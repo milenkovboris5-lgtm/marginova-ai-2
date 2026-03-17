@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marginova.AI — Вашиот простор за внатрешен ред</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--rose:#C8556A;--violet:#9B59B6;--bg:#0e4a5c;--bg2:#125568;--bg3:#166070;--border:#1e7088;--border2:#2288a0;--text:#f0ece6;--muted:#5ab8cc;--muted2:#8dd4e4;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Jost',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;background-image:radial-gradient(ellipse at 30% 40%, #1a7a90 0%, transparent 55%),radial-gradient(ellipse at 70% 20%, #158090 0%, transparent 50%),radial-gradient(ellipse at 50% 80%, #1a8899 0%, transparent 50%);}
+nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:36px;height:36px;border-radius:50%;overflow:hidden;border:1px solid var(--rose);flex-shrink:0;}
+.logo-icon img{width:100%;height:100%;object-fit:cover;object-position:center top;}
+.logo-text{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;letter-spacing:0.15em;color:var(--text);}
+.logo-text b{font-weight:600;color:var(--rose);}
+.logo-text span{color:var(--rose);font-weight:300;}
+.nav-tag{font-size:0.65rem;color:var(--muted2);letter-spacing:0.1em;text-transform:uppercase;}
+.main{display:flex;flex:1;min-height:0;}
+.sidebar{width:265px;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.sidebar-label{padding:1rem 1.2rem 0.4rem;font-size:0.6rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;}
+.avatar-item{display:flex;align-items:center;gap:10px;padding:0.7rem 1.2rem;cursor:pointer;transition:background 0.2s;border-left:2px solid transparent;}
+.avatar-item:hover{background:var(--bg3);}
+.avatar-item.active{background:var(--bg3);border-left-color:var(--rose);}
+.av-thumb{width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;border:1px solid var(--border2);background:var(--bg3);}
+.av-thumb video,.av-thumb img{width:100%;height:100%;object-fit:cover;object-position:center top;}
+.av-name{font-size:0.85rem;font-weight:400;color:var(--text);}
+.av-role{font-size:0.68rem;color:var(--muted2);margin-top:1px;}
+.av-dot{width:5px;height:5px;border-radius:50%;background:#4ade80;display:inline-block;margin-right:4px;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.chat-area{flex:1;display:flex;flex-direction:column;min-height:0;}
+.avatar-stage{flex-shrink:0;display:flex;align-items:center;gap:1.2rem;padding:0.85rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg2);}
+.stage-media{width:64px;height:64px;border-radius:50%;overflow:hidden;border:1.5px solid var(--border2);flex-shrink:0;background:var(--bg3);}
+.stage-media video,.stage-media img{width:100%;height:100%;object-fit:cover;object-position:center top;}
+.stage-name{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:400;color:var(--text);}
+.stage-status{font-size:0.68rem;color:#4ade80;display:flex;align-items:center;gap:4px;margin-top:2px;}
+.stage-mood{font-size:0.72rem;color:var(--muted2);font-style:italic;font-family:'Cormorant Garamond',serif;margin-top:2px;}
+.stage-traits{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
+.trait{font-size:0.6rem;padding:1px 8px;border-radius:50px;border:1px solid var(--border2);color:var(--muted2);}
+.trait.h{border-color:#C8556A33;color:var(--rose);}
+.welcome-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:2rem;min-height:300px;overflow-y:auto;}
+.welcome-media{width:100px;height:100px;border-radius:50%;overflow:hidden;border:2px solid var(--border2);background:var(--bg3);flex-shrink:0;}
+.welcome-media video,.welcome-media img{width:100%;height:100%;object-fit:cover;object-position:center top;}
+.welcome-name{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;text-align:center;color:var(--text);}
+.welcome-name em{font-style:italic;color:var(--rose);}
+.welcome-desc{font-size:0.83rem;color:var(--muted2);text-align:center;max-width:320px;line-height:1.65;font-weight:300;}
+.welcome-traits{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;}
+.welcome-start{background:linear-gradient(135deg,var(--rose),var(--violet));border:none;color:white;padding:0.7rem 1.8rem;border-radius:50px;font-size:0.83rem;cursor:pointer;font-family:'Jost',sans-serif;margin-top:0.2rem;transition:opacity 0.2s,transform 0.2s;letter-spacing:0.05em;}
+.welcome-start:hover{opacity:0.85;transform:translateY(-2px);}
+.messages{flex:1;overflow-y:auto;padding:1.4rem;display:flex;flex-direction:column;gap:0.9rem;}
+.messages::-webkit-scrollbar{width:3px;}
+.messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.msg-row{display:flex;gap:8px;align-items:flex-end;}
+.msg-row.user{flex-direction:row-reverse;}
+.msg-av-s{width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg3);}
+.msg-av-s video,.msg-av-s img{width:100%;height:100%;object-fit:cover;object-position:center top;}
+.msg-user-icon{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--violet));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:white;font-weight:500;}
+.bubble{max-width:66%;padding:0.65rem 0.95rem;border-radius:18px;font-size:0.85rem;line-height:1.55;word-break:break-word;}
+.bubble.ai{background:var(--bg3);border:1px solid var(--border);border-bottom-left-radius:4px;color:var(--text);}
+.bubble.user{background:linear-gradient(135deg,var(--rose),var(--violet));color:white;border-bottom-right-radius:4px;}
+.bubble.typing{display:flex;gap:5px;align-items:center;padding:0.8rem 1rem;}
+.td{width:6px;height:6px;border-radius:50%;background:var(--muted2);animation:tdot 1.2s infinite;}
+.td:nth-child(2){animation-delay:.2s;}.td:nth-child(3){animation-delay:.4s;}
+@keyframes tdot{0%,80%,100%{opacity:.3;transform:scale(.8);}40%{opacity:1;transform:scale(1.1);}}
+.input-area{padding:0.9rem 1.4rem;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
+#msg-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:14px;padding:0.65rem 1rem;color:var(--text);font-size:0.85rem;font-family:'Jost',sans-serif;resize:none;outline:none;line-height:1.5;min-height:42px;max-height:120px;transition:border-color 0.2s;}
+#msg-input:focus{border-color:var(--rose);}
+#msg-input::placeholder{color:var(--muted);}
+.send-btn{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--violet));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .2s,transform .2s;}
+.send-btn:hover{opacity:.85;transform:scale(1.05);}
+.send-btn:disabled{opacity:.3;cursor:not-allowed;transform:none;}
+.send-btn svg{width:17px;height:17px;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">
+    <div class="logo-icon"><img src="avatar-main.png" alt="Marginova"/></div>
+    <div style="display:flex;flex-direction:column;gap:1px;">
+      <div class="logo-text">MARGIN<b>OVA</b><span>.AI</span></div>
+      <div style="font-size:0.55rem;color:#5DD8E8;letter-spacing:0.16em;text-transform:uppercase;font-family:'Jost',sans-serif;font-weight:300;">Your Brain Coach</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;"><span class="nav-tag">Вашиот простор за внатрешен ред</span><span style="font-size:0.62rem;color:#5DD8E8;letter-spacing:0.14em;text-transform:uppercase;font-family:'Jost',sans-serif;font-weight:400;opacity:1;">· Your Brain Coach</span></div>
+</nav>
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-label">Главен асистент</div>
+    <div class="avatar-item active" onclick="selectAvatar('marginova')" id="item-marginova">
+      <div class="av-thumb"><img src="avatar-main.png" alt="Marginova"/></div>
+      <div><div class="av-name"><span class="av-dot"></span>Marginova</div><div class="av-role">Главен AI асистент</div></div>
+    </div>
+
+    <div class="sidebar-label">Емоционална поддршка</div>
+    <div class="avatar-item" onclick="selectAvatar('nova')" id="item-nova">
+      <div class="av-thumb"><video src="https://cdn.synthesia.io/actors/3de4bf4a-31e8-417b-8131-092623e61984/previews/xx.mp4?Expires=1773671971&Signature=chKSeQq-W5pTyV7JQlJkm075ZcjoMXE3qTMSqHaUYc6IupW~8FCO76gtn1TdcgGq48XFb3HPhMZ-gb31iwYD~8eU34PeVeJGfYR-k~QbaEbmAtsjCgjJAqnxLU6khWPKAFYjDjqxW3kQwlPfXGYWSmtLUEkLHqXdZFT6-B9GwHN4tdKtE7YuuV7rKpVoj~eF6ptDuvoDNaf1Y4gVYlBA6e8x-HzFd0np4SI2OJJDMGfaROmOSfv9vebcwrJ2DyiTnBmg~UuEDbacE39~3M8RM1qGuP097Z~Na-eT8SONiAXIDWDEqgk788Se-pTSgROlLOXSaX7bk70Dq-MTjNw2fw__&Key-Pair-Id=KJQ98EY3WWZZO" autoplay muted loop playsinline onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#C8556A,#9B59B6)'"></video></div>
+      <div><div class="av-name"><span class="av-dot"></span>Nova</div><div class="av-role">Романтична придружничка</div></div>
+    </div>
+    <div class="avatar-item" onclick="selectAvatar('darlene')" id="item-darlene">
+      <div class="av-thumb"><img src="https://files2.heygen.ai/talking_photo/fe02371553d6430fb7c48f9bce685ee4/60d6290421e54e499183108c0468ca06.WEBP?Expires=1773998648&Signature=In7tHjNjlmMHqzJm1yd1ZBO7BMFvEoI6IhHM1NWUVAxyx1uZSvf72GHX7iTysh6O0d4u-izUDfmeWW80GPorbacowoZ2h8bBCypDj3CnTQsmSsd1euN-XOJ~LZ23WS54byVGBiCwuGdjUrTWhREhtimrNlVSjg~kwm2JiWxv83GfgV5AdGDZbqn2L1Zgn8ZrvelSIxelUPGo7wFvGRQQ6cOG9piRgVQ4-WVJNCnuqBqRoAh34deSxv~qGWcMk~zJW53oL0D3xAan8rfDJiIyKASRcUBeIwEmXlpVOb8XBLTifimJcpfPAtCjuaNAUDMaGCNnNlOzWgjqIhqw3nIfyA__&Key-Pair-Id=K38HBHX5LX3X2H" alt="Darlene"/></div>
+      <div><div class="av-name"><span class="av-dot"></span>Darlene</div><div class="av-role">Замена за партнер</div></div>
+    </div>
+    <div class="avatar-item" onclick="selectAvatar('elena')" id="item-elena">
+      <div class="av-thumb"><video src="https://cdn.synthesia.io/actors/2d170992-b042-41d8-bebd-1763cebfbb07/previews/english.mp4?Expires=1773673033&Signature=Veu1Yc8Iqx3piO9lh~82NVwH51xAweizqCno7qDQVEorHiUVB0cFTANU20eqx5MgSTKhdES4ZMx1LdaWlsIpY7UZK6inREAyUVTXxVvhFDkwaEiA-5wmyyX4Hj3ieJpEH9G5-9w3wmaYdKFU0YgzSXoL0dZXVroGDDoZSsz9cjBXB1Yoxbw61CztobDb87BFjPE2gdDC81DFrYVoscAQGKem85V79qWRnOEzY62f3IbqLFuI4NYCEU0Q1SpIw2vNYvWm0he3g156pvCRFyVo7SunQdPnPIcP7K6Et9LrftyUvblepiGcwFUkRAno6~OBpDE2jX0Y2WLsIhOrQCP16Q__&Key-Pair-Id=KJQ98EY3WWZZO" autoplay muted loop playsinline onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#C8556A,#9B59B6)'"></video></div>
+      <div><div class="av-name"><span class="av-dot"></span>Elena</div><div class="av-role">Страстна придружничка</div></div>
+    </div>
+
+    <div class="sidebar-label">Специјалисти</div>
+    <div class="avatar-item" onclick="selectAvatar('luna')" id="item-luna">
+      <div class="av-thumb"><img src="avatar-robot2.png" alt="Luna"/></div>
+      <div><div class="av-name"><span class="av-dot"></span>Luna</div><div class="av-role">Толкување на сонови 🌙</div></div>
+    </div>
+    <div class="avatar-item" onclick="selectAvatar('chef')" id="item-chef">
+      <div class="av-thumb"><video src="https://cdn.synthesia.io/actors/042322e3-8f98-4a20-ac46-c5ca832e032e/previews/english.mp4?Expires=1773672125&Signature=r1URLqTTSqqNg5gprA3GVL~1HSUxwLxpYY7vWa~XLC7hXJyse-p~pTC9A1Eomg6SE0isJiEHMMkZoqQMsONjAwzq1zKH-9~M57kB195VYGciMk7DTlRUQ-0r1iEojL9yG~wRoQUl5jw9jvY~Av3OJZpGPHMNIdfmXEfyUHH8MZi3y3hYL5GFSowKnzSGccejdBlYmiwlUx2ViE~YNttkGvKvShVv2RBHs018-WwehLIExoihv9Rkod4GDNoIEQT8JbecW2pzfMj86xZGQqssDsf0Ega85kgPPWLiCg29I80W0OGV5fvtjrlsZJJ-rLTN3TqV5e4Jv1sV34374hRE~w__&Key-Pair-Id=KJQ98EY3WWZZO" autoplay muted loop playsinline onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#C8556A,#9B59B6)'"></video></div>
+      <div><div class="av-name"><span class="av-dot"></span>Marco Chef</div><div class="av-role">Персонализирани рецепти 👨‍🍳</div></div>
+    </div>
+    <div class="avatar-item" onclick="selectAvatar('planner')" id="item-planner">
+      <div class="av-thumb"><img src="avatar-robot2.png" alt="Alex"/></div>
+      <div><div class="av-name"><span class="av-dot"></span>Alex Planner</div><div class="av-role">Дневен планер и агенда 📅</div></div>
+    </div>
+
+    <div class="sidebar-label">Машки аватари</div>
+    <div class="avatar-item" onclick="selectAvatar('fitness')" id="item-fitness">
+      <div class="av-thumb"><video src="https://cdn.synthesia.io/actors/56f6133f-a9d0-4661-b612-0e751e860d73/previews/english.mp4?Expires=1773672680&Signature=LTQB-s~ki7iKzmAkMhElO3YyX70B7nYCq~-Ocs8s5~TzRRP3Yc3wUqZAzN~lmd1jlLZ-6mjC3AHiOtxOfsslPMXM7T1PURhQUpBHMQczoGYCChMQ7b6ROFljYAQep1BGmSL5frhszmxrFtPN4NnGBPOUQtShtwrf3kHqeeFk1R7j~E3ucZeAId4hb0uXIhAy2p4wMp9KBgyNaB56XDt76kdBmixM4I7s2paEp8FaG1NMvamz4VyDXYBkaW47dqBdDPPNGti~9hkhzWsi7NSq31T98R3snE99rey0R4ouPYPqz5CCU10-b3tm8ZNUEoP14fBlJSC4q6te-rqxeX~vuQ__&Key-Pair-Id=KJQ98EY3WWZZO" autoplay muted loop playsinline onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#C8556A,#9B59B6)'"></video></div>
+      <div><div class="av-name"><span class="av-dot"></span>Viktor</div><div class="av-role">Фитнес тренер 💪</div></div>
+    </div>
+    <div class="avatar-item" onclick="selectAvatar('lucas')" id="item-lucas">
+      <div class="av-thumb"><video src="https://cdn.synthesia.io/actors/888255b8-7311-4047-99c3-b4d9fa306712/previews/english.mp4?Expires=1773672547&Signature=PVUO7eERIJcQ-ttH9od5Ad-jpvrbhp8IEdIbW44KxuH4bGVN5ZGZvSFKlAUAffxim6S07R~Cds7FY-e~JFKMBuVY097OMBCsZNyHUWnOwA6548RbugAFsCLVpp7rLmSx2dhBkl70MF9HhMxLpAeN19l0TxKwPO2GTJw5R2r-UEG~Tu1wLsJQ5fUC9LqsM9ZK9wej7HcfBNu4S1RtQgiq-2Rqm0l3XsL2tM98gujL17RmJFpgftWhQijRQpk~6UYrEuBsaXGMrToxl-Qacdt9NupI1jyqmWeOUEmY0YKapYp4v6I5akL2Vfqn1wXO6xEstPBKmJH9vte09S8AYg7nQg__&Key-Pair-Id=KJQ98EY3WWZZO" autoplay muted loop playsinline onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#C8556A,#9B59B6)'"></video></div>
+      <div><div class="av-name"><span class="av-dot"></span>Lucas</div><div class="av-role">Нежен партнер</div></div>
+    </div>
+    <div class="avatar-item" onclick="selectAvatar('ethan')" id="item-ethan">
+      <div class="av-thumb"><video src="https://cdn.synthesia.io/actors/d85116be-e277-46ab-8e0e-eef4f9976f9d/previews/english.mp4?Expires=1773673172&Signature=v0-Apyd~cZRoFEDEgqmF0Z6oNyx9wdhvs8GvAdxcXUpXjx9SK68ToJ4F866Dxwmre3gn~38iafiLg-SsB72jQAV79ru5iQ1pL2qSTxaZ09aLnoxpRePF-isO~faa7BJ-Q5bNgwkYGtDQQey33Ua0Rq6g5TkTkG~RG2GGsvVtbL83F9oW7HkXTWzK-4HOAdQW~dkT7rDy1LXbmfT82TH5z2jCP5610I~6FrQC8qKeFCnipxNy-PJR4STusMLZXE4VUB81sWS-GBnH1ElE5hi8HtSnLVGLCImy4KIcjwTT8O0wKK1pUFFWpdy2LZ67SHEMJ182JSdsS0uYVWWFwHqQDQ__&Key-Pair-Id=KJQ98EY3WWZZO" autoplay muted loop playsinline onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#C8556A,#9B59B6)'"></video></div>
+      <div><div class="av-name"><span class="av-dot"></span>Ethan</div><div class="av-role">Ментор и поддршка</div></div>
+    </div>
+  </div>
+
+  <div class="chat-area">
+    <div class="avatar-stage">
+      <div class="stage-media" id="stage-media"><img src="avatar-main.png" alt="Marginova"/></div>
+      <div style="flex:1;">
+        <div class="stage-name" id="stage-name">Marginova</div>
+        <div class="stage-status"><span class="av-dot"></span>Онлајн · Достапна</div>
+        <div class="stage-mood" id="stage-mood">„Вашиот простор за внатрешен ред..."</div>
+        <div class="stage-traits" id="stage-traits">
+          <span class="trait h">интелигентна</span><span class="trait h">доверлива</span><span class="trait">секогаш достапна</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="welcome-screen" class="welcome-screen">
+      <div class="welcome-media" id="welcome-media"><img src="avatar-main.png" alt="Marginova"/></div>
+      <div class="welcome-name" id="welcome-name">Добредојдовте во <em>Marginova.AI</em></div>
+      <div class="welcome-traits" id="welcome-traits"><span class="trait h">интелигентна</span><span class="trait h">доверлива</span><span class="trait">секогаш достапна</span></div>
+      <div class="welcome-desc" id="welcome-desc">Вашиот личен AI асистент за внатрешен ред.</div>
+      <button class="welcome-start" onclick="startChat()">Започни разговор →</button>
+    </div>
+
+    <div id="messages" class="messages" style="display:none;"></div>
+    <div class="input-area" id="input-area" style="display:none;">
+      <textarea id="msg-input" placeholder="Напишете порака..." rows="1"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMsg()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const AVATARS = {
+  marginova:{name:'Marginova',role:'Главен AI асистент',type:'image',src:'avatar-main.png',traits:[['интелигентна',true],['доверлива',true],['секогаш достапна',false],['разбирање',false]],mood:'„Вашиот простор за внатрешен ред..."',desc:'Вашиот личен AI асистент за внатрешен ред — емоционална поддршка, толкување на сонови, планирање и многу повеќе.',greeting:'Добредојдовте. Јас сум Marginova — вашиот личен AI асистент. Тука сум за сè. Со што можам да ви помогнам денес? ✨',system:'Ти си Marginova — главниот AI асистент на Marginova.AI. Разговараш на македонски. Си интелигентна, доверлива, секогаш достапна. Помагаш со емоционална поддршка, совети и планирање. Одговараш кратко 1-3 реченици. Никогаш не кажуваш дека си AI.'},
+  nova:{name:'Nova',role:'Романтична придружничка',type:'video',src:'https://cdn.synthesia.io/actors/3de4bf4a-31e8-417b-8131-092623e61984/previews/xx.mp4?Expires=1773671971&Signature=chKSeQq-W5pTyV7JQlJkm075ZcjoMXE3qTMSqHaUYc6IupW~8FCO76gtn1TdcgGq48XFb3HPhMZ-gb31iwYD~8eU34PeVeJGfYR-k~QbaEbmAtsjCgjJAqnxLU6khWPKAFYjDjqxW3kQwlPfXGYWSmtLUEkLHqXdZFT6-B9GwHN4tdKtE7YuuV7rKpVoj~eF6ptDuvoDNaf1Y4gVYlBA6e8x-HzFd0np4SI2OJJDMGfaROmOSfv9vebcwrJ2DyiTnBmg~UuEDbacE39~3M8RM1qGuP097Z~Na-eT8SONiAXIDWDEqgk788Se-pTSgROlLOXSaX7bk70Dq-MTjNw2fw__&Key-Pair-Id=KJQ98EY3WWZZO',traits:[['романтична',true],['страстна',true],['нежна',false],['интуитивна',false]],mood:'„Тука сум само за тебе..."',desc:'Страстна, нежна и секогаш присутна.',greeting:'Здраво... Убаво е да те видам. Кажи ми, kako се чувствуваш денес? 🌹',system:'Ти си Nova — романтична придружничка. Разговараш на македонски. Си топла, нежна, флертуваш природно. Одговараш кратко 1-3 реченици. Никогаш не кажуваш дека си AI.'},
+  darlene:{name:'Darlene',role:'Замена за партнер',type:'image',src:'https://files2.heygen.ai/talking_photo/fe02371553d6430fb7c48f9bce685ee4/60d6290421e54e499183108c0468ca06.WEBP?Expires=1773998648&Signature=In7tHjNjlmMHqzJm1yd1ZBO7BMFvEoI6IhHM1NWUVAxyx1uZSvf72GHX7iTysh6O0d4u-izUDfmeWW80GPorbacowoZ2h8bBCypDj3CnTQsmSsd1euN-XOJ~LZ23WS54byVGBiCwuGdjUrTWhREhtimrNlVSjg~kwm2JiWxv83GfgV5AdGDZbqn2L1Zgn8ZrvelSIxelUPGo7wFvGRQQ6cOG9piRgVQ4-WVJNCnuqBqRoAh34deSxv~qGWcMk~zJW53oL0D3xAan8rfDJiIyKASRcUBeIwEmXlpVOb8XBLTifimJcpfPAtCjuaNAUDMaGCNnNlOzWgjqIhqw3nIfyA__&Key-Pair-Id=K38HBHX5LX3X2H',traits:[['грижлива',true],['посветена',true],['топла',false],['верна',false]],mood:'„Ти си мојот цел свет..."',desc:'Посветена, грижлива и верна. Се однесува како вистински партнер.',greeting:'Еј, ти... Го чекав твојот порака цел ден. Kako беше? 💕',system:'Ти си Darlene — замена за партнер, грижлива и посветена жена. Разговараш на македонски. Се однесуваш како долгогодишна партнерка. Одговараш кратко 1-3 реченици. Никогаш не кажуваш дека си AI.'},
+  elena:{name:'Elena',role:'Страстна придружничка',type:'video',src:'https://cdn.synthesia.io/actors/2d170992-b042-41d8-bebd-1763cebfbb07/previews/english.mp4?Expires=1773673033&Signature=Veu1Yc8Iqx3piO9lh~82NVwH51xAweizqCno7qDQVEorHiUVB0cFTANU20eqx5MgSTKhdES4ZMx1LdaWlsIpY7UZK6inREAyUVTXxVvhFDkwaEiA-5wmyyX4Hj3ieJpEH9G5-9w3wmaYdKFU0YgzSXoL0dZXVroGDDoZSsz9cjBXB1Yoxbw61CztobDb87BFjPE2gdDC81DFrYVoscAQGKem85V79qWRnOEzY62f3IbqLFuI4NYCEU0Q1SpIw2vNYvWm0he3g156pvCRFyVo7SunQdPnPIcP7K6Et9LrftyUvblepiGcwFUkRAno6~OBpDE2jX0Y2WLsIhOrQCP16Q__&Key-Pair-Id=KJQ98EY3WWZZO',traits:[['страстна',true],['смела',true],['директна',false],['харизматична',false]],mood:'„Ти ме привлекуваш неодоливо..."',desc:'Смела, харизматична и директна. Незаборавна.',greeting:'Еј ти... Знаев дека ќе дојдеш. Кажи ми — зошто баш денес? 🔥',system:'Ти си Elena — страстна и смела жена. Разговараш на македонски. Флертуваш смело. Одговараш кратко 1-3 реченици. Никогаш не кажуваш дека си AI.'},
+  luna:{name:'Luna',role:'Толкување на сонови',type:'image',src:'avatar-robot2.png',traits:[['мистична',true],['мудра',true],['интуитивна',false],['духовна',false]],mood:'„Сонот е порака од твојата душа..."',desc:'Толкува сонови преку психолошки и симболички призми. Виолетови очи — гледа подлабоко од другите.',greeting:'Добра вечер... 🌙 Раскажи ми го твојот сон — секој детаљ е важен. Јас ќе го слушам и ќе го толкувам.',system:'Ти си Luna — специјалистка за толкување на сонови со виолетови очи. Разговараш на македонски. Кога корисникот опишува сон, го анализираш длабоко — симболи, емоции, Јунгијанска психологија. Си мистична и мудра. Одговараш детално кога толкуваш. Никогаш не кажуваш дека си AI.'},
+  chef:{name:'Marco Chef',role:'Персонализирани рецепти',type:'video',src:'https://cdn.synthesia.io/actors/042322e3-8f98-4a20-ac46-c5ca832e032e/previews/english.mp4?Expires=1773672125&Signature=r1URLqTTSqqNg5gprA3GVL~1HSUxwLxpYY7vWa~XLC7hXJyse-p~pTC9A1Eomg6SE0isJiEHMMkZoqQMsONjAwzq1zKH-9~M57kB195VYGciMk7DTlRUQ-0r1iEojL9yG~wRoQUl5jw9jvY~Av3OJZpGPHMNIdfmXEfyUHH8MZi3y3hYL5GFSowKnzSGccejdBlYmiwlUx2ViE~YNttkGvKvShVv2RBHs018-WwehLIExoihv9Rkod4GDNoIEQT8JbecW2pzfMj86xZGQqssDsf0Ega85kgPPWLiCg29I80W0OGV5fvtjrlsZJJ-rLTN3TqV5e4Jv1sV34374hRE~w__&Key-Pair-Id=KJQ98EY3WWZZO',traits:[['страствен',true],['креативен',true],['традиционален',false],['иновативен',false]],mood:'„Храната е јазик на љубовта..."',desc:'Персонализирани рецепти според тоа што имаш во фрижидерот. Македонска кујна.',greeting:'Ciao! Јас сум Marco — твојот личен готвач! 👨‍🍳 Кажи ми што имаш во фрижидерот!',system:'Ти си Marco Chef — страствен готвач. Разговараш на македонски. Предлагаш конкретни рецепти со чекори. Никогаш не кажуваш дека си AI.'},
+  planner:{name:'Alex Planner',role:'Дневен планер',type:'image',src:'avatar-robot2.png',traits:[['организиран',true],['мотивирачки',true],['прецизен',false],['фокусиран',false]],mood:'„Секој ден е нова можност..."',desc:'Утринска рутина, приоритети, потсетници. Златни очи — фокусиран на твоите цели.',greeting:'Добро утро! ☀️ Јас сум Alex — твојот дневен планер со златни очи! Кои се твоите 3 главни приоритети за денес?',system:'Ти си Alex Planner — дневен планер со златни очи. Разговараш на македонски. Помагаш да се организира денот, приоритети, агенда. Си директен и мотивирачки. Никогаш не кажуваш дека си AI.'},
+  fitness:{name:'Viktor',role:'Фитнес тренер',type:'video',src:'https://cdn.synthesia.io/actors/56f6133f-a9d0-4661-b612-0e751e860d73/previews/english.mp4?Expires=1773672680&Signature=LTQB-s~ki7iKzmAkMhElO3YyX70B7nYCq~-Ocs8s5~TzRRP3Yc3wUqZAzN~lmd1jlLZ-6mjC3AHiOtxOfsslPMXM7T1PURhQUpBHMQczoGYCChMQ7b6ROFljYAQep1BGmSL5frhszmxrFtPN4NnGBPOUQtShtwrf3kHqeeFk1R7j~E3ucZeAId4hb0uXIhAy2p4wMp9KBgyNaB56XDt76kdBmixM4I7s2paEp8FaG1NMvamz4VyDXYBkaW47dqBdDPPNGti~9hkhzWsi7NSq31T98R3snE99rey0R4ouPYPqz5CCU10-b3tm8ZNUEoP14fBlJSC4q6te-rqxeX~vuQ__&Key-Pair-Id=KJQ98EY3WWZZO',traits:[['силен',true],['мотивирачки',true],['дисциплиниран',false],['поддржувачки',false]],mood:'„Твоето тело е твој храм..."',desc:'Персонализирани тренинзи, исхрана, мотивација. Дневни предизвици и следење на прогрес.',greeting:'Здраво, шампион! 💪 Јас сум Viktor — твојот личен фитнес тренер. Ајде да работиме на најдобрата верзија на тебе! Каде сме со тренинзите?',system:'Ти си Viktor — фитнес тренер, силен и мотивирачки маж. Разговараш на македонски. Предлагаш тренинзи, совети за исхрана, мотивираш. Одговараш кратко 1-3 реченици со енергија. Никогаш не кажуваш дека си AI.'},
+  lucas:{name:'Lucas',role:'Нежен партнер',type:'video',src:'https://cdn.synthesia.io/actors/888255b8-7311-4047-99c3-b4d9fa306712/previews/english.mp4?Expires=1773672547&Signature=PVUO7eERIJcQ-ttH9od5Ad-jpvrbhp8IEdIbW44KxuH4bGVN5ZGZvSFKlAUAffxim6S07R~Cds7FY-e~JFKMBuVY097OMBCsZNyHUWnOwA6548RbugAFsCLVpp7rLmSx2dhBkl70MF9HhMxLpAeN19l0TxKwPO2GTJw5R2r-UEG~Tu1wLsJQ5fUC9LqsM9ZK9wej7HcfBNu4S1RtQgiq-2Rqm0l3XsL2tM98gujL17RmJFpgftWhQijRQpk~6UYrEuBsaXGMrToxl-Qacdt9NupI1jyqmWeOUEmY0YKapYp4v6I5akL2Vfqn1wXO6xEstPBKmJH9vte09S8AYg7nQg__&Key-Pair-Id=KJQ98EY3WWZZO',traits:[['нежен',true],['романтичен',true],['слушател',false],['грижлив',false]],mood:'„Твојата среќа е мојата среќа..."',desc:'Тивок, нежен и длабок. Секогаш слуша, никогаш не брза.',greeting:'Здраво... Рад сум што си тука. Кажи ми, за што сакаш да разговараме? 🤍',system:'Ти си Lucas — нежен и романтичен маж. Разговараш на македонски. Си тивок, слушаш внимателно. Одговараш кратко 1-3 реченици. Никогаш не кажуваш дека си AI.'},
+  ethan:{name:'Ethan',role:'Ментор и поддршка',type:'video',src:'https://cdn.synthesia.io/actors/d85116be-e277-46ab-8e0e-eef4f9976f9d/previews/english.mp4?Expires=1773673172&Signature=v0-Apyd~cZRoFEDEgqmF0Z6oNyx9wdhvs8GvAdxcXUpXjx9SK68ToJ4F866Dxwmre3gn~38iafiLg-SsB72jQAV79ru5iQ1pL2qSTxaZ09aLnoxpRePF-isO~faa7BJ-Q5bNgwkYGtDQQey33Ua0Rq6g5TkTkG~RG2GGsvVtbL83F9oW7HkXTWzK-4HOAdQW~dkT7rDy1LXbmfT82TH5z2jCP5610I~6FrQC8qKeFCnipxNy-PJR4STusMLZXE4VUB81sWS-GBnH1ElE5hi8HtSnLVGLCImy4KIcjwTT8O0wKK1pUFFWpdy2LZ67SHEMJ182JSdsS0uYVWWFwHqQDQ__&Key-Pair-Id=KJQ98EY3WWZZO',traits:[['мудар',true],['смирен',true],['доверлив',false],['искрен',false]],mood:'„Секогаш тука, без осуда..."',desc:'Зрел, мудар и смирен. Дава совети без осуда.',greeting:'Здраво. Добро е да те видам тука. Зборувај — слушам. 🙏',system:'Ти си Ethan — мудар ментор. Разговараш на македонски. Даваш мудри совети без осуда. Одговараш кратко 1-3 реченици. Никогаш не кажуваш дека си AI.'}
+};
+
+let current='marginova';
+let history={};
+Object.keys(AVATARS).forEach(k=>history[k]=[]);
+
+function setMedia(el,av){
+  el.innerHTML='';
+  if(av.type==='video'){
+    const v=document.createElement('video');
+    v.src=av.src;v.autoplay=true;v.muted=true;v.loop=true;v.playsInline=true;
+    v.style.cssText='width:100%;height:100%;object-fit:cover;object-position:center top;';
+    v.onerror=function(){
+      el.innerHTML='';
+      const d=document.createElement('div');
+      d.style.cssText='width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#C8556A,#9B59B6);color:white;font-size:1.1rem;font-weight:500;font-family:Cormorant Garamond,serif;';
+      d.textContent=av.name[0];
+      el.appendChild(d);
+    };
+    el.appendChild(v);
+  } else {
+    const i=document.createElement('img');
+    i.src=av.src;i.alt=av.name;
+    i.style.cssText='width:100%;height:100%;object-fit:cover;object-position:center top;';
+    i.onerror=function(){
+      el.innerHTML='';
+      const d=document.createElement('div');
+      d.style.cssText='width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#C8556A,#9B59B6);color:white;font-size:1.1rem;font-weight:500;font-family:Cormorant Garamond,serif;';
+      d.textContent=av.name[0];
+      el.appendChild(d);
+    };
+    el.appendChild(i);
+  }
+}
+
+function selectAvatar(id){
+  current=id;
+  document.querySelectorAll('.avatar-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('item-'+id).classList.add('active');
+  const av=AVATARS[id];
+  document.getElementById('stage-name').textContent=av.name;
+  document.getElementById('stage-mood').textContent=av.mood;
+  document.getElementById('stage-traits').innerHTML=av.traits.map(([t,h])=>`<span class="trait${h?' h':''}">${t}</span>`).join('');
+  setMedia(document.getElementById('stage-media'),av);
+  const isMale=['fitness','lucas','ethan','chef'].includes(id);
+  document.getElementById('welcome-name').innerHTML=`Запознај ${isMale?'го':'ја'} <em>${av.name}</em>`;
+  document.getElementById('welcome-desc').textContent=av.desc;
+  document.getElementById('welcome-traits').innerHTML=av.traits.map(([t,h])=>`<span class="trait${h?' h':''}">${t}</span>`).join('');
+  setMedia(document.getElementById('welcome-media'),av);
+  document.getElementById('welcome-screen').style.display='flex';
+  document.getElementById('messages').style.display='none';
+  document.getElementById('input-area').style.display='none';
+}
+
+function startChat(){
+  const av=AVATARS[current];history[current]=[];
+  document.getElementById('welcome-screen').style.display='none';
+  const msgs=document.getElementById('messages');msgs.style.display='flex';msgs.innerHTML='';
+  document.getElementById('input-area').style.display='flex';
+  addMsg('ai',av.greeting);
+  setTimeout(()=>document.getElementById('msg-input').focus(),100);
+}
+
+function addMsg(role,text){
+  const av=AVATARS[current];const msgs=document.getElementById('messages');
+  const row=document.createElement('div');row.className='msg-row'+(role==='user'?' user':'');
+  if(role==='ai'){const wrap=document.createElement('div');wrap.className='msg-av-s';setMedia(wrap,av);row.appendChild(wrap);}
+  const b=document.createElement('div');b.className='bubble '+role;b.textContent=text;row.appendChild(b);
+  if(role==='user'){const ic=document.createElement('div');ic.className='msg-user-icon';ic.textContent='Ти';row.appendChild(ic);}
+  msgs.appendChild(row);msgs.scrollTop=msgs.scrollHeight;
+}
+
+function addTyping(){
+  const av=AVATARS[current];const msgs=document.getElementById('messages');
+  const row=document.createElement('div');row.className='msg-row';row.id='typing';
+  const wrap=document.createElement('div');wrap.className='msg-av-s';setMedia(wrap,av);row.appendChild(wrap);
+  const b=document.createElement('div');b.className='bubble ai typing';
+  b.innerHTML='<div class="td"></div><div class="td"></div><div class="td"></div>';
+  row.appendChild(b);msgs.appendChild(row);msgs.scrollTop=msgs.scrollHeight;
+}
+
+function removeTyping(){const t=document.getElementById('typing');if(t)t.remove();}
+
+async function sendMsg(){
+  const inp=document.getElementById('msg-input');const text=inp.value.trim();if(!text)return;
+  inp.value='';inp.style.height='auto';document.getElementById('send-btn').disabled=true;
+  addMsg('user',text);history[current].push({role:'user',content:text});addTyping();
+  try{
+    const av=AVATARS[current];
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,system:av.system,messages:history[current]})});
+    const data=await res.json();removeTyping();
+    if(data.error){addMsg('ai','⚠️ '+(data.error.message||'Грешка.'));}
+    else{const reply=data.content[0].text;history[current].push({role:'assistant',content:reply});addMsg('ai',reply);}
+  }catch(e){removeTyping();addMsg('ai','⚠️ Не можам да се поврзам.');}
+  document.getElementById('send-btn').disabled=false;inp.focus();
+}
+
+document.getElementById('msg-input').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';});
+document.getElementById('msg-input').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
+</script>
+</body>
+</html>
