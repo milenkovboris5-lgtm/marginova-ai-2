@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marginova.AI — Your AI Brain Coach</title>
+<meta name="description" content="Meet your personal AI assistants. Available 24/7. In your language.">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#C9A84C;
+  --gold2:#E8C97A;
+  --gold3:#F5E0A0;
+  --goldglow:rgba(201,168,76,0.25);
+  --goldglow2:rgba(201,168,76,0.08);
+  --bg:#090910;
+  --bg2:#0e0e1a;
+  --bg3:#13131f;
+  --border:rgba(201,168,76,0.18);
+  --border2:rgba(201,168,76,0.35);
+  --text:#f0eada;
+  --text2:#c8bfa8;
+  --muted:#7a7060;
+  --accent:#a87cff;
+  --green:#2ddc7a;
+}
+
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Jost',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow-x:hidden;
+}
+
+/* ═══ GRID BACKGROUND ═══ */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,168,76,0.03) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+
+/* ═══ NAV ═══ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:1rem 3rem;
+  background:rgba(9,9,16,0.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+nav::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:0.4;
+}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.nav-logo img{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold);}
+.nav-logo-text{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;letter-spacing:0.15em;}
+.nav-logo-text b{color:var(--gold);}
+.nav-logo-text span{color:var(--accent);}
+.nav-cta{
+  background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));
+  border:none;color:#0a0a12;padding:0.5rem 1.5rem;border-radius:50px;
+  font-size:0.8rem;cursor:pointer;font-family:'Jost',sans-serif;
+  font-weight:600;letter-spacing:0.05em;transition:all 0.25s;
+  text-decoration:none;display:inline-block;
+  box-shadow:0 4px 20px rgba(201,168,76,0.3);
+}
+.nav-cta:hover{box-shadow:0 4px 30px rgba(201,168,76,0.5);transform:translateY(-1px);}
+
+/* ═══ HERO ═══ */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:8rem 2rem 4rem;
+  position:relative;z-index:1;
+  background:
+    radial-gradient(ellipse at 20% 50%,rgba(168,124,255,0.08) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 30%,rgba(201,168,76,0.07) 0%,transparent 50%),
+    radial-gradient(ellipse at 50% 80%,rgba(201,168,76,0.05) 0%,transparent 40%);
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(201,168,76,0.08);border:1px solid var(--border2);
+  border-radius:50px;padding:0.35rem 1rem;
+  font-size:0.7rem;color:var(--gold);letter-spacing:0.1em;
+  margin-bottom:2rem;
+  animation:fadeInDown 0.8s ease both;
+}
+.hero-badge span{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);animation:blink 2s infinite;}
+.hero-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(3rem,8vw,6rem);
+  font-weight:300;line-height:1.1;
+  margin-bottom:1.5rem;
+  animation:fadeInUp 0.9s ease 0.1s both;
+}
+.hero-title em{font-style:italic;color:var(--gold);text-shadow:0 0 40px var(--goldglow);}
+.hero-title .line2{display:block;font-size:clamp(1.8rem,4vw,3rem);color:var(--text2);font-weight:300;margin-top:0.5rem;}
+.hero-desc{
+  font-size:clamp(0.9rem,2vw,1.1rem);color:var(--text2);
+  max-width:520px;line-height:1.8;margin-bottom:3rem;
+  animation:fadeInUp 0.9s ease 0.2s both;
+}
+.hero-actions{
+  display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;
+  animation:fadeInUp 0.9s ease 0.3s both;
+  margin-bottom:4rem;
+}
+.btn-primary{
+  background:linear-gradient(135deg,rgba(201,168,76,0.95),rgba(201,168,76,0.7));
+  border:none;color:#0a0a12;padding:0.85rem 2.5rem;border-radius:50px;
+  font-size:0.9rem;cursor:pointer;font-family:'Jost',sans-serif;
+  font-weight:600;letter-spacing:0.08em;transition:all 0.25s;
+  box-shadow:0 4px 30px rgba(201,168,76,0.35);
+  text-decoration:none;display:inline-block;
+}
+.btn-primary:hover{box-shadow:0 4px 45px rgba(201,168,76,0.55);transform:translateY(-2px);}
+.btn-secondary{
+  background:transparent;border:1px solid var(--border2);color:var(--text2);
+  padding:0.85rem 2.5rem;border-radius:50px;font-size:0.9rem;cursor:pointer;
+  font-family:'Jost',sans-serif;font-weight:400;letter-spacing:0.05em;
+  transition:all 0.25s;text-decoration:none;display:inline-block;
+}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold);box-shadow:0 0 20px var(--goldglow2);}
+
+/* Hero stats */
+.hero-stats{
+  display:flex;gap:3rem;flex-wrap:wrap;justify-content:center;
+  animation:fadeInUp 0.9s ease 0.4s both;
+}
+.stat{text-align:center;}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--gold);font-weight:300;}
+.stat-label{font-size:0.65rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;}
+
+/* Scroll indicator */
+.scroll-ind{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  color:var(--muted);font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;
+  animation:fadeIn 1s ease 1s both;
+}
+.scroll-line{width:1px;height:40px;background:linear-gradient(180deg,var(--gold),transparent);animation:scrollLine 2s ease-in-out infinite;}
+@keyframes scrollLine{0%,100%{opacity:0.3;transform:scaleY(1);}50%{opacity:1;transform:scaleY(1.2);}}
+
+/* ═══ AVATARS SECTION ═══ */
+.section{padding:6rem 2rem;position:relative;z-index:1;}
+.section-header{text-align:center;margin-bottom:4rem;}
+.section-label{
+  font-size:0.65rem;color:var(--gold);letter-spacing:0.2em;text-transform:uppercase;
+  margin-bottom:1rem;display:block;opacity:0.8;
+}
+.section-title{
+  font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,5vw,3.5rem);
+  font-weight:300;line-height:1.2;
+}
+.section-title em{color:var(--gold);font-style:italic;}
+.section-desc{font-size:0.9rem;color:var(--text2);max-width:500px;margin:1rem auto 0;line-height:1.7;}
+
+/* Avatar grid */
+.avatars-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:1.2rem;max-width:1100px;margin:0 auto;
+}
+.avatar-card{
+  background:linear-gradient(135deg,rgba(19,19,31,0.95),rgba(14,14,26,0.95));
+  border:1px solid var(--border);border-radius:20px;
+  padding:1.5rem 1rem;text-align:center;
+  transition:all 0.3s;cursor:pointer;position:relative;overflow:hidden;
+}
+.avatar-card::before{
+  content:'';position:absolute;inset:0;border-radius:20px;
+  background:linear-gradient(135deg,rgba(201,168,76,0.08),transparent);
+  opacity:0;transition:opacity 0.3s;
+}
+.avatar-card:hover{border-color:var(--border2);transform:translateY(-6px);box-shadow:0 12px 40px rgba(201,168,76,0.12);}
+.avatar-card:hover::before{opacity:1;}
+.av-img{
+  width:75px;height:75px;border-radius:50%;overflow:hidden;margin:0 auto 1rem;
+  border:2px solid var(--border);transition:border-color 0.3s,box-shadow 0.3s;
+}
+.avatar-card:hover .av-img{border-color:var(--gold);box-shadow:0 0 20px var(--goldglow);}
+.av-img img{width:100%;height:100%;object-fit:cover;object-position:center center;}
+.av-card-name{font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:4px;}
+.av-card-role{font-size:0.65rem;color:var(--muted);letter-spacing:0.05em;}
+.av-online{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;box-shadow:0 0 6px var(--green);animation:blink 2s infinite;}
+
+/* ═══ FEATURES ═══ */
+.features-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;max-width:1000px;margin:0 auto;
+}
+.feature-card{
+  background:rgba(19,19,31,0.8);border:1px solid var(--border);
+  border-radius:20px;padding:2rem;transition:all 0.3s;
+}
+.feature-card:hover{border-color:var(--border2);transform:translateY(-4px);box-shadow:0 8px 30px rgba(201,168,76,0.08);}
+.feature-icon{font-size:2rem;margin-bottom:1rem;}
+.feature-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--text);margin-bottom:0.5rem;}
+.feature-desc{font-size:0.82rem;color:var(--text2);line-height:1.7;}
+
+/* ═══ HOW IT WORKS ═══ */
+.steps{display:flex;flex-direction:column;gap:0;max-width:700px;margin:0 auto;}
+.step{
+  display:flex;gap:2rem;align-items:flex-start;padding:2rem 0;
+  border-left:1px solid var(--border);margin-left:20px;padding-left:2.5rem;
+  position:relative;
+}
+.step::before{
+  content:'';position:absolute;left:-5px;top:2rem;
+  width:9px;height:9px;border-radius:50%;
+  background:var(--gold);box-shadow:0 0 12px var(--goldglow);
+}
+.step-num{
+  font-family:'Cormorant Garamond',serif;font-size:3rem;color:var(--border2);
+  font-weight:300;line-height:1;flex-shrink:0;min-width:40px;
+}
+.step-content{}
+.step-title{font-size:1rem;font-weight:500;color:var(--text);margin-bottom:0.4rem;}
+.step-desc{font-size:0.82rem;color:var(--text2);line-height:1.6;}
+
+/* ═══ REVIEWS ═══ */
+.reviews-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.2rem;max-width:1000px;margin:0 auto;
+}
+.review-card{
+  background:rgba(19,19,31,0.9);border:1px solid var(--border);
+  border-radius:16px;padding:1.5rem;
+}
+.review-stars{color:var(--gold);font-size:0.85rem;margin-bottom:0.75rem;text-shadow:0 0 8px rgba(201,168,76,0.4);}
+.review-text{font-size:0.82rem;color:var(--text2);line-height:1.6;margin-bottom:1rem;font-style:italic;}
+.review-author{font-size:0.75rem;color:var(--muted);font-weight:500;}
+
+/* ═══ PRICING ═══ */
+.pricing-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;max-width:800px;margin:0 auto;
+}
+.price-card{
+  background:rgba(19,19,31,0.9);border:1px solid var(--border);
+  border-radius:20px;padding:2.5rem 2rem;text-align:center;
+  transition:all 0.3s;position:relative;overflow:hidden;
+}
+.price-card.featured{
+  border-color:var(--border2);
+  box-shadow:0 0 40px rgba(201,168,76,0.12);
+}
+.price-card.featured::before{
+  content:'MOST POPULAR';
+  position:absolute;top:1rem;right:-2rem;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#0a0a12;font-size:0.55rem;font-weight:700;letter-spacing:0.15em;
+  padding:4px 3rem;transform:rotate(45deg);
+}
+.price-name{font-size:0.7rem;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:1rem;}
+.price-amount{font-family:'Cormorant Garamond',serif;font-size:3.5rem;font-weight:300;color:var(--text);}
+.price-amount span{font-size:1rem;color:var(--muted);vertical-align:super;}
+.price-period{font-size:0.75rem;color:var(--muted);margin-bottom:2rem;}
+.price-features{list-style:none;text-align:left;margin-bottom:2rem;}
+.price-features li{font-size:0.82rem;color:var(--text2);padding:0.45rem 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.price-features li::before{content:'✓';color:var(--green);font-size:0.75rem;flex-shrink:0;}
+.price-features li.no::before{content:'✗';color:var(--muted);}
+.price-features li.no{color:var(--muted);}
+.price-btn{
+  width:100%;padding:0.75rem;border-radius:50px;font-size:0.82rem;
+  cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;
+  letter-spacing:0.05em;transition:all 0.25s;border:none;
+  text-decoration:none;display:block;
+}
+.price-btn.free{background:rgba(255,255,255,0.06);color:var(--text2);border:1px solid var(--border);}
+.price-btn.free:hover{border-color:var(--border2);color:var(--text);}
+.price-btn.pro{
+  background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.65));
+  color:#0a0a12;box-shadow:0 4px 20px rgba(201,168,76,0.3);
+}
+.price-btn.pro:hover{box-shadow:0 4px 35px rgba(201,168,76,0.5);transform:translateY(-1px);}
+
+/* ═══ CTA SECTION ═══ */
+.cta-section{
+  padding:8rem 2rem;text-align:center;position:relative;z-index:1;
+  background:radial-gradient(ellipse at 50% 50%,rgba(201,168,76,0.06) 0%,transparent 60%);
+}
+.cta-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.5rem,6vw,4.5rem);font-weight:300;margin-bottom:1rem;}
+.cta-title em{color:var(--gold);font-style:italic;}
+.cta-desc{font-size:0.9rem;color:var(--text2);max-width:400px;margin:0 auto 2.5rem;line-height:1.7;}
+
+/* ═══ FOOTER ═══ */
+footer{
+  border-top:1px solid var(--border);padding:2rem 3rem;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:1rem;position:relative;z-index:1;
+}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:300;letter-spacing:0.15em;}
+.footer-logo b{color:var(--gold);}
+.footer-logo span{color:var(--accent);}
+.footer-text{font-size:0.7rem;color:var(--muted);}
+
+/* ═══ DIVIDER ═══ */
+.divider{
+  width:100%;max-width:800px;margin:0 auto;height:1px;
+  background:linear-gradient(90deg,transparent,var(--border2),transparent);
+}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* Scroll reveal */
+.reveal{opacity:0;transform:translateY(40px);transition:all 0.7s cubic-bezier(.4,0,.2,1);}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:768px){
+  nav{padding:1rem 1.5rem;}
+  .hero{padding:7rem 1.5rem 3rem;}
+  .section{padding:4rem 1.5rem;}
+  .hero-stats{gap:2rem;}
+  footer{flex-direction:column;text-align:center;}
+  .step{gap:1rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <img src="avatar-main.png" alt="Marginova"/>
+    <div class="nav-logo-text">MARGIN<b>OVA</b><span>.AI</span></div>
+  </div>
+  <a href="index.html" class="nav-cta">Get Started Free →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge"><span></span> Live · Available 24/7</div>
+  <h1 class="hero-title">
+    Meet Your Personal
+    <em>AI Brain Coach</em>
+    <span class="line2">Always here. Always ready.</span>
+  </h1>
+  <p class="hero-desc">
+    A team of specialized AI assistants — each with their own personality, expertise and voice. Available in English, Македонски and Serbian.
+  </p>
+  <div class="hero-actions">
+    <a href="index.html" class="btn-primary">Start for Free →</a>
+    <a href="#assistants" class="btn-secondary">Meet the Team</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">11</div><div class="stat-label">AI Specialists</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Languages</div></div>
+    <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Available</div></div>
+    <div class="stat"><div class="stat-num">Free</div><div class="stat-label">To Start</div></div>
+  </div>
+  <div class="scroll-ind">
+    <div class="scroll-line"></div>
+    scroll
+  </div>
+</section>
+
+<!-- ASSISTANTS -->
+<section class="section" id="assistants">
+  <div class="section-header reveal">
+    <span class="section-label">The Team</span>
+    <h2 class="section-title">Not one AI. <em>Eleven specialists.</em></h2>
+    <p class="section-desc">Each assistant has a unique personality, area of expertise and voice — built to feel real.</p>
+  </div>
+  <div class="avatars-grid">
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-main.png" alt="Marginova"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Marginova</div>
+      <div class="av-card-role">Main AI Assistant</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-ai-mentor.png" alt="AI Mentor"/></div>
+      <div class="av-card-name"><span class="av-online"></span>AI Mentor</div>
+      <div class="av-card-role">AI Learning 🤖</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-ana.png" alt="Ana"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Ana</div>
+      <div class="av-card-role">Nutritionist 🥗</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-sophie.png" alt="Sophie"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Sophie</div>
+      <div class="av-card-role">English Teacher 🇬🇧</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-leo.png" alt="Leo"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Leo</div>
+      <div class="av-card-role">Essay Assistant ✍️</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-sara.png" alt="Sara"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Sara</div>
+      <div class="av-card-role">Special Education 🧩</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-luna.png" alt="Luna"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Luna</div>
+      <div class="av-card-role">Dream Interpreter 🌙</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-chef.png" alt="Marco"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Marco Chef</div>
+      <div class="av-card-role">Recipes 👨‍🍳</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-planner.png" alt="Alex"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Alex Planner</div>
+      <div class="av-card-role">Daily Planner 📅</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-viktor.png" alt="Viktor"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Viktor</div>
+      <div class="av-card-role">Fitness Trainer 💪</div>
+    </div>
+    <div class="avatar-card reveal">
+      <div class="av-img"><img src="avatar-ethan.png" alt="Ethan"/></div>
+      <div class="av-card-name"><span class="av-online"></span>Ethan</div>
+      <div class="av-card-role">Mentor & Support</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider reveal"></div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-header reveal">
+    <span class="section-label">Why Marginova</span>
+    <h2 class="section-title">Built different. <em>By design.</em></h2>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <div class="feature-icon">🎙️</div>
+      <div class="feature-title">Voice Conversations</div>
+      <div class="feature-desc">Speak directly to your assistant. Each one responds in their own unique voice — female or male, warm or precise.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">🧠</div>
+      <div class="feature-title">Remembers You</div>
+      <div class="feature-desc">Your assistants remember your previous conversations. No need to repeat yourself — they already know your context.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">🌍</div>
+      <div class="feature-title">Your Language</div>
+      <div class="feature-desc">Switch between English, Македонски and Serbian at any time. Your assistants follow along seamlessly.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">🏆</div>
+      <div class="feature-title">XP & Levels</div>
+      <div class="feature-desc">Earn experience points for every conversation. Level up from Beginner to Legend as you grow.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">Private & Secure</div>
+      <div class="feature-desc">Your conversations are yours. Secured with Supabase authentication and encrypted storage.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Always Instant</div>
+      <div class="feature-desc">Powered by the fastest AI infrastructure available. Responses in under 2 seconds, every time.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider reveal"></div>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="section-header reveal">
+    <span class="section-label">How It Works</span>
+    <h2 class="section-title">Simple. <em>Powerful.</em></h2>
+  </div>
+  <div class="steps">
+    <div class="step reveal">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <div class="step-title">Create your free account</div>
+        <div class="step-desc">Sign up in 30 seconds. No credit card required. Immediately access all 11 AI specialists.</div>
+      </div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <div class="step-title">Choose your assistant</div>
+        <div class="step-desc">Pick the specialist that fits your need — from nutrition to fitness, from English to dream interpretation.</div>
+      </div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <div class="step-title">Talk or type</div>
+        <div class="step-desc">Use voice or text. Your assistant listens, remembers and responds with a unique personality and voice.</div>
+      </div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">04</div>
+      <div class="step-content">
+        <div class="step-title">Grow and level up</div>
+        <div class="step-desc">Earn XP, unlock levels, invite friends and build a daily habit with your personal AI team.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider reveal"></div>
+
+<!-- REVIEWS -->
+<section class="section" id="reviews">
+  <div class="section-header reveal">
+    <span class="section-label">User Reviews</span>
+    <h2 class="section-title">What people <em>are saying.</em></h2>
+  </div>
+  <div class="reviews-grid">
+    <div class="review-card reveal">
+      <div class="review-stars">★★★★★</div>
+      <div class="review-text">"Marginova helped me organize my thoughts every morning. I feel more focused and calm."</div>
+      <div class="review-author">Maria K.</div>
+    </div>
+    <div class="review-card reveal">
+      <div class="review-stars">★★★★★</div>
+      <div class="review-text">"The AI Mentor explained machine learning to me in a way no YouTube video ever could."</div>
+      <div class="review-author">Alexander T.</div>
+    </div>
+    <div class="review-card reveal">
+      <div class="review-stars">★★★★☆</div>
+      <div class="review-text">"Marco Chef suggested incredible recipes based on what I had in my fridge. Highly recommend!"</div>
+      <div class="review-author">Ivana M.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider reveal"></div>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div class="section-header reveal">
+    <span class="section-label">Pricing</span>
+    <h2 class="section-title">Start free. <em>Grow when ready.</em></h2>
+    <p class="section-desc">No hidden fees. Cancel anytime. Your data is always yours.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card reveal">
+      <div class="price-name">Free</div>
+      <div class="price-amount"><span>$</span>0</div>
+      <div class="price-period">forever</div>
+      <ul class="price-features">
+        <li>50 messages per day</li>
+        <li>All 11 assistants</li>
+        <li>Voice conversations</li>
+        <li>3 languages (EN/МК/SR)</li>
+        <li>XP & Level system</li>
+        <li class="no">Unlimited messages</li>
+        <li class="no">Priority responses</li>
+      </ul>
+      <a href="index.html" class="price-btn free">Get Started Free</a>
+    </div>
+    <div class="price-card featured reveal">
+      <div class="price-name">Pro</div>
+      <div class="price-amount"><span>$</span>5</div>
+      <div class="price-period">per month</div>
+      <ul class="price-features">
+        <li>Unlimited messages</li>
+        <li>All 11 assistants</li>
+        <li>Voice conversations</li>
+        <li>3 languages (EN/МК/SR)</li>
+        <li>XP & Level system</li>
+        <li>Priority responses</li>
+        <li>Early access to new features</li>
+      </ul>
+      <a href="index.html" class="price-btn pro">Start Pro →</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 class="cta-title reveal">Ready to meet your <em>AI team?</em></h2>
+  <p class="cta-desc reveal">Join thousands of people who have already discovered a smarter way to grow, learn and feel supported.</p>
+  <a href="index.html" class="btn-primary reveal">Start for Free — No Card Needed →</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">MARGIN<b>OVA</b><span>.AI</span></div>
+  <div class="footer-text">© 2026 Marginova.AI · Your AI Brain Coach · EN · МК · SR</div>
+</footer>
+
+<script>
+// Scroll reveal
+const observer=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');}});
+},{threshold:0.1,rootMargin:'0px 0px -50px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+</script>
+</body>
+</html>
