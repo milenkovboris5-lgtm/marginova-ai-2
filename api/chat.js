@@ -1,4 +1,4 @@
-javascript// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
 // RATE LIMITING — In-memory store
 // 50 messages per user per day (resets at midnight)
 // ═══════════════════════════════════════════
