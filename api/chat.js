@@ -137,7 +137,7 @@ export default async function handler(req, res) {
           results.map((r, i) =>
             `${i + 1}. ${r.title}\n${r.snippet}\nLink: ${r.link}`
           ).join('\n\n') +
-          '\n\n[Use these real results to answer with specific prices and links. Be helpful and concrete.]';
+         [IMPORTANT: You MUST use ONLY the prices and stores from the search results above. Do NOT invent any prices, store names, or links. If no specific prices are found in the results, tell the user you could not find exact prices and share the links. Never mention stores like Lidl, MediaMarkt, Vero, KAM unless they appear in the actual search results.]
       }
     }
 
