@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════
+// // ═══════════════════════════════════════════
 // RATE LIMITING — In-memory store
 // 50 messages per user per day (resets at midnight)
 // ═══════════════════════════════════════════
@@ -75,7 +75,6 @@ async function searchPrices(query) {
   }
 }
 
-// Check if message is price-related
 function isPriceQuery(text) {
   const keywords = [
     'цена', 'цени', 'поевтино', 'најевтино', 'попуст', 'акција', 'акции',
@@ -126,10 +125,11 @@ export default async function handler(req, res) {
     const body = req.body;
     const isPrice = body.avatar === 'priceai';
     const lastMsg = body.messages?.[body.messages.length - 1]?.content || '';
+    const hasImage = !!body.image;
 
     // ── SERPER SEARCH for Price AI ──
     let searchContext = '';
-    if (isPrice && isPriceQuery(lastMsg)) {
+    if (isPrice && isPriceQuery(typeof lastMsg === 'string' ? lastMsg : body.imageText || '')) {
       const searchQuery = `${lastMsg} цена Македонија Балкан маркет`;
       const results = await searchPrices(searchQuery);
       if (results && results.length > 0) {
@@ -148,33 +148,81 @@ export default async function handler(req, res) {
         content: body.system + searchContext
       });
     }
-    messages.push(...body.messages);
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 350,
-        messages: messages
-      })
-    });
+    // ── HANDLE IMAGE MESSAGE ──
+    if (hasImage) {
+      // Build vision message with image
+      const visionMessages = [...body.messages.slice(0, -1)];
+      visionMessages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:${body.imageType};base64,${body.image}`
+            }
+          },
+          {
+            type: 'text',
+            text: body.imageText || 'Please analyze this image.'
+          }
+        ]
+      });
+      messages.push(...visionMessages);
 
-    const data = await response.json();
+      // Use vision-capable model
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          max_tokens: 500,
+          messages: messages
+        })
+      });
 
-    if (data.error) {
-      return res.status(400).json({ error: data.error });
+      const data = await response.json();
+      if (data.error) {
+        return res.status(400).json({ error: data.error });
+      }
+
+      const converted = {
+        content: [{ type: 'text', text: data.choices[0].message.content }],
+        remaining_messages: limit.remaining - 1
+      };
+      return res.status(200).json(converted);
+
+    } else {
+      // ── REGULAR TEXT MESSAGE ──
+      messages.push(...body.messages);
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          max_tokens: 350,
+          messages: messages
+        })
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        return res.status(400).json({ error: data.error });
+      }
+
+      const converted = {
+        content: [{ type: 'text', text: data.choices[0].message.content }],
+        remaining_messages: limit.remaining - 1
+      };
+      return res.status(200).json(converted);
     }
-
-    const converted = {
-      content: [{ type: 'text', text: data.choices[0].message.content }],
-      remaining_messages: limit.remaining - 1
-    };
-
-    return res.status(200).json(converted);
 
   } catch (err) {
     return res.status(500).json({ error: { message: err.message } });
