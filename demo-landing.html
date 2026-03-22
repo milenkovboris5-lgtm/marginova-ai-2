@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marginova.AI — Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#C9A84C;--gold2:#E8C97A;--gold3:#F5E0A0;
+  --goldglow:rgba(201,168,76,0.25);--goldglow2:rgba(201,168,76,0.08);
+  --bg:#090910;--bg2:#0e0e1a;
+  --border:rgba(201,168,76,0.18);--border2:rgba(201,168,76,0.35);
+  --text:#f0eada;--text2:#c8bfa8;--muted:#7a7060;
+  --accent:#a87cff;--green:#2ddc7a;
+}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:'Jost',sans-serif;background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(201,168,76,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,0.03) 1px,transparent 1px);
+  background-size:50px 50px;
+}
+
+/* ═══ INTRO ═══ */
+.intro{
+  position:fixed;inset:0;z-index:1000;
+  background:radial-gradient(ellipse at 50% 40%,rgba(201,168,76,0.06) 0%,transparent 60%), var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.8rem;
+}
+.intro.hidden{display:none;}
+.intro-logo{
+  font-family:'Cormorant Garamond',serif;font-size:4rem;font-weight:300;
+  letter-spacing:0.15em;animation:fadeInUp 0.9s ease both;
+}
+.intro-logo b{color:var(--gold);text-shadow:0 0 40px var(--goldglow);}
+.intro-logo span{color:var(--accent);}
+.intro-tagline{
+  font-size:0.85rem;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;
+  animation:fadeInUp 0.9s ease 0.2s both;
+}
+.intro-features{
+  display:flex;gap:2rem;flex-wrap:wrap;justify-content:center;
+  animation:fadeInUp 0.9s ease 0.4s both;
+}
+.intro-feat{
+  text-align:center;padding:1rem 1.5rem;
+  background:rgba(201,168,76,0.05);border:1px solid var(--border);
+  border-radius:14px;min-width:130px;
+}
+.intro-feat-icon{font-size:1.8rem;margin-bottom:0.4rem;}
+.intro-feat-text{font-size:0.7rem;color:var(--text2);letter-spacing:0.05em;}
+.intro-btn{
+  background:linear-gradient(135deg,rgba(201,168,76,0.95),rgba(201,168,76,0.65));
+  border:none;color:#0a0a12;padding:0.9rem 3rem;border-radius:50px;
+  font-size:0.95rem;cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;
+  letter-spacing:0.1em;box-shadow:0 4px 30px rgba(201,168,76,0.4);
+  animation:fadeInUp 0.9s ease 0.6s both;transition:all 0.25s;
+}
+.intro-btn:hover{box-shadow:0 4px 50px rgba(201,168,76,0.6);transform:translateY(-2px);}
+
+/* ═══ SCENE OVERLAY ═══ */
+.scene-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;
+  opacity:0;pointer-events:none;transition:opacity 0.5s;
+}
+.scene-overlay.show{opacity:1;pointer-events:all;}
+.scene-number{
+  font-size:0.65rem;color:var(--gold);letter-spacing:0.25em;text-transform:uppercase;
+  opacity:0.7;
+}
+.scene-title{
+  font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:300;
+  text-align:center;
+}
+.scene-title em{color:var(--gold);font-style:italic;}
+.scene-subtitle{font-size:0.85rem;color:var(--muted);text-align:center;}
+
+/* ═══ NAV ═══ */
+nav{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0.6rem 1.5rem;border-bottom:1px solid var(--border);
+  flex-shrink:0;background:rgba(9,9,16,0.92);backdrop-filter:blur(20px);
+  position:relative;z-index:10;
+}
+nav::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),var(--gold2),var(--gold),transparent);
+  opacity:0.4;
+}
+.logo-text{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;letter-spacing:0.15em;}
+.logo-text b{color:var(--gold);}
+.logo-text span{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.xp-wrap{display:flex;align-items:center;gap:6px;font-size:0.65rem;color:var(--muted);}
+.xp-bar-outer{width:90px;height:5px;background:rgba(255,255,255,0.06);border-radius:50px;overflow:hidden;}
+.xp-bar-inner{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0%;transition:width 0.6s ease;border-radius:50px;box-shadow:0 0 8px rgba(201,168,76,0.6);}
+.xp-badge{
+  background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.1));
+  color:var(--gold);font-size:0.6rem;padding:2px 8px;border-radius:50px;
+  font-weight:500;border:1px solid var(--border2);
+}
+
+/* ═══ MAIN LAYOUT ═══ */
+.main{display:flex;flex:1;min-height:0;position:relative;z-index:1;}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar{
+  width:220px;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;
+  background:rgba(9,9,16,0.8);
+}
+.sidebar-label{
+  padding:0.85rem 1rem 0.3rem;font-size:0.55rem;
+  color:var(--gold);letter-spacing:0.18em;text-transform:uppercase;opacity:0.7;
+}
+.avatar-item{
+  display:flex;align-items:center;gap:9px;padding:0.45rem 1rem;
+  cursor:pointer;transition:all 0.3s;border-left:2px solid transparent;
+}
+.avatar-item:hover,.avatar-item.highlight{background:rgba(201,168,76,0.05);}
+.avatar-item.active{
+  background:linear-gradient(90deg,rgba(201,168,76,0.1),transparent);
+  border-left-color:var(--gold);
+}
+.av-thumb{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  border:1.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+  background:linear-gradient(135deg,rgba(19,19,31,0.95),rgba(9,9,16,0.95));
+  transition:all 0.3s;
+}
+.avatar-item.active .av-thumb{border-color:var(--gold);box-shadow:0 0 12px var(--goldglow);}
+.av-name{font-size:0.78rem;color:var(--text2);}
+.avatar-item.active .av-name{color:var(--gold);}
+.av-role{font-size:0.58rem;color:var(--muted);margin-top:1px;}
+.av-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* ═══ CHAT ═══ */
+.chat-area{flex:1;display:flex;flex-direction:column;min-height:0;}
+.avatar-stage{
+  flex-shrink:0;display:flex;align-items:center;gap:1rem;
+  padding:0.7rem 1.3rem;border-bottom:1px solid var(--border);
+  background:rgba(9,9,16,0.9);
+}
+.stage-icon{
+  width:50px;height:50px;border-radius:50%;
+  border:2px solid var(--gold);flex-shrink:0;
+  box-shadow:0 0 20px var(--goldglow);
+  display:flex;align-items:center;justify-content:center;font-size:1.6rem;
+  background:linear-gradient(135deg,rgba(19,19,31,0.95),rgba(9,9,16,0.95));
+  transition:all 0.4s;
+}
+.stage-name{font-family:'Cormorant Garamond',serif;font-size:1.1rem;}
+.stage-status{font-size:0.63rem;color:var(--green);margin-top:2px;}
+.stage-mood{font-size:0.65rem;color:var(--gold);font-style:italic;font-family:'Cormorant Garamond',serif;margin-top:2px;opacity:0.8;}
+
+.messages{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.75rem;}
+.messages::-webkit-scrollbar{width:2px;}
+.messages::-webkit-scrollbar-thumb{background:var(--border2);}
+
+.msg-row{display:flex;gap:8px;align-items:flex-end;animation:msgIn 0.35s ease both;}
+.msg-row.user{flex-direction:row-reverse;}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.msg-icon{
+  width:26px;height:26px;border-radius:50%;flex-shrink:0;
+  border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;font-size:0.85rem;
+  background:linear-gradient(135deg,rgba(19,19,31,0.95),rgba(9,9,16,0.95));
+}
+.msg-user-icon{
+  width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(201,168,76,0.8),rgba(201,168,76,0.5));
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:0.55rem;color:#0a0a12;font-weight:700;
+}
+.bubble{
+  max-width:68%;padding:0.6rem 0.9rem;border-radius:18px;
+  font-size:0.82rem;line-height:1.65;white-space:pre-line;
+}
+.bubble.ai{
+  background:rgba(19,19,31,0.95);border:1px solid var(--border);
+  border-bottom-left-radius:4px;
+}
+.bubble.user{
+  background:linear-gradient(135deg,rgba(201,168,76,0.85),rgba(201,168,76,0.65));
+  color:#0a0a12;font-weight:500;border-bottom-right-radius:4px;
+}
+.bubble.typing{display:flex;gap:5px;align-items:center;padding:0.75rem 1rem;}
+.td{width:6px;height:6px;border-radius:50%;background:var(--gold);opacity:0.5;animation:tdot 1.2s infinite;}
+.td:nth-child(2){animation-delay:.2s;}.td:nth-child(3){animation-delay:.4s;}
+@keyframes tdot{0%,80%,100%{opacity:.2;transform:scale(.8);}40%{opacity:0.9;transform:scale(1.1);}}
+
+/* INPUT */
+.input-area{
+  padding:0.75rem 1.1rem;border-top:1px solid var(--border);
+  display:flex;gap:7px;align-items:center;flex-shrink:0;
+  background:rgba(9,9,16,0.95);position:relative;
+}
+.input-area::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0.2;
+}
+#msg-input{
+  flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:14px;padding:0.58rem 0.95rem;color:var(--text);font-size:0.83rem;
+  font-family:'Jost',sans-serif;outline:none;height:38px;
+}
+#msg-input::placeholder{color:var(--muted);}
+.cam-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,0.06);border:1px solid var(--border);
+  cursor:default;display:flex;align-items:center;justify-content:center;font-size:1rem;
+  transition:all 0.3s;
+}
+.cam-btn.glow{border-color:var(--gold);box-shadow:0 0 15px var(--goldglow);background:rgba(201,168,76,0.1);}
+.send-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));
+  border:none;cursor:default;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 12px rgba(201,168,76,0.3);
+}
+.send-btn svg{width:15px;height:15px;stroke:#0a0a12;}
+
+/* XP TOAST */
+.xp-toast{
+  position:fixed;top:65px;right:20px;
+  background:linear-gradient(135deg,rgba(19,19,31,0.98),rgba(14,14,26,0.98));
+  border:1px solid var(--border2);color:var(--gold);
+  padding:0.6rem 1.2rem;border-radius:50px;font-size:0.8rem;
+  z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;
+  box-shadow:0 4px 24px rgba(201,168,76,0.25);
+}
+.xp-toast.show{opacity:1;}
+
+/* PROGRESS */
+.demo-progress{position:fixed;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,0.04);z-index:999;}
+.demo-progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0%;transition:width 0.8s ease;box-shadow:0 0 8px rgba(201,168,76,0.6);}
+
+/* ATTRIBUTE BADGE */
+.attr-badge{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,rgba(19,19,31,0.98),rgba(14,14,26,0.98));
+  border:1px solid var(--border2);color:var(--text);
+  padding:0.7rem 1.8rem;border-radius:50px;font-size:0.78rem;
+  z-index:998;opacity:0;transition:opacity 0.4s;pointer-events:none;
+  box-shadow:0 4px 24px rgba(201,168,76,0.2);
+  white-space:nowrap;
+}
+.attr-badge.show{opacity:1;}
+.attr-badge span{color:var(--gold);font-weight:600;}
+
+/* FINALE */
+.finale{
+  position:fixed;inset:0;z-index:600;
+  background:radial-gradient(ellipse at 50% 40%,rgba(201,168,76,0.08) 0%,transparent 60%), var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;
+  opacity:0;pointer-events:none;transition:opacity 0.8s;
+}
+.finale.show{opacity:1;pointer-events:all;}
+.finale-title{font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:300;text-align:center;}
+.finale-title em{color:var(--gold);font-style:italic;text-shadow:0 0 30px var(--goldglow);}
+.finale-grid{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;max-width:700px;}
+.finale-item{
+  background:rgba(201,168,76,0.06);border:1px solid var(--border2);
+  border-radius:12px;padding:0.7rem 1.2rem;font-size:0.78rem;color:var(--text2);
+  display:flex;align-items:center;gap:8px;
+}
+.finale-item span{color:var(--gold);}
+.finale-stats{display:flex;gap:2.5rem;margin-top:0.5rem;}
+.finale-stat{text-align:center;}
+.finale-stat-num{font-family:'Cormorant Garamond',serif;font-size:2.2rem;color:var(--gold);font-weight:300;}
+.finale-stat-label{font-size:0.62rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
+.finale-cta{
+  background:linear-gradient(135deg,rgba(201,168,76,0.95),rgba(201,168,76,0.65));
+  border:none;color:#0a0a12;padding:0.85rem 2.5rem;border-radius:50px;
+  font-size:0.9rem;cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;
+  letter-spacing:0.08em;box-shadow:0 4px 30px rgba(201,168,76,0.4);transition:all 0.25s;
+}
+.finale-cta:hover{box-shadow:0 4px 50px rgba(201,168,76,0.6);transform:translateY(-2px);}
+.finale-sub{font-size:0.72rem;color:var(--muted);}
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(25px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div class="intro" id="intro">
+  <div class="intro-logo">MARGIN<b>OVA</b><span>.AI</span></div>
+  <div class="intro-tagline">Your Personal AI Brain Coach</div>
+  <div class="intro-features">
+    <div class="intro-feat"><div class="intro-feat-icon">🤖</div><div class="intro-feat-text">15 AI Specialists</div></div>
+    <div class="intro-feat"><div class="intro-feat-icon">🇪🇺</div><div class="intro-feat-text">EU Funds Expert</div></div>
+    <div class="intro-feat"><div class="intro-feat-icon">🇬🇧</div><div class="intro-feat-text">Daily Word Challenge</div></div>
+    <div class="intro-feat"><div class="intro-feat-icon">📷</div><div class="intro-feat-text">Image Analysis</div></div>
+    <div class="intro-feat"><div class="intro-feat-icon">🏆</div><div class="intro-feat-text">XP & Levels</div></div>
+  </div>
+  <button class="intro-btn" onclick="startDemo()">▶ Start Demo</button>
+</div>
+
+<!-- SCENE OVERLAY -->
+<div class="scene-overlay" id="scene-overlay">
+  <div class="scene-number" id="scene-num"></div>
+  <div class="scene-title" id="scene-title"></div>
+  <div class="scene-subtitle" id="scene-sub"></div>
+</div>
+
+<!-- FINALE -->
+<div class="finale" id="finale">
+  <div class="finale-title">Your personal <em>AI team</em><br>is ready.</div>
+  <div class="finale-stats">
+    <div class="finale-stat"><div class="finale-stat-num">15</div><div class="finale-stat-label">AI Specialists</div></div>
+    <div class="finale-stat"><div class="finale-stat-num">3</div><div class="finale-stat-label">Languages</div></div>
+    <div class="finale-stat"><div class="finale-stat-num">24/7</div><div class="finale-stat-label">Available</div></div>
+    <div class="finale-stat"><div class="finale-stat-num">Free</div><div class="finale-stat-label">To Start</div></div>
+  </div>
+  <div class="finale-grid">
+    <div class="finale-item"><span>🤖</span> 15 specialized AI assistants</div>
+    <div class="finale-item"><span>🇪🇺</span> EU Funds — specific amounts & links</div>
+    <div class="finale-item"><span>🇬🇧</span> Daily Word Challenge with Sophie</div>
+    <div class="finale-item"><span>📷</span> Image analysis — meals, docs, homework</div>
+    <div class="finale-item"><span>🏆</span> XP system — level up every day</div>
+  </div>
+  <button class="finale-cta" onclick="window.open('index.html','_blank')">Start for Free → marginova.ai</button>
+  <div class="finale-sub">No credit card needed · Free forever plan available</div>
+  <button onclick="location.reload()" style="background:none;border:1px solid var(--border);color:var(--muted);padding:0.4rem 1.2rem;border-radius:50px;cursor:pointer;font-family:'Jost',sans-serif;font-size:0.72rem;">▶ Watch Again</button>
+</div>
+
+<!-- XP TOAST -->
+<div class="xp-toast" id="xp-toast"></div>
+<div class="attr-badge" id="attr-badge"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo-text">MARGIN<b>OVA</b><span>.AI</span></div>
+  <div class="nav-right">
+    <div class="xp-wrap">
+      <div class="xp-badge" id="xp-badge">🌱 Level 1 · Beginner</div>
+      <div class="xp-bar-outer"><div class="xp-bar-inner" id="xp-bar"></div></div>
+      <span id="xp-text" style="font-size:0.65rem;color:var(--muted);">0 XP</span>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-label">Main Assistant</div>
+    <div class="avatar-item active" id="item-marginova">
+      <div class="av-thumb">✨</div>
+      <div><div class="av-name"><span class="av-dot"></span>Marginova</div><div class="av-role">Main AI Assistant</div></div>
+    </div>
+    <div class="avatar-item" id="item-aimentor">
+      <div class="av-thumb">🤖</div>
+      <div><div class="av-name"><span class="av-dot"></span>AI Mentor</div><div class="av-role">AI Learning 🤖</div></div>
+    </div>
+    <div class="sidebar-label">Health & Wellness</div>
+    <div class="avatar-item" id="item-ana">
+      <div class="av-thumb">🌿</div>
+      <div><div class="av-name"><span class="av-dot"></span>Ana</div><div class="av-role">Wellness Coach 🌿</div></div>
+    </div>
+    <div class="sidebar-label">Education</div>
+    <div class="avatar-item" id="item-sophie">
+      <div class="av-thumb">🇬🇧</div>
+      <div><div class="av-name"><span class="av-dot"></span>Sophie</div><div class="av-role">Daily Word Challenge ✨</div></div>
+    </div>
+    <div class="avatar-item" id="item-leo">
+      <div class="av-thumb">✍️</div>
+      <div><div class="av-name"><span class="av-dot"></span>Leo</div><div class="av-role">Essay Assistant ✍️</div></div>
+    </div>
+    <div class="sidebar-label">Specialists</div>
+    <div class="avatar-item" id="item-luna">
+      <div class="av-thumb">🌙</div>
+      <div><div class="av-name"><span class="av-dot"></span>Luna</div><div class="av-role">Mindfulness 🌙</div></div>
+    </div>
+    <div class="avatar-item" id="item-chef">
+      <div class="av-thumb">👨‍🍳</div>
+      <div><div class="av-name"><span class="av-dot"></span>Marco Chef</div><div class="av-role">Recipes 👨‍🍳</div></div>
+    </div>
+    <div class="avatar-item" id="item-anastasia">
+      <div class="av-thumb">📅</div>
+      <div><div class="av-name"><span class="av-dot"></span>Anastasia</div><div class="av-role">Daily Planner 📅</div></div>
+    </div>
+    <div class="sidebar-label">Fitness & Growth</div>
+    <div class="avatar-item" id="item-viktor">
+      <div class="av-thumb">💪</div>
+      <div><div class="av-name"><span class="av-dot"></span>Viktor</div><div class="av-role">Life & Fitness Coach 💪</div></div>
+    </div>
+    <div class="avatar-item" id="item-monica">
+      <div class="av-thumb">🌟</div>
+      <div><div class="av-name"><span class="av-dot"></span>Monica</div><div class="av-role">Life Coach 🌟</div></div>
+    </div>
+    <div class="sidebar-label">Tech & Business</div>
+    <div class="avatar-item" id="item-devai">
+      <div class="av-thumb">💻</div>
+      <div><div class="av-name"><span class="av-dot"></span>Dev AI</div><div class="av-role">AI Developer 💻</div></div>
+    </div>
+    <div class="avatar-item" id="item-dropai">
+      <div class="av-thumb">🛒</div>
+      <div><div class="av-name"><span class="av-dot"></span>Drop AI</div><div class="av-role">Dropshipping 🛒</div></div>
+    </div>
+    <div class="sidebar-label">EU & Grants</div>
+    <div class="avatar-item" id="item-eva">
+      <div class="av-thumb">🇪🇺</div>
+      <div><div class="av-name"><span class="av-dot"></span>Eva</div><div class="av-role">EU Funds Guide 🇪🇺</div></div>
+    </div>
+    <div class="sidebar-label">Quiz & Travel</div>
+    <div class="avatar-item" id="item-quizai">
+      <div class="av-thumb">🧠</div>
+      <div><div class="av-name"><span class="av-dot"></span>Quiz AI</div><div class="av-role">Daily Brain Quiz 🧠</div></div>
+    </div>
+    <div class="avatar-item" id="item-travelai">
+      <div class="av-thumb">🌍</div>
+      <div><div class="av-name"><span class="av-dot"></span>Travel AI</div><div class="av-role">Tourist Guide 🌍</div></div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-area">
+    <div class="avatar-stage">
+      <div class="stage-icon" id="stage-icon">✨</div>
+      <div>
+        <div class="stage-name" id="stage-name">Marginova</div>
+        <div class="stage-status"><span class="av-dot"></span>Online · Available</div>
+        <div class="stage-mood" id="stage-mood">"Your space for inner clarity..."</div>
+      </div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <input id="msg-input" placeholder="Type a message..." readonly/>
+      <div class="cam-btn" id="cam-btn">📷</div>
+      <div class="send-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="demo-progress"><div class="demo-progress-fill" id="progress"></div></div>
+
+<script>
+let xp = 0;
+let currentIcon = '✨';
+let toastQueue = [], toastRunning = false;
+
+const AVATARS = {
+  marginova: {icon:'✨', mood:'"Your space for inner clarity..."'},
+  eva:       {icon:'🇪🇺', mood:'"Every grant is an opportunity waiting to be discovered..."'},
+  sophie:    {icon:'🇬🇧', mood:'"A new word every day keeps boredom away..."'},
+  ana:       {icon:'🌿', mood:'"A healthy life starts with small daily choices..."'},
+  quizai:    {icon:'🧠', mood:'"Challenge your brain every day..."'},
+};
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function setProgress(p){ document.getElementById('progress').style.width = p + '%'; }
+
+function showXP(msg){
+  toastQueue.push(msg);
+  if(!toastRunning) runToast();
+}
+function runToast(){
+  if(!toastQueue.length){ toastRunning=false; return; }
+  toastRunning = true;
+  const t = document.getElementById('xp-toast');
+  t.textContent = toastQueue.shift();
+  t.classList.add('show');
+  setTimeout(()=>{ t.classList.remove('show'); setTimeout(runToast, 400); }, 2200);
+}
+
+function addXP(amount, label){
+  xp += amount;
+  document.getElementById('xp-bar').style.width = Math.min(xp/2, 100) + '%';
+  document.getElementById('xp-text').textContent = xp + ' XP';
+  if(xp >= 50) document.getElementById('xp-badge').textContent = '🔍 Level 2 · Explorer';
+  if(xp >= 100) document.getElementById('xp-badge').textContent = '⚡ Level 3 · Advanced';
+  showXP('+' + amount + ' XP — ' + label);
+}
+
+function showAttr(text){
+  const b = document.getElementById('attr-badge');
+  b.innerHTML = text;
+  b.classList.add('show');
+  setTimeout(()=> b.classList.remove('show'), 3500);
+}
+
+async function showScene(num, title, sub){
+  const o = document.getElementById('scene-overlay');
+  document.getElementById('scene-num').textContent = 'ATTRIBUTE ' + num + ' OF 5';
+  document.getElementById('scene-title').innerHTML = title;
+  document.getElementById('scene-sub').textContent = sub;
+  o.classList.add('show');
+  await sleep(2200);
+  o.classList.remove('show');
+  await sleep(300);
+}
+
+function switchAvatar(id){
+  document.querySelectorAll('.avatar-item').forEach(el => el.classList.remove('active'));
+  const item = document.getElementById('item-' + id);
+  if(item){
+    item.classList.add('active');
+    item.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  const av = AVATARS[id] || {icon:'🤖', mood:'...'};
+  currentIcon = av.icon;
+  document.getElementById('stage-icon').textContent = av.icon;
+  document.getElementById('stage-name').textContent = item ? item.querySelector('.av-name').textContent.trim() : id;
+  document.getElementById('stage-mood').textContent = av.mood;
+}
+
+function clearMsgs(){ document.getElementById('messages').innerHTML = ''; }
+
+async function typeIn(text, speed=40){
+  const inp = document.getElementById('msg-input');
+  inp.value = '';
+  for(let c of text){
+    inp.value += c;
+    await sleep(speed);
+  }
+  await sleep(200);
+}
+
+function addMsg(role, text, delay=0){
+  return new Promise(resolve => {
+    setTimeout(()=>{
+      const msgs = document.getElementById('messages');
+      const existing = document.getElementById('typing-row');
+      if(existing) existing.remove();
+
+      if(role === 'typing'){
+        const row = document.createElement('div');
+        row.className = 'msg-row'; row.id = 'typing-row';
+        const ic = document.createElement('div'); ic.className='msg-icon'; ic.textContent=currentIcon;
+        const b = document.createElement('div'); b.className='bubble ai typing';
+        b.innerHTML='<div class="td"></div><div class="td"></div><div class="td"></div>';
+        row.appendChild(ic); row.appendChild(b);
+        msgs.appendChild(row); msgs.scrollTop=msgs.scrollHeight;
+        resolve(); return;
+      }
+
+      const row = document.createElement('div');
+      row.className = 'msg-row' + (role==='user'?' user':'');
+
+      if(role==='ai'){
+        const ic = document.createElement('div'); ic.className='msg-icon'; ic.textContent=currentIcon;
+        row.appendChild(ic);
+      }
+      const b = document.createElement('div'); b.className='bubble '+role; b.textContent=text;
+      row.appendChild(b);
+      if(role==='user'){
+        const ic = document.createElement('div'); ic.className='msg-user-icon'; ic.textContent='You';
+        row.appendChild(ic);
+      }
+      msgs.appendChild(row); msgs.scrollTop=msgs.scrollHeight;
+      resolve();
+    }, delay);
+  });
+}
+
+function addPhotoMsg(){
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  const b = document.createElement('div'); b.className='bubble user';
+  b.innerHTML='📷 <em style="font-size:0.78rem;opacity:0.85">[Photo uploaded]</em>';
+  const ic = document.createElement('div'); ic.className='msg-user-icon'; ic.textContent='You';
+  row.appendChild(b); row.appendChild(ic);
+  msgs.appendChild(row); msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ═══════════════════════════════════
+// HIGHLIGHT SIDEBAR ITEMS
+// ═══════════════════════════════════
+async function highlightAllAvatars(){
+  const items = document.querySelectorAll('.avatar-item');
+  for(let item of items){
+    item.style.background='rgba(201,168,76,0.08)';
+    await sleep(80);
+  }
+  await sleep(400);
+  for(let item of items){
+    item.style.background='';
+  }
+}
+
+// ═══════════════════════════════════
+// MAIN DEMO
+// ═══════════════════════════════════
+async function startDemo(){
+  document.getElementById('intro').classList.add('hidden');
+  await sleep(300);
+
+  // ══════════════════════════════════════
+  // ATTRIBUTE 1 — 15 AI SPECIALISTS
+  // ══════════════════════════════════════
+  await showScene('1', 'Not one AI.<br><em>Fifteen specialists.</em>', 'Each with their own personality, expertise and voice');
+  setProgress(5);
+  switchAvatar('marginova');
+  clearMsgs();
+
+  await addMsg('ai', 'Welcome! I am Marginova — your personal AI Brain Coach. ✨\n\nYou have access to 15 specialized AI assistants, available 24/7 in English, Македонски and Serbian.');
+  addXP(15, 'New conversation');
+  await sleep(1200);
+
+  // Highlight all sidebar items
+  showAttr('🤖 <span>15 specialists</span> — from nutrition to EU grants, from English to fitness');
+  await highlightAllAvatars();
+  await sleep(800);
+
+  await typeIn('How many assistants do I have access to?', 45);
+  await addMsg('user', 'How many assistants do I have access to?');
+  document.getElementById('msg-input').value = '';
+  await addMsg('typing', '', 200);
+  await sleep(1800);
+  await addMsg('ai', 'You have 15 specialists:\n🌿 Ana · Wellness Coach\n🇬🇧 Sophie · Daily Word Challenge\n🇪🇺 Eva · EU Funds Guide\n🧠 Quiz AI · Brain Challenges\n🌍 Travel AI · Best Deals\n...and 10 more! All free to start. 🚀');
+  addXP(10, 'Message sent');
+  await sleep(2500);
+  setProgress(20);
+
+  // ══════════════════════════════════════
+  // ATTRIBUTE 2 — EVA EU FUNDS
+  // ══════════════════════════════════════
+  await showScene('2', '<em>Eva</em> — EU Funds Expert 🇪🇺', 'Specific grants, amounts, deadlines and links for the Western Balkans');
+  switchAvatar('eva');
+  clearMsgs();
+
+  await addMsg('ai', 'Здраво! Јас сум Eva 🇪🇺\n\nТвојот личен водич за EU фондови — конкретни износи, рокови и линкови за МК, СР, ХР, БиХ и БГ.');
+  addXP(15, 'New conversation');
+  await sleep(1200);
+
+  await typeIn('Имам стартап во Македонија — дали постои EU грант?', 42);
+  await addMsg('user', 'Имам стартап во Македонија — дали постои EU грант?');
+  document.getElementById('msg-input').value = '';
+  await addMsg('typing', '', 300);
+  await sleep(2500);
+  await addMsg('ai', '🇲🇰 За стартап во Македонија:\n\n1. ФИТР — до 200.000 EUR\n   fitr.gov.mk · Рок: јуни 2025\n\n2. IPA III Дигитализација — до 50.000 EUR\n   eufunds.mk · Рок: септември 2025\n\n3. Western Balkans Fund — до 30.000 EUR\n   westernbalkansfund.org\n\nСакаш чекор-по-чекор водич?');
+  addXP(10, 'Detailed answer');
+  showAttr('🇪🇺 <span>Eva</span> — Конкретни износи, рокови и линкови. Само на Marginova.AI!');
+  await sleep(2800);
+  setProgress(40);
+
+  // ══════════════════════════════════════
+  // ATTRIBUTE 3 — SOPHIE DAILY WORD
+  // ══════════════════════════════════════
+  await showScene('3', 'Sophie — <em>Daily Word Challenge</em> 🇬🇧', 'Learn one new English word every day and build your streak');
+  switchAvatar('sophie');
+  clearMsgs();
+
+  await addMsg('ai', 'Hello! I am Sophie! 🇬🇧\n\n🌟 Today\'s Daily Word Challenge:\n\n✨ RESILIENCE ✨\n📖 Meaning: The ability to recover quickly from difficulties\n🔊 Pronunciation: /rɪˈzɪlɪəns/\n💡 Example: "Her resilience helped her overcome every obstacle."\n\nYour turn — make a sentence! 💪');
+  addXP(15, 'Daily Word Challenge');
+  await sleep(1500);
+
+  await typeIn('His resilience inspired the whole team.', 50);
+  await addMsg('user', 'His resilience inspired the whole team.');
+  document.getElementById('msg-input').value = '';
+  await addMsg('typing', '', 300);
+  await sleep(1800);
+  await addMsg('ai', '✅ Excellent! +15 XP!\n\nPerfect sentence! You used RESILIENCE correctly — describing how someone\'s strength inspired others.\n\n🔥 Day streak: 1 · Keep it up tomorrow!');
+  addXP(15, 'Correct answer! 🇬🇧');
+  showAttr('🇬🇧 <span>Daily Word Challenge</span> — Learn English every day. Build your streak. Earn XP!');
+  await sleep(2500);
+  setProgress(60);
+
+  // ══════════════════════════════════════
+  // ATTRIBUTE 4 — IMAGE ANALYSIS
+  // ══════════════════════════════════════
+  await showScene('4', '<em>Image Analysis</em> — Send a Photo 📷', 'Ana analyzes meals · Marco sees your fridge · Eva reads documents');
+
+  // Highlight camera button
+  document.getElementById('cam-btn').classList.add('glow');
+  switchAvatar('ana');
+  clearMsgs();
+
+  await addMsg('ai', 'Hello! I am Ana, your Wellness Coach 🌿\n\nYou can send me a 📷 photo of your meal and I will analyze calories, nutrients and give you healthy tips!');
+  addXP(15, 'New conversation');
+  await sleep(1200);
+
+  addPhotoMsg();
+  await addMsg('typing', '', 400);
+  await sleep(2500);
+  document.getElementById('cam-btn').classList.remove('glow');
+  await addMsg('ai', '📷 Meal Analysis:\n\n🍝 Pasta with tomato sauce + salad\n\n📊 Estimated nutrition:\n• Calories: ~520 kcal\n• Protein: 18g · Carbs: 72g · Fat: 12g\n\n✅ Good: Fresh vegetables, moderate portion\n⚠️ Tip: Add lean protein (chicken/tuna) for better balance\n\n💚 Healthy score: 7/10');
+  addXP(15, 'Photo analyzed! 📷');
+  showAttr('📷 <span>Image Analysis</span> — Send any photo. Get instant AI analysis. Free!');
+  await sleep(2800);
+  setProgress(80);
+
+  // ══════════════════════════════════════
+  // ATTRIBUTE 5 — XP SYSTEM
+  // ══════════════════════════════════════
+  await showScene('5', 'Earn <em>XP</em> every day 🏆', 'Level up from Beginner to Legend as you grow');
+  switchAvatar('quizai');
+  clearMsgs();
+
+  await addMsg('ai', 'Hello! I am Quiz AI — your daily brain challenge! 🧠\n\n🌟 Today\'s question:\n\nWhat is the capital of Australia?\nA) Sydney  B) Melbourne  C) Canberra  D) Brisbane');
+  addXP(15, 'New conversation');
+  await sleep(1500);
+
+  await typeIn('C) Canberra!', 60);
+  await addMsg('user', 'C) Canberra!');
+  document.getElementById('msg-input').value = '';
+  await addMsg('typing', '', 300);
+  await sleep(1500);
+  await addMsg('ai', '✅ Correct! +20 XP! 🎉\n\nCanberra is the capital of Australia — many people think it\'s Sydney, but Canberra was chosen as a compromise between Sydney and Melbourne!\n\nQuestion 2/5 coming up...');
+  addXP(20, 'Quiz correct answer! 🧠');
+  showAttr('🏆 <span>XP & Levels</span> — Every conversation earns XP. Level up every day!');
+  await sleep(2500);
+
+  // Final XP boost
+  addXP(25, 'Demo completed! 🎉');
+  setProgress(100);
+  await sleep(1500);
+
+  // ══════════════════════════════════════
+  // FINALE
+  // ══════════════════════════════════════
+  document.getElementById('finale').classList.add('show');
+}
+</script>
+</body>
+</html>
