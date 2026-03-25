@@ -113,11 +113,20 @@ module.exports = async function handler(req, res) {
     const model = 'gemini-2.0-flash';
     const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
-    const geminiBody = {
-      system_instruction: {
-        parts: [{ text: systemPrompt }]
+    // Add system prompt as first part of first user message
+    const contentsWithSystem = contents.length > 0 ? [
+      {
+        role: 'user',
+        parts: [{ text: systemPrompt + '\n\nUser: ' + (contents[0]?.parts?.[0]?.text || '') }]
       },
-      contents: contents,
+      ...contents.slice(1)
+    ] : [{
+      role: 'user',
+      parts: [{ text: systemPrompt }]
+    }];
+
+    const geminiBody = {
+      contents: contentsWithSystem,
       generationConfig: {
         maxOutputTokens: maxTokens,
         temperature: 0.7,
