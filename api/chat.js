@@ -1,6 +1,6 @@
 // Rate limiting
 const rateLimitStore = {};
-const DAILY_LIMIT = 50;
+const DAILY_LIMIT = 30;
 
 function getRateLimitKey(req) {
   const ip =
@@ -113,17 +113,24 @@ module.exports = async function handler(req, res) {
     const model = 'gemini-3-flash-preview';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    // Add system prompt as first part of first user message
-    const contentsWithSystem = contents.length > 0 ? [
-      {
+    // Add system prompt - prepend to first message parts
+    let contentsWithSystem;
+    if (contents.length > 0) {
+      const firstMsg = contents[0];
+      const systemPart = { text: systemPrompt + '\n\n' };
+      contentsWithSystem = [
+        {
+          role: 'user',
+          parts: [systemPart, ...firstMsg.parts]
+        },
+        ...contents.slice(1)
+      ];
+    } else {
+      contentsWithSystem = [{
         role: 'user',
-        parts: [{ text: systemPrompt + '\n\nUser: ' + (contents[0]?.parts?.[0]?.text || '') }]
-      },
-      ...contents.slice(1)
-    ] : [{
-      role: 'user',
-      parts: [{ text: systemPrompt }]
-    }];
+        parts: [{ text: systemPrompt }]
+      }];
+    }
 
     const geminiBody = {
       contents: contentsWithSystem,
