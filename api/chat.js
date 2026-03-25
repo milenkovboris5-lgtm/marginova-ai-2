@@ -1,4 +1,3 @@
-
 // Rate limiting
 const rateLimitStore = {};
 const DAILY_LIMIT = 50;
@@ -111,8 +110,8 @@ module.exports = async function handler(req, res) {
     }
 
     // Call Gemini API
-    const model = 'gemini-1.5-flash';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const model = 'gemini-2.0-flash';
+    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
     const geminiBody = {
       system_instruction: {
