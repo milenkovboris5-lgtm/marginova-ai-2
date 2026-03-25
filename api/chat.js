@@ -77,7 +77,7 @@ module.exports = async function handler(req, res) {
 
     // Verbose avatars get more tokens
     const verboseAvatars = ['eva', 'dropshipper', 'businessai', 'creativeai', 'travelai', 'developer'];
-    const maxTokens = verboseAvatars.includes(body.avatar) ? 1200 : 700;
+    const maxTokens = verboseAvatars.includes(body.avatar) ? 2000 : 1200;
 
     // Build Gemini contents array
     const contents = [];
