@@ -111,7 +111,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Call Gemini API
-    const model = 'gemini-2.5-flash-preview-04-17';
+    const model = 'gemini-2.5-flash';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     // Add system prompt - prepend to first message parts
