@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ═══ PRIMARY SEO ═══ -->
+<title>Marginova.AI — Your AI Brain Coach | 17 AI Specialists, Free to Start</title>
+<meta name="description" content="Meet your personal AI Brain Coach. 17 specialized AI assistants available 24/7 in 8 languages. Voice conversations. Free to start — no credit card needed.">
+<meta name="keywords" content="AI assistant, AI brain coach, veštačka inteligencija, AI asistent makedonski, AI asistent srpski, personal AI, chat AI, AI coach, Marginova AI, AI nutritionist, AI fitness trainer, AI mentor, dream interpreter AI">
+<meta name="author" content="Marginova.AI">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://marginova-ai-2.vercel.app/landing.html">
+
+<!-- ═══ OPEN GRAPH ═══ -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://marginova-ai-2.vercel.app/landing.html">
+<meta property="og:title" content="Marginova.AI — Your AI Brain Coach">
+<meta property="og:description" content="17 specialized AI assistants available 24/7. Voice conversations. Free to start. In 8 languages.">
+<meta property="og:image" content="https://marginova-ai-2.vercel.app/avatar-main.png">
+<meta property="og:site_name" content="Marginova.AI">
+<meta property="og:locale" content="en_US">
+
+<!-- ═══ TWITTER CARD ═══ -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Marginova.AI — Your AI Brain Coach">
+<meta name="twitter:description" content="17 specialized AI assistants available 24/7. Voice conversations. Free to start.">
+<meta name="twitter:image" content="https://marginova-ai-2.vercel.app/avatar-main.png">
+
+<!-- ═══ STRUCTURED DATA ═══ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Marginova.AI",
+  "url": "https://marginova-ai-2.vercel.app",
+  "description": "Personal AI Brain Coach with 17 specialized AI assistants available 24/7 in 8 languages.",
+  "applicationCategory": "UtilitiesApplication",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "operatingSystem": "Any",
+  "inLanguage": ["en", "mk", "sr"]
+}
+</script>
+
+<meta name="theme-color" content="#C9A84C">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#C9A84C;
+  --gold2:#E8C97A;
+  --gold3:#F5E0A0;
+  --goldglow:rgba(201,168,76,0.25);
+  --goldglow2:rgba(201,168,76,0.08);
+  --bg:#090910;
+  --bg2:#0e0e1a;
+  --bg3:#13131f;
+  --border:rgba(201,168,76,0.18);
+  --border2:rgba(201,168,76,0.35);
+  --text:#f0eada;
+  --text2:#c8bfa8;
+  --muted:#7a7060;
+  --accent:#a87cff;
+  --green:#2ddc7a;
+}
+
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Jost',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow-x:hidden;
+}
+
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,168,76,0.03) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+
+/* ═══ NAV ═══ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:1rem 3rem;
+  background:rgba(9,9,16,0.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+nav::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:0.4;
+}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.nav-logo img{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold);}
+.nav-logo-text{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;letter-spacing:0.15em;}
+.nav-logo-text b{color:var(--gold);}
+.nav-logo-text span{color:var(--accent);}
+.nav-cta{
+  background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));
+  border:none;color:#0a0a12;padding:0.5rem 1.5rem;border-radius:50px;
+  font-size:0.8rem;cursor:pointer;font-family:'Jost',sans-serif;
+  font-weight:600;letter-spacing:0.05em;transition:all 0.25s;
+  text-decoration:none;display:inline-block;
+  box-shadow:0 4px 20px rgba(201,168,76,0.3);
+}
+.nav-cta:hover{box-shadow:0 4px 30px rgba(201,168,76,0.5);transform:translateY(-1px);}
+
+/* ═══ HERO ═══ */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:8rem 2rem 4rem;
+  position:relative;z-index:1;
+  background:
+    radial-gradient(ellipse at 20% 50%,rgba(168,124,255,0.08) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 30%,rgba(201,168,76,0.07) 0%,transparent 50%),
+    radial-gradient(ellipse at 50% 80%,rgba(201,168,76,0.05) 0%,transparent 40%);
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(201,168,76,0.08);border:1px solid var(--border2);
+  border-radius:50px;padding:0.35rem 1rem;
+  font-size:0.7rem;color:var(--gold);letter-spacing:0.1em;
+  margin-bottom:2rem;
+  animation:fadeInDown 0.8s ease both;
+}
+.hero-badge span{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);animation:blink 2s infinite;}
+.hero-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(3rem,8vw,6rem);
+  font-weight:300;line-height:1.1;
+  margin-bottom:1.5rem;
+  animation:fadeInUp 0.9s ease 0.1s both;
+}
+.hero-title em{font-style:italic;color:var(--gold);text-shadow:0 0 40px var(--goldglow);}
+.hero-title .line2{display:block;font-size:clamp(1.8rem,4vw,3rem);color:var(--text2);font-weight:300;margin-top:0.5rem;}
+.hero-desc{
+  font-size:clamp(0.9rem,2vw,1.1rem);color:var(--text2);
+  max-width:520px;line-height:1.8;margin-bottom:3rem;
+  animation:fadeInUp 0.9s ease 0.2s both;
+}
+.hero-actions{
+  display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;
+  animation:fadeInUp 0.9s ease 0.3s both;
+  margin-bottom:4rem;
+}
+.btn-primary{
+  background:linear-gradient(135deg,rgba(201,168,76,0.95),rgba(201,168,76,0.7));
+  border:none;color:#0a0a12;padding:0.85rem 2.5rem;border-radius:50px;
+  font-size:0.9rem;cursor:pointer;font-family:'Jost',sans-serif;
+  font-weight:600;letter-spacing:0.08em;transition:all 0.25s;
+  box-shadow:0 4px 30px rgba(201,168,76,0.35);
+  text-decoration:none;display:inline-block;
+}
+.btn-primary:hover{box-shadow:0 4px 45px rgba(201,168,76,0.55);transform:translateY(-2px);}
+.btn-secondary{
+  background:transparent;border:1px solid var(--border2);color:var(--text2);
+  padding:0.85rem 2.5rem;border-radius:50px;font-size:0.9rem;cursor:pointer;
+  font-family:'Jost',sans-serif;font-weight:400;letter-spacing:0.05em;
+  transition:all 0.25s;text-decoration:none;display:inline-block;
+}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold);box-shadow:0 0 20px var(--goldglow2);}
+
+.hero-stats{
+  display:flex;gap:3rem;flex-wrap:wrap;justify-content:center;
+  animation:fadeInUp 0.9s ease 0.4s both;
+}
+.stat{text-align:center;}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--gold);font-weight:300;}
+.stat-label{font-size:0.65rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;}
+
+.scroll-ind{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  color:var(--muted);font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;
+  animation:fadeIn 1s ease 1s both;
+}
+.scroll-line{width:1px;height:40px;background:linear-gradient(180deg,var(--gold),transparent);animation:scrollLine 2s ease-in-out infinite;}
+@keyframes scrollLine{0%,100%{opacity:0.3;transform:scaleY(1);}50%{opacity:1;transform:scaleY(1.2);}}
+
+/* ═══ SECTIONS ═══ */
+.section{padding:6rem 2rem;position:relative;z-index:1;}
+.section-header{text-align:center;margin-bottom:4rem;}
+.section-label{
+  font-size:0.65rem;color:var(--gold);letter-spacing:0.2em;text-transform:uppercase;
+  margin-bottom:1rem;display:block;opacity:0.8;
+}
+.section-title{
+  font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,5vw,3.5rem);
+  font-weight:300;line-height:1.2;
+}
+.section-title em{color:var(--gold);font-style:italic;}
+.section-desc{font-size:0.9rem;color:var(--text2);max-width:500px;margin:1rem auto 0;line-height:1.7;}
+
+/* Avatar grid */
+.avatars-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:1.2rem;max-width:1100px;margin:0 auto;
+}
+.avatar-card{
+  background:linear-gradient(135deg,rgba(19,19,31,0.95),rgba(14,14,26,0.95));
+  border:1px solid var(--border);border-radius:20px;
+  padding:1.5rem 1rem;text-align:center;
+  transition:all 0.3s;cursor:pointer;position:relative;overflow:hidden;
+}
+.avatar-card::before{
+  content:'';position:absolute;inset:0;border-radius:20px;
+  background:linear-gradient(135deg,rgba(201,168,76,0.08),transparent);
+  opacity:0;transition:opacity 0.3s;
+}
+.avatar-card:hover{border-color:var(--border2);transform:translateY(-6px);box-shadow:0 12px 40px rgba(201,168,76,0.12);}
+.avatar-card:hover::before{opacity:1;}
+.av-img{
+  width:75px;height:75px;border-radius:50%;overflow:hidden;margin:0 auto 1rem;
+  border:2px solid var(--border);transition:border-color 0.3s,box-shadow 0.3s;
+}
+.avatar-card:hover .av-img{border-color:var(--gold);box-shadow:0 0 20px var(--goldglow);}
+.av-img img{width:100%;height:100%;object-fit:cover;object-position:center center;}
+.av-card-name{font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:4px;}
+.av-card-role{font-size:0.65rem;color:var(--muted);letter-spacing:0.05em;}
+.av-online{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;box-shadow:0 0 6px var(--green);animation:blink 2s infinite;}
+
+/* Features */
+.features-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;max-width:1000px;margin:0 auto;
+}
+.feature-card{
+  background:rgba(19,19,31,0.8);border:1px solid var(--border);
+  border-radius:20px;padding:2rem;transition:all 0.3s;
+}
+.feature-card:hover{border-color:var(--border2);transform:translateY(-4px);box-shadow:0 8px 30px rgba(201,168,76,0.08);}
+.feature-icon{font-size:2rem;margin-bottom:1rem;}
+.feature-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--text);margin-bottom:0.5rem;}
+.feature-desc{font-size:0.82rem;color:var(--text2);line-height:1.7;}
+
+/* Steps */
+.steps{display:flex;flex-direction:column;gap:0;max-width:700px;margin:0 auto;}
+.step{
+  display:flex;gap:2rem;align-items:flex-start;padding:2rem 0;
+  border-left:1px solid var(--border);margin-left:20px;padding-left:2.5rem;
+  position:relative;
+}
+.step::before{
+  content:'';position:absolute;left:-5px;top:2rem;
+  width:9px;height:9px;border-radius:50%;
+  background:var(--gold);box-shadow:0 0 12px var(--goldglow);
+}
+.step-num{
+  font-family:'Cormorant Garamond',serif;font-size:3rem;color:var(--border2);
+  font-weight:300;line-height:1;flex-shrink:0;min-width:40px;
+}
+.step-title{font-size:1rem;font-weight:500;color:var(--text);margin-bottom:0.4rem;}
+.step-desc{font-size:0.82rem;color:var(--text2);line-height:1.6;}
+
+/* Reviews */
+.reviews-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.2rem;max-width:1000px;margin:0 auto;
+}
+.review-card{
+  background:rgba(19,19,31,0.9);border:1px solid var(--border);
+  border-radius:16px;padding:1.5rem;
+}
+.review-stars{color:var(--gold);font-size:0.85rem;margin-bottom:0.75rem;text-shadow:0 0 8px rgba(201,168,76,0.4);}
+.review-text{font-size:0.82rem;color:var(--text2);line-height:1.6;margin-bottom:1rem;font-style:italic;}
+.review-author{font-size:0.75rem;color:var(--muted);font-weight:500;}
+
+/* Pricing */
+.pricing-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:1.5rem;max-width:900px;margin:0 auto;
+}
+.price-card{
+  background:rgba(19,19,31,0.9);border:1px solid var(--border);
+  border-radius:20px;padding:2.5rem 2rem;text-align:center;
+  transition:all 0.3s;position:relative;overflow:hidden;
+}
+.price-card.featured{border-color:var(--border2);box-shadow:0 0 40px rgba(201,168,76,0.12);}
+.price-card.featured::before{
+  content:'MOST POPULAR';
+  position:absolute;top:1rem;right:-2rem;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#0a0a12;font-size:0.55rem;font-weight:700;letter-spacing:0.15em;
+  padding:4px 3rem;transform:rotate(45deg);
+}
+.price-name{font-size:0.7rem;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:1rem;}
+.price-amount{font-family:'Jost',sans-serif;font-size:3.5rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;}
+.price-amount span{font-size:1rem;color:var(--muted);vertical-align:super;}
+.price-period{font-size:0.75rem;color:var(--muted);margin-bottom:2rem;}
+.price-features{list-style:none;text-align:left;margin-bottom:2rem;}
+.price-features li{font-size:0.82rem;color:var(--text2);padding:0.45rem 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.price-features li::before{content:'✓';color:var(--green);font-size:0.75rem;flex-shrink:0;}
+.price-features li.no::before{content:'✗';color:var(--muted);}
+.price-features li.no{color:var(--muted);}
+.price-btn{
+  width:100%;padding:0.75rem;border-radius:50px;font-size:0.82rem;
+  cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;
+  letter-spacing:0.05em;transition:all 0.25s;border:none;
+  text-decoration:none;display:block;
+}
+.price-btn.free{background:rgba(255,255,255,0.06);color:var(--text2);border:1px solid var(--border);}
+.price-btn.free:hover{border-color:var(--border2);color:var(--text);}
+.price-btn.pro{
+  background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.65));
+  color:#0a0a12;box-shadow:0 4px 20px rgba(201,168,76,0.3);
+}
+.price-btn.pro:hover{box-shadow:0 4px 35px rgba(201,168,76,0.5);transform:translateY(-1px);}
+
+/* CTA */
+.cta-section{
+  padding:8rem 2rem;text-align:center;position:relative;z-index:1;
+  background:radial-gradient(ellipse at 50% 50%,rgba(201,168,76,0.06) 0%,transparent 60%);
+}
+.cta-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.5rem,6vw,4.5rem);font-weight:300;margin-bottom:1rem;}
+.cta-title em{color:var(--gold);font-style:italic;}
+.cta-desc{font-size:0.9rem;color:var(--text2);max-width:400px;margin:0 auto 2.5rem;line-height:1.7;}
+
+/* Footer */
+footer{
+  border-top:1px solid var(--border);padding:2rem 3rem;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:1rem;position:relative;z-index:1;
+}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:300;letter-spacing:0.15em;}
+.footer-logo b{color:var(--gold);}
+.footer-logo span{color:var(--accent);}
+.footer-text{font-size:0.7rem;color:var(--muted);}
+
+.divider{
+  width:100%;max-width:800px;margin:0 auto;height:1px;
+  background:linear-gradient(90deg,transparent,var(--border2),transparent);
+}
+
+/* Animations */
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+.reveal{opacity:1;transform:translateY(0);transition:all 0.7s cubic-bezier(.4,0,.2,1);}
+.reveal.hidden{opacity:0;transform:translateY(40px);}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+@media(max-width:768px){
+  nav{padding:1rem 1.5rem;}
+  .hero{padding:7rem 1.5rem 3rem;}
+  .section{padding:4rem 1.5rem;}
+  .hero-stats{gap:2rem;}
+  footer{flex-direction:column;text-align:center;}
+  .step{gap:1rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <img src="avatar-main.png" alt="Marginova"/>
+    <div class="nav-logo-text">MARGIN<b>OVA</b><span>.AI</span></div>
+  </div>
+      <select id="lang-sel" onchange="setLang(this.value)" style="background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.35);border-radius:50px;color:#C9A84C;font-family:'Jost',sans-serif;font-size:0.72rem;padding:0.3rem 0.8rem;cursor:pointer;outline:none;margin-right:0.5rem;"><option value="en" style="background:#0e0e1a;color:#f0eada;">🇬🇧 English</option><option value="mk" style="background:#0e0e1a;color:#f0eada;">🇲🇰 Македонски</option><option value="sr" style="background:#0e0e1a;color:#f0eada;">🇷🇸 Srpski</option><option value="hr" style="background:#0e0e1a;color:#f0eada;">🇭🇷 Hrvatski</option><option value="bs" style="background:#0e0e1a;color:#f0eada;">🇧🇦 Bosanski</option><option value="sq" style="background:#0e0e1a;color:#f0eada;">🇦🇱 Albanian</option><option value="bg" style="background:#0e0e1a;color:#f0eada;">🇧🇬 Български</option><option value="de" style="background:#0e0e1a;color:#f0eada;">🇩🇪 Deutsch</option></select>
+    <a href="index.html" class="nav-cta" id="nav-cta-btn">Get Started Free →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero" style="padding-bottom:2rem;">
+  <div class="hero-badge" id="hero-badge"><span></span> Live · Available 24/7</div>
+  <h1 class="hero-title" id="hero-title-el">
+    Meet Your Personal
+    <em>AI Brain Coach</em>
+    <span class="line2">Always here. Always ready.</span>
+  </h1>
+</section>
+
+<!-- ASSISTANTS -->
+<!-- DEMO VIDEO SECTION -->
+<section class="section" style="background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 50%,var(--bg) 100%);padding:6rem 2rem;">
+  <div style="text-align:center;margin-bottom:3rem;">
+    <div style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;opacity:0.8;">Real Story</div>
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:300;color:var(--text);line-height:1.2;margin-bottom:1rem;">
+      I was in agony.<br>No support. No budget.<br>
+      <em style="color:var(--gold);font-style:italic;">AI found me $345,000.</em>
+    </h2>
+    <p style="font-size:0.9rem;color:var(--text2);max-width:400px;margin:0 auto;">5 minutes. 4 AI specialists. One complete business built.</p>
+  </div>
+
+  <!-- Demo Player -->
+  <div style="max-width:750px;margin:0 auto;background:rgba(9,9,16,0.95);border:1px solid var(--border2);border-radius:20px;overflow:hidden;box-shadow:0 0 60px rgba(201,168,76,0.1);">
+    
+    <!-- Progress bar -->
+    <div style="height:3px;background:rgba(255,255,255,0.05);">
+      <div id="demo-progress" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--accent));width:0%;transition:width 0.5s ease;"></div>
+    </div>
+
+    <!-- Scene container -->
+    <div style="min-height:380px;display:flex;align-items:center;justify-content:center;padding:2rem;" id="demo-container">
+      
+      <!-- SCENE 0: INTRO -->
+      <div class="demo-scene" id="demo-s0" style="text-align:center;width:100%;">
+        <div style="display:flex;gap:1.2rem;justify-content:center;margin-bottom:2rem;">
+          <div style="text-align:center;">
+            <img src="avatar-businessai.png" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;box-shadow:0 0 15px rgba(201,168,76,0.3);" onerror="this.style.display='none'"/>
+            <div style="font-size:0.55rem;color:var(--muted);margin-top:4px;">Business AI</div>
+          </div>
+          <div style="text-align:center;">
+            <img src="avatar-eva.png" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;box-shadow:0 0 15px rgba(201,168,76,0.3);" onerror="this.style.display='none'"/>
+            <div style="font-size:0.55rem;color:var(--muted);margin-top:4px;">Eva</div>
+          </div>
+          <div style="text-align:center;">
+            <img src="avatar-creativeai.png" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;box-shadow:0 0 15px rgba(201,168,76,0.3);" onerror="this.style.display='none'"/>
+            <div style="font-size:0.55rem;color:var(--muted);margin-top:4px;">Creative AI</div>
+          </div>
+          <div style="text-align:center;">
+            <img src="avatar-justinian.png" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;box-shadow:0 0 15px rgba(201,168,76,0.3);" onerror="this.style.display='none'"/>
+            <div style="font-size:0.55rem;color:var(--muted);margin-top:4px;">Justinian</div>
+          </div>
+        </div>
+        <div style="font-size:clamp(1.2rem,3vw,1.8rem);font-weight:700;color:var(--text);line-height:1.4;margin-bottom:0.75rem;">
+          I had only an idea.<br>No money. No connections.<br>
+          <span style="color:var(--gold);">AI gave me everything.</span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--muted);">5 minutes · 4 specialists · $345,000 in grants found</div>
+      </div>
+
+      <!-- SCENE 1: Business AI -->
+      <div class="demo-scene" id="demo-s1" style="display:none;width:100%;">
+        <div style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;opacity:0.8;">Step 1 of 4 — Business Plan</div>
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.2rem;">
+          <img src="avatar-businessai.png" style="width:50px;height:50px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;box-shadow:0 0 15px rgba(201,168,76,0.3);" onerror="this.style.background='rgba(201,168,76,0.2)'"/>
+          <div style="text-align:left;">
+            <div style="font-size:0.95rem;font-weight:600;color:var(--gold);">Business AI</div>
+            <div style="font-size:0.7rem;color:var(--muted);">Strategy & Finance</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;max-width:560px;margin:0 auto;">
+          <div style="align-self:flex-end;background:linear-gradient(135deg,rgba(201,168,76,0.85),rgba(201,168,76,0.6));color:#0a0a12;padding:0.6rem 1rem;border-radius:18px 18px 4px 18px;font-size:0.82rem;font-weight:500;max-width:80%;text-align:left;">
+            I want to build an educational platform for young people. No money, just an idea. Can it work?
+          </div>
+          <div style="align-self:flex-start;background:rgba(19,19,31,0.95);border:1px solid var(--border);color:var(--text);padding:0.75rem 1rem;border-radius:18px 18px 18px 4px;font-size:0.78rem;line-height:1.7;max-width:85%;text-align:left;">
+            <span style="color:#2ddc7a;">✅ Yes — and here is your plan:</span><br><br>
+            📊 Model: <span style="color:var(--gold);font-weight:600;">Freemium + ads + grants</span><br>
+            💰 Startup costs: only <span style="color:var(--gold);font-weight:600;">~€200</span><br>
+            📈 Break-even: month 4–6<br>
+            🎯 Market: 8 languages, Balkans + EU<br><br>
+            <span style="color:var(--gold);font-weight:600;">Top action: Apply for EU grant through Eva →</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 2: Eva -->
+      <div class="demo-scene" id="demo-s2" style="display:none;width:100%;">
+        <div style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;opacity:0.8;">Step 2 of 4 — EU Funds</div>
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.2rem;">
+          <img src="avatar-eva.png" style="width:50px;height:50px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;box-shadow:0 0 15px rgba(201,168,76,0.3);" onerror="this.style.background='rgba(201,168,76,0.2)'"/>
+          <div style="text-align:left;">
+            <div style="font-size:0.95rem;font-weight:600;color:var(--gold);">Eva</div>
+            <div style="font-size:0.7rem;color:var(--muted);">EU Funds Guide</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;max-width:560px;margin:0 auto;">
+          <div style="align-self:flex-end;background:linear-gradient(135deg,rgba(201,168,76,0.85),rgba(201,168,76,0.6));color:#0a0a12;padding:0.6rem 1rem;border-radius:18px 18px 4px 18px;font-size:0.82rem;font-weight:500;max-width:80%;text-align:left;">
+            Eva, are there grants for educational platforms for young people with no budget?
+          </div>
+          <div style="align-self:flex-start;background:rgba(19,19,31,0.95);border:1px solid var(--border);color:var(--text);padding:0.75rem 1rem;border-radius:18px 18px 18px 4px;font-size:0.78rem;line-height:1.7;max-width:85%;text-align:left;">
+            <span style="color:#2ddc7a;">🇪🇺 I found 3 opportunities for you:</span><br><br>
+            1. <span style="color:var(--gold);font-weight:600;">Erasmus+ KA2</span> — up to <span style="color:var(--gold);font-weight:600;">€300,000</span><br>
+            2. <span style="color:var(--gold);font-weight:600;">Western Balkans Fund</span> — up to <span style="color:var(--gold);font-weight:600;">€30,000</span><br>
+            3. <span style="color:var(--gold);font-weight:600;">UNDP Youth Grant</span> — up to <span style="color:var(--gold);font-weight:600;">€15,000</span><br><br>
+            <span style="color:#2ddc7a;font-weight:600;">Total potential: $345,000 🎯</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 3: Creative AI -->
+      <div class="demo-scene" id="demo-s3" style="display:none;width:100%;">
+        <div style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;opacity:0.8;">Step 3 of 4 — Branding & Marketing</div>
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.2rem;">
+          <img src="avatar-creativeai.png" style="width:50px;height:50px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;box-shadow:0 0 15px rgba(201,168,76,0.3);" onerror="this.style.background='rgba(201,168,76,0.2)'"/>
+          <div style="text-align:left;">
+            <div style="font-size:0.95rem;font-weight:600;color:var(--gold);">Creative AI</div>
+            <div style="font-size:0.7rem;color:var(--muted);">Copywriting & Branding</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;max-width:560px;margin:0 auto;">
+          <div style="align-self:flex-end;background:linear-gradient(135deg,rgba(201,168,76,0.85),rgba(201,168,76,0.6));color:#0a0a12;padding:0.6rem 1rem;border-radius:18px 18px 4px 18px;font-size:0.82rem;font-weight:500;max-width:80%;text-align:left;">
+            I need a name, slogan and marketing strategy for my platform.
+          </div>
+          <div style="align-self:flex-start;background:rgba(19,19,31,0.95);border:1px solid var(--border);color:var(--text);padding:0.75rem 1rem;border-radius:18px 18px 18px 4px;font-size:0.78rem;line-height:1.7;max-width:85%;text-align:left;">
+            <span style="color:#2ddc7a;">🎨 Your brand is born:</span><br><br>
+            💡 Name: <span style="color:var(--gold);font-weight:600;">EduWave / LearnBalkan</span><br>
+            ✨ Slogan: <span style="color:var(--gold);font-weight:600;">"Learn. Grow. Inspire."</span><br>
+            📱 TikTok Hook: <em>"Did you know you can get a €300K grant for your idea?"</em><br>
+            📘 Facebook Ad CTR: <span style="color:var(--gold);font-weight:600;">4.2% expected</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 4: Justinian -->
+      <div class="demo-scene" id="demo-s4" style="display:none;width:100%;">
+        <div style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;opacity:0.8;">Step 4 of 4 — Legal Protection</div>
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.2rem;">
+          <img src="avatar-justinian.png" style="width:50px;height:50px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;box-shadow:0 0 15px rgba(201,168,76,0.3);" onerror="this.style.background='rgba(201,168,76,0.2)'"/>
+          <div style="text-align:left;">
+            <div style="font-size:0.95rem;font-weight:600;color:var(--gold);">Justinian</div>
+            <div style="font-size:0.7rem;color:var(--muted);">Your Personal Advisor</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;max-width:560px;margin:0 auto;">
+          <div style="align-self:flex-end;background:linear-gradient(135deg,rgba(201,168,76,0.85),rgba(201,168,76,0.6));color:#0a0a12;padding:0.6rem 1rem;border-radius:18px 18px 4px 18px;font-size:0.82rem;font-weight:500;max-width:80%;text-align:left;">
+            How do I protect my idea and register a company?
+          </div>
+          <div style="align-self:flex-start;background:rgba(19,19,31,0.95);border:1px solid var(--border);color:var(--text);padding:0.75rem 1rem;border-radius:18px 18px 18px 4px;font-size:0.78rem;line-height:1.7;max-width:85%;text-align:left;">
+            <span style="color:#2ddc7a;">⚖️ Your legal protection:</span><br><br>
+            📋 Register your <span style="color:var(--gold);font-weight:600;">LLC</span> — Cost: ~€50 | 3 business days<br>
+            🔒 Trademark protection — €100 | Valid 10 years<br>
+            📄 <span style="color:var(--gold);font-weight:600;">GDPR</span> compliance — Required for EU grants<br>
+            💡 Sign an NDA before sharing your idea
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 5: FINAL -->
+      <div class="demo-scene" id="demo-s5" style="display:none;width:100%;text-align:center;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.3rem,3vw,2rem);font-weight:300;color:var(--text);line-height:1.4;margin-bottom:1.5rem;">
+          He had only an idea.<br>In 5 minutes — he had <em style="color:var(--gold);">everything.</em>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;max-width:440px;margin:0 auto 1.5rem;">
+          <div style="background:rgba(19,19,31,0.9);border:1px solid var(--border2);border-radius:12px;padding:0.7rem;display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;">
+            <img src="avatar-businessai.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border2);" onerror="this.style.display='none'"/>
+            Business plan <span style="color:#2ddc7a;margin-left:auto;">✅</span>
+          </div>
+          <div style="background:rgba(19,19,31,0.9);border:1px solid var(--border2);border-radius:12px;padding:0.7rem;display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;">
+            <img src="avatar-eva.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border2);" onerror="this.style.display='none'"/>
+            $345,000 grants <span style="color:#2ddc7a;margin-left:auto;">✅</span>
+          </div>
+          <div style="background:rgba(19,19,31,0.9);border:1px solid var(--border2);border-radius:12px;padding:0.7rem;display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;">
+            <img src="avatar-creativeai.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border2);" onerror="this.style.display='none'"/>
+            Brand & Marketing <span style="color:#2ddc7a;margin-left:auto;">✅</span>
+          </div>
+          <div style="background:rgba(19,19,31,0.9);border:1px solid var(--border2);border-radius:12px;padding:0.7rem;display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;">
+            <img src="avatar-justinian.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border2);" onerror="this.style.display='none'"/>
+            Legal protection <span style="color:#2ddc7a;margin-left:auto;">✅</span>
+          </div>
+        </div>
+        <a href="index.html" style="display:inline-block;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:0.7rem 2rem;border-radius:50px;font-size:0.85rem;font-weight:700;text-decoration:none;letter-spacing:0.05em;">Start for free →</a>
+      </div>
+
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem;border-top:1px solid var(--border);">
+      <button onclick="demoPrev()" style="background:transparent;border:1px solid var(--border2);color:var(--gold);padding:0.4rem 1rem;border-radius:50px;font-size:0.72rem;cursor:pointer;font-family:'Jost',sans-serif;">← Back</button>
+      <div id="demo-dots" style="display:flex;gap:6px;"></div>
+      <button onclick="demoNext()" id="demo-btn-next" style="background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));border:none;color:#0a0a12;padding:0.4rem 1rem;border-radius:50px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Jost',sans-serif;">Next →</button>
+    </div>
+  </div>
+</section>
+
+<script>
+var demoTotal=6,demoCur=0,demoTimer;
+function demoRender(){
+  for(var i=0;i<demoTotal;i++){var s=document.getElementById('demo-s'+i);if(s)s.style.display=i===demoCur?'block':'none';}
+  var dots=document.getElementById('demo-dots');
+  dots.innerHTML='';
+  for(var j=0;j<demoTotal;j++){var d=document.createElement('div');d.style.cssText='width:'+(j===demoCur?'20px':'8px')+';height:8px;border-radius:4px;background:'+(j===demoCur?'var(--gold)':'rgba(201,168,76,0.3)')+';cursor:pointer;transition:all 0.3s;';(function(idx){d.onclick=function(){clearInterval(demoTimer);demoCur=idx;demoRender();};})(j);dots.appendChild(d);}
+  document.getElementById('demo-progress').style.width=((demoCur/(demoTotal-1))*100)+'%';
+  document.getElementById('demo-btn-next').textContent=demoCur===demoTotal-1?'🔄 Restart':'Next →';
+}
+function demoNext(){clearInterval(demoTimer);demoCur=demoCur<demoTotal-1?demoCur+1:0;demoRender();if(demoCur>0&&demoCur<demoTotal-1)demoAutoPlay();}
+function demoPrev(){clearInterval(demoTimer);if(demoCur>0)demoCur--;demoRender();}
+function demoAutoPlay(){demoTimer=setInterval(function(){if(demoCur<demoTotal-1){demoCur++;demoRender();}else clearInterval(demoTimer);},4500);}
+demoRender();demoAutoPlay();
+</script>
+
+
+
+
+
+<section style="padding:3rem 2rem 4rem;text-align:center;background:var(--bg);">
+  <p class="hero-desc" id="hero-desc-p" style="max-width:600px;margin:0 auto 2rem;">
+    A team of specialized AI assistants — each with their own personality, expertise and voice. Available in English, Македонски and Serbian.
+  </p>
+  <div class="hero-actions" style="justify-content:center;">
+    <a href="index.html" class="btn-primary" id="hero-btn-primary">Start for Free →</a>
+    <a href="#assistants" class="btn-secondary" id="hero-btn-secondary">Meet the Team</a>
+  </div>
+  <div class="hero-stats" style="margin-top:2rem;">
+    <div class="stat"><div class="stat-num">18</div><div class="stat-label">AI Specialists</div></div>
+    <div class="stat"><div class="stat-num">8</div><div class="stat-label">Languages</div></div>
+    <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Available</div></div>
+    <div class="stat"><div class="stat-num">Free</div><div class="stat-label">To Start</div></div>
+  </div>
+</section>
+<section class="section" id="assistants">
+  <div class="section-header reveal">
+    <span class="section-label">The Team</span>
+    <h2 class="section-title" id="av-section-title">Not one AI. <em>Fifteen specialists.</em></h2>
+    <p class="section-desc">Each assistant has a unique personality and expertise. From Sophie's Daily Word Challenge to Eva's EU funds expertise, Creative AI's copywriting to Business AI's strategic analysis.</p>
+  </div>
+  <div class="avatars-grid">
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-main.png" alt="Marginova"/></div><div class="av-card-name"><span class="av-online"></span>Marginova <span style="font-size:0.5rem;background:rgba(45,220,122,0.15);color:#2ddc7a;border:1px solid rgba(45,220,122,0.3);padding:1px 6px;border-radius:50px;font-weight:700;">FREE</span></div><div class="av-card-role">Main AI Assistant</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-aimentor-new.png" alt="AI Mentor" style="object-position:center 20%;filter:brightness(1.3);"/></div><div class="av-card-name"><span class="av-online"></span>AI Mentor <span style="font-size:0.5rem;background:rgba(45,220,122,0.15);color:#2ddc7a;border:1px solid rgba(45,220,122,0.3);padding:1px 6px;border-radius:50px;font-weight:700;">FREE</span></div><div class="av-card-role">AI Learning 🤖</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-ana.png" alt="Ana"/></div><div class="av-card-name"><span class="av-online"></span>Ana <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Wellness Coach 🌿</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-sophie-new.png" alt="Sophie" style="object-position:center 30%;"/></div><div class="av-card-name"><span class="av-online"></span>Sophie <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Daily Word Challenge 🇬🇧✨</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-leo.png" alt="Leo"/></div><div class="av-card-name"><span class="av-online"></span>Leo <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Essay Assistant ✍️</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-sara.png" alt="Sara"/></div><div class="av-card-name"><span class="av-online"></span>Sara <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Learning Support 🧩</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-anastasia.png" alt="Anastasia"/></div><div class="av-card-name"><span class="av-online"></span>Anastasia Planner <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Daily Planner 📅</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-viktor.png" alt="Viktor"/></div><div class="av-card-name"><span class="av-online"></span>Viktor <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Life & Fitness Coach 💪</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-monica.png" alt="Monica"/></div><div class="av-card-name"><span class="av-online"></span>Monica <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Life Coach & Motivation 🌟</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-devai.png" alt="Dev AI"/></div><div class="av-card-name"><span class="av-online"></span>Dev AI <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">AI Developer 💻</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-dropai.png" alt="Drop AI"/></div><div class="av-card-name"><span class="av-online"></span>Drop AI <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Dropshipping 🛒</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-eva.png" alt="Eva"/></div><div class="av-card-name"><span class="av-online"></span>Eva <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">EU Funds Guide 🇪🇺</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-luna.png" alt="Luna"/></div><div class="av-card-name"><span class="av-online"></span>Luna <span style="font-size:0.5rem;background:rgba(45,220,122,0.15);color:#2ddc7a;border:1px solid rgba(45,220,122,0.3);padding:1px 6px;border-radius:50px;font-weight:700;">FREE</span></div><div class="av-card-role">Mindfulness 🌙</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-chef.png" alt="Marco" style="object-position:center 15%;"/></div><div class="av-card-name"><span class="av-online"></span>Marco Chef <span style="font-size:0.5rem;background:rgba(45,220,122,0.15);color:#2ddc7a;border:1px solid rgba(45,220,122,0.3);padding:1px 6px;border-radius:50px;font-weight:700;">FREE</span></div><div class="av-card-role">Recipes 👨‍🍳</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-quizai.png" alt="Quiz AI"/></div><div class="av-card-name"><span class="av-online"></span>Quiz AI <span style="font-size:0.5rem;background:rgba(45,220,122,0.15);color:#2ddc7a;border:1px solid rgba(45,220,122,0.3);padding:1px 6px;border-radius:50px;font-weight:700;">FREE</span></div><div class="av-card-role">Daily Brain Quiz 🧠</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-travel.png" alt="Travel AI"/></div><div class="av-card-name"><span class="av-online"></span>Travel AI <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Last Minute Deals ✈️</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-creativeai.png" alt="Creative AI"/></div><div class="av-card-name"><span class="av-online"></span>Creative AI <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Copywriting & Branding 🎨</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-businessai.png" alt="Business AI"/></div><div class="av-card-name"><span class="av-online"></span>Business AI <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Strategy & Finance 💼</div></div>
+    <div class="avatar-card reveal"><div class="av-img"><img src="avatar-justinian.png" alt="Justinian"/></div><div class="av-card-name"><span class="av-online"></span>Justinian <span style="font-size:0.5rem;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:1px 5px;border-radius:50px;font-weight:700;vertical-align:middle;">PRO</span></div><div class="av-card-role">Legal Advisor ⚖️</div></div>
+  </div>
+</section>
+
+<div class="divider reveal"></div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-header reveal">
+    <span class="section-label">Why Marginova</span>
+    <h2 class="section-title" id="features-title">Built different. <em>By design.</em></h2>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal"><div class="feature-icon">🎙️</div><div class="feature-title">Voice Conversations</div><div class="feature-desc">Speak directly to your assistant. Each one responds in their own unique voice — female or male, warm or precise.</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">🧠</div><div class="feature-title">Remembers You</div><div class="feature-desc">Your assistants remember your previous conversations. No need to repeat yourself — they already know your context.</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">🇬🇧</div><div class="feature-title">Daily Word Challenge</div><div class="feature-desc">Sophie gives you one new English word every day. Use it in a sentence, get feedback and earn XP. Build your streak and grow your vocabulary — one word at a time.</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">🇪🇺</div><div class="feature-title">Eva — EU & World Funds</div><div class="feature-desc">Eva knows every EU grant plus World Bank, UNDP, USAID, GIZ and NGO funds. Specific amounts, deadlines and links — always concrete, never vague.</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">🏆</div><div class="feature-title">XP & Levels</div><div class="feature-desc">Earn experience points for every conversation. Level up from Beginner to Legend as you grow.</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">🎨</div><div class="feature-title">Creative AI — Your Creative Director</div><div class="feature-desc">Copywriting that converts, Facebook/Instagram/TikTok ads, branding strategy and target audience analysis. Real examples, real benchmark numbers.</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">💼</div><div class="feature-title">Business AI — Your Strategist</div><div class="feature-desc">Business plans with real financial projections, SWOT analysis, competitive analysis and growth strategy. Always ends with Top 3 priority actions.</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">🛒</div><div class="feature-title">Drop AI — Top 10 Weekly</div><div class="feature-desc">Get weekly Top 10 trending products with prices, margins and suppliers. Send a product photo for instant dropshipping analysis.</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">✈️</div><div class="feature-title">Travel AI — Last Minute</div><div class="feature-desc">Last minute deals under €99 — flights + hotel. Real platform links (Skyscanner, Booking.com), budget tricks and hidden gems worldwide.</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">🏆</div><div class="feature-title">XP & Invite Rewards</div><div class="feature-desc">Earn XP every day. Level up from Beginner to Legend. Invite 10 friends → 1 week Premium free. Invite 200 → Lifetime Premium 👑</div></div>
+    <div class="feature-card reveal"><div class="feature-icon">🌍</div><div class="feature-title">8 Languages</div><div class="feature-desc">Македонски · Srpski · Shqip · Bosanski · Hrvatski · Български · Deutsch · English — твојот јазик, твојот асистент.</div></div>
+  </div>
+</section>
+
+<div class="divider reveal"></div>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="section-header reveal">
+    <span class="section-label">How It Works</span>
+    <h2 class="section-title" id="how-title">Simple. <em>Powerful.</em></h2>
+  </div>
+  <div class="steps">
+    <div class="step reveal"><div class="step-num">01</div><div class="step-content"><div class="step-title" id="step1-t">Create your free account</div><div class="step-desc" id="step1-d">Sign up in 30 seconds. No credit card required. Immediately access all 15 AI specialists.</div></div></div>
+    <div class="step reveal"><div class="step-num">02</div><div class="step-content"><div class="step-title" id="step2-t">Choose your assistant</div><div class="step-desc">Pick the specialist that fits your need — from nutrition to fitness, from Quiz AI to Travel AI.</div></div></div>
+    <div class="step reveal"><div class="step-num">03</div><div class="step-content"><div class="step-title" id="step3-t">Talk or type</div><div class="step-desc">Use voice or text. Your assistant listens, remembers and responds with a unique personality and voice.</div></div></div>
+    <div class="step reveal"><div class="step-num">04</div><div class="step-content"><div class="step-title" id="step4-t">Grow and level up</div><div class="step-desc">Earn XP, unlock levels, invite friends and build a daily habit with your personal AI team.</div></div></div>
+  </div>
+</section>
+
+<div class="divider reveal"></div>
+
+<!-- REVIEWS -->
+<section class="section" id="reviews">
+  <div class="section-header reveal">
+    <span class="section-label">User Reviews</span>
+    <h2 class="section-title" id="rev-title">What people <em>are saying.</em></h2>
+  </div>
+  <div class="reviews-grid">
+    <div class="review-card reveal"><div class="review-stars">★★★★★</div><div class="review-text" id="r1-text">"Eva found me 3 EU grants in 2 minutes. I applied for FITR and got approved for 50.000€. This is unreal."</div><div class="review-author">Stefan M. · <span style="font-size:0.65rem;color:var(--muted);">Startup founder, Skopje</span></div></div>
+    <div class="review-card reveal"><div class="review-stars">★★★★★</div><div class="review-text" id="r2-text">"Drop AI gave me the Top 10 trending products and I launched my Shopify store in a week. Already profitable."</div><div class="review-author">Ana K. · <span style="font-size:0.65rem;color:var(--muted);">Dropshipper, Belgrade</span></div></div>
+    <div class="review-card reveal"><div class="review-stars">★★★★★</div><div class="review-text" id="r3-text">"Business AI wrote me a complete business plan with financial projections. My bank approved the loan."</div><div class="review-author">Marko P. · <span style="font-size:0.65rem;color:var(--muted);">Entrepreneur, Zagreb</span></div></div>
+    <div class="review-card reveal"><div class="review-stars">★★★★★</div><div class="review-text" id="r4-text">"Travel AI found me a last minute trip to Istanbul for €89 total — flights + hotel. Booked in 10 minutes."</div><div class="review-author">Nikola D. · <span style="font-size:0.65rem;color:var(--muted);">Traveler, Sofia</span></div></div>
+    <div class="review-card reveal"><div class="review-stars">★★★★★</div><div class="review-text" id="r5-text">"Justinian helped me understand my employment contract in minutes. Found 3 clauses that were illegal. Saved me from a bad deal."</div><div class="review-author">Maja S. · <span style="font-size:0.65rem;color:var(--muted);">Manager, Zagreb</span></div></div>
+    <div class="review-card reveal"><div class="review-stars">★★★★★</div><div class="review-text" id="r6-text">"Marco Chef saved my dinner party. Sent a photo of my fridge and got an amazing 3-course menu recipe."</div><div class="review-author">Ivana T. · <span style="font-size:0.65rem;color:var(--muted);">Food lover, Tirana</span></div></div>
+  </div>
+</section>
+
+
+<div class="divider reveal"></div>
+<section class="section" style="padding:4rem 2rem;">
+  <div class="section-header reveal">
+    <span class="section-label">Gamification</span>
+    <h2 class="section-title">Earn XP. <em>Level up.</em></h2>
+  </div>
+  <div style="max-width:700px;margin:0 auto;text-align:center;">
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-bottom:2rem;">
+      <div style="padding:1rem 1.2rem;background:rgba(255,255,255,0.02);border:1px solid rgba(201,168,76,0.18);border-radius:14px;text-align:center;min-width:90px;"><div style="font-size:1.5rem;">🌱</div><div style="font-size:0.65rem;color:#C9A84C;margin-top:4px;">Beginner</div></div>
+      <div style="padding:1rem 1.2rem;background:rgba(255,255,255,0.02);border:1px solid rgba(201,168,76,0.18);border-radius:14px;text-align:center;min-width:90px;"><div style="font-size:1.5rem;">🔍</div><div style="font-size:0.65rem;color:#C9A84C;margin-top:4px;">Explorer</div></div>
+      <div style="padding:1rem 1.2rem;background:rgba(255,255,255,0.02);border:1px solid rgba(201,168,76,0.18);border-radius:14px;text-align:center;min-width:90px;"><div style="font-size:1.5rem;">⚡</div><div style="font-size:0.65rem;color:#C9A84C;margin-top:4px;">Advanced</div></div>
+      <div style="padding:1rem 1.2rem;background:rgba(255,255,255,0.02);border:1px solid rgba(201,168,76,0.18);border-radius:14px;text-align:center;min-width:90px;"><div style="font-size:1.5rem;">🏆</div><div style="font-size:0.65rem;color:#C9A84C;margin-top:4px;">Expert</div></div>
+      <div style="padding:1rem 1.2rem;background:rgba(255,255,255,0.02);border:1px solid rgba(201,168,76,0.18);border-radius:14px;text-align:center;min-width:90px;"><div style="font-size:1.5rem;">👑</div><div style="font-size:0.65rem;color:#C9A84C;margin-top:4px;">Master</div></div>
+      <div style="padding:1rem 1.2rem;background:rgba(255,255,255,0.02);border:1px solid rgba(201,168,76,0.18);border-radius:14px;text-align:center;min-width:90px;"><div style="font-size:1.5rem;">🌟</div><div style="font-size:0.65rem;color:#C9A84C;margin-top:4px;">Legend</div></div>
+    </div>
+    <p style="font-size:0.82rem;color:var(--text2);line-height:1.8;" id="xp-invite-desc"><span id="xp-invite-desc">🎁 Invite 10 friends → 500 tokens · 25 friends → 1 month · 200 friends → Lifetime Premium 👑</p>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div class="section-header reveal">
+    <span class="section-label">Pricing</span>
+    <h2 class="section-title" id="price-title">Start free. <em>Grow when ready.</em></h2>
+    <p class="section-desc" id="price-desc-p">No hidden fees. Cancel anytime. Your data is always yours.</p>
+  </div>
+  <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));max-width:1200px;">
+    <div class="price-card reveal">
+      <div class="price-name" id="p1-name">Free</div>
+      <div class="price-amount"><span>$</span>0</div>
+      <div class="price-period" id="p1-period">47 🪙 токени</div>
+      <ul class="price-features" id="p1-features">
+        <li id="p1-f1">47 🪙 токени за старт</li>
+        <li id="p1-f2">5 бесплатни асистенти</li>
+        <li id="p1-f3">Daily Brain Quiz 🧠</li>
+        <li id="p1-f4">8 јазици · XP систем</li>
+        <li class="no" id="p1-f5">Сите 18 специјалисти</li>
+        <li class="no" id="p1-f6">Eva · Drop AI · Justinian</li>
+        <li class="no" id="p1-f7">Анализа на слики 📷</li>
+      </ul>
+      <a href="index.html" class="price-btn free" id="p1-btn">Почни бесплатно</a>
+    </div>
+    <div class="price-card reveal">
+      <div class="price-name" id="p2-name">Starter</div>
+      <div class="price-amount"><span>$</span>4.99</div>
+      <div class="price-period" id="p2-period">156 🪙 токени</div>
+      <ul class="price-features" id="p2-features">
+        <li id="p2-f1">156 🪙 токени</li>
+        <li id="p2-f2">Сите 18 специјалисти</li>
+        <li id="p2-f3">Eva — EU Фондови 🇪🇺</li>
+        <li id="p2-f4">Justinian — Правен советник ⚖️</li>
+        <li id="p2-f5">Анализа на слики 📷</li>
+        <li id="p2-f6">Без месечна обврска</li>
+      </ul>
+      <a href="index.html" class="price-btn free" id="p2-btn">Купи Starter →</a>
+    </div>
+    <div class="price-card featured reveal">
+      <div class="featured-badge">⭐ Најпопуларно</div>
+      <div class="price-name" id="p3-name">Pro</div>
+      <div class="price-amount"><span>$</span>19.99</div>
+      <div class="price-period" id="p3-period">3,000 🪙 токени</div>
+      <ul class="price-features" id="p3-features">
+        <li id="p3-f1">3,000 токени 🪙</li>
+        <li id="p3-f2">Сите 18 специјалисти</li>
+        <li id="p3-f3">Eva — EU & Светски Фондови 🇪🇺</li>
+        <li id="p3-f4">Justinian — Правен советник ⚖️</li>
+        <li id="p3-f5">Drop AI — Top 10 🛒</li>
+        <li id="p3-f6">Travel AI — Last Minute ✈️</li>
+        <li id="p3-f7">Приоритетни одговори</li>
+      </ul>
+      <a href="index.html" class="price-btn pro" id="p3-btn">Купи Pro →</a>
+    </div>
+    <div class="price-card reveal">
+      <div class="price-name" id="p4-name">Power</div>
+      <div class="price-amount"><span>$</span>49.99</div>
+      <div class="price-period" id="p4-period">9,000 🪙 токени</div>
+      <ul class="price-features" id="p4-features">
+        <li id="p4-f1">9,000 токени 🪙</li>
+        <li id="p4-f2">Сите 18 специјалисти</li>
+        <li id="p4-f3">Сите Pro функции</li>
+        <li id="p4-f4">Justinian — Правен советник ⚖️</li>
+        <li id="p4-f5">Анализа на слики 📷</li>
+        <li id="p4-f6">За интензивни корисници</li>
+      </ul>
+      <a href="index.html" class="price-btn pro" id="p4-btn">Купи Power →</a>
+    </div>
+    <div class="price-card reveal">
+      <div class="price-name" id="p5-name">Monthly</div>
+      <div class="price-amount"><span>$</span>149.99</div>
+      <div class="price-period" id="p5-period">неограничено / месец</div>
+      <ul class="price-features" id="p5-features">
+        <li id="p5-f1">Неограничени пораки 🚀</li>
+        <li id="p5-f2">Сите 18 специјалисти</li>
+        <li id="p5-f3">Eva за EU грантови 🇪🇺</li>
+        <li id="p5-f4">Justinian — Правен советник ⚖️</li>
+        <li id="p5-f5">За фирми и НВО</li>
+        <li id="p5-f6">Приоритетна поддршка</li>
+      </ul>
+      <a href="index.html" class="price-btn pro" id="p5-btn">Купи Monthly →</a>
+    </div>
+  </div>
+</section>
+
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 class="cta-title reveal" id="cta-title">Ready to meet your <em>AI team?</em></h2>
+  <p class="cta-desc reveal" id="cta-desc-p">Join thousands of people who have already discovered a smarter way to grow, learn and feel supported.</p>
+  <a href="index.html" class="btn-primary reveal" id="cta-btn">Start for Free — No Card Needed →</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">MARGIN<b>OVA</b><span>.AI</span></div>
+  <div class="footer-text" id="footer-text">© 2026 Marginova.AI · Your AI Brain Coach · 8 Languages · 17 Specialists</div>
+  <div style="display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;">
+    <a href="privacy-policy.html" style="font-size:0.7rem;color:var(--muted);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">Privacy Policy</a>
+    <a href="terms-of-service.html" style="font-size:0.7rem;color:var(--muted);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">Terms of Service</a>
+    <a href="refund-policy.html" style="font-size:0.7rem;color:var(--muted);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">Refund Policy</a>
+    <a href="/cdn-cgi/l/email-protection#4f2c20213b2e2c3b0f222e3d28262120392e612e26" style="font-size:0.7rem;color:var(--muted);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">Contact</a>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+
+// ═══ LANGUAGE SYSTEM ═══
+const LT={
+  en:{
+    navCta:'Start Free →',badge:'18 AI Specialists · Available Now',
+    heroTitle:'Your Personal <em>AI Brain Coach</em>',
+    heroDesc:'18 specialized AI assistants for funding, business, law, creativity and travel. Free to start.',
+    btnP:'Start for Free — No Card Needed →',btnS:'Meet the Team',
+    avT:'Meet your <em>18 specialists.</em>',avDesc:'5 assistants free forever. Buy tokens to unlock all 18.',
+    featT:'Built different. <em>By design.</em>',
+    howT:'Simple. <em>Powerful.</em>',
+    step1t:'Create your free account',step1d:'Sign up in 30 seconds. No credit card required.',
+    step2t:'Choose your assistant',step2d:'Pick the specialist that fits your need.',
+    step3t:'Talk or type',step3d:'Use voice or text. Your assistant listens and remembers.',
+    step4t:'Grow and level up',step4d:'Earn XP, buy tokens, invite friends.',
+    revT:'What people <em>are saying.</em>',
+    r1:'Eva found me 3 EU grants in 2 minutes. I applied for FITR and got approved for 50.000€. This is unreal.',
+    r2:'Drop AI gave me the Top 10 trending products and I launched my Shopify store in a week. Already profitable.',
+    r3:'Business AI wrote me a complete business plan with financial projections. My bank approved the loan.',
+    r4:'Travel AI found me a last minute trip to Istanbul for €89 total — flights + hotel. Booked in 10 minutes.',
+    r5:'Justinian helped me understand my employment contract in minutes. Found 3 illegal clauses. Saved me from a bad deal.',
+    r6:'Marco Chef saved my dinner party. Sent a photo of my fridge and got an amazing 3-course menu recipe.',
+    priceT:'Start free. <em>Grow when ready.</em>',priceDesc:'No hidden fees. Your data is always yours.',
+    p1n:'Free',p1p:'100 🪙 tokens',p2n:'Starter',p2p:'500 🪙 tokens',
+    p3n:'Pro',p3p:'3,000 🪙 tokens',p4n:'Power',p4p:'9,000 🪙 tokens',
+    p5n:'Monthly',p5p:'unlimited / month',
+    p1btn:'Get Started Free',p2btn:'Buy Starter →',p3btn:'Buy Pro →',p4btn:'Buy Power →',p5btn:'Buy Monthly →',
+    xpInvite:'🎁 Invite 10 friends → 156 🪙 токени · 25 → 780 🪙 токени · 200 → Lifetime Monthly 👑',
+    ctaT:'Ready to meet your <em>AI team?</em>',
+    ctaDesc:'Join thousands who discovered a smarter way to grow, learn and feel supported.',
+    ctaB:'Start for Free — No Card Needed →',
+    footer:'© 2026 Marginova.AI · Your AI Brain Coach · 8 Languages · 18 Specialists'
+  },
+  mk:{
+    navCta:'Почни бесплатно →',badge:'18 AI Специјалисти · Достапни сега',
+    heroTitle:'Твојот Личен <em>AI Brain Coach</em>',
+    heroDesc:'18 специјализирани AI асистенти за финансирање, бизнис, право, креативност и патување. Бесплатно.',
+    btnP:'Почни бесплатно — Без картичка →',btnS:'Запознај го тимот',
+    avT:'Запознај ги твоите <em>18 специјалисти.</em>',avDesc:'5 асистенти бесплатно засекогаш. Купи токени за сите 18.',
+    featT:'Направено поинаку. <em>По дизајн.</em>',
+    howT:'Едноставно. <em>Моќно.</em>',
+    step1t:'Креирај бесплатна сметка',step1d:'Регистрирај се за 30 секунди. Без картичка.',
+    step2t:'Избери асистент',step2d:'Избери го специјалистот за твоите потреби.',
+    step3t:'Зборувај или пишувај',step3d:'Користи глас или текст. Твојот асистент слуша и памети.',
+    step4t:'Расти и напредувај',step4d:'Заработи XP, купи токени, покани пријатели.',
+    revT:'Што велат <em>луѓето.</em>',
+    r1:'Eva ми најде 3 EU грантови за 2 минути. Аплицирав за ФИТР и добив одобрување за 50.000€. Неверојатно.',
+    r2:'Drop AI ми даде Top 10 трендирачки производи и го лансирав Shopify стор за една недела. Веќе профитабилен.',
+    r3:'Business AI ми напиша комплетен бизнис план со финансиски проекции. Банката ми одобри кредит.',
+    r4:'Travel AI ми најде last minute патување до Истанбул за €89 вкупно. Резервирав за 10 минути.',
+    r5:'Јустинијан ми помогна да го разберам договорот за работа за неколку минути. Најде 3 незаконски клаузули. Ме спаси.',
+    r6:'Marco Chef ми го спаси вечерниот собир. Испратив фото од фрижидерот и добив неверојатно мени.',
+    priceT:'Почни бесплатно. <em>Расти кога си спремен.</em>',priceDesc:'Без скриени трошоци. Твоите податоци се твои.',
+    p1n:'Бесплатно',p1p:'47 🪙 токени',p2n:'Starter',p2p:'156 🪙 токени',
+    p3n:'Pro',p3p:'780 🪙 токени',p4n:'Power',p4p:'3.120 🪙 токени',
+    p5n:'Monthly',p5p:'неограничено / месец',
+    p1btn:'Почни бесплатно',p2btn:'Купи Starter →',p3btn:'Купи Pro →',p4btn:'Купи Power →',p5btn:'Купи Monthly →',
+    xpInvite:'🎁 Покани 10 пријатели → 156 🪙 токени · 25 → 780 🪙 токени · 200 → Доживотен Monthly 👑',
+    ctaT:'Спремен да го запознаеш твојот <em>AI тим?</em>',
+    ctaDesc:'Придружи се на илјадници луѓе кои открија попаметен начин да растат.',
+    ctaB:'Почни бесплатно — Без картичка →',
+    footer:'© 2026 Marginova.AI · Твојот AI Brain Coach · 8 Јазици · 18 Специјалисти'
+  },
+  sr:{
+    navCta:'Počni besplatno →',badge:'18 AI Specijalista · Dostupni sada',
+    heroTitle:'Tvoj Lični <em>AI Brain Coach</em>',
+    heroDesc:'18 specijalizovanih AI asistenata za finansiranje, biznis, pravo, kreativnost i putovanja. Besplatno.',
+    btnP:'Počni besplatno — Bez kartice →',btnS:'Upoznaj tim',
+    avT:'Upoznaj svojih <em>18 specijalista.</em>',avDesc:'5 asistenata besplatno zauvek. Kupi tokene za sve 18.',
+    featT:'Napravljeno drugačije. <em>By design.</em>',
+    howT:'Jednostavno. <em>Moćno.</em>',
+    step1t:'Kreiraj besplatan nalog',step1d:'Registruj se za 30 sekundi. Bez kartice.',
+    step2t:'Izaberi asistenta',step2d:'Izaberi specijalista za tvoje potrebe.',
+    step3t:'Govori ili kucaj',step3d:'Koristi glas ili tekst. Asistent sluša i pamti.',
+    step4t:'Rasti i napreduj',step4d:'Zarađuj XP, kupuj tokene, pozivaj prijatelje.',
+    revT:'Šta kažu <em>ljudi.</em>',
+    r1:'Eva mi pronašla 3 EU granta za 2 minuta. Aplicirao za FITR i dobio odobrenje za 50.000€.',
+    r2:'Drop AI dao mi Top 10 trending proizvoda i pokrenuo Shopify za nedelju dana. Već profitabilno.',
+    r3:'Business AI napisao kompletan biznis plan. Banka odobrila kredit.',
+    r4:'Travel AI pronašao putovanje u Istanbul za €89 ukupno. Rezervisao za 10 minuta.',
+    r5:'Justinijan mi pomogao da razumem ugovor o radu za nekoliko minuta. Pronašao 3 nezakonite klauzule.',
+    r6:'Marco Chef spasio moju večeru. Foto frižidera i neverovatno meni.',
+    priceT:'Počni besplatno. <em>Rasti kad si spreman.</em>',priceDesc:'Bez skrivenih troškova.',
+    p1n:'Besplatno',p1p:'100 🪙 tokena',p2n:'Starter',p2p:'500 🪙 tokena',
+    p3n:'Pro',p3p:'3.000 🪙 tokena',p4n:'Power',p4p:'9.000 🪙 tokena',
+    p5n:'Monthly',p5p:'neograničeno / mesec',
+    p1btn:'Počni besplatno',p2btn:'Kupi Starter →',p3btn:'Kupi Pro →',p4btn:'Kupi Power →',p5btn:'Kupi Monthly →',
+    xpInvite:'🎁 Pozovi 10 prijatelja → 156 🪙 токени · 25 → 780 🪙 токени · 200 → Doživotni Monthly 👑',
+    ctaT:'Spreman da upoznaš <em>AI tim?</em>',
+    ctaDesc:'Pridruži se hiljadama koji su otkrili pametniji način rasta.',
+    ctaB:'Počni besplatno — Bez kartice →',
+    footer:'© 2026 Marginova.AI · 8 Jezika · 18 Specijalista'
+  },
+  hr:{
+    navCta:'Počni besplatno →',badge:'18 AI Specijalista · Dostupni sada',
+    heroTitle:'Tvoj Osobni <em>AI Brain Coach</em>',
+    heroDesc:'18 specijaliziranih AI asistenata za financiranje, biznis, pravo i putovanja. Besplatno.',
+    btnP:'Počni besplatno →',btnS:'Upoznaj tim',
+    avT:'Upoznaj svojih <em>18 specijalista.</em>',avDesc:'5 asistenata besplatno zauvijek. Kupi tokene za sve 18.',
+    featT:'Napravljeno drugačije. <em>By design.</em>',howT:'Jednostavno. <em>Moćno.</em>',
+    step1t:'Kreiraj besplatan račun',step1d:'Registriraj se za 30 sekundi.',
+    step2t:'Odaberi asistenta',step2d:'Odaberi specijalista za potrebe.',
+    step3t:'Govori ili piši',step3d:'Glas ili tekst. Asistent sluša i pamti.',
+    step4t:'Rasti i napreduj',step4d:'Zarađuj XP i kupuj tokene.',
+    revT:'Što kažu <em>ljudi.</em>',
+    r1:'Eva mi pronašla 3 EU granta za 2 minute. Aplicirao za FITR i dobio 50.000€.',
+    r2:'Drop AI dao Top 10 trending proizvoda. Pokrenuo Shopify za tjedan dana.',
+    r3:'Business AI napisao poslovni plan. Banka odobrila kredit.',
+    r4:'Travel AI pronašao putovanje u Istanbul za €89 ukupno.',
+    r5:'Justinijan mi pomogao razumjeti ugovor o radu. Pronašao 3 nezakonite klauzule.',
+    r6:'Marco Chef spasio večeru. Foto hladnjaka i nevjerojatno meni.',
+    priceT:'Počni besplatno. <em>Rasti kad si spreman.</em>',priceDesc:'Bez skrivenih troškova.',
+    p1n:'Besplatno',p1p:'100 🪙 tokena',p2n:'Starter',p2p:'500 🪙 tokena',
+    p3n:'Pro',p3p:'3.000 🪙 tokena',p4n:'Power',p4p:'9.000 🪙 tokena',p5n:'Monthly',p5p:'neograničeno / mjesec',
+    p1btn:'Počni besplatno',p2btn:'Kupi Starter →',p3btn:'Kupi Pro →',p4btn:'Kupi Power →',p5btn:'Kupi Monthly →',
+    xpInvite:'🎁 Pozovi 10 prijatelja → 156 🪙 токени · 25 → 780 🪙 токени · 200 → Doživotni Monthly 👑',
+    ctaT:'Spreman upoznati <em>AI tim?</em>',ctaDesc:'Pridruži se tisućama koji rastu uz AI.',ctaB:'Počni besplatno →',
+    footer:'© 2026 Marginova.AI · 8 Jezika · 18 Specijalista'
+  },
+  bs:{
+    navCta:'Počni besplatno →',badge:'18 AI Specijalista · Dostupni sada',
+    heroTitle:'Tvoj Lični <em>AI Brain Coach</em>',
+    heroDesc:'18 specijaliziranih AI asistenata za finansiranje, biznis i pravo. Besplatno.',
+    btnP:'Počni besplatno →',btnS:'Upoznaj tim',
+    avT:'Upoznaj svojih <em>18 specijalista.</em>',avDesc:'5 asistenata besplatno. Kupi tokene za sve 18.',
+    featT:'Napravljeno drugačije. <em>By design.</em>',howT:'Jednostavno. <em>Moćno.</em>',
+    step1t:'Kreiraj besplatan nalog',step1d:'Registruj se za 30 sekundi.',
+    step2t:'Odaberi asistenta',step2d:'Odaberi specijalista.',
+    step3t:'Govori ili piši',step3d:'Glas ili tekst.',
+    step4t:'Rasti i napreduj',step4d:'Zarađuj XP i kupuj tokene.',
+    revT:'Što kažu <em>ljudi.</em>',
+    r1:'Eva mi pronašla 3 EU granta za 2 minute. Dobio 50.000€.',
+    r2:'Drop AI dao Top 10 trending proizvoda. Pokrenuo Shopify.',
+    r3:'Business AI napisao biznis plan. Banka odobrila kredit.',
+    r4:'Travel AI pronašao putovanje u Istanbul za €89.',
+    r5:'Justinijan mi pomogao razumjeti ugovor o radu. Pronašao nezakonite klauzule.',
+    r6:'Marco Chef spasio večeru sa foto frižidera.',
+    priceT:'Počni besplatno.',priceDesc:'Bez skrivenih troškova.',
+    p1n:'Besplatno',p1p:'100 🪙 tokena',p2n:'Starter',p2p:'500 🪙 tokena',
+    p3n:'Pro',p3p:'3.000 🪙 tokena',p4n:'Power',p4p:'9.000 🪙 tokena',p5n:'Monthly',p5p:'neograničeno / mjesec',
+    p1btn:'Počni besplatno',p2btn:'Kupi Starter →',p3btn:'Kupi Pro →',p4btn:'Kupi Power →',p5btn:'Kupi Monthly →',
+    xpInvite:'🎁 Pozovi 10 prijatelja → 156 🪙 токени · 25 → 780 🪙 токени · 200 → Doživotni Monthly 👑',
+    ctaT:'Spreman upoznati <em>AI tim?</em>',ctaDesc:'Pridruži se hiljadama koji rastu.',ctaB:'Počni besplatno →',
+    footer:'© 2026 Marginova.AI · 8 Jezika · 18 Specijalista'
+  },
+  sq:{
+    navCta:'Fillo falas →',badge:'18 Specialistë AI · Disponueshëm tani',
+    heroTitle:'Trajneri yt Personal <em>AI Brain</em>',
+    heroDesc:'18 asistentë AI për financim, biznes, ligj dhe udhëtime. Falas.',
+    btnP:'Fillo falas — Pa kartë →',btnS:'Njihu me ekipin',
+    avT:'Njihu me <em>18 specialistët.</em>',avDesc:'5 asistentë falas. Bli argjendat për të gjithë 18.',
+    featT:'Ndërtuar ndryshe. <em>By design.</em>',howT:'E thjeshtë. <em>E fuqishme.</em>',
+    step1t:'Krijo llogari falas',step1d:'Regjistrohu në 30 sekonda.',
+    step2t:'Zgjidh asistentin',step2d:'Zgjidh specialistin për nevojat tuaja.',
+    step3t:'Fol ose shkruaj',step3d:'Glas ose tekst. Asistenti dëgjon dhe mban mend.',
+    step4t:'Rrit dhe avanco',step4d:'Fito XP dhe bli argjendat.',
+    revT:'Çfarë thonë <em>njerëzit.</em>',
+    r1:'Eva më gjeti 3 grante EU në 2 minuta. Mora miratim për 50.000€.',
+    r2:'Drop AI dha Top 10 produkte në trend. Lançova Shopify.',
+    r3:'Business AI shkroi plan biznesi. Banka miratoi kredinë.',
+    r4:'Travel AI gjeti udhëtim në Istanbul për €89.',
+    r5:'Justiniani më ndihmoi të kuptoj kontratën e punës. Gjeti 3 klauzola të paligjshme.',
+    r6:'Marco Chef shpëtoi darkën time me foto të frigoriferit.',
+    priceT:'Fillo falas. <em>Rrit kur je gati.</em>',priceDesc:'Pa tarifa të fshehura.',
+    p1n:'Falas',p1p:'100 🪙 argjendata',p2n:'Starter',p2p:'500 🪙 argjendata',
+    p3n:'Pro',p3p:'3.000 🪙 argjendata',p4n:'Power',p4p:'9.000 🪙 argjendata',p5n:'Monthly',p5p:'e pakufizuar / muaj',
+    p1btn:'Fillo falas',p2btn:'Bli Starter →',p3btn:'Bli Pro →',p4btn:'Bli Power →',p5btn:'Bli Monthly →',
+    xpInvite:'🎁 Fto 10 miq → 156 🪙 токени · 25 → 780 🪙 токени · 200 → Monthly Gjatë gjithë jetës 👑',
+    ctaT:'Gati të takosh <em>ekipin AI?</em>',ctaDesc:'Bashkohu me mijëra që zbuluan mënyrën më të mençur.',ctaB:'Fillo falas →',
+    footer:'© 2026 Marginova.AI · 8 Gjuhë · 18 Specialistë'
+  },
+  bg:{
+    navCta:'Започни безплатно →',badge:'18 AI Специалисти · Достъпни сега',
+    heroTitle:'Твоят Личен <em>AI Brain Coach</em>',
+    heroDesc:'18 специализирани AI асистенти за финансиране, бизнес, право и пътувания. Безплатно.',
+    btnP:'Започни безплатно — Без карта →',btnS:'Запознай екипа',
+    avT:'Запознай своите <em>18 специалисти.</em>',avDesc:'5 асистенти безплатно. Купи токени за всичките 18.',
+    featT:'Направено по различен начин. <em>By design.</em>',howT:'Просто. <em>Мощно.</em>',
+    step1t:'Създай безплатен акаунт',step1d:'Регистрирай се за 30 секунди.',
+    step2t:'Избери асистент',step2d:'Избери специалиста за нуждите си.',
+    step3t:'Говори или пиши',step3d:'Глас или текст. Асистентът слуша и помни.',
+    step4t:'Расти и напредвай',step4d:'Спечели XP и купувай токени.',
+    revT:'Какво казват <em>хората.</em>',
+    r1:'Eva ми намери 3 EU гранта за 2 минути. Получих одобрение за 50.000€.',
+    r2:'Drop AI даде Топ 10 трендинг продукта. Стартирах Shopify.',
+    r3:'Business AI написа бизнес план. Банката одобри кредита.',
+    r4:'Travel AI намери пътуване до Истанбул за €89.',
+    r5:'Юстиниан ми помогна да разбера трудовия договор. Намери 3 незаконни клаузи.',
+    r6:'Marco Chef спаси вечерята ми с фото на хладилника.',
+    priceT:'Започни безплатно. <em>Расти когато си готов.</em>',priceDesc:'Без скрити такси.',
+    p1n:'Безплатно',p1p:'47 🪙 токени',p2n:'Starter',p2p:'156 🪙 токени',
+    p3n:'Pro',p3p:'780 🪙 токени',p4n:'Power',p4p:'3.120 🪙 токени',p5n:'Monthly',p5p:'неограничено / месец',
+    p1btn:'Започни безплатно',p2btn:'Купи Starter →',p3btn:'Купи Pro →',p4btn:'Купи Power →',p5btn:'Купи Monthly →',
+    xpInvite:'🎁 Покани 10 приятели → 156 🪙 токени · 25 → 780 🪙 токени · 200 → Доживотен Monthly 👑',
+    ctaT:'Готов да запознаеш своя <em>AI екип?</em>',ctaDesc:'Присъедини се към хиляди, открили по-умния начин.',ctaB:'Започни безплатно →',
+    footer:'© 2026 Marginova.AI · 8 Езика · 18 Специалисти'
+  },
+  de:{
+    navCta:'Kostenlos starten →',badge:'18 KI-Spezialisten · Jetzt verfügbar',
+    heroTitle:'Dein Persönlicher <em>AI Brain Coach</em>',
+    heroDesc:'18 spezialisierte KI-Assistenten für Finanzierung, Business, Recht und Reisen. Kostenlos.',
+    btnP:'Kostenlos starten — Keine Karte →',btnS:'Das Team kennenlernen',
+    avT:'Lerne deine <em>18 Spezialisten</em> kennen.',avDesc:'5 Assistenten dauerhaft kostenlos. Token kaufen für alle 18.',
+    featT:'Anders gebaut. <em>By design.</em>',howT:'Einfach. <em>Leistungsstark.</em>',
+    step1t:'Kostenloses Konto erstellen',step1d:'In 30 Sekunden registrieren.',
+    step2t:'Assistenten wählen',step2d:'Den passenden Spezialisten wählen.',
+    step3t:'Sprechen oder tippen',step3d:'Sprache oder Text. Dein Assistent hört zu.',
+    step4t:'Wachsen und aufsteigen',step4d:'XP verdienen und Token kaufen.',
+    revT:'Was die <em>Menschen sagen.</em>',
+    r1:'Eva fand mir in 2 Minuten 3 EU-Zuschüsse. Genehmigung für 50.000€ erhalten.',
+    r2:'Drop AI gab mir Top 10 Trendprodukte. Shopify in einer Woche gestartet.',
+    r3:'Business AI schrieb einen vollständigen Businessplan. Bank genehmigte den Kredit.',
+    r4:'Travel AI fand eine Reise nach Istanbul für €89 gesamt.',
+    r5:'Justinian half mir, meinen Arbeitsvertrag zu verstehen. Fand 3 illegale Klauseln.',
+    r6:'Marco Chef rettete mein Abendessen mit einem Kühlschrankfoto.',
+    priceT:'Kostenlos starten. <em>Wachsen wenn bereit.</em>',priceDesc:'Keine versteckten Gebühren.',
+    p1n:'Kostenlos',p1p:'47 🪙 токени',p2n:'Starter',p2p:'156 🪙 токени',
+    p3n:'Pro',p3p:'780 🪙 токени',p4n:'Power',p4p:'3.120 🪙 токени',p5n:'Monthly',p5p:'unbegrenzt / Monat',
+    p1btn:'Kostenlos starten',p2btn:'Starter kaufen →',p3btn:'Pro kaufen →',p4btn:'Power kaufen →',p5btn:'Monthly kaufen →',
+    xpInvite:'🎁 10 Freunde einladen → 156 🪙 токени · 25 → 780 🪙 токени · 200 → Lebenslanges Monthly 👑',
+    ctaT:'Bereit dein <em>AI-Team</em> kennenzulernen?',ctaDesc:'Tritt Tausenden bei, die einen klügeren Weg gefunden haben.',ctaB:'Kostenlos starten →',
+    footer:'© 2026 Marginova.AI · 8 Sprachen · 18 Spezialisten'
+  },
+};
+
+function setLang(l){
+  const t=LT[l]||LT.en;
+  const s=(id,v)=>{const e=document.getElementById(id);if(e)e.innerHTML=v;};
+  const st=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  s('nav-cta-btn',t.navCta);
+  s('hero-badge-span',t.badge);
+  s('hero-title-em',t.heroTitle);
+  s('hero-desc-p',t.heroDesc);
+  s('hero-btn-primary',t.btnP);
+  s('av-section-title',t.avT);
+  s('feat-title',t.featT);
+  s('how-title',t.howT);
+  st('step1-t',t.step1t); st('step1-d',t.step1d);
+  st('step2-t',t.step2t); st('step3-t',t.step3t); st('step4-t',t.step4t);
+  s('rev-title',t.revT);
+  if(document.getElementById('r1-text')) document.getElementById('r1-text').textContent='"'+t.r1+'"';
+  if(document.getElementById('r2-text')) document.getElementById('r2-text').textContent='"'+t.r2+'"';
+  if(document.getElementById('r3-text')) document.getElementById('r3-text').textContent='"'+t.r3+'"';
+  if(document.getElementById('r4-text')) document.getElementById('r4-text').textContent='"'+t.r4+'"';
+  if(document.getElementById('r5-text')) document.getElementById('r5-text').textContent='"'+t.r5+'"';
+  if(document.getElementById('r6-text')) document.getElementById('r6-text').textContent='"'+t.r6+'"';
+  s('price-title',t.priceT);
+  s('price-desc-p',t.priceDesc);
+  s('p1-name',t.p1n); s('p1-period',t.p1p); s('p1-btn',t.p1btn);
+  s('p2-name',t.p2n); s('p2-period',t.p2p); s('p2-btn',t.p2btn);
+  s('p3-name',t.p3n); s('p3-period',t.p3p); s('p3-btn',t.p3btn);
+  s('p4-name',t.p4n); s('p4-period',t.p4p); s('p4-btn',t.p4btn);
+  s('p5-name',t.p5n); s('p5-period',t.p5p); s('p5-btn',t.p5btn);
+  s('xp-invite-desc',t.xpInvite);
+  s('cta-title',t.ctaT);
+  s('cta-desc-p',t.ctaDesc);
+  s('cta-btn',t.ctaB);
+  s('footer-text',t.footer);
+
+  // Pricing features
+  const pf={
+    en:{
+      p1:['100 tokens to start 🪙','5 free assistants','Daily Brain Quiz 🧠','8 languages · XP system','All 18 specialists','Eva · Drop AI · Justinian','Image Analysis 📷'],
+      p2:['500 tokens 🪙','All 18 specialists','Eva — EU Funds 🇪🇺','Justinian — Legal Advisor ⚖️','Image Analysis 📷','No monthly commitment'],
+      p3:['3,000 tokens 🪙','All 18 specialists','Eva — EU & World Funds 🇪🇺','Justinian — Legal Advisor ⚖️','Drop AI — Top 10 🛒','Travel AI — Last Minute ✈️','Priority responses'],
+      p4:['9,000 tokens 🪙','All 18 specialists','All Pro features','Justinian — Legal Advisor ⚖️','Image Analysis 📷','For intensive users'],
+      p5:['Unlimited messages 🚀','All 18 specialists','Eva for EU grants 🇪🇺','Justinian — Legal Advisor ⚖️','For companies & NGOs','Priority support'],
+    },
+    mk:{
+      p1:['47 🪙 токени за старт','5 бесплатни асистенти','Дневен Квиз 🧠','8 јазици · XP систем','Сите 18 специјалисти','Eva · Drop AI · Јустинијан','Анализа на слики 📷'],
+      p2:['156 🪙 токени','Сите 18 специјалисти','Eva — EU Фондови 🇪🇺','Јустинијан — Правен советник ⚖️','Анализа на слики 📷','Без месечна обврска'],
+      p3:['780 🪙 токени','Сите 18 специјалисти','Eva — EU & Светски Фондови 🇪🇺','Јустинијан — Правен советник ⚖️','Drop AI — Top 10 🛒','Travel AI — Last Minute ✈️','Приоритетни одговори'],
+      p4:['3.120 🪙 токени','Сите 18 специјалисти','Сите Pro функции','Јустинијан — Правен советник ⚖️','Анализа на слики 📷','За интензивни корисници'],
+      p5:['Неограничени пораки 🚀','Сите 18 специјалисти','Eva за EU грантови 🇪🇺','Јустинијан — Правен советник ⚖️','За фирми и НВО','Приоритетна поддршка'],
+    },
+    sr:{
+      p1:['47 🪙 tokena za start','5 besplatnih asistenata','Dnevni Kviz 🧠','8 jezika · XP sistem','Svih 18 specijalista','Eva · Drop AI · Justinijan','Analiza slika 📷'],
+      p2:['156 🪙 токени','Svih 18 specijalista','Eva — EU Fondovi 🇪🇺','Justinijan — Pravni savetnik ⚖️','Analiza slika 📷','Bez mesečne obaveze'],
+      p3:['780 🪙 токени','Svih 18 specijalista','Eva — EU & Svetski Fondovi 🇪🇺','Justinijan — Pravni savetnik ⚖️','Drop AI — Top 10 🛒','Travel AI — Last Minute ✈️','Prioritetni odgovori'],
+      p4:['3.120 🪙 токени','Svih 18 specijalista','Sve Pro funkcije','Justinijan — Pravni savetnik ⚖️','Analiza slika 📷','Za intenzivne korisnike'],
+      p5:['Neograničene poruke 🚀','Svih 18 specijalista','Eva za EU grantove 🇪🇺','Justinijan — Pravni savetnik ⚖️','Za firme i NVO','Prioritetna podrška'],
+    },
+    de:{
+      p1:['47 🪙 Token zum Start','5 kostenlose Assistenten','Tägliches Quiz 🧠','8 Sprachen · XP-System','Alle 18 Spezialisten','Eva · Drop AI · Justinian','Bildanalyse 📷'],
+      p2:['156 🪙 токени','Alle 18 Spezialisten','Eva — EU-Fonds 🇪🇺','Justinian — Rechtsberater ⚖️','Bildanalyse 📷','Keine monatliche Verpflichtung'],
+      p3:['780 🪙 токени','Alle 18 Spezialisten','Eva — EU & Weltfonds 🇪🇺','Justinian — Rechtsberater ⚖️','Drop AI — Top 10 🛒','Travel AI — Last Minute ✈️','Prioritätsantworten'],
+      p4:['3.120 🪙 токени','Alle 18 Spezialisten','Alle Pro-Funktionen','Justinian — Rechtsberater ⚖️','Bildanalyse 📷','Für intensive Nutzer'],
+      p5:['Unbegrenzte Nachrichten 🚀','Alle 18 Spezialisten','Eva für EU-Zuschüsse 🇪🇺','Justinian — Rechtsberater ⚖️','Für Unternehmen & NGOs','Prioritätssupport'],
+    },
+  };
+  // Use sr for hr/bs, en as fallback
+  const pfl = pf[l] || pf[l==='hr'||l==='bs' ? 'sr' : 'en'] || pf.en;
+  for(let p=1;p<=5;p++){
+    const arr = pfl['p'+p] || pf.en['p'+p];
+    if(arr) arr.forEach((txt,i)=>{
+      const el=document.getElementById('p'+p+'-f'+(i+1));
+      if(el) el.textContent=txt;
+    });
+  }
+
+  const sel=document.getElementById('lang-sel');
+  if(sel)sel.value=l;
+  document.documentElement.lang=l;
+}
+window.addEventListener('load',()=>{
+  const sup=['en','mk','sr','hr','bs','sq','bg','de'];
+  const bl=navigator.language.split('-')[0];
+  const det=sup.includes(bl)?bl:'en';
+  if(det!=='en')setLang(det);
+});
+</script>
+</body>
+</html>
