@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marginova.AI — The Power of AI Business | 18 AI Specialists</title>
+<meta name="description" content="18 specialized AI assistants available 24/7 in 8 languages. Free to start. Voice conversations included.">
+<meta name="keywords" content="AI assistant, AI business, EU grants AI, AI legal advisor, Marginova AI, veštačka inteligencija, AI asistent makedonski">
+<meta name="author" content="Marginova.AI">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://marginova.tech/landing.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://marginova.tech/landing.html">
+<meta property="og:title" content="Marginova.AI — The Power of AI Business">
+<meta property="og:description" content="18 specialized AI assistants available 24/7. Free to start. 8 languages.">
+<meta property="og:image" content="https://marginova.tech/avatar-main.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Marginova.AI — The Power of AI Business">
+<meta name="twitter:image" content="https://marginova.tech/avatar-main.png">
+<meta name="theme-color" content="#C9A84C">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#C9A84C;--gold2:#E8C97A;--gold3:#F5E0A0;
+  --goldglow:rgba(201,168,76,0.25);--goldglow2:rgba(201,168,76,0.08);
+  --bg:#090910;--bg2:#0e0e1a;--bg3:#13131f;
+  --border:rgba(201,168,76,0.18);--border2:rgba(201,168,76,0.35);
+  --text:#f0eada;--text2:#c8bfa8;--muted:#7a7060;
+  --accent:#a87cff;--green:#2ddc7a;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Jost',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(201,168,76,0.03) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(201,168,76,0.03) 1px,transparent 1px);
+  background-size:60px 60px;}
+
+/* ═══ NAV ═══ */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;
+  padding:0.8rem 2rem;background:rgba(9,9,16,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0.4;}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.nav-logo img{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold);}
+.nav-logo-text{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;letter-spacing:0.15em;}
+.nav-logo-text b{color:var(--gold);}
+.nav-logo-text span{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:8px;}
+
+/* Lang buttons */
+.lang-group{display:flex;gap:3px;background:rgba(255,255,255,0.04);padding:3px;border-radius:50px;border:1px solid var(--border);}
+.lang-btn{padding:0.2rem 0.6rem;border-radius:50px;font-size:0.65rem;cursor:pointer;border:none;
+  background:transparent;color:var(--muted);font-family:'Jost',sans-serif;transition:all 0.2s;letter-spacing:0.03em;}
+.lang-btn.active,.lang-btn:hover{background:rgba(201,168,76,0.15);color:var(--gold);}
+
+/* Live badge in nav */
+.live-badge{display:flex;align-items:center;gap:5px;font-size:0.65rem;color:var(--green);
+  background:rgba(45,220,122,0.08);border:1px solid rgba(45,220,122,0.25);
+  border-radius:50px;padding:0.2rem 0.7rem;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 6px var(--green);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+.nav-cta{background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));
+  border:none;color:#0a0a12;padding:0.45rem 1.3rem;border-radius:50px;
+  font-size:0.78rem;cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;
+  letter-spacing:0.05em;transition:all 0.25s;text-decoration:none;
+  box-shadow:0 4px 20px rgba(201,168,76,0.3);}
+.nav-cta:hover{box-shadow:0 4px 30px rgba(201,168,76,0.5);transform:translateY(-1px);}
+
+/* ═══ HERO ═══ */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:8rem 2rem 5rem;position:relative;z-index:1;
+  background:radial-gradient(ellipse at 20% 50%,rgba(168,124,255,0.08) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 30%,rgba(201,168,76,0.07) 0%,transparent 50%);}
+
+/* Avatar aura */
+.hero-avatar-wrap{position:relative;width:200px;height:200px;margin-bottom:2rem;}
+.hero-avatar-wrap img{width:200px;height:200px;border-radius:50%;object-fit:cover;object-position:center 20%;
+  border:2px solid var(--gold);position:relative;z-index:3;
+  box-shadow:0 0 40px rgba(201,168,76,0.3);}
+.aura{position:absolute;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);}
+.aura1{width:224px;height:224px;border:1.5px solid rgba(201,168,76,0.5);animation:aura-pulse 3s ease-in-out infinite;}
+.aura2{width:255px;height:255px;border:1px solid rgba(201,168,76,0.3);animation:aura-pulse 3s ease-in-out 0.6s infinite;}
+.aura3{width:290px;height:290px;border:1px solid rgba(201,168,76,0.15);animation:aura-pulse 3s ease-in-out 1.2s infinite;}
+.aura4{width:328px;height:328px;border:1px solid rgba(201,168,76,0.07);animation:aura-pulse 3s ease-in-out 1.8s infinite;}
+@keyframes aura-pulse{0%,100%{opacity:0.6;transform:translate(-50%,-50%) scale(1);}50%{opacity:1;transform:translate(-50%,-50%) scale(1.02);}}
+
+.hero-name{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,4vw,2.8rem);
+  font-weight:300;letter-spacing:0.25em;color:var(--text);margin-bottom:0.3rem;}
+.hero-name b{color:var(--gold);text-shadow:0 0 30px var(--goldglow);}
+.hero-name span{color:var(--accent);}
+
+.hero-power{font-size:clamp(0.7rem,1.5vw,0.85rem);letter-spacing:0.3em;text-transform:uppercase;
+  color:var(--gold);text-shadow:0 0 20px var(--goldglow),0 0 40px rgba(201,168,76,0.15);
+  margin-bottom:2.5rem;font-weight:500;
+  animation:glow-text 3s ease-in-out infinite;}
+@keyframes glow-text{0%,100%{text-shadow:0 0 20px var(--goldglow),0 0 40px rgba(201,168,76,0.1);}
+  50%{text-shadow:0 0 30px rgba(201,168,76,0.5),0 0 60px rgba(201,168,76,0.2);}}
+
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,5vw,4rem);
+  font-weight:300;line-height:1.15;margin-bottom:0.7rem;}
+.hero-title em{font-style:italic;color:var(--gold);text-shadow:0 0 40px var(--goldglow);}
+.hero-subtitle{font-size:1rem;color:var(--text2);font-weight:300;margin-bottom:2.5rem;letter-spacing:0.05em;}
+
+.hero-actions{display:flex;gap:0.8rem;flex-wrap:wrap;justify-content:center;margin-bottom:3.5rem;}
+.btn-primary{background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));
+  border:none;color:#0a0a12;padding:0.8rem 2.2rem;border-radius:50px;
+  font-size:0.88rem;cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;
+  letter-spacing:0.05em;transition:all 0.25s;text-decoration:none;
+  box-shadow:0 4px 30px rgba(201,168,76,0.35);}
+.btn-primary:hover{box-shadow:0 4px 45px rgba(201,168,76,0.55);transform:translateY(-2px);}
+.btn-secondary{padding:0.8rem 1.8rem;border-radius:50px;border:1px solid var(--border2);
+  color:var(--text2);font-size:0.85rem;font-family:'Jost',sans-serif;text-decoration:none;transition:all 0.25s;}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold);}
+.btn-android{display:inline-flex;align-items:center;gap:6px;padding:0.8rem 1.8rem;border-radius:50px;
+  border:1px solid rgba(45,220,122,0.4);color:var(--green);font-size:0.85rem;
+  font-family:'Jost',sans-serif;text-decoration:none;transition:all 0.25s;}
+.btn-android:hover{background:rgba(45,220,122,0.08);transform:translateY(-1px);}
+
+.hero-stats{display:flex;gap:3rem;flex-wrap:wrap;justify-content:center;}
+.stat{text-align:center;}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:300;color:var(--gold);}
+.stat-label{font-size:0.68rem;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;margin-top:0.2rem;}
+
+/* ═══ DEMO — autoplay ═══ */
+.demo-section{padding:5rem 2rem;position:relative;z-index:1;text-align:center;}
+.section-label{font-size:0.68rem;letter-spacing:0.25em;color:var(--gold);text-transform:uppercase;margin-bottom:0.8rem;}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:300;margin-bottom:1rem;}
+.section-title em{color:var(--gold);font-style:italic;}
+.section-desc{color:var(--text2);font-size:0.88rem;max-width:650px;margin:0 auto 2rem;line-height:1.7;}
+.demo-frame{width:100%;max-width:860px;margin:0 auto;border-radius:16px;overflow:hidden;
+  border:1px solid var(--border2);box-shadow:0 0 60px rgba(201,168,76,0.1);}
+.demo-frame iframe{width:100%;height:480px;border:none;display:block;}
+
+/* ═══ AVATARS ═══ */
+.avatars-section{padding:5rem 2rem;position:relative;z-index:1;}
+.avatars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
+  gap:1rem;max-width:1150px;margin:2rem auto 0;}
+.avatar-card{background:linear-gradient(135deg,rgba(19,19,31,0.95),rgba(14,14,26,0.95));
+  border:1px solid var(--border);border-radius:16px;padding:1.4rem 1rem;
+  text-align:center;transition:all 0.3s;position:relative;overflow:hidden;}
+.avatar-card:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 8px 30px rgba(201,168,76,0.1);}
+.avatar-card.free-card{border-color:rgba(45,220,122,0.3);}
+.avatar-card.free-card:hover{border-color:rgba(45,220,122,0.6);}
+.card-badge{position:absolute;top:8px;right:8px;border-radius:50px;
+  font-size:0.58rem;padding:2px 8px;letter-spacing:0.05em;font-weight:700;}
+.badge-free{background:rgba(45,220,122,0.12);border:1px solid rgba(45,220,122,0.4);color:var(--green);}
+.badge-pro{background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);color:var(--gold);}
+.avatar-card img{width:68px;height:68px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--border2);margin-bottom:0.75rem;}
+.avatar-card.free-card img{border-color:rgba(45,220,122,0.4);}
+.av-online{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 5px var(--green);margin-right:5px;}
+.avatar-name{font-size:0.88rem;font-weight:500;color:var(--text);margin-bottom:0.2rem;}
+.avatar-role{font-size:0.7rem;color:var(--muted);}
+
+/* ═══ REVIEWS ═══ */
+.reviews-section{padding:4rem 2rem;position:relative;z-index:1;}
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.2rem;max-width:1100px;margin:2rem auto 0;}
+.review-card{background:linear-gradient(135deg,rgba(19,19,31,0.95),rgba(14,14,26,0.95));
+  border:1px solid var(--border);border-radius:16px;padding:1.5rem;
+  transition:all 0.3s;}
+.review-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.review-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem;}
+.review-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border2);}
+.review-name{font-size:0.85rem;font-weight:500;color:var(--text);}
+.review-country{font-size:0.7rem;color:var(--muted);}
+.review-stars{color:var(--gold);font-size:0.75rem;margin-bottom:0.6rem;}
+.review-text{font-size:0.82rem;color:var(--text2);line-height:1.65;font-style:italic;}
+.review-ai{display:inline-block;margin-top:0.8rem;font-size:0.68rem;color:var(--gold);
+  background:rgba(201,168,76,0.08);border:1px solid var(--border);border-radius:50px;padding:2px 10px;}
+
+/* ═══ PRICING ═══ */
+.pricing-section{padding:5rem 2rem;position:relative;z-index:1;}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:1.5rem;max-width:1100px;margin:2rem auto 0;}
+.price-card{background:linear-gradient(135deg,rgba(19,19,31,0.97),rgba(14,14,26,0.97));
+  border:1px solid var(--border);border-radius:20px;padding:2rem;
+  display:flex;flex-direction:column;transition:all 0.3s;position:relative;}
+.price-card.featured{border-color:var(--border2);box-shadow:0 0 40px rgba(201,168,76,0.12);}
+.price-card.featured::before{content:'MOST POPULAR';position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0a12;
+  font-size:0.58rem;font-weight:700;letter-spacing:0.15em;padding:3px 16px;border-radius:0 0 10px 10px;}
+.price-card.ultra{border-color:rgba(168,124,255,0.35);}
+.price-name{font-size:0.68rem;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:0.5rem;}
+.price-amount{font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:300;color:var(--text);line-height:1;}
+.price-amount sup{font-size:1.1rem;vertical-align:super;color:var(--muted);}
+.price-period{font-size:0.73rem;color:var(--muted);margin-bottom:0.4rem;}
+.price-tokens{font-size:0.8rem;color:var(--gold);margin-bottom:1.4rem;font-weight:500;}
+.price-features{list-style:none;flex:1;margin-bottom:1.4rem;}
+.price-features li{font-size:0.79rem;color:var(--text2);padding:0.38rem 0;
+  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;}
+.price-features li::before{content:'✓';color:var(--green);font-size:0.68rem;flex-shrink:0;}
+.price-btn{width:100%;padding:0.68rem;border-radius:50px;font-size:0.8rem;
+  cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;letter-spacing:0.05em;
+  transition:all 0.25s;border:none;text-decoration:none;display:block;text-align:center;}
+.price-btn.free-btn{background:rgba(255,255,255,0.05);color:var(--text2);border:1px solid var(--border);}
+.price-btn.free-btn:hover{border-color:var(--border2);color:var(--text);}
+.price-btn.gold-btn{background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;
+  box-shadow:0 4px 20px rgba(201,168,76,0.3);}
+.price-btn.gold-btn:hover{box-shadow:0 4px 30px rgba(201,168,76,0.5);transform:translateY(-1px);}
+.price-btn.ultra-btn{background:linear-gradient(135deg,rgba(168,124,255,0.9),rgba(168,124,255,0.6));color:#fff;
+  box-shadow:0 4px 20px rgba(168,124,255,0.3);}
+.price-btn.ultra-btn:hover{box-shadow:0 4px 30px rgba(168,124,255,0.5);transform:translateY(-1px);}
+
+/* Token scale */
+.token-section{padding:2rem 2rem 4rem;position:relative;z-index:1;max-width:680px;margin:0 auto;text-align:center;}
+.token-box{background:rgba(14,14,26,0.8);border:1px solid var(--border);border-radius:16px;padding:1.8rem;}
+.token-box h3{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;margin-bottom:1.2rem;}
+.token-box h3 em{color:var(--gold);font-style:italic;}
+.token-row{display:flex;justify-content:space-between;align-items:center;
+  padding:0.55rem 0;border-bottom:1px solid var(--border);font-size:0.8rem;color:var(--text2);}
+.token-row:last-child{border-bottom:none;}
+.token-row .save{color:var(--green);font-size:0.7rem;font-weight:600;}
+
+/* Referral */
+.referral-section{padding:4rem 2rem;position:relative;z-index:1;text-align:center;}
+.referral-box{max-width:680px;margin:0 auto;
+  background:linear-gradient(135deg,rgba(168,124,255,0.05),rgba(201,168,76,0.04));
+  border:1px solid var(--border2);border-radius:20px;padding:2.5rem 2rem;}
+.referral-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;margin-bottom:0.4rem;}
+.referral-title em{color:var(--gold);font-style:italic;}
+.referral-desc{color:var(--text2);font-size:0.83rem;margin-bottom:1.8rem;}
+.referral-tiers{display:flex;flex-direction:column;gap:0.8rem;}
+.ref-tier{display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  border-radius:12px;padding:0.9rem 1.3rem;}
+.ref-tier .invite{font-size:0.83rem;color:var(--text2);}
+.ref-tier .invite b{color:var(--text);}
+.ref-tier .reward{font-size:0.8rem;color:var(--gold);font-weight:500;}
+.ref-tier.mega .reward{color:var(--accent);}
+
+/* CTA */
+.cta-section{padding:6rem 2rem;text-align:center;position:relative;z-index:1;
+  background:radial-gradient(ellipse at 50% 50%,rgba(201,168,76,0.05) 0%,transparent 60%);}
+.cta-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:300;margin-bottom:1rem;}
+.cta-title em{color:var(--gold);font-style:italic;}
+.cta-desc{color:var(--text2);margin-bottom:2.5rem;font-size:0.92rem;}
+.cta-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
+
+/* Footer */
+footer{padding:2.5rem 2rem 2rem;border-top:1px solid var(--border);position:relative;z-index:1;text-align:center;}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;letter-spacing:0.2em;margin-bottom:0.5rem;}
+.footer-logo b{color:var(--gold);}
+.footer-logo span{color:var(--accent);}
+.footer-links{display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:0.8rem;}
+.footer-links a{font-size:0.7rem;color:var(--muted);text-decoration:none;transition:color 0.2s;}
+.footer-links a:hover{color:var(--gold);}
+.footer-copy{font-size:0.72rem;color:var(--muted);}
+
+/* Divider */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);
+  max-width:800px;margin:0 auto;position:relative;z-index:1;}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(28px);transition:all 0.7s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+@media(max-width:768px){
+  nav{padding:0.7rem 1rem;}
+  .hero-avatar-wrap{width:160px;height:160px;}
+  .hero-avatar-wrap img{width:160px;height:160px;}
+  .aura1{width:180px;height:180px;}
+  .aura2{width:210px;height:210px;}
+  .aura3{width:245px;height:245px;}
+  .aura4{width:280px;height:280px;}
+  .hero-stats{gap:1.5rem;}
+  .pricing-grid{grid-template-columns:1fr;}
+  .lang-group{display:none;}
+  .live-badge{display:none;}
+  .demo-frame iframe{height:240px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <img src="avatar-main.png" alt="Marginova.AI">
+    <div class="nav-logo-text"><b>MARGIN</b>OVA<span>.AI</span></div>
+  </div>
+  <div class="nav-right">
+    <div class="live-badge"><div class="live-dot"></div> Live 24/7</div>
+    <div class="lang-group">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('mk')">МК</button>
+      <button class="lang-btn" onclick="setLang('sr')">SR</button>
+      <button class="lang-btn" onclick="setLang('sq')">SQ</button>
+    </div>
+    <a href="index.html" class="nav-cta">Get Started Free →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-avatar-wrap">
+    <div class="aura aura4"></div>
+    <div class="aura aura3"></div>
+    <div class="aura aura2"></div>
+    <div class="aura aura1"></div>
+    <img src="avatar-main.png" alt="Marginova AI">
+  </div>
+
+  <div class="hero-name"><b>MARGIN</b>OVA<span>.AI</span></div>
+  <div class="hero-power">✦ The Power of AI Business ✦</div>
+
+  <h1 class="hero-title">Always here.<br><em>Always ready.</em></h1>
+  <p class="hero-subtitle">Not one AI. 18 specialists.</p>
+
+  <div class="hero-actions">
+    <a href="index.html" class="btn-primary">Start for Free →</a>
+    <a href="demo.html" target="_blank" class="btn-secondary">▶ Watch Demo</a>
+    <a href="app.apk" class="btn-android" download>🤖 Android App</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">18</div><div class="stat-label">AI Specialists</div></div>
+    <div class="stat"><div class="stat-num">8</div><div class="stat-label">Languages</div></div>
+    <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Available</div></div>
+    <div class="stat"><div class="stat-num">Free</div><div class="stat-label">To Start</div></div>
+  </div>
+</section>
+
+<!-- DEMO — autoplay inline -->
+<section class="demo-section">
+  <div class="section-label">See it in action</div>
+  <h2 class="section-title">Not one AI. <em>18 specialists.</em></h2>
+  <p class="section-desc">Each assistant has a unique personality and expertise. From Sophie's Daily Word Challenge to Eva's EU funds expertise, Creative AI's copywriting to Business AI's strategic analysis.</p>
+  <div class="demo-frame reveal">
+    <iframe src="demo.html" scrolling="no" allowfullscreen></iframe>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- AVATARS -->
+<section class="avatars-section" id="assistants">
+  <div style="text-align:center;">
+    <div class="section-label">Meet the team</div>
+    <h2 class="section-title">Your <em>18 Specialists.</em></h2>
+    <p style="color:var(--text2);font-size:0.85rem;margin-bottom:0.3rem;">4 assistants free forever. Unlock all 18 with a plan.</p>
+  </div>
+  <div class="avatars-grid">
+    <div class="avatar-card free-card reveal"><span class="card-badge badge-free">FREE</span><img src="avatar-main.png" alt="Marginova"><div class="avatar-name"><span class="av-online"></span>Marginova</div><div class="avatar-role">Main AI Assistant</div></div>
+    <div class="avatar-card free-card reveal"><span class="card-badge badge-free">FREE</span><img src="avatar-aimentor-new.png" alt="AI Mentor" style="filter:brightness(1.2);"><div class="avatar-name"><span class="av-online"></span>AI Mentor</div><div class="avatar-role">AI Learning 🎓</div></div>
+    <div class="avatar-card free-card reveal"><span class="card-badge badge-free">FREE</span><img src="avatar-ana.png" alt="Ana"><div class="avatar-name"><span class="av-online"></span>Ana</div><div class="avatar-role">Wellness Coach 🌿</div></div>
+    <div class="avatar-card free-card reveal"><span class="card-badge badge-free">FREE</span><img src="avatar-quizai.png" alt="Quiz AI"><div class="avatar-name"><span class="av-online"></span>Quiz AI</div><div class="avatar-role">Daily Brain Quiz 🧠</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-sophie-new.png" alt="Sophie" style="object-position:center 30%;"><div class="avatar-name"><span class="av-online"></span>Sophie</div><div class="avatar-role">English Teacher 🇬🇧</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-leo.png" alt="Leo"><div class="avatar-name"><span class="av-online"></span>Leo</div><div class="avatar-role">Essay & Writing ✍️</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-sara.png" alt="Sara"><div class="avatar-name"><span class="av-online"></span>Sara</div><div class="avatar-role">Learning Support 🌸</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-luna.png" alt="Luna"><div class="avatar-name"><span class="av-online"></span>Luna</div><div class="avatar-role">Dream Interpreter 🌙</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-chef.png" alt="Marco Chef" style="object-position:center 15%;"><div class="avatar-name"><span class="av-online"></span>Marco Chef</div><div class="avatar-role">AI Chef 👨‍🍳</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-anastasia.png" alt="Anastasia"><div class="avatar-name"><span class="av-online"></span>Anastasia</div><div class="avatar-role">Daily Planner 📅</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-viktor.png" alt="Viktor"><div class="avatar-name"><span class="av-online"></span>Viktor</div><div class="avatar-role">Life & Fitness 💪</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-monica.png" alt="Monica"><div class="avatar-name"><span class="av-online"></span>Monica</div><div class="avatar-role">Life Coach 🌟</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-devai.png" alt="Dev AI"><div class="avatar-name"><span class="av-online"></span>Dev AI</div><div class="avatar-role">Developer Assistant 💻</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-dropai.png" alt="Drop AI"><div class="avatar-name"><span class="av-online"></span>Drop AI</div><div class="avatar-role">Dropshipping 🛒</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-eva.png" alt="Eva"><div class="avatar-name"><span class="av-online"></span>Eva</div><div class="avatar-role">EU Funds Expert 🇪🇺</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-travel.png" alt="Travel AI"><div class="avatar-name"><span class="av-online"></span>Travel AI</div><div class="avatar-role">Travel Planner ✈️</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-creativeai.png" alt="Creative AI"><div class="avatar-name"><span class="av-online"></span>Creative AI</div><div class="avatar-role">Copywriter 🎨</div></div>
+    <div class="avatar-card reveal"><span class="card-badge badge-pro">PRO</span><img src="avatar-justinian.png" alt="Justinian"><div class="avatar-name"><span class="av-online"></span>Justinian</div><div class="avatar-role">Legal Advisor ⚖️</div></div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="reviews-section">
+  <div style="text-align:center;">
+    <div class="section-label">Real results</div>
+    <h2 class="section-title">What our <em>users say.</em></h2>
+  </div>
+  <div class="reviews-grid">
+    <div class="review-card reveal">
+      <div class="review-header">
+        <img src="avatar-eva.png" alt="Stefan" class="review-avatar">
+        <div><div class="review-name">Stefan M.</div><div class="review-country">🇲🇰 Skopje</div></div>
+      </div>
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"I asked Business AI to write a complete business plan for my new café. In 20 minutes I had a full document with financial projections, SWOT analysis and a 90-day action plan. The bank approved my loan."</p>
+      <span class="review-ai">Business AI 💼</span>
+    </div>
+    <div class="review-card reveal">
+      <div class="review-header">
+        <img src="avatar-ana.png" alt="Marija" class="review-avatar">
+        <div><div class="review-name">Marija K.</div><div class="review-country">🇷🇸 Beograd</div></div>
+      </div>
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"Eva found me 3 EU grants for my NGO in under 5 minutes. Specific deadlines, amounts and application links. I applied for €35,000 and got approved. This tool is unreal."</p>
+      <span class="review-ai">Eva — EU Funds 🇪🇺</span>
+    </div>
+    <div class="review-card reveal">
+      <div class="review-header">
+        <img src="avatar-dropai.png" alt="Nikola" class="review-avatar">
+        <div><div class="review-name">Nikola T.</div><div class="review-country">🇧🇦 Sarajevo</div></div>
+      </div>
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"Drop AI gave me the Top 10 trending products for Q1. I launched a Shopify store in one week and made my first $2,000 in 3 weeks. The AI knew exactly what the market needed."</p>
+      <span class="review-ai">Drop AI 🛒</span>
+    </div>
+    <div class="review-card reveal">
+      <div class="review-header">
+        <img src="avatar-justinian.png" alt="Ana" class="review-avatar">
+        <div><div class="review-name">Ana P.</div><div class="review-country">🇭🇷 Zagreb</div></div>
+      </div>
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"Justinian reviewed my employment contract and found 3 illegal clauses. Saved me from a terrible deal. He explained everything in plain language — like having a lawyer friend on call 24/7."</p>
+      <span class="review-ai">Justinian ⚖️</span>
+    </div>
+    <div class="review-card reveal">
+      <div class="review-header">
+        <img src="avatar-creativeai.png" alt="Darko" class="review-avatar">
+        <div><div class="review-name">Darko V.</div><div class="review-country">🇧🇬 Sofia</div></div>
+      </div>
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"Creative AI wrote my entire Facebook ad campaign — copy, hooks, CTAs and audience targeting strategy. CTR went from 0.8% to 4.2%. My ad spend finally became profitable."</p>
+      <span class="review-ai">Creative AI 🎨</span>
+    </div>
+    <div class="review-card reveal">
+      <div class="review-header">
+        <img src="avatar-travel.png" alt="Emina" class="review-avatar">
+        <div><div class="review-name">Emina H.</div><div class="review-country">🇦🇱 Tirana</div></div>
+      </div>
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"Travel AI planned my entire Istanbul trip — flights, hotels, restaurants and local tips — for under €150 total. It found a last-minute deal I never would have found myself."</p>
+      <span class="review-ai">Travel AI ✈️</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div style="text-align:center;">
+    <div class="section-label">Plans & Pricing</div>
+    <h2 class="section-title">Start free. <em>Grow when ready.</em></h2>
+    <p style="color:var(--text2);font-size:0.83rem;">No hidden fees. Cancel anytime.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card reveal">
+      <div class="price-name">Free</div>
+      <div class="price-amount">0<sup>$</sup></div>
+      <div class="price-period">forever</div>
+      <div class="price-tokens">🪙 200 tokens to start</div>
+      <ul class="price-features">
+        <li>Marginova — Main Assistant</li>
+        <li>AI Mentor · Ana · Quiz AI</li>
+        <li>8 languages · XP system</li>
+        <li>Voice conversations</li>
+        <li>Daily Brain Quiz 🧠</li>
+      </ul>
+      <a href="index.html" class="price-btn free-btn">Get Started Free</a>
+    </div>
+    <div class="price-card featured reveal">
+      <div class="price-name">Pro</div>
+      <div class="price-amount">19<sup>$</sup></div>
+      <div class="price-period">.99 / month</div>
+      <div class="price-tokens">🪙 Unlimited messages</div>
+      <ul class="price-features">
+        <li>All 18 specialists</li>
+        <li>Eva — EU Funds 🇪🇺</li>
+        <li>Justinian — Legal ⚖️</li>
+        <li>Drop AI · Creative AI</li>
+        <li>Image Analysis 📷</li>
+        <li>Priority responses</li>
+      </ul>
+      <a href="index.html" class="price-btn gold-btn">Start Pro →</a>
+    </div>
+    <div class="price-card reveal">
+      <div class="price-name">Premium</div>
+      <div class="price-amount">49<sup>$</sup></div>
+      <div class="price-period">.99 / month</div>
+      <div class="price-tokens">🪙 Unlimited + Priority</div>
+      <ul class="price-features">
+        <li>Everything in Pro</li>
+        <li>Fastest response times</li>
+        <li>Travel AI — Last Minute ✈️</li>
+        <li>Business AI — Strategy 📊</li>
+        <li>Advanced image analysis</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="index.html" class="price-btn gold-btn">Start Premium →</a>
+    </div>
+    <div class="price-card ultra reveal">
+      <div class="price-name">Ultra</div>
+      <div class="price-amount">149<sup>$</sup></div>
+      <div class="price-period">.99 / month · up to 5 accounts</div>
+      <div class="price-tokens">🪙 Unlimited · Family & Business</div>
+      <ul class="price-features">
+        <li>Everything in Premium</li>
+        <li>Up to 5 linked accounts</li>
+        <li>Family or team plan</li>
+        <li>Custom AI settings</li>
+        <li>Dedicated support</li>
+        <li>For companies & NGOs</li>
+      </ul>
+      <a href="index.html" class="price-btn ultra-btn">Start Ultra →</a>
+    </div>
+  </div>
+</section>
+
+<!-- TOKEN SCALE -->
+<section class="token-section">
+  <div class="token-box reveal">
+    <h3>Token packages — <em>save up to 30%</em></h3>
+    <div class="token-row"><span>🪙 500 tokens</span><span>$4.99</span><span class="save">—</span></div>
+    <div class="token-row"><span>🪙 1,500 tokens</span><span>$12.99</span><span class="save">Save 13%</span></div>
+    <div class="token-row"><span>🪙 4,000 tokens</span><span>$29.99</span><span class="save">Save 20%</span></div>
+    <div class="token-row"><span>🪙 10,000 tokens</span><span>$59.99</span><span class="save">Save 30% 🔥</span></div>
+  </div>
+</section>
+
+<!-- REFERRAL -->
+<section class="referral-section">
+  <div class="referral-box reveal">
+    <div class="referral-title">Invite friends. <em>Earn rewards.</em></div>
+    <p class="referral-desc">Share your referral link and earn premium plans — completely free.</p>
+    <div class="referral-tiers">
+      <div class="ref-tier">
+        <span class="invite">Invite <b>100 friends</b></span>
+        <span class="reward">🎁 1 month Pro — Free</span>
+      </div>
+      <div class="ref-tier">
+        <span class="invite">Invite <b>300 friends</b></span>
+        <span class="reward">🎁 1 month Premium — Free</span>
+      </div>
+      <div class="ref-tier mega">
+        <span class="invite">Invite <b>900 friends</b></span>
+        <span class="reward">👑 1 full year Ultra — Free</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 class="cta-title">Ready to meet your <em>AI team?</em></h2>
+  <p class="cta-desc">Join thousands who discovered the smarter way to work, learn and grow.</p>
+  <div class="cta-actions">
+    <a href="index.html" class="btn-primary">Start for Free — No Card Needed →</a>
+    <a href="app.apk" class="btn-android" download>🤖 Download Android App</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo"><b>MARGIN</b>OVA<span>.AI</span></div>
+  <div class="footer-links">
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <a href="terms-of-service.html">Terms of Service</a>
+    <a href="refund-policy.html">Refund Policy</a>
+    <a href="mailto:info@marginova.tech">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 Marginova.AI · The Power of AI Business · EN · МК · SR</div>
+</footer>
+
+<script>
+// Reveal on scroll
+const reveals = document.querySelectorAll('.reveal');
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold: 0.08});
+reveals.forEach(r => obs.observe(r));
+
+// Lang switcher
+function setLang(l){
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
