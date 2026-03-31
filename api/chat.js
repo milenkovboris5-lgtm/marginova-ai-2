@@ -76,9 +76,8 @@ module.exports = async function handler(req, res) {
     const hasImage = !!body.image;
     const systemPrompt = body.system || '';
 
-    // Verbose avatars get more tokens
-    const verboseAvatars = ['eva', 'dropshipper', 'businessai', 'creativeai', 'travelai', 'developer'];
-    const maxTokens = verboseAvatars.includes(body.avatar) ? 2000 : 1200;
+    // Site avatari dobivaat 3000 tokens - dovolno za kompletni planovi i odgovori
+    const maxTokens = 3000;
 
     // Build Gemini contents array
     const contents = [];
