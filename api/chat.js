@@ -143,7 +143,7 @@ function buildRouterResponse(category, userText, isAdvanced) {
 // ═══════════════════════════════════════════
 
 async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
-  const maxTokens = 3000;
+  const maxTokens = 1000;
   const model = 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
