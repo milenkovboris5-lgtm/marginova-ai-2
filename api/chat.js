@@ -1,4 +1,3 @@
-
 // ═══════════════════════════════════════════
 // MARGINOVA ROUTER — chat.js
 // ═══════════════════════════════════════════
@@ -240,23 +239,46 @@ module.exports = async function handler(req, res) {
     }));
 
     // ═══ ROUTER — only for Marginova ═══
+    // Only routes when user has a CLEAR, SPECIFIC specialist need
+    // NOT for general conversation, greetings, or simple questions
     if (ROUTER_AVATARS.includes(avatar) && messages.length > 0) {
       const lastUserMsg = messages.filter(m => m.role === 'user').pop();
       const userText = lastUserMsg?.content || '';
+      const wordCount = userText.trim().split(/\s+/).length;
 
-      if (userText.length > 10) { // Skip very short messages
-        const category = detectCategory(userText);
+      // Minimum conditions to even consider routing:
+      // 1. Message must be at least 8 words (not casual chat)
+      // 2. Must contain advanced intent keywords (strategy, plan, analysis...)
+      // 3. Must have a clear category match (2+ keyword hits)
+      if (wordCount >= 8) {
         const isAdvanced = detectAdvancedIntent(userText);
+        
+        if (isAdvanced) {
+          const lower = userText.toLowerCase();
+          let businessScore = 0, educationScore = 0, healthScore = 0;
+          BUSINESS_KEYWORDS.forEach(k => { if (lower.includes(k)) businessScore++; });
+          EDUCATION_KEYWORDS.forEach(k => { if (lower.includes(k)) educationScore++; });
+          HEALTH_KEYWORDS.forEach(k => { if (lower.includes(k)) healthScore++; });
 
-        // Only route if category is detected AND it's NOT general conversation
-        if (category && (isAdvanced || userText.split(' ').length > 5)) {
-          const routerResponse = buildRouterResponse(category, userText, isAdvanced);
-          return res.status(200).json({
-            content: [{ type: 'text', text: routerResponse }],
-            routed: true,
-            category: category,
-            remaining_messages: limit.remaining - 1
-          });
+          const max = Math.max(businessScore, educationScore, healthScore);
+
+          // Only route if there are 2+ keyword hits — strong signal
+          if (max >= 2) {
+            let category = null;
+            if (businessScore === max) category = 'Business';
+            else if (educationScore === max) category = 'Education';
+            else if (healthScore === max) category = 'Health';
+
+            if (category) {
+              const routerResponse = buildRouterResponse(category, userText, true);
+              return res.status(200).json({
+                content: [{ type: 'text', text: routerResponse }],
+                routed: true,
+                category: category,
+                remaining_messages: limit.remaining - 1
+              });
+            }
+          }
         }
       }
     }
