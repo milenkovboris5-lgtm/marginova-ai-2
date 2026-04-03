@@ -284,11 +284,184 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     <div class="live-badge"><div class="live-dot"></div><span id="t-live-nav"></span></div>
     <a href="index.html" class="nav-cta" id="t-navCta"></a>
   </div>
-</nav><!-- ═══════════════════════════════════════════════════════
-     МАНДИНО СВИТОЦИ — лева страна на landing.html
-     Вметни го овој блок веднаш по затворачкиот </nav> таг
-     и пред <section class="hero">
-     ═══════════════════════════════════════════════════════ -->
+</nav><<!-- ═══════════════════════════════════════════
+     МАНДИНО СВИТОЦИ — вметни по </nav>
+     ═══════════════════════════════════════════ -->
+<style>
+.ms-wrap{position:fixed;top:68px;left:0;width:210px;height:calc(100vh - 68px);overflow-y:auto;z-index:49;padding:1.2rem 0.8rem 2rem 1.1rem;scrollbar-width:none;}
+.ms-wrap::-webkit-scrollbar{display:none;}
+.ms-title{font-family:'Cormorant Garamond',serif;font-size:0.82rem;font-weight:300;color:#C9A84C;line-height:1.3;margin-bottom:2px;letter-spacing:0.03em;}
+.ms-sub{font-family:'Cormorant Garamond',serif;font-size:0.58rem;font-style:italic;color:#5a4520;letter-spacing:0.05em;margin-bottom:8px;}
+.ms-orn{display:flex;align-items:center;gap:5px;margin-bottom:9px;}
+.ms-orn-line{height:0.5px;width:35px;background:linear-gradient(90deg,rgba(201,168,76,0.5),transparent);}
+.ms-orn-dot{width:3px;height:3px;background:#C9A84C;transform:rotate(45deg);flex-shrink:0;}
+.ms-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;}
+.ms-pap{flex-shrink:0;margin-top:1px;}
+.ms-right{flex:1;}
+.ms-label{font-family:'Cormorant Garamond',serif;font-size:0.48rem;letter-spacing:0.2em;color:#4a3a18;text-transform:uppercase;margin-bottom:0;}
+.ms-msg{font-family:'Cormorant Garamond',serif;font-size:0.65rem;color:rgba(184,148,62,0.7);font-style:italic;line-height:1.4;}
+.ms-msg em{color:#C9A84C;font-style:normal;}
+@media(max-width:960px){.ms-wrap{display:none;}}
+</style>
+
+<div class="ms-wrap" id="ms-wrap">
+  <div class="ms-title" id="ms-title">Десетте свитоци<br>на мудроста</div>
+  <div class="ms-sub" id="ms-sub">Зборовите кои го менуваат животот</div>
+  <div class="ms-orn"><div class="ms-orn-line"></div><div class="ms-orn-dot"></div></div>
+  <div id="ms-list"></div>
+</div>
+
+<script>
+var MS_LANGS={
+  mk:{title:'Десетте свитоци<br>на мудроста',sub:'Зборовите кои го менуваат животот',
+    s:[
+      {l:'Свиток I',t:'Ќе ги формирам <em>добрите навики</em> и ќе бидам нивен роб.'},
+      {l:'Свиток II',t:'Ќе го поздравам овој ден со <em>љубов</em> во моето срце.'},
+      {l:'Свиток III',t:'Ќе истраам <em>додека не успеам.</em>'},
+      {l:'Свиток IV',t:'Јас сум <em>најголемото чудо</em> на природата.'},
+      {l:'Свиток V',t:'Ќе живеам како <em>овој да е мојот последен ден.</em>'},
+      {l:'Свиток VI',t:'Ќе ги контролирам <em>моите емоции.</em>'},
+      {l:'Свиток VII',t:'Ќе се <em>смеам на светот.</em>'},
+      {l:'Свиток VIII',t:'Ќе го умножам мојот <em>талент стократно.</em>'},
+      {l:'Свиток IX',t:'Ќе дејствувам <em>сега.</em>'},
+      {l:'Свиток X',t:'Ќе се <em>молам за водство.</em>'}
+    ]},
+  sr:{title:'Deset svitaka<br>mudrosti',sub:'Reči koje menjaju život',
+    s:[
+      {l:'Svitak I',t:'Formivaću <em>dobre navike</em> i biću njihov rob.'},
+      {l:'Svitak II',t:'Pozdraviću ovaj dan sa <em>ljubavlju</em> u srcu.'},
+      {l:'Svitak III',t:'Istrajaću <em>dok ne uspem.</em>'},
+      {l:'Svitak IV',t:'Ja sam <em>najveće čudo</em> prirode.'},
+      {l:'Svitak V',t:'Živeću kao da je <em>ovo moj poslednji dan.</em>'},
+      {l:'Svitak VI',t:'Kontrolisaću <em>svoje emocije.</em>'},
+      {l:'Svitak VII',t:'Smejaću se <em>svetu.</em>'},
+      {l:'Svitak VIII',t:'Umnožiću svoj <em>talenat stokratno.</em>'},
+      {l:'Svitak IX',t:'Delovaću <em>sada.</em>'},
+      {l:'Svitak X',t:'Moliću se za <em>vodstvo.</em>'}
+    ]},
+  hr:{title:'Deset svitaka<br>mudrosti',sub:'Riječi koje mijenjaju život',
+    s:[
+      {l:'Svitak I',t:'Izgradit ću <em>dobre navike</em> i postati njihov rob.'},
+      {l:'Svitak II',t:'Pozdravit ću ovaj dan s <em>ljubavlju</em> u srcu.'},
+      {l:'Svitak III',t:'Istrajat ću <em>dok ne uspijem.</em>'},
+      {l:'Svitak IV',t:'Ja sam <em>najveće čudo</em> prirode.'},
+      {l:'Svitak V',t:'Živjet ću kao da je <em>ovo moj posljednji dan.</em>'},
+      {l:'Svitak VI',t:'Vladat ću <em>svojim emocijama.</em>'},
+      {l:'Svitak VII',t:'Smijat ću se <em>svijetu.</em>'},
+      {l:'Svitak VIII',t:'Umnožit ću svoj <em>talent stokratno.</em>'},
+      {l:'Svitak IX',t:'Djelovat ću <em>sada.</em>'},
+      {l:'Svitak X',t:'Molit ću se za <em>vodstvo.</em>'}
+    ]},
+  bs:{title:'Deset svitaka<br>mudrosti',sub:'Riječi koje mijenjaju život',
+    s:[
+      {l:'Svitak I',t:'Formirat ću <em>dobre navike</em> i biti njihov rob.'},
+      {l:'Svitak II',t:'Pozdravit ću ovaj dan s <em>ljubavlju</em> u srcu.'},
+      {l:'Svitak III',t:'Istrajat ću <em>dok ne uspijem.</em>'},
+      {l:'Svitak IV',t:'Ja sam <em>najveće čudo</em> prirode.'},
+      {l:'Svitak V',t:'Živjet ću kao da je <em>ovo moj posljednji dan.</em>'},
+      {l:'Svitak VI',t:'Kontrolisat ću <em>svoje emocije.</em>'},
+      {l:'Svitak VII',t:'Smijat ću se <em>svijetu.</em>'},
+      {l:'Svitak VIII',t:'Umnožit ću svoj <em>talenat stokratno.</em>'},
+      {l:'Svitak IX',t:'Djelovat ću <em>sada.</em>'},
+      {l:'Svitak X',t:'Molit ću se za <em>vodstvo.</em>'}
+    ]},
+  en:{title:'The Ten Scrolls<br>of Wisdom',sub:'Words that change your life',
+    s:[
+      {l:'Scroll I',t:'I will form <em>good habits</em> and become their slave.'},
+      {l:'Scroll II',t:'I will greet this day with <em>love</em> in my heart.'},
+      {l:'Scroll III',t:'I will persist <em>until I succeed.</em>'},
+      {l:'Scroll IV',t:'I am <em>nature\'s greatest miracle.</em>'},
+      {l:'Scroll V',t:'I will live <em>this day as if it is my last.</em>'},
+      {l:'Scroll VI',t:'I will be master of <em>my emotions.</em>'},
+      {l:'Scroll VII',t:'I will <em>laugh at the world.</em>'},
+      {l:'Scroll VIII',t:'I will multiply my value <em>a hundredfold.</em>'},
+      {l:'Scroll IX',t:'I will act <em>now.</em>'},
+      {l:'Scroll X',t:'I will pray for <em>guidance.</em>'}
+    ]},
+  de:{title:'Die zehn Schriftrollen<br>der Weisheit',sub:'Worte, die das Leben verändern',
+    s:[
+      {l:'Schriftrolle I',t:'Ich werde <em>gute Gewohnheiten</em> formen und ihr Sklave sein.'},
+      {l:'Schriftrolle II',t:'Ich werde diesen Tag mit <em>Liebe</em> im Herzen begrüßen.'},
+      {l:'Schriftrolle III',t:'Ich werde durchhalten, <em>bis ich Erfolg habe.</em>'},
+      {l:'Schriftrolle IV',t:'Ich bin <em>das größte Wunder</em> der Natur.'},
+      {l:'Schriftrolle V',t:'Ich werde leben als wäre <em>dies mein letzter Tag.</em>'},
+      {l:'Schriftrolle VI',t:'Ich werde Meister <em>meiner Emotionen</em> sein.'},
+      {l:'Schriftrolle VII',t:'Ich werde über <em>die Welt lachen.</em>'},
+      {l:'Schriftrolle VIII',t:'Ich werde meinen Wert <em>hundertfach steigern.</em>'},
+      {l:'Schriftrolle IX',t:'Ich werde <em>jetzt handeln.</em>'},
+      {l:'Schriftrolle X',t:'Ich werde um <em>Führung beten.</em>'}
+    ]},
+  bg:{title:'Десетте свитъка<br>на мъдростта',sub:'Думите, които променят живота',
+    s:[
+      {l:'Свитък I',t:'Ще формирам <em>добри навици</em> и ще бъда техен роб.'},
+      {l:'Свитък II',t:'Ще посрещна този ден с <em>любов</em> в сърцето си.'},
+      {l:'Свитък III',t:'Ще продължавам <em>докато не успея.</em>'},
+      {l:'Свитък IV',t:'Аз съм <em>най-голямото чудо</em> на природата.'},
+      {l:'Свитък V',t:'Ще живея като <em>този е моят последен ден.</em>'},
+      {l:'Свитък VI',t:'Ще контролирам <em>своите емоции.</em>'},
+      {l:'Свитък VII',t:'Ще се <em>смея на света.</em>'},
+      {l:'Свитък VIII',t:'Ще умножа своя <em>талант стократно.</em>'},
+      {l:'Свитък IX',t:'Ще действам <em>сега.</em>'},
+      {l:'Свитък X',t:'Ще се моля за <em>напътствие.</em>'}
+    ]},
+  sq:{title:'Dhjetë rrotullat<br>e urtësisë',sub:'Fjalët që ndryshojnë jetën',
+    s:[
+      {l:'Rrotull I',t:'Do të formoj <em>zakone të mira</em> dhe do të jem skllavi i tyre.'},
+      {l:'Rrotull II',t:'Do ta përshëndes këtë ditë me <em>dashuri</em> në zemër.'},
+      {l:'Rrotull III',t:'Do të vazhdoj <em>derisa të kem sukses.</em>'},
+      {l:'Rrotull IV',t:'Unë jam <em>mrekullia më e madhe</em> e natyrës.'},
+      {l:'Rrotull V',t:'Do të jetoj si të ishte <em>ky dita ime e fundit.</em>'},
+      {l:'Rrotull VI',t:'Do të kontrolloj <em>emocionet e mia.</em>'},
+      {l:'Rrotull VII',t:'Do të <em>qesh me botën.</em>'},
+      {l:'Rrotull VIII',t:'Do ta shumëzoj vlerën time <em>njëqindfish.</em>'},
+      {l:'Rrotull IX',t:'Do të veproj <em>tani.</em>'},
+      {l:'Rrotull X',t:'Do të lutem për <em>udhëzim.</em>'}
+    ]}
+};
+
+function msPap(){
+  return '<svg width="20" height="26" viewBox="0 0 20 26" xmlns="http://www.w3.org/2000/svg">'
+    +'<rect x="1" y="4" width="18" height="18" rx="1" fill="#2a1f08" stroke="#C9A84C" stroke-width="0.4" opacity="0.8"/>'
+    +'<line x1="4" y1="8" x2="16" y2="8" stroke="#C9A84C" stroke-width="0.25" opacity="0.3"/>'
+    +'<line x1="4" y1="12" x2="16" y2="12" stroke="#C9A84C" stroke-width="0.25" opacity="0.2"/>'
+    +'<line x1="4" y1="16" x2="16" y2="16" stroke="#C9A84C" stroke-width="0.25" opacity="0.2"/>'
+    +'<line x1="4" y1="20" x2="16" y2="20" stroke="#C9A84C" stroke-width="0.25" opacity="0.3"/>'
+    +'<rect x="1" y="2" width="18" height="4" rx="2" fill="#3a2a0a" stroke="#C9A84C" stroke-width="0.4" opacity="0.85"/>'
+    +'<rect x="1" y="20" width="18" height="4" rx="2" fill="#3a2a0a" stroke="#C9A84C" stroke-width="0.4" opacity="0.85"/>'
+    +'<ellipse cx="10" cy="4" rx="3" ry="0.9" fill="#C9A84C" opacity="0.3"/>'
+    +'<ellipse cx="10" cy="22" rx="3" ry="0.9" fill="#C9A84C" opacity="0.3"/>'
+    +'</svg>';
+}
+
+function msRender(lang){
+  var d=MS_LANGS[lang]||MS_LANGS['mk'];
+  document.getElementById('ms-title').innerHTML=d.title;
+  document.getElementById('ms-sub').textContent=d.sub;
+  var list=document.getElementById('ms-list');
+  list.innerHTML='';
+  d.s.forEach(function(s){
+    var row=document.createElement('div');
+    row.className='ms-row';
+    row.innerHTML='<div class="ms-pap">'+msPap()+'</div>'
+      +'<div class="ms-right">'
+      +'<div class="ms-label">'+s.l+'</div>'
+      +'<div class="ms-msg">'+s.t+'</div>'
+      +'</div>';
+    list.appendChild(row);
+  });
+}
+
+function msHook(){
+  if(typeof setLandingLang==='function'){
+    var _o=setLandingLang;
+    setLandingLang=function(l){_o(l);msRender(l);};
+    msRender(localStorage.getItem('mlang')||'mk');
+  } else {
+    setTimeout(msHook,80);
+  }
+}
+msHook();
+</script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap');
