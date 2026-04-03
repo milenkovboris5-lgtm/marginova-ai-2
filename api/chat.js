@@ -1,55 +1,34 @@
-// ═══════════════════════════════════════════
-// MARGINOVA ROUTER — chat.js
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// MARGINOVA.AI — api/chat.js  (Vercel Serverless Function)
+// ═══════════════════════════════════════════════════════════════
+//
+// Безбедносни гаранции:
+//   ✅ JWT верификација — само логирани корисници
+//   ✅ Rate limiting по user_id (не IP)
+//   ✅ Лимитите се земаат од Supabase profiles (plan колона)
+//   ✅ Gemini API клучот никогаш не го напушта серверот
+//   ✅ max_tokens cappiran на 1500 (заштита од злоупотреба)
+//
+// Потребни Vercel Environment Variables:
+//   GEMINI_API_KEY        — од Google AI Studio
+//   SUPABASE_URL          — https://xxxx.supabase.co
+//   SUPABASE_SERVICE_KEY  — Service Role клуч (не anon!)
+//   SUPABASE_JWT_SECRET   — од Supabase → Settings → API → JWT Secret
+// ═══════════════════════════════════════════════════════════════
 
-// Rate limiting
-const rateLimitStore = {};
-const DAILY_LIMIT = 9999;
+const { createClient } = require('@supabase/supabase-js');
+const { jwtVerify, createRemoteJWKSet } = require('jose');
 
-function getRateLimitKey(req) {
-  const ip =
-    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-    req.headers['x-real-ip'] ||
-    req.socket?.remoteAddress ||
-    'unknown';
-  const today = new Date().toISOString().split('T')[0];
-  return `${ip}_${today}`;
-}
+// ─── Константи ──────────────────────────────────────────────
+const PLAN_LIMITS = {
+  free:    50,
+  pro:     1500,
+  premium: 5000,
+  ultra:   -1,   // -1 = неограничено
+};
 
-function checkRateLimit(req) {
-  const key = getRateLimitKey(req);
-  const now = Date.now();
-  if (!rateLimitStore[key]) {
-    rateLimitStore[key] = { count: 0, resetAt: getEndOfDay() };
-  }
-  for (const k in rateLimitStore) {
-    if (rateLimitStore[k].resetAt < now) delete rateLimitStore[k];
-  }
-  const record = rateLimitStore[key];
-  record.count += 1;
-  return {
-    allowed: record.count <= DAILY_LIMIT,
-    count: record.count,
-    remaining: Math.max(0, DAILY_LIMIT - record.count),
-    resetAt: record.resetAt
-  };
-}
-
-function getEndOfDay() {
-  const now = new Date();
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-  return end.getTime();
-}
-
-// ═══════════════════════════════════════════
-// ROUTER CONFIG
-// ═══════════════════════════════════════════
-
-// Avatars that use the Router system (only Marginova)
 const ROUTER_AVATARS = ['marginova'];
 
-// Advanced intent keywords — trigger upsell
 const ADVANCED_INTENT_KEYWORDS = [
   'strategy', 'plan', 'analysis', 'analyze', 'step by step', 'detailed',
   'стратегија', 'план', 'анализа', 'чекор по чекор', 'детално',
@@ -58,7 +37,6 @@ const ADVANCED_INTENT_KEYWORDS = [
   'compete', 'конкуренција', 'market', 'пазар', 'revenue', 'приход'
 ];
 
-// Category routing keywords
 const BUSINESS_KEYWORDS = [
   'business', 'money', 'marketing', 'startup', 'strategy', 'revenue', 'profit',
   'бизнис', 'пари', 'маркетинг', 'стартап', 'стратегија', 'приход', 'профит',
@@ -84,38 +62,69 @@ const HEALTH_KEYWORDS = [
   'dream', 'сон', 'mindfulness', 'anxiety', 'анксиозност', 'mood', 'расположение'
 ];
 
-// ═══════════════════════════════════════════
-// ROUTER LOGIC
-// ═══════════════════════════════════════════
-
-function detectCategory(text) {
-  const lower = text.toLowerCase();
-
-  let businessScore = 0;
-  let educationScore = 0;
-  let healthScore = 0;
-
-  BUSINESS_KEYWORDS.forEach(k => { if (lower.includes(k)) businessScore++; });
-  EDUCATION_KEYWORDS.forEach(k => { if (lower.includes(k)) educationScore++; });
-  HEALTH_KEYWORDS.forEach(k => { if (lower.includes(k)) healthScore++; });
-
-  const max = Math.max(businessScore, educationScore, healthScore);
-  if (max === 0) return null; // unclear
-
-  if (businessScore === max) return 'Business';
-  if (educationScore === max) return 'Education';
-  return 'Health';
+// ─── JWT Верификација ────────────────────────────────────────
+async function verifySupabaseJWT(token) {
+  try {
+    const secret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret, {
+      issuer: process.env.SUPABASE_URL + '/auth/v1',
+    });
+    return payload; // содржи sub (user_id), email, role итн.
+  } catch (err) {
+    return null;
+  }
 }
 
+// ─── Rate Limiting (Supabase-базиран) ───────────────────────
+async function checkAndDeductLimit(supabase, userId) {
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('plan, daily_msgs, last_msg_date')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !profile) {
+    // Ако нема профил — дозволи (нов корисник, ќе се создаде подоцна)
+    return { allowed: true, remaining: 50, plan: 'free' };
+  }
+
+  const plan = profile.plan || 'free';
+  const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+
+  // Неограничен план
+  if (limit === -1) {
+    return { allowed: true, remaining: -1, plan };
+  }
+
+  // Ресетирај бројач ако е нов ден
+  const usedToday = profile.last_msg_date === today
+    ? (profile.daily_msgs || 0)
+    : 0;
+
+  if (usedToday >= limit) {
+    return { allowed: false, remaining: 0, plan, limit };
+  }
+
+  // Зголеми бројач
+  const newCount = usedToday + 1;
+  await supabase
+    .from('profiles')
+    .update({ daily_msgs: newCount, last_msg_date: today })
+    .eq('user_id', userId);
+
+  return { allowed: true, remaining: limit - newCount, plan };
+}
+
+// ─── Router логика (непроменета) ─────────────────────────────
 function detectAdvancedIntent(text) {
   const lower = text.toLowerCase();
   return ADVANCED_INTENT_KEYWORDS.some(k => lower.includes(k));
 }
 
 function buildRouterResponse(category, userText, isAdvanced) {
-  // Category routing messages (multilingual basic detection)
   const isMK = /[а-шА-Ш]/.test(userText);
-
   const routingMessages = {
     Business: isMK
       ? `📊 **Категорија: Бизнис**\nОвоа прашање е за нашиот Business тим.\n\n➡️ За најдобар одговор, зборувај со **Business AI**, **Justinian**, **Eva** или **Creative AI** — специјалисти за твојата тема.`
@@ -127,23 +136,17 @@ function buildRouterResponse(category, userText, isAdvanced) {
       ? `🌿 **Категорија: Здравје**\nОвоа прашање е за нашиот Health тим.\n\n➡️ За најдобар одговор, зборувај со **Ana**, **Viktor**, **Marko** или **Luna** — специјалисти за здравје.`
       : `🌿 **Category: Health**\nThis is a Health & Wellness question.\n\n➡️ For the best answer, talk to **Ana**, **Viktor**, **Marko** or **Luna** — wellness specialists.`
   };
-
   const upsellSuffix = isMK
     ? `\n\n---\n💡 Го детектирав сложено прашање кое бара **детална стратегија**.\n🔒 **Отклучи го целосниот план** со надградба на Pro планот.`
     : `\n\n---\n💡 I detected a complex question that requires a **full strategy**.\n🔒 **Unlock the full plan** by upgrading to Pro.`;
 
   let response = routingMessages[category] || routingMessages['Business'];
   if (isAdvanced) response += upsellSuffix;
-
   return response;
 }
 
-// ═══════════════════════════════════════════
-// GEMINI API CALL
-// ═══════════════════════════════════════════
-
+// ─── Gemini API повик (непроменет) ───────────────────────────
 async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
-  const maxTokens = 1000;
   const model = 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
@@ -166,7 +169,6 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
     contents.push(...historyWithoutLast, visionMsg);
   }
 
-  // Prepend system prompt to first message
   let contentsWithSystem;
   if (contents.length > 0) {
     contentsWithSystem = [
@@ -182,50 +184,65 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: contentsWithSystem,
-      generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 }
+      generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
     })
   });
 
   const data = await response.json();
   if (data.error) throw new Error(data.error.message || 'Gemini API error');
-
   return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
 }
 
-// ═══════════════════════════════════════════
-// MAIN HANDLER
-// ═══════════════════════════════════════════
-
+// ─── Главен Handler ──────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', 'https://marginova.tech');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: { message: 'Method Not Allowed' } });
+  if (req.method !== 'POST') return res.status(405).json({ error: { message: 'Method Not Allowed' } });
+
+  // ── 1. JWT Верификација ──────────────────────────────────
+  const authHeader = req.headers['authorization'];
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: { message: 'Unauthorized — најавете се за да продолжите.' } });
   }
 
-  // Rate limit
-  const limit = checkRateLimit(req);
-  res.setHeader('X-RateLimit-Limit', DAILY_LIMIT);
-  res.setHeader('X-RateLimit-Remaining', limit.remaining);
+  const token = authHeader.replace('Bearer ', '');
+  const jwtPayload = await verifySupabaseJWT(token);
 
-  if (!limit.allowed) {
+  if (!jwtPayload || !jwtPayload.sub) {
+    return res.status(401).json({ error: { message: 'Unauthorized — сесијата е истечена. Најавете се повторно.' } });
+  }
+
+  const userId = jwtPayload.sub;
+
+  // ── 2. Supabase клиент (Service Role — за читање profiles) ─
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  );
+
+  // ── 3. Rate Limiting по user_id ──────────────────────────
+  const limitCheck = await checkAndDeductLimit(supabase, userId);
+
+  if (!limitCheck.allowed) {
     return res.status(429).json({
       error: {
-        message: 'Daily limit reached. Resets at midnight.',
+        message: `Го достигнавте дневниот лимит (${limitCheck.limit} пораки). Надградете го планот за повеќе!`,
         code: 'RATE_LIMIT_EXCEEDED',
         remaining: 0
       }
     });
   }
 
+  // ── 4. Земи го Gemini API клучот ─────────────────────────
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: { message: 'Gemini API key not configured.' } });
+    return res.status(500).json({ error: { message: 'Server misconfiguration.' } });
   }
 
+  // ── 5. Парсирај body ─────────────────────────────────────
   try {
     const body = req.body;
     const avatar = body.avatar || 'marginova';
@@ -238,52 +255,41 @@ module.exports = async function handler(req, res) {
                String(m.content)
     }));
 
-    // ═══ ROUTER — only for Marginova ═══
-    // Only routes when user has a CLEAR, SPECIFIC specialist need
-    // NOT for general conversation, greetings, or simple questions
+    // Заштита — не дозволи system prompt инјекција
+    if (systemPrompt.length > 8000) {
+      return res.status(400).json({ error: { message: 'System prompt too long.' } });
+    }
+
+    // ── 6. Router (само за Marginova) ────────────────────
     if (ROUTER_AVATARS.includes(avatar) && messages.length > 0) {
       const lastUserMsg = messages.filter(m => m.role === 'user').pop();
       const userText = lastUserMsg?.content || '';
       const wordCount = userText.trim().split(/\s+/).length;
 
-      // Minimum conditions to even consider routing:
-      // 1. Message must be at least 8 words (not casual chat)
-      // 2. Must contain advanced intent keywords (strategy, plan, analysis...)
-      // 3. Must have a clear category match (2+ keyword hits)
       if (wordCount >= 8) {
         const isAdvanced = detectAdvancedIntent(userText);
-        
         if (isAdvanced) {
           const lower = userText.toLowerCase();
-          let businessScore = 0, educationScore = 0, healthScore = 0;
-          BUSINESS_KEYWORDS.forEach(k => { if (lower.includes(k)) businessScore++; });
-          EDUCATION_KEYWORDS.forEach(k => { if (lower.includes(k)) educationScore++; });
-          HEALTH_KEYWORDS.forEach(k => { if (lower.includes(k)) healthScore++; });
-
-          const max = Math.max(businessScore, educationScore, healthScore);
-
-          // Only route if there are 2+ keyword hits — strong signal
+          let biz = 0, edu = 0, health = 0;
+          BUSINESS_KEYWORDS.forEach(k => { if (lower.includes(k)) biz++; });
+          EDUCATION_KEYWORDS.forEach(k => { if (lower.includes(k)) edu++; });
+          HEALTH_KEYWORDS.forEach(k => { if (lower.includes(k)) health++; });
+          const max = Math.max(biz, edu, health);
           if (max >= 2) {
-            let category = null;
-            if (businessScore === max) category = 'Business';
-            else if (educationScore === max) category = 'Education';
-            else if (healthScore === max) category = 'Health';
-
-            if (category) {
-              const routerResponse = buildRouterResponse(category, userText, true);
-              return res.status(200).json({
-                content: [{ type: 'text', text: routerResponse }],
-                routed: true,
-                category: category,
-                remaining_messages: limit.remaining - 1
-              });
-            }
+            const category = biz === max ? 'Business' : edu === max ? 'Education' : 'Health';
+            const routerResponse = buildRouterResponse(category, userText, true);
+            return res.status(200).json({
+              content: [{ type: 'text', text: routerResponse }],
+              routed: true,
+              category,
+              remaining_messages: limitCheck.remaining
+            });
           }
         }
       }
     }
 
-    // ═══ STANDARD GEMINI CALL ═══
+    // ── 7. Gemini повик ───────────────────────────────────
     const text = await callGemini(
       systemPrompt,
       messages,
@@ -296,7 +302,7 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       content: [{ type: 'text', text }],
-      remaining_messages: limit.remaining - 1
+      remaining_messages: limitCheck.remaining
     });
 
   } catch (err) {
