@@ -284,528 +284,125 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     <div class="live-badge"><div class="live-dot"></div><span id="t-live-nav"></span></div>
     <a href="index.html" class="nav-cta" id="t-navCta"></a>
   </div>
-</nav><<!-- ═══════════════════════════════════════════
-     МАНДИНО СВИТОЦИ — вметни по </nav>
-     ═══════════════════════════════════════════ -->
+</nav>
+<!-- МАНДИНО СВИТОЦИ -->
 <style>
-.ms-wrap{position:fixed;top:68px;left:0;width:210px;height:calc(100vh - 68px);overflow-y:auto;z-index:49;padding:1.2rem 0.8rem 2rem 1.1rem;scrollbar-width:none;}
+.ms-wrap{position:fixed;top:50px;left:0;width:205px;height:calc(100vh - 50px);overflow-y:auto;z-index:49;padding:1.1rem 0.7rem 2rem 1rem;scrollbar-width:none;}
 .ms-wrap::-webkit-scrollbar{display:none;}
-.ms-title{font-family:'Cormorant Garamond',serif;font-size:0.82rem;font-weight:300;color:#C9A84C;line-height:1.3;margin-bottom:2px;letter-spacing:0.03em;}
-.ms-sub{font-family:'Cormorant Garamond',serif;font-size:0.58rem;font-style:italic;color:#5a4520;letter-spacing:0.05em;margin-bottom:8px;}
+.ms-title{font-family:'Cormorant Garamond',serif;font-size:0.78rem;font-weight:300;color:#C9A84C;line-height:1.3;margin-bottom:2px;letter-spacing:0.03em;}
+.ms-sub{font-family:'Cormorant Garamond',serif;font-size:0.55rem;font-style:italic;color:#5a4520;letter-spacing:0.05em;margin-bottom:8px;}
 .ms-orn{display:flex;align-items:center;gap:5px;margin-bottom:9px;}
 .ms-orn-line{height:0.5px;width:35px;background:linear-gradient(90deg,rgba(201,168,76,0.5),transparent);}
 .ms-orn-dot{width:3px;height:3px;background:#C9A84C;transform:rotate(45deg);flex-shrink:0;}
 .ms-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;}
 .ms-pap{flex-shrink:0;margin-top:1px;}
 .ms-right{flex:1;}
-.ms-label{font-family:'Cormorant Garamond',serif;font-size:0.48rem;letter-spacing:0.2em;color:#4a3a18;text-transform:uppercase;margin-bottom:0;}
-.ms-msg{font-family:'Cormorant Garamond',serif;font-size:0.65rem;color:rgba(184,148,62,0.7);font-style:italic;line-height:1.4;}
+.ms-label{font-family:'Cormorant Garamond',serif;font-size:0.46rem;letter-spacing:0.2em;color:#4a3a18;text-transform:uppercase;margin-bottom:0;}
+.ms-msg{font-family:'Cormorant Garamond',serif;font-size:0.63rem;color:rgba(184,148,62,0.65);font-style:italic;line-height:1.4;}
 .ms-msg em{color:#C9A84C;font-style:normal;}
 @media(max-width:960px){.ms-wrap{display:none;}}
 </style>
-
 <div class="ms-wrap" id="ms-wrap">
   <div class="ms-title" id="ms-title">Десетте свитоци<br>на мудроста</div>
   <div class="ms-sub" id="ms-sub">Зборовите кои го менуваат животот</div>
   <div class="ms-orn"><div class="ms-orn-line"></div><div class="ms-orn-dot"></div></div>
   <div id="ms-list"></div>
 </div>
-
 <script>
 var MS_LANGS={
-  mk:{title:'Десетте свитоци<br>на мудроста',sub:'Зборовите кои го менуваат животот',
-    s:[
-      {l:'Свиток I',t:'Ќе ги формирам <em>добрите навики</em> и ќе бидам нивен роб.'},
-      {l:'Свиток II',t:'Ќе го поздравам овој ден со <em>љубов</em> во моето срце.'},
-      {l:'Свиток III',t:'Ќе истраам <em>додека не успеам.</em>'},
-      {l:'Свиток IV',t:'Јас сум <em>најголемото чудо</em> на природата.'},
-      {l:'Свиток V',t:'Ќе живеам како <em>овој да е мојот последен ден.</em>'},
-      {l:'Свиток VI',t:'Ќе ги контролирам <em>моите емоции.</em>'},
-      {l:'Свиток VII',t:'Ќе се <em>смеам на светот.</em>'},
-      {l:'Свиток VIII',t:'Ќе го умножам мојот <em>талент стократно.</em>'},
-      {l:'Свиток IX',t:'Ќе дејствувам <em>сега.</em>'},
-      {l:'Свиток X',t:'Ќе се <em>молам за водство.</em>'}
-    ]},
-  sr:{title:'Deset svitaka<br>mudrosti',sub:'Reči koje menjaju život',
-    s:[
-      {l:'Svitak I',t:'Formivaću <em>dobre navike</em> i biću njihov rob.'},
-      {l:'Svitak II',t:'Pozdraviću ovaj dan sa <em>ljubavlju</em> u srcu.'},
-      {l:'Svitak III',t:'Istrajaću <em>dok ne uspem.</em>'},
-      {l:'Svitak IV',t:'Ja sam <em>najveće čudo</em> prirode.'},
-      {l:'Svitak V',t:'Živeću kao da je <em>ovo moj poslednji dan.</em>'},
-      {l:'Svitak VI',t:'Kontrolisaću <em>svoje emocije.</em>'},
-      {l:'Svitak VII',t:'Smejaću se <em>svetu.</em>'},
-      {l:'Svitak VIII',t:'Umnožiću svoj <em>talenat stokratno.</em>'},
-      {l:'Svitak IX',t:'Delovaću <em>sada.</em>'},
-      {l:'Svitak X',t:'Moliću se za <em>vodstvo.</em>'}
-    ]},
-  hr:{title:'Deset svitaka<br>mudrosti',sub:'Riječi koje mijenjaju život',
-    s:[
-      {l:'Svitak I',t:'Izgradit ću <em>dobre navike</em> i postati njihov rob.'},
-      {l:'Svitak II',t:'Pozdravit ću ovaj dan s <em>ljubavlju</em> u srcu.'},
-      {l:'Svitak III',t:'Istrajat ću <em>dok ne uspijem.</em>'},
-      {l:'Svitak IV',t:'Ja sam <em>najveće čudo</em> prirode.'},
-      {l:'Svitak V',t:'Živjet ću kao da je <em>ovo moj posljednji dan.</em>'},
-      {l:'Svitak VI',t:'Vladat ću <em>svojim emocijama.</em>'},
-      {l:'Svitak VII',t:'Smijat ću se <em>svijetu.</em>'},
-      {l:'Svitak VIII',t:'Umnožit ću svoj <em>talent stokratno.</em>'},
-      {l:'Svitak IX',t:'Djelovat ću <em>sada.</em>'},
-      {l:'Svitak X',t:'Molit ću se za <em>vodstvo.</em>'}
-    ]},
-  bs:{title:'Deset svitaka<br>mudrosti',sub:'Riječi koje mijenjaju život',
-    s:[
-      {l:'Svitak I',t:'Formirat ću <em>dobre navike</em> i biti njihov rob.'},
-      {l:'Svitak II',t:'Pozdravit ću ovaj dan s <em>ljubavlju</em> u srcu.'},
-      {l:'Svitak III',t:'Istrajat ću <em>dok ne uspijem.</em>'},
-      {l:'Svitak IV',t:'Ja sam <em>najveće čudo</em> prirode.'},
-      {l:'Svitak V',t:'Živjet ću kao da je <em>ovo moj posljednji dan.</em>'},
-      {l:'Svitak VI',t:'Kontrolisat ću <em>svoje emocije.</em>'},
-      {l:'Svitak VII',t:'Smijat ću se <em>svijetu.</em>'},
-      {l:'Svitak VIII',t:'Umnožit ću svoj <em>talenat stokratno.</em>'},
-      {l:'Svitak IX',t:'Djelovat ću <em>sada.</em>'},
-      {l:'Svitak X',t:'Molit ću se za <em>vodstvo.</em>'}
-    ]},
-  en:{title:'The Ten Scrolls<br>of Wisdom',sub:'Words that change your life',
-    s:[
-      {l:'Scroll I',t:'I will form <em>good habits</em> and become their slave.'},
-      {l:'Scroll II',t:'I will greet this day with <em>love</em> in my heart.'},
-      {l:'Scroll III',t:'I will persist <em>until I succeed.</em>'},
-      {l:'Scroll IV',t:'I am <em>nature\'s greatest miracle.</em>'},
-      {l:'Scroll V',t:'I will live <em>this day as if it is my last.</em>'},
-      {l:'Scroll VI',t:'I will be master of <em>my emotions.</em>'},
-      {l:'Scroll VII',t:'I will <em>laugh at the world.</em>'},
-      {l:'Scroll VIII',t:'I will multiply my value <em>a hundredfold.</em>'},
-      {l:'Scroll IX',t:'I will act <em>now.</em>'},
-      {l:'Scroll X',t:'I will pray for <em>guidance.</em>'}
-    ]},
-  de:{title:'Die zehn Schriftrollen<br>der Weisheit',sub:'Worte, die das Leben verändern',
-    s:[
-      {l:'Schriftrolle I',t:'Ich werde <em>gute Gewohnheiten</em> formen und ihr Sklave sein.'},
-      {l:'Schriftrolle II',t:'Ich werde diesen Tag mit <em>Liebe</em> im Herzen begrüßen.'},
-      {l:'Schriftrolle III',t:'Ich werde durchhalten, <em>bis ich Erfolg habe.</em>'},
-      {l:'Schriftrolle IV',t:'Ich bin <em>das größte Wunder</em> der Natur.'},
-      {l:'Schriftrolle V',t:'Ich werde leben als wäre <em>dies mein letzter Tag.</em>'},
-      {l:'Schriftrolle VI',t:'Ich werde Meister <em>meiner Emotionen</em> sein.'},
-      {l:'Schriftrolle VII',t:'Ich werde über <em>die Welt lachen.</em>'},
-      {l:'Schriftrolle VIII',t:'Ich werde meinen Wert <em>hundertfach steigern.</em>'},
-      {l:'Schriftrolle IX',t:'Ich werde <em>jetzt handeln.</em>'},
-      {l:'Schriftrolle X',t:'Ich werde um <em>Führung beten.</em>'}
-    ]},
-  bg:{title:'Десетте свитъка<br>на мъдростта',sub:'Думите, които променят живота',
-    s:[
-      {l:'Свитък I',t:'Ще формирам <em>добри навици</em> и ще бъда техен роб.'},
-      {l:'Свитък II',t:'Ще посрещна този ден с <em>любов</em> в сърцето си.'},
-      {l:'Свитък III',t:'Ще продължавам <em>докато не успея.</em>'},
-      {l:'Свитък IV',t:'Аз съм <em>най-голямото чудо</em> на природата.'},
-      {l:'Свитък V',t:'Ще живея като <em>този е моят последен ден.</em>'},
-      {l:'Свитък VI',t:'Ще контролирам <em>своите емоции.</em>'},
-      {l:'Свитък VII',t:'Ще се <em>смея на света.</em>'},
-      {l:'Свитък VIII',t:'Ще умножа своя <em>талант стократно.</em>'},
-      {l:'Свитък IX',t:'Ще действам <em>сега.</em>'},
-      {l:'Свитък X',t:'Ще се моля за <em>напътствие.</em>'}
-    ]},
-  sq:{title:'Dhjetë rrotullat<br>e urtësisë',sub:'Fjalët që ndryshojnë jetën',
-    s:[
-      {l:'Rrotull I',t:'Do të formoj <em>zakone të mira</em> dhe do të jem skllavi i tyre.'},
-      {l:'Rrotull II',t:'Do ta përshëndes këtë ditë me <em>dashuri</em> në zemër.'},
-      {l:'Rrotull III',t:'Do të vazhdoj <em>derisa të kem sukses.</em>'},
-      {l:'Rrotull IV',t:'Unë jam <em>mrekullia më e madhe</em> e natyrës.'},
-      {l:'Rrotull V',t:'Do të jetoj si të ishte <em>ky dita ime e fundit.</em>'},
-      {l:'Rrotull VI',t:'Do të kontrolloj <em>emocionet e mia.</em>'},
-      {l:'Rrotull VII',t:'Do të <em>qesh me botën.</em>'},
-      {l:'Rrotull VIII',t:'Do ta shumëzoj vlerën time <em>njëqindfish.</em>'},
-      {l:'Rrotull IX',t:'Do të veproj <em>tani.</em>'},
-      {l:'Rrotull X',t:'Do të lutem për <em>udhëzim.</em>'}
-    ]}
+  mk:{title:'Десетте свитоци<br>на мудроста',sub:'Зборовите кои го менуваат животот',s:[
+    {l:'Свиток I',t:'Ке ги формирам <em>добрите навики</em> и ке бидам нивен роб.'},
+    {l:'Свиток II',t:'Ке го поздравам овој ден со <em>љубов</em> во моето срце.'},
+    {l:'Свиток III',t:'Ке истраам <em>додека не успеам.</em>'},
+    {l:'Свиток IV',t:'Јас сум <em>најголемото чудо</em> на природата.'},
+    {l:'Свиток V',t:'Ке живеам како <em>овој да е мојот последен ден.</em>'},
+    {l:'Свиток VI',t:'Ке ги контролирам <em>моите емоции.</em>'},
+    {l:'Свиток VII',t:'Ке се <em>смеам на светот.</em>'},
+    {l:'Свиток VIII',t:'Ке го умножам мојот <em>талент стократно.</em>'},
+    {l:'Свиток IX',t:'Ке дејствувам <em>сега.</em>'},
+    {l:'Свиток X',t:'Ке се <em>молам за водство.</em>'}]},
+  sr:{title:'Deset svitaka<br>mudrosti',sub:'Reci koje menjaju zivot',s:[
+    {l:'Svitak I',t:'Formivaci <em>dobre navike</em> i bici njihov rob.'},
+    {l:'Svitak II',t:'Pozdravicu ovaj dan sa <em>ljubavlju</em> u srcu.'},
+    {l:'Svitak III',t:'Istrajaci <em>dok ne uspem.</em>'},
+    {l:'Svitak IV',t:'Ja sam <em>najvece cudo</em> prirode.'},
+    {l:'Svitak V',t:'Ziveci kao da je <em>ovo moj poslednji dan.</em>'},
+    {l:'Svitak VI',t:'Kontrolisacu <em>svoje emocije.</em>'},
+    {l:'Svitak VII',t:'Smejaci se <em>svetu.</em>'},
+    {l:'Svitak VIII',t:'Umnoziciu svoj <em>talenat stokratno.</em>'},
+    {l:'Svitak IX',t:'Delovaci <em>sada.</em>'},
+    {l:'Svitak X',t:'Molici se za <em>vodstvo.</em>'}]},
+  hr:{title:'Deset svitaka<br>mudrosti',sub:'Rijeci koje mijenjaju zivot',s:[
+    {l:'Svitak I',t:'Izgradit cu <em>dobre navike</em> i postati njihov rob.'},
+    {l:'Svitak II',t:'Pozdravit cu ovaj dan s <em>ljubavlju</em> u srcu.'},
+    {l:'Svitak III',t:'Istrajat cu <em>dok ne uspijem.</em>'},
+    {l:'Svitak IV',t:'Ja sam <em>najvece cudo</em> prirode.'},
+    {l:'Svitak V',t:'Zivjet cu kao da je <em>ovo moj posljednji dan.</em>'},
+    {l:'Svitak VI',t:'Vladat cu <em>svojim emocijama.</em>'},
+    {l:'Svitak VII',t:'Smijat cu se <em>svijetu.</em>'},
+    {l:'Svitak VIII',t:'Umnoziit cu svoj <em>talent stokratno.</em>'},
+    {l:'Svitak IX',t:'Djelovat cu <em>sada.</em>'},
+    {l:'Svitak X',t:'Molit cu se za <em>vodstvo.</em>'}]},
+  bs:{title:'Deset svitaka<br>mudrosti',sub:'Rijeci koje mijenjaju zivot',s:[
+    {l:'Svitak I',t:'Formirat cu <em>dobre navike</em> i biti njihov rob.'},
+    {l:'Svitak II',t:'Pozdravit cu ovaj dan s <em>ljubavlju</em> u srcu.'},
+    {l:'Svitak III',t:'Istrajat cu <em>dok ne uspijem.</em>'},
+    {l:'Svitak IV',t:'Ja sam <em>najvece cudo</em> prirode.'},
+    {l:'Svitak V',t:'Zivjet cu kao da je <em>ovo moj posljednji dan.</em>'},
+    {l:'Svitak VI',t:'Kontrolisat cu <em>svoje emocije.</em>'},
+    {l:'Svitak VII',t:'Smijat cu se <em>svijetu.</em>'},
+    {l:'Svitak VIII',t:'Umnoziit cu svoj <em>talenat stokratno.</em>'},
+    {l:'Svitak IX',t:'Djelovat cu <em>sada.</em>'},
+    {l:'Svitak X',t:'Molit cu se za <em>vodstvo.</em>'}]},
+  en:{title:'The Ten Scrolls<br>of Wisdom',sub:'Words that change your life',s:[
+    {l:'Scroll I',t:'I will form <em>good habits</em> and become their slave.'},
+    {l:'Scroll II',t:'I will greet this day with <em>love</em> in my heart.'},
+    {l:'Scroll III',t:'I will persist <em>until I succeed.</em>'},
+    {l:'Scroll IV',t:'I am <em>nature's greatest miracle.</em>'},
+    {l:'Scroll V',t:'I will live <em>this day as if it is my last.</em>'},
+    {l:'Scroll VI',t:'I will be master of <em>my emotions.</em>'},
+    {l:'Scroll VII',t:'I will <em>laugh at the world.</em>'},
+    {l:'Scroll VIII',t:'I will multiply my value <em>a hundredfold.</em>'},
+    {l:'Scroll IX',t:'I will act <em>now.</em>'},
+    {l:'Scroll X',t:'I will pray for <em>guidance.</em>'}]},
+  de:{title:'Die zehn Schriftrollen<br>der Weisheit',sub:'Worte, die das Leben verandern',s:[
+    {l:'Schriftrolle I',t:'Ich werde <em>gute Gewohnheiten</em> formen und ihr Sklave sein.'},
+    {l:'Schriftrolle II',t:'Ich werde diesen Tag mit <em>Liebe</em> im Herzen begru&szlig;en.'},
+    {l:'Schriftrolle III',t:'Ich werde durchhalten, <em>bis ich Erfolg habe.</em>'},
+    {l:'Schriftrolle IV',t:'Ich bin <em>das gr&ouml;&szlig;te Wunder</em> der Natur.'},
+    {l:'Schriftrolle V',t:'Ich werde leben als ware <em>dies mein letzter Tag.</em>'},
+    {l:'Schriftrolle VI',t:'Ich werde Meister <em>meiner Emotionen</em> sein.'},
+    {l:'Schriftrolle VII',t:'Ich werde uber <em>die Welt lachen.</em>'},
+    {l:'Schriftrolle VIII',t:'Ich werde meinen Wert <em>hundertfach steigern.</em>'},
+    {l:'Schriftrolle IX',t:'Ich werde <em>jetzt handeln.</em>'},
+    {l:'Schriftrolle X',t:'Ich werde um <em>Fuhrung beten.</em>'}]},
+  bg:{title:'Десетте свитъка<br>на мъдростта',sub:'Думите, които променят живота',s:[
+    {l:'Свитък I',t:'Ще формирам <em>добри навици</em> и ще бъда техен роб.'},
+    {l:'Свитък II',t:'Ще посрещна този ден с <em>любов</em> в сърцето си.'},
+    {l:'Свитък III',t:'Ще продължавам <em>докато не успея.</em>'},
+    {l:'Свитък IV',t:'Аз съм <em>най-голямото чудо</em> на природата.'},
+    {l:'Свитък V',t:'Ще живея като <em>този е моят последен ден.</em>'},
+    {l:'Свитък VI',t:'Ще контролирам <em>своите емоции.</em>'},
+    {l:'Свитък VII',t:'Ще се <em>смея на света.</em>'},
+    {l:'Свитък VIII',t:'Ще умножа своя <em>талант стократно.</em>'},
+    {l:'Свитък IX',t:'Ще действам <em>сега.</em>'},
+    {l:'Свитък X',t:'Ще се моля за <em>напътствие.</em>'}]},
+  sq:{title:'Dhjet&euml; rrotullat<br>e urt&euml;s&euml;',sub:'Fjal&euml;t q&euml; ndryshojn&euml; jet&euml;n',s:[
+    {l:'Rrotull I',t:'Do t&euml; formoj <em>zakone t&euml; mira</em> dhe do t&euml; jem skllavi i tyre.'},
+    {l:'Rrotull II',t:'Do ta p&euml;rsh&euml;ndes k&euml;t&euml; dit&euml; me <em>dashuri</em> n&euml; zem&euml;r.'},
+    {l:'Rrotull III',t:'Do t&euml; vazhdoj <em>derisa t&euml; kem sukses.</em>'},
+    {l:'Rrotull IV',t:'Un&euml; jam <em>mrekullia m&euml; e madhe</em> e naty r&euml;s.'},
+    {l:'Rrotull V',t:'Do t&euml; jetoj si t&euml; ishte <em>ky dita ime e fundit.</em>'},
+    {l:'Rrotull VI',t:'Do t&euml; kontrolloj <em>emocionet e mia.</em>'},
+    {l:'Rrotull VII',t:'Do t&euml; <em>qesh me bot&euml;n.</em>'},
+    {l:'Rrotull VIII',t:'Do ta shumezoj vler&euml;n time <em>njequindfish.</em>'},
+    {l:'Rrotull IX',t:'Do t&euml; veproj <em>tani.</em>'},
+    {l:'Rrotull X',t:'Do t&euml; lutem p&euml;r <em>udh&euml;zim.</em>'}]}
 };
-
-function msPap(){
-  return '<svg width="20" height="26" viewBox="0 0 20 26" xmlns="http://www.w3.org/2000/svg">'
-    +'<rect x="1" y="4" width="18" height="18" rx="1" fill="#2a1f08" stroke="#C9A84C" stroke-width="0.4" opacity="0.8"/>'
-    +'<line x1="4" y1="8" x2="16" y2="8" stroke="#C9A84C" stroke-width="0.25" opacity="0.3"/>'
-    +'<line x1="4" y1="12" x2="16" y2="12" stroke="#C9A84C" stroke-width="0.25" opacity="0.2"/>'
-    +'<line x1="4" y1="16" x2="16" y2="16" stroke="#C9A84C" stroke-width="0.25" opacity="0.2"/>'
-    +'<line x1="4" y1="20" x2="16" y2="20" stroke="#C9A84C" stroke-width="0.25" opacity="0.3"/>'
-    +'<rect x="1" y="2" width="18" height="4" rx="2" fill="#3a2a0a" stroke="#C9A84C" stroke-width="0.4" opacity="0.85"/>'
-    +'<rect x="1" y="20" width="18" height="4" rx="2" fill="#3a2a0a" stroke="#C9A84C" stroke-width="0.4" opacity="0.85"/>'
-    +'<ellipse cx="10" cy="4" rx="3" ry="0.9" fill="#C9A84C" opacity="0.3"/>'
-    +'<ellipse cx="10" cy="22" rx="3" ry="0.9" fill="#C9A84C" opacity="0.3"/>'
-    +'</svg>';
-}
-
-function msRender(lang){
-  var d=MS_LANGS[lang]||MS_LANGS['mk'];
-  document.getElementById('ms-title').innerHTML=d.title;
-  document.getElementById('ms-sub').textContent=d.sub;
-  var list=document.getElementById('ms-list');
-  list.innerHTML='';
-  d.s.forEach(function(s){
-    var row=document.createElement('div');
-    row.className='ms-row';
-    row.innerHTML='<div class="ms-pap">'+msPap()+'</div>'
-      +'<div class="ms-right">'
-      +'<div class="ms-label">'+s.l+'</div>'
-      +'<div class="ms-msg">'+s.t+'</div>'
-      +'</div>';
-    list.appendChild(row);
-  });
-}
-
-function msHook(){
-  if(typeof setLandingLang==='function'){
-    var _o=setLandingLang;
-    setLandingLang=function(l){_o(l);msRender(l);};
-    msRender(localStorage.getItem('mlang')||'mk');
-  } else {
-    setTimeout(msHook,80);
-  }
-}
+function msPap(){return '<svg width="20" height="26" viewBox="0 0 20 26" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="4" width="18" height="18" rx="1" fill="#2a1f08" stroke="#C9A84C" stroke-width="0.4" opacity="0.8"/><line x1="4" y1="8" x2="16" y2="8" stroke="#C9A84C" stroke-width="0.25" opacity="0.3"/><line x1="4" y1="12" x2="16" y2="12" stroke="#C9A84C" stroke-width="0.25" opacity="0.2"/><line x1="4" y1="16" x2="16" y2="16" stroke="#C9A84C" stroke-width="0.25" opacity="0.2"/><line x1="4" y1="20" x2="16" y2="20" stroke="#C9A84C" stroke-width="0.25" opacity="0.3"/><rect x="1" y="2" width="18" height="4" rx="2" fill="#3a2a0a" stroke="#C9A84C" stroke-width="0.4" opacity="0.85"/><rect x="1" y="20" width="18" height="4" rx="2" fill="#3a2a0a" stroke="#C9A84C" stroke-width="0.4" opacity="0.85"/><ellipse cx="10" cy="4" rx="3" ry="0.9" fill="#C9A84C" opacity="0.3"/><ellipse cx="10" cy="22" rx="3" ry="0.9" fill="#C9A84C" opacity="0.3"/></svg>';}
+function msRender(lang){var d=MS_LANGS[lang]||MS_LANGS.mk;document.getElementById('ms-title').innerHTML=d.title;document.getElementById('ms-sub').textContent=d.sub;var list=document.getElementById('ms-list');list.innerHTML='';d.s.forEach(function(s){var row=document.createElement('div');row.className='ms-row';row.innerHTML='<div class="ms-pap">'+msPap()+'</div><div class="ms-right"><div class="ms-label">'+s.l+'</div><div class="ms-msg">'+s.t+'</div></div>';list.appendChild(row);});}
+function msHook(){if(typeof setLandingLang==='function'){var _o=setLandingLang;setLandingLang=function(l){_o(l);msRender(l);};msRender(localStorage.getItem('mlang')||'mk');}else{setTimeout(msHook,80);}}
 msHook();
-</script>
-
-<style>
-@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap');
-
-.mandino-panel {
-  position: fixed;
-  top: 58px;
-  left: 0;
-  width: 240px;
-  height: calc(100vh - 58px);
-  overflow-y: auto;
-  z-index: 50;
-  padding: 1.4rem 1rem 2rem 1.2rem;
-  background: linear-gradient(180deg, rgba(9,9,16,0.98) 0%, rgba(9,9,16,0.92) 100%);
-  border-right: 1px solid rgba(201,168,76,0.1);
-  scrollbar-width: none;
-}
-.mandino-panel::-webkit-scrollbar { display: none; }
-.mandino-panel::after {
-  content: '';
-  position: absolute;
-  top: 0; right: 0; bottom: 0;
-  width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(201,168,76,0.3), rgba(201,168,76,0.15), transparent);
-}
-
-.mp-header { margin-bottom: 1rem; }
-
-.mp-title {
-  font-family: 'IM Fell English', serif;
-  font-size: 1.05rem;
-  font-weight: 400;
-  color: #C9A84C;
-  line-height: 1.3;
-  margin-bottom: 0.2rem;
-  letter-spacing: 0.01em;
-}
-
-.mp-sub {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 0.62rem;
-  font-style: italic;
-  color: #6a5520;
-  letter-spacing: 0.06em;
-}
-
-.mp-ornament {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0.75rem 0 1rem;
-}
-.mp-line {
-  flex: 1;
-  height: 0.5px;
-  background: linear-gradient(90deg, rgba(201,168,76,0.5), transparent);
-}
-.mp-star {
-  font-size: 8px;
-  color: #C9A84C;
-}
-
-.mp-scroll {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 0.5rem 0;
-  border-bottom: 0.5px solid rgba(201,168,76,0.06);
-  cursor: default;
-  transition: all 0.2s;
-}
-.mp-scroll:last-child { border-bottom: none; }
-.mp-scroll:hover .mp-msg { color: #f0dcaa; }
-.mp-scroll:hover { padding-left: 3px; }
-
-.mp-pap {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.mp-right { flex: 1; min-width: 0; }
-
-.mp-label {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 0.52rem;
-  letter-spacing: 0.22em;
-  color: #6a5520;
-  text-transform: uppercase;
-  margin-bottom: 1px;
-}
-
-.mp-msg {
-  font-family: 'IM Fell English', serif;
-  font-size: 0.78rem;
-  color: #c9a84c99;
-  font-style: italic;
-  line-height: 1.45;
-  transition: color 0.2s;
-}
-.mp-msg em {
-  color: #C9A84C;
-  font-style: normal;
-}
-
-.mp-footer {
-  margin-top: 1.2rem;
-  padding-top: 0.9rem;
-  border-top: 0.5px solid rgba(201,168,76,0.08);
-  text-align: center;
-  cursor: pointer;
-}
-.mp-cta-label {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 0.55rem;
-  color: #4a3e1e;
-  font-style: italic;
-  letter-spacing: 0.08em;
-  margin-bottom: 0.3rem;
-}
-.mp-cta-btn {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 0.6rem;
-  color: #C9A84C;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  border-bottom: 0.5px solid rgba(201,168,76,0.35);
-  padding-bottom: 1px;
-}
-
-@media (max-width: 900px) {
-  .mandino-panel { display: none; }
-}
-</style>
-
-<div class="mandino-panel" id="mandino-panel">
-  <div class="mp-header">
-    <div class="mp-title" id="mp-title">Десетте свитоци<br>на мудроста</div>
-    <div class="mp-sub" id="mp-sub">Зборовите кои го менуваат животот</div>
-  </div>
-
-  <div class="mp-ornament">
-    <div class="mp-line"></div>
-    <div class="mp-star">✦</div>
-  </div>
-
-  <div id="mp-list"></div>
-
-  <div class="mp-footer" onclick="window.location.href='index.html'">
-    <div class="mp-cta-label" id="mp-cta-label">Почни го предизвикот денес</div>
-    <div class="mp-cta-btn">Mandino Challenge →</div>
-  </div>
-</div>
-
-<script>
-// ── Свитоци по јазик ────────────────────────────────────────
-var MANDINO_LANGS = {
-  mk: {
-    title: 'Десетте свитоци<br>на мудроста',
-    sub: 'Зборовите кои го менуваат животот',
-    cta: 'Почни го предизвикот денес',
-    scrolls: [
-      { label: 'Свиток I',    text: 'Ќе ги формирам <em>добрите навики</em> и ќе бидам нивен роб.' },
-      { label: 'Свиток II',   text: 'Ќе го поздравам овој ден со <em>љубов</em> во моето срце.' },
-      { label: 'Свиток III',  text: 'Ќе истраам <em>додека не успеам.</em>' },
-      { label: 'Свиток IV',   text: 'Јас сум <em>најголемото чудо</em> на природата.' },
-      { label: 'Свиток V',    text: 'Ќе живеам како <em>овој да е мојот последен ден.</em>' },
-      { label: 'Свиток VI',   text: 'Ќе ги контролирам <em>моите емоции.</em>' },
-      { label: 'Свиток VII',  text: 'Ќе се <em>смеам на светот.</em>' },
-      { label: 'Свиток VIII', text: 'Ќе го умножам мојот <em>талент стократно.</em>' },
-      { label: 'Свиток IX',   text: 'Ќе дејствувам <em>сега.</em>' },
-      { label: 'Свиток X',    text: 'Ќе се <em>молам за водство.</em>' },
-    ]
-  },
-  sr: {
-    title: 'Deset svitaka<br>mudrosti',
-    sub: 'Reči koje menjaju život',
-    cta: 'Počni izazov danas',
-    scrolls: [
-      { label: 'Svitak I',    text: 'Formivaću <em>dobre navike</em> i biću njihov rob.' },
-      { label: 'Svitak II',   text: 'Pozdraviću ovaj dan sa <em>ljubavlju</em> u srcu.' },
-      { label: 'Svitak III',  text: 'Istrajaću <em>dok ne uspem.</em>' },
-      { label: 'Svitak IV',   text: 'Ja sam <em>najveće čudo</em> prirode.' },
-      { label: 'Svitak V',    text: 'Živeću kao da je <em>ovo moj poslednji dan.</em>' },
-      { label: 'Svitak VI',   text: 'Kontrolisaću <em>svoje emocije.</em>' },
-      { label: 'Svitak VII',  text: 'Smejaću se <em>svetu.</em>' },
-      { label: 'Svitak VIII', text: 'Umnožiću svoj <em>talenat stokratno.</em>' },
-      { label: 'Svitak IX',   text: 'Delovaću <em>sada.</em>' },
-      { label: 'Svitak X',    text: 'Moliću se za <em>vodstvo.</em>' },
-    ]
-  },
-  en: {
-    title: 'The Ten Scrolls<br>of Wisdom',
-    sub: 'Words that change your life',
-    cta: 'Start the challenge today',
-    scrolls: [
-      { label: 'Scroll I',    text: 'I will form <em>good habits</em> and become their slave.' },
-      { label: 'Scroll II',   text: 'I will greet this day with <em>love</em> in my heart.' },
-      { label: 'Scroll III',  text: 'I will persist <em>until I succeed.</em>' },
-      { label: 'Scroll IV',   text: 'I am <em>nature\'s greatest miracle.</em>' },
-      { label: 'Scroll V',    text: 'I will live <em>this day as if it is my last.</em>' },
-      { label: 'Scroll VI',   text: 'I will be master of <em>my emotions.</em>' },
-      { label: 'Scroll VII',  text: 'I will <em>laugh at the world.</em>' },
-      { label: 'Scroll VIII', text: 'I will multiply my value <em>a hundredfold.</em>' },
-      { label: 'Scroll IX',   text: 'I will act <em>now.</em>' },
-      { label: 'Scroll X',    text: 'I will pray for <em>guidance.</em>' },
-    ]
-  },
-  hr: {
-    title: 'Deset svitaka<br>mudrosti',
-    sub: 'Riječi koje mijenjaju život',
-    cta: 'Počni izazov danas',
-    scrolls: [
-      { label: 'Svitak I',    text: 'Izgradit ću <em>dobre navike</em> i postati njihov rob.' },
-      { label: 'Svitak II',   text: 'Pozdravit ću ovaj dan s <em>ljubavlju</em> u srcu.' },
-      { label: 'Svitak III',  text: 'Istrajat ću <em>dok ne uspijem.</em>' },
-      { label: 'Svitak IV',   text: 'Ja sam <em>najveće čudo</em> prirode.' },
-      { label: 'Svitak V',    text: 'Živjet ću kao da je <em>ovo moj posljednji dan.</em>' },
-      { label: 'Svitak VI',   text: 'Vladat ću <em>svojim emocijama.</em>' },
-      { label: 'Svitak VII',  text: 'Smijat ću se <em>svijetu.</em>' },
-      { label: 'Svitak VIII', text: 'Umnožit ću svoj <em>talent stokratno.</em>' },
-      { label: 'Svitak IX',   text: 'Djelovat ću <em>sada.</em>' },
-      { label: 'Svitak X',    text: 'Molit ću se za <em>vodstvo.</em>' },
-    ]
-  },
-  bs: {
-    title: 'Deset svitaka<br>mudrosti',
-    sub: 'Riječi koje mijenjaju život',
-    cta: 'Počni izazov danas',
-    scrolls: [
-      { label: 'Svitak I',    text: 'Formirat ću <em>dobre navike</em> i biti njihov rob.' },
-      { label: 'Svitak II',   text: 'Pozdravit ću ovaj dan s <em>ljubavlju</em> u srcu.' },
-      { label: 'Svitak III',  text: 'Istrajat ću <em>dok ne uspijem.</em>' },
-      { label: 'Svitak IV',   text: 'Ja sam <em>najveće čudo</em> prirode.' },
-      { label: 'Svitak V',    text: 'Živjet ću kao da je <em>ovo moj posljednji dan.</em>' },
-      { label: 'Svitak VI',   text: 'Kontrolisat ću <em>svoje emocije.</em>' },
-      { label: 'Svitak VII',  text: 'Smijat ću se <em>svijetu.</em>' },
-      { label: 'Svitak VIII', text: 'Umnožit ću svoj <em>talenat stokratno.</em>' },
-      { label: 'Svitak IX',   text: 'Djelovat ću <em>sada.</em>' },
-      { label: 'Svitak X',    text: 'Molit ću se za <em>vodstvo.</em>' },
-    ]
-  },
-  de: {
-    title: 'Die zehn Schriftrollen<br>der Weisheit',
-    sub: 'Worte, die das Leben verändern',
-    cta: 'Starte die Herausforderung heute',
-    scrolls: [
-      { label: 'Schriftrolle I',    text: 'Ich werde <em>gute Gewohnheiten</em> formen und ihr Sklave sein.' },
-      { label: 'Schriftrolle II',   text: 'Ich werde diesen Tag mit <em>Liebe</em> im Herzen begrüßen.' },
-      { label: 'Schriftrolle III',  text: 'Ich werde durchhalten, <em>bis ich Erfolg habe.</em>' },
-      { label: 'Schriftrolle IV',   text: 'Ich bin <em>das größte Wunder</em> der Natur.' },
-      { label: 'Schriftrolle V',    text: 'Ich werde leben als wäre <em>dies mein letzter Tag.</em>' },
-      { label: 'Schriftrolle VI',   text: 'Ich werde Meister <em>meiner Emotionen</em> sein.' },
-      { label: 'Schriftrolle VII',  text: 'Ich werde über <em>die Welt lachen.</em>' },
-      { label: 'Schriftrolle VIII', text: 'Ich werde meinen Wert <em>hundertfach steigern.</em>' },
-      { label: 'Schriftrolle IX',   text: 'Ich werde <em>jetzt handeln.</em>' },
-      { label: 'Schriftrolle X',    text: 'Ich werde um <em>Führung beten.</em>' },
-    ]
-  },
-  bg: {
-    title: 'Десетте свитъка<br>на мъдростта',
-    sub: 'Думите, които променят живота',
-    cta: 'Започни предизвикателството днес',
-    scrolls: [
-      { label: 'Свитък I',    text: 'Ще формирам <em>добри навици</em> и ще бъда техен роб.' },
-      { label: 'Свитък II',   text: 'Ще посрещна този ден с <em>любов</em> в сърцето си.' },
-      { label: 'Свитък III',  text: 'Ще продължавам <em>докато не успея.</em>' },
-      { label: 'Свитък IV',   text: 'Аз съм <em>най-голямото чудо</em> на природата.' },
-      { label: 'Свитък V',    text: 'Ще живея като <em>този е моят последен ден.</em>' },
-      { label: 'Свитък VI',   text: 'Ще контролирам <em>своите емоции.</em>' },
-      { label: 'Свитък VII',  text: 'Ще се <em>смея на света.</em>' },
-      { label: 'Свитък VIII', text: 'Ще умножа своя <em>талант стократно.</em>' },
-      { label: 'Свитък IX',   text: 'Ще действам <em>сега.</em>' },
-      { label: 'Свитък X',    text: 'Ще се моля за <em>напътствие.</em>' },
-    ]
-  },
-  sq: {
-    title: 'Dhjetë rrotullat<br>e urtësisë',
-    sub: 'Fjalët që ndryshojnë jetën',
-    cta: 'Fillo sfidën sot',
-    scrolls: [
-      { label: 'Rrotull I',    text: 'Do të formoj <em>zakone të mira</em> dhe do të jem skllavi i tyre.' },
-      { label: 'Rrotull II',   text: 'Do ta përshëndes këtë ditë me <em>dashuri</em> në zemër.' },
-      { label: 'Rrotull III',  text: 'Do të vazhdoj <em>derisa të kem sukses.</em>' },
-      { label: 'Rrotull IV',   text: 'Unë jam <em>mrekullia më e madhe</em> e natyrës.' },
-      { label: 'Rrotull V',    text: 'Do të jetoj si të ishte <em>ky dita ime e fundit.</em>' },
-      { label: 'Rrotull VI',   text: 'Do të kontrolloj <em>emocionet e mia.</em>' },
-      { label: 'Rrotull VII',  text: 'Do të <em>qesh me botën.</em>' },
-      { label: 'Rrotull VIII', text: 'Do ta shumëzoj vlerën time <em>njëqindfish.</em>' },
-      { label: 'Rrotull IX',   text: 'Do të veproj <em>tani.</em>' },
-      { label: 'Rrotull X',    text: 'Do të lutem për <em>udhëzim.</em>' },
-    ]
-  }
-};
-
-// ── SVG Папирус ──────────────────────────────────────────────
-function papyrusSVG() {
-  return '<svg width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="2" y="6" width="28" height="28" rx="1" fill="#1e160600" stroke="#C9A84C" stroke-width="0.5" opacity="0.7"/>'
-    + '<rect x="2" y="6" width="28" height="28" rx="1" fill="#2a1f08" opacity="0.9"/>'
-    + '<line x1="6" y1="12" x2="26" y2="12" stroke="#C9A84C" stroke-width="0.35" opacity="0.3"/>'
-    + '<line x1="6" y1="17" x2="26" y2="17" stroke="#C9A84C" stroke-width="0.35" opacity="0.18"/>'
-    + '<line x1="6" y1="22" x2="26" y2="22" stroke="#C9A84C" stroke-width="0.35" opacity="0.18"/>'
-    + '<line x1="6" y1="27" x2="26" y2="27" stroke="#C9A84C" stroke-width="0.35" opacity="0.3"/>'
-    + '<rect x="2" y="3" width="28" height="6" rx="3" fill="#3d2e0d" stroke="#C9A84C" stroke-width="0.5" opacity="0.85"/>'
-    + '<ellipse cx="16" cy="6" rx="4" ry="1.2" fill="#C9A84C" opacity="0.35"/>'
-    + '<rect x="2" y="31" width="28" height="6" rx="3" fill="#3d2e0d" stroke="#C9A84C" stroke-width="0.5" opacity="0.85"/>'
-    + '<ellipse cx="16" cy="34" rx="4" ry="1.2" fill="#C9A84C" opacity="0.35"/>'
-    + '</svg>';
-}
-
-// ── Рендерирај свитоци ───────────────────────────────────────
-function renderMandino(lang) {
-  var data = MANDINO_LANGS[lang] || MANDINO_LANGS['mk'];
-
-  document.getElementById('mp-title').innerHTML = data.title;
-  document.getElementById('mp-sub').textContent = data.sub;
-  document.getElementById('mp-cta-label').textContent = data.cta;
-
-  var list = document.getElementById('mp-list');
-  list.innerHTML = '';
-  data.scrolls.forEach(function(s) {
-    var row = document.createElement('div');
-    row.className = 'mp-scroll';
-    row.innerHTML = '<div class="mp-pap">' + papyrusSVG() + '</div>'
-      + '<div class="mp-right">'
-      + '<div class="mp-label">' + s.label + '</div>'
-      + '<div class="mp-msg">' + s.text + '</div>'
-      + '</div>';
-    list.appendChild(row);
-  });
-}
-
-// ── Поврзи со setLandingLang ─────────────────────────────────
-var _origSetLandingLang = window.setLandingLang;
-window.setLandingLang = function(lang) {
-  if (_origSetLandingLang) _origSetLandingLang(lang);
-  renderMandino(lang);
-};
-
-// ── Почетен рендер ───────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  var savedLang = localStorage.getItem('mlang') || 'mk';
-  renderMandino(savedLang);
-});
 </script>
 
 
@@ -1150,12 +747,12 @@ document.addEventListener('DOMContentLoaded', function() {
     <a href="privacy-policy.html" id="t-fprivacy">Политика на приватност</a>
     <a href="terms-of-service.html" id="t-fterms">Услови за користење</a>
     <a href="refund-policy.html" id="t-frefund">Политика на враќање</a>
-    <a href="mailto:contact@marginova.tech" id="t-fcontact">Контакт</a>
+    <a href="/cdn-cgi/l/email-protection#1675797862777562567b7764717f78796077386273757e" id="t-fcontact">Контакт</a>
   </div>
   <div class="footer-copy" id="t-fcopy"></div>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const LANGS = {
   mk:{
     live:'Живо 24/7',navCta:'Почни бесплатно →',harmonic:'ХАРМОНИЧЕН ИНТЕЛЕКТ',
@@ -1331,10 +928,4 @@ document.addEventListener('DOMContentLoaded', function(){
   setLandingLang(currentLang);
   var reveals = document.querySelectorAll('.reveal');
   var obs = new IntersectionObserver(function(entries){
-    entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible');});
-  },{threshold:0.08});
-  reveals.forEach(function(r){obs.observe(r);});
-});
-</script>
-</body>
-</html>
+    entries.forEach(function(e){if(e.i
