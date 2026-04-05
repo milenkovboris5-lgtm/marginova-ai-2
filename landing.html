@@ -60,7 +60,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
 /* FLAGS BLOCK */
 .flags-block{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;
   background:rgba(14,14,26,0.7);border:1px solid rgba(201,168,76,0.2);
-  border-radius:14px;padding:0.65rem 0.8rem;margin-bottom:1.6rem;}
+  border-radius:14px;padding:0.65rem 0.8rem;margin-bottom:2rem;}
 .flag-btn{display:flex;flex-direction:column;align-items:center;gap:3px;
   padding:0.4rem 0.3rem;border-radius:8px;border:1px solid transparent;
   background:transparent;cursor:pointer;transition:all 0.2s;min-width:40px;}
@@ -317,16 +317,11 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     <img src="avatar-main.png" alt="Marginova.AI">
     <div>
       <div class="nav-logo-text"><b>MARGIN</b>OVA<span>.AI</span></div>
-      <div class="nav-tagline">
-        <span style="color:#4a9eff;">Едукација</span> &nbsp;·&nbsp;
-        <span style="color:#2ddc7a;">Здравје</span> &nbsp;·&nbsp;
-        <span style="color:#C9A84C;">Бизнис</span>
-      </div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:0.52rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;background:linear-gradient(135deg,#8B6914,#C9A84C,#E8C97A,#C9A84C,#8B6914);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gold-shimmer 4s ease-in-out infinite;margin-top:1px;">The Game Changer</div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
-    <div class="live-badge"><div class="live-dot"></div><span id="t-live-nav"></span></div>
-    <a href="index.html" class="nav-cta" id="t-navCta"></a>
+    <a href="#" class="btn-android" style="font-size:0.7rem;padding:0.35rem 1rem;" id="t-navAndroid">🤖 Android App</a>
   </div>
 </nav>
 E html>
@@ -391,7 +386,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
 /* FLAGS BLOCK */
 .flags-block{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;
   background:rgba(14,14,26,0.7);border:1px solid rgba(201,168,76,0.2);
-  border-radius:14px;padding:0.65rem 0.8rem;margin-bottom:1.6rem;}
+  border-radius:14px;padding:0.65rem 0.8rem;margin-bottom:2rem;}
 .flag-btn{display:flex;flex-direction:column;align-items:center;gap:3px;
   padding:0.4rem 0.3rem;border-radius:8px;border:1px solid transparent;
   background:transparent;cursor:pointer;transition:all 0.2s;min-width:40px;}
@@ -626,13 +621,16 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
-    <div class="live-badge"><div class="live-dot"></div><span id="t-live-nav"></span></div>
-    <a href="index.html" class="nav-cta" id="t-navCta"></a>
+    <a href="#" class="btn-android" style="font-size:0.7rem;padding:0.35rem 1rem;" id="t-navAndroid">🤖 Android App</a>
   </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero" id="hero">
+  <div style="display:flex;gap:1rem;justify-content:center;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;">
+    <a href="index.html" class="btn-primary" id="t-btnStart" style="animation:pulse-gold 3s infinite;">Почни бесплатно →</a>
+    <span class="no-card" id="t-nocard" style="font-size:0.58rem;">Без кредитна картичка · Бесплатно</span>
+  </div>
   <div class="flags-block">
     <button class="flag-btn" id="hf-mk" onclick="setLandingLang('mk')"><img src="https://flagcdn.com/w40/mk.png" alt="MK"><span>MK</span></button>
     <button class="flag-btn" id="hf-sr" onclick="setLandingLang('sr')"><img src="https://flagcdn.com/w40/rs.png" alt="SR"><span>SR</span></button>
@@ -643,14 +641,7 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     <button class="flag-btn" id="hf-de" onclick="setLandingLang('de')"><img src="https://flagcdn.com/w40/de.png" alt="DE"><span>DE</span></button>
     <button class="flag-btn" id="hf-bg" onclick="setLandingLang('bg')"><img src="https://flagcdn.com/w40/bg.png" alt="BG"><span>BG</span></button>
   </div>
-  <div class="hero-top-actions">
-    <div class="live-badge"><div class="live-dot"></div><span id="t-live">Живо 24/7</span></div>
-    <div class="hero-btns">
-      <a href="index.html" class="btn-primary" id="t-btnStart">Почни бесплатно →</a>
-      <a href="#" class="btn-android" id="t-btnAndroid">🤖 Android App</a>
-    </div>
-    <div class="no-card" id="t-nocard">Без кредитна картичка · Бесплатно засекогаш</div>
-  </div>
+
   <div class="pulse-banners">
     <a href="index.html" class="pulse-banner pb-grant">
       <div class="pb-icon">💰</div>
@@ -663,6 +654,7 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
       <div class="pb-arrow">→</div>
     </a>
   </div>
+
   <div style="position:relative;width:360px;height:320px;margin:0 auto 1.4rem;">
     <div class="sat-left">
       <img src="avatar-ana.png" class="sat-side-img" style="border-color:rgba(45,220,122,0.6);" alt="Ana">
