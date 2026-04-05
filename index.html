@@ -2420,12 +2420,14 @@ async function sendMsg(){
     const brevityInstruction = '\n\nRESPONSE STYLE — CRITICAL:\n- Keep responses SHORT and CLEAN. Maximum 150-200 words.\n- NO long explanations or summaries unless explicitly asked.\n- If asked for a prompt, code, plan or recipe — GIVE IT DIRECTLY, no long intro or outro.\n- Use bullet points or numbered steps ONLY when it genuinely helps clarity.\n- Cut all filler text. Be sharp, direct, useful.\n- If the answer needs to be longer, ask: Want me to go deeper on this?';
     const sys = baseSys + langInstruction + brevityInstruction;
     
+    const userPlan = (window._userPlan || 'free');
     const payload = {
       model:'claude-sonnet-4-20250514',
       max_tokens:2000,
       system:sys,
       messages:messagesForAPI,
-      avatar:current
+      avatar:current,
+      plan:userPlan
     };
 
     if(savedImage){
@@ -2443,6 +2445,9 @@ async function sendMsg(){
       history[current].push({role:'assistant',content:reply});
       addMsg('ai',reply);speak(reply);
       saveMessage('assistant',reply);
+      if(data.premium_required && data.trigger==='upgrade_popup'){
+        setTimeout(()=>showUpgradePopup(),800);
+      }
     }
   }catch(e){removeTyping();addMsg('ai','⚠️ Unable to connect. Please try again.');}
   document.getElementById('send-btn').disabled=false;inp.focus();
@@ -3134,5 +3139,53 @@ function emailPlan(){
   </div>
   <div style="font-size:0.5rem;color:#3a3020;">&#169; 2026 Marginova.AI &#183; Хармоничен интелект</div>
 </div>
+
+<style>
+#upgrade-overlay{display:none;position:fixed;inset:0;background:rgba(9,9,16,0.85);z-index:9999;align-items:center;justify-content:center;padding:1rem;}
+#upgrade-overlay.show{display:flex;}
+#upgrade-box{background:#0e0e1a;border:1px solid rgba(201,168,76,0.4);border-radius:18px;padding:2rem 1.8rem;max-width:420px;width:100%;text-align:center;animation:popIn 0.3s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(0.9);}to{opacity:1;transform:scale(1);}}
+.up-icon{font-size:2rem;margin-bottom:0.8rem;}
+.up-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:400;color:#C9A84C;margin-bottom:0.5rem;}
+.up-sub{font-size:0.82rem;color:#c8bfa8;margin-bottom:1.2rem;line-height:1.6;}
+.up-features{list-style:none;padding:0;margin:0 0 1.5rem;text-align:left;background:rgba(201,168,76,0.05);border-radius:10px;padding:1rem 1.2rem;}
+.up-features li{font-size:0.78rem;color:#c8bfa8;padding:0.3rem 0;display:flex;align-items:center;gap:8px;}
+.up-features li::before{content:'✓';color:#2ddc7a;font-weight:700;flex-shrink:0;}
+.up-btn-primary{width:100%;padding:0.85rem;border-radius:50px;border:none;background:linear-gradient(135deg,rgba(201,168,76,0.95),rgba(201,168,76,0.7));color:#0a0a12;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:'Jost',sans-serif;margin-bottom:0.7rem;transition:all 0.2s;}
+.up-btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(201,168,76,0.3);}
+.up-btn-secondary{width:100%;padding:0.65rem;border-radius:50px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#7a7060;font-size:0.76rem;cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.2s;}
+.up-btn-secondary:hover{color:#c8bfa8;border-color:rgba(255,255,255,0.2);}
+.up-social{font-size:0.65rem;color:#5a5040;margin-top:0.8rem;}
+</style>
+
+<div id="upgrade-overlay">
+  <div id="upgrade-box">
+    <div class="up-icon">⚡</div>
+    <div class="up-title">Оваа функција носи реални приходи</div>
+    <div class="up-sub">Добиваш пристап до конкретни можности — грантови, тендери, правни совети со суми и рокови.</div>
+    <ul class="up-features">
+      <li>Активни EU грантови и фондови со рокови</li>
+      <li>Тендери и апликации чекор по чекор</li>
+      <li>Напредни правни и бизнис совети</li>
+      <li>1.500 пораки / месец</li>
+    </ul>
+    <button class="up-btn-primary" onclick="window.location.href='landing.html#pricing'">⚡ Отклучи Premium — $9.99/мес</button>
+    <button class="up-btn-secondary" onclick="closeUpgradePopup()">Продолжи со бесплатно (ограничено)</button>
+    <div class="up-social">347 корисници го отклучија оваа недела</div>
+  </div>
+</div>
+
+<script>
+function showUpgradePopup(){
+  document.getElementById('upgrade-overlay').classList.add('show');
+}
+function closeUpgradePopup(){
+  document.getElementById('upgrade-overlay').classList.remove('show');
+}
+document.getElementById('upgrade-overlay').addEventListener('click', function(e){
+  if(e.target===this) closeUpgradePopup();
+});
+</script>
+
 </body>
 </html>
