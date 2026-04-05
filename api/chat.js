@@ -1,7 +1,6 @@
-
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// Верзија: Стабилна без JWT
+// Верзија: Premium Strategy v2
 // ═══════════════════════════════════════════
 
 const rateLimitStore = {};
@@ -21,15 +20,12 @@ function checkRateLimit(req) {
   const now = Date.now();
   const end = new Date();
   end.setHours(23, 59, 59, 999);
-
   for (const k in rateLimitStore) {
     if (rateLimitStore[k].resetAt < now) delete rateLimitStore[k];
   }
-
   if (!rateLimitStore[key]) {
     rateLimitStore[key] = { count: 0, resetAt: end.getTime() };
   }
-
   rateLimitStore[key].count += 1;
   const count = rateLimitStore[key].count;
   return {
@@ -38,6 +34,54 @@ function checkRateLimit(req) {
   };
 }
 
+// ═══ PREMIUM TRIGGER ЗБОРОВИ ═══
+const PREMIUM_TRIGGERS = [
+  // MK
+  'најди грант','најди тендер','направи договор','правен совет','eu фонд',
+  'аплицирај','апликација за тендер','бизнис план','финансиска проекција',
+  'dropshipping производ','last minute','патување понуда',
+  // SR
+  'nađi grant','nađi tender','napravi ugovor','pravni savet','eu fond',
+  'aplikacija za tender','biznis plan','finansijska projekcija',
+  // EN
+  'find grant','find tender','make contract','legal advice','eu fund',
+  'tender application','business plan','financial projection',
+  'find me a grant','apply for','dropshipping product'
+];
+
+// ═══ АВАТАРИ КОИ БАРААТ PREMIUM ═══
+const PREMIUM_AVATARS = ['eva','tenderai','justinian','businessai','dropshipper','travelai'];
+
+// ═══ ПЛАНОВИ И ЛИМИТИ ═══
+const PLAN_LIMITS = {
+  free:    { monthly: 50,   daily: null },
+  pro:     { monthly: 1500, daily: null },
+  premium: { monthly: 5000, daily: null },
+  ultra:   { monthly: null, daily: null } // неограничено
+};
+
+// ═══ ПРОВЕРИ ДАЛИ Е PREMIUM TRIGGER ═══
+function isPremiumTrigger(message, avatar) {
+  const lower = (message || '').toLowerCase();
+  if (PREMIUM_AVATARS.includes(avatar)) {
+    return PREMIUM_TRIGGERS.some(t => lower.includes(t));
+  }
+  return false;
+}
+
+// ═══ ГЕНЕРИРАЈ 20% PREVIEW ОДГОВОР ═══
+async function generatePreview(systemPrompt, messages, apiKey, isMK) {
+  const previewPrompt = systemPrompt + '\n\nВАЖНО: Дај само КРАТОК почеток на одговорот (максимум 3 реченици, 20% од целосниот одговор). Не завршувај го одговорот. Запри на интересно место.';
+  const preview = await callGemini(previewPrompt, messages, false, null, null, null, apiKey);
+
+  const locked = isMK
+    ? `\n\n---\n🔒 **За целосен одговор потребен е Premium план**\n\nОвој одговор содржи:\n• Листа на активни грантови/тендери\n• Чекор-по-чекор водич за апликација\n• Конкретни суми и рокови\n\n**[⚡ Отклучи Premium →](#upgrade)** &nbsp; *или* &nbsp; **[Продолжи бесплатно ↓](#continue)**`
+    : `\n\n---\n🔒 **Full answer requires Premium plan**\n\nThis answer includes:\n• List of active grants/tenders\n• Step-by-step application guide\n• Specific amounts and deadlines\n\n**[⚡ Unlock Premium →](#upgrade)** &nbsp; *or* &nbsp; **[Continue free ↓](#continue)**`;
+
+  return preview + locked;
+}
+
+// ═══ ROUTER АВАТАРИ ═══
 const ROUTER_AVATARS = ['marginova'];
 
 const ADVANCED_INTENT_KEYWORDS = [
@@ -163,6 +207,8 @@ module.exports = async function handler(req, res) {
     const avatar = body.avatar || 'marginova';
     const hasImage = !!body.image;
     const systemPrompt = body.system || '';
+    const userPlan = body.plan || 'free'; // ќе дојде од Supabase преку index.html
+
     const messages = (body.messages || []).slice(-20).map(function(m) {
       return {
         role: m.role,
@@ -172,19 +218,33 @@ module.exports = async function handler(req, res) {
       };
     });
 
-    if (ROUTER_AVATARS.includes(avatar) && messages.length > 0) {
-      const lastUserMsg = messages.filter(function(m) { return m.role === 'user'; }).pop();
-      const userText = (lastUserMsg && lastUserMsg.content) || '';
-      const wordCount = userText.trim().split(/\s+/).length;
+    // ═══ ПРОВЕРИ ДАЛИ Е PREMIUM TRIGGER ═══
+    const lastUserMsg = messages.filter(m => m.role === 'user').pop();
+    const userText = (lastUserMsg && lastUserMsg.content) || '';
+    const isMK = /[а-шА-Ш]/.test(userText);
 
+    if (userPlan === 'free' && isPremiumTrigger(userText, avatar)) {
+      // Генерирај 20% preview + locked порака
+      const previewText = await generatePreview(systemPrompt, messages, apiKey, isMK);
+      return res.status(200).json({
+        content: [{ type: 'text', text: previewText }],
+        premium_required: true,
+        trigger: 'upgrade_popup',
+        remaining_messages: limit.remaining
+      });
+    }
+
+    // ═══ ROUTER ЛОГИКА ═══
+    if (ROUTER_AVATARS.includes(avatar) && messages.length > 0) {
+      const wordCount = userText.trim().split(/\s+/).length;
       if (wordCount >= 8) {
         const lower = userText.toLowerCase();
-        const isAdvanced = ADVANCED_INTENT_KEYWORDS.some(function(k) { return lower.includes(k); });
+        const isAdvanced = ADVANCED_INTENT_KEYWORDS.some(k => lower.includes(k));
         if (isAdvanced) {
-          var biz = 0, edu = 0, health = 0;
-          BUSINESS_KEYWORDS.forEach(function(k) { if (lower.includes(k)) biz++; });
-          EDUCATION_KEYWORDS.forEach(function(k) { if (lower.includes(k)) edu++; });
-          HEALTH_KEYWORDS.forEach(function(k) { if (lower.includes(k)) health++; });
+          let biz = 0, edu = 0, health = 0;
+          BUSINESS_KEYWORDS.forEach(k => { if (lower.includes(k)) biz++; });
+          EDUCATION_KEYWORDS.forEach(k => { if (lower.includes(k)) edu++; });
+          HEALTH_KEYWORDS.forEach(k => { if (lower.includes(k)) health++; });
           const max = Math.max(biz, edu, health);
           if (max >= 2) {
             const category = biz === max ? 'Business' : edu === max ? 'Education' : 'Health';
@@ -198,6 +258,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    // ═══ НОРМАЛЕН ОДГОВОР ═══
     const text = await callGemini(
       systemPrompt, messages, hasImage,
       body.image, body.imageType, body.imageText, apiKey
