@@ -738,6 +738,9 @@ nav::after{
     <input class="auth-input" type="password" id="auth-password" placeholder="Password"/>
     <div class="auth-msg" id="auth-msg"></div>
     <button class="auth-btn" onclick="handleAuth()" id="auth-btn">Sign In</button>
+    <div style="text-align:center;margin-top:0.5rem;">
+      <button onclick="loginAsGuest()" style="background:none;border:none;color:rgba(201,168,76,0.6);font-size:0.72rem;cursor:pointer;font-family:'Jost',sans-serif;text-decoration:underline;padding:0.3rem;">🧪 Continue as Guest (Testing)</button>
+    </div>
   </div>
 </div>
 
@@ -1912,23 +1915,24 @@ async function handleAuth(){
   btn.disabled=false;
 }
 
+// TESTING: guest shortcut — remove before production!
+function loginAsGuest(){showApp();}
+
 function showApp(){
   document.getElementById('auth-screen').style.display='none';
   var mn=document.getElementById('main-nav');mn.style.display='flex';
-  // lang flags now in nav
   document.getElementById('chat-page').style.display='flex';
   document.getElementById('avatar-grid-page').style.display='block';
   document.getElementById('chat-area-wrap').style.display='none';
   const savedLang=localStorage.getItem('mlang')||'mk';
   setLangGrid(savedLang);
+  // GUEST MODE: show guest label, skip Supabase profile/token calls
+  const drawerEmail=document.getElementById('drawer-email');
+  if(drawerEmail) drawerEmail.textContent='🧪 Guest (Testing Mode)';
+  window._userPlan='ultra'; // unlimited messages for testing
+  updateTokenDisplay('∞');
   if(currentUser){
-    const email=currentUser.email;
-    const drawerEmail=document.getElementById('drawer-email');
-    if(drawerEmail)drawerEmail.textContent=email;
-    loadProfile().then(()=>{
-      // Daily login XP is handled inside checkStreak (called from loadProfile)
-      // to ensure it only triggers once per 24 hours
-    });
+    loadProfile().then(()=>{});
     loadTokens();
     initReferral();
   }
@@ -1946,9 +1950,15 @@ async function logout(){
 }
 
 // Check existing session
+// ═══ TESTING MODE: GUEST AUTO-LOGIN ═══
+// TODO: Remove this block before production launch!
+// Uncomment the block below and delete this one to restore real auth.
+/*
 db.auth.getSession().then(({data:{session}})=>{
   if(session){currentUser=session.user;showApp();}
 });
+*/
+// showApp() is called at the bottom of the script after all functions are defined
 
 // LANG
 function setLang(l){
@@ -3125,6 +3135,12 @@ function emailPlan(){
 }
 
 // Show/hi
+
+// ═══ GUEST MODE: call showApp after ALL functions are defined ═══
+// TODO: Replace with real auth block before production!
+window.addEventListener('DOMContentLoaded', function() {
+  showApp();
+});
 </script>
 
 <div id="app-footer" style="text-align:center;padding:0.6rem 1rem 0.8rem;border-top:1px solid rgba(201,168,76,0.1);background:rgba(9,9,16,0.8);">
@@ -3133,7 +3149,7 @@ function emailPlan(){
     <span style="color:#3a3020;font-size:0.55rem;">&#183;</span>
     <a href="terms-of-service.html" style="font-size:0.55rem;color:#7a7060;text-decoration:none;" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#7a7060'">Услови за користење</a>
     <span style="color:#3a3020;font-size:0.55rem;">&#183;</span>
-    <a href="mailto:contact@marginova.tech" style="font-size:0.55rem;color:#7a7060;text-decoration:none;" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#7a7060'">Контакт &amp; Поддршка</a>
+    <a href="/cdn-cgi/l/email-protection#32515d5c46535146725f5340555b5c5d44531c4657515a" style="font-size:0.55rem;color:#7a7060;text-decoration:none;" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#7a7060'">Контакт &amp; Поддршка</a>
     <span style="color:#3a3020;font-size:0.55rem;">&#183;</span>
     <a href="refund-policy.html" style="font-size:0.55rem;color:#7a7060;text-decoration:none;" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#7a7060'">Политика на враќање</a>
   </div>
@@ -3175,17 +3191,11 @@ function emailPlan(){
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 function showUpgradePopup(){
   document.getElementById('upgrade-overlay').classList.add('show');
 }
 function closeUpgradePopup(){
   document.getElementById('upgrade-overlay').classList.remove('show');
 }
-document.getElementById('upgrade-overlay').addEventListener('click', function(e){
-  if(e.target===this) closeUpgradePopup();
-});
-</script>
-
-</body>
-</html>
+do
