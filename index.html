@@ -1001,8 +1001,8 @@ nav::after{
           <div id="ms-hero-left"></div>
         </div>
 
-        <!-- ЦЕНТАР: Marginova со прстени -->
-        <div style="position:relative;width:120px;height:120px;flex-shrink:0;cursor:pointer;" onclick="selectAvatarGrid(document.getElementById('item-marginova')||this,'marginova','Marginova','avatar-main.png')">
+        <!-- ЦЕНТАР: Marginova лого (само декоративно, не clickable) -->
+        <div style="position:relative;width:120px;height:120px;flex-shrink:0;">
           <div style="position:absolute;inset:-22px;border-radius:50%;border:1px solid rgba(201,168,76,0.35);animation:ring-rot 8s linear infinite;"></div>
           <div style="position:absolute;inset:-14px;border-radius:50%;border:1px dashed rgba(201,168,76,0.2);animation:ring-rot 14s linear infinite reverse;"></div>
           <div style="position:absolute;inset:-30px;border-radius:50%;border:1px solid rgba(201,168,76,0.1);animation:ring-rot 20s linear infinite;"></div>
@@ -1172,7 +1172,7 @@ nav::after{
         <div class="ag-card biz" id="item-tenderai" onclick="selectAvatarGrid(this,'tenderai','Tender AI','avatar-tenderai.png')" style="border:1.5px solid rgba(201,168,76,0.5) !important;box-shadow:0 0 8px rgba(201,168,76,0.15);" data-role-mk="Тендери & Лицитации 📋" data-role-sr="Tenderi & Licitacije 📋" data-role-hr="Tenderi & Licitacije 📋" data-role-bs="Tenderi & Licitacije 📋" data-role-en="Tenders & Auctions 📋" data-role-sq="Tenderat & Ankandet 📋" data-role-de="Ausschreibungen & Auktionen 📋" data-role-bg="Търгове & Търгове 📋">
           <div class="ag-img-wrap"><img class="ag-img" src="avatar-tenderai.png" alt="Tender AI"/><div class="ag-online"></div></div>
           <div class="ag-name">Tender AI</div><div class="ag-role" id="role-tenderai">Тендери & Лицитации 📋</div>
-          <div class="ag-tag ag-pro">PRO</div>
+          <div class="ag-tag ag-free">TEST</div>
         </div>
 
     <div class="ag-bottom-pad"></div>
@@ -1331,7 +1331,7 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
-let lang='en', soundOn=false, selectedStars=0, current='marginova';
+let lang='en', soundOn=false, selectedStars=0, current='aimentor';
 let history={}, currentUser=null, authMode='login';
 
 const AVATARS={
@@ -2195,7 +2195,7 @@ function setImg(el,src,alt){el.innerHTML=`<img src="${src}" alt="${alt}" style="
 
 // FREE avatars - only these 2 + marginova
 // Site avatari se dostapni - limitot e na PORAKI ne na avatari
-const FREE_AVATARS = ['marginova', 'quizai', 'aimentor', 'sophie', 'hanna', 'luna', 'chef', 'ana', 'leo', 'sara', 'liber', 'planner', 'fitness', 'ethan', 'developer', 'dropshipper', 'eva', 'travelai', 'creativeai', 'businessai', 'justinian'];
+const FREE_AVATARS = ['marginova', 'quizai', 'aimentor', 'sophie', 'hanna', 'luna', 'chef', 'ana', 'leo', 'sara', 'liber', 'planner', 'fitness', 'ethan', 'developer', 'dropshipper', 'eva', 'travelai', 'creativeai', 'businessai', 'justinian', 'tenderai'];
 
 function showProLocked(){
   document.getElementById('pro-locked').style.display='flex';
