@@ -105,11 +105,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
   font-weight:300;letter-spacing:0.2em;margin-bottom:0.4rem;}
 .hero-logo b{color:var(--gold);}
 .hero-logo span{color:var(--accent);}
-.hero-harmonic{font-family:'Cormorant Garamond',serif;font-size:clamp(1.5rem,5vw,3rem);
-  font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
-  background:linear-gradient(135deg,var(--gold),var(--gold2),var(--gold));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  margin-bottom:0.3rem;animation:glow-text 3s ease-in-out infinite;}
+/* hero-harmonic moved to game-changer section */
 .hero-domains{display:flex;gap:1rem;justify-content:center;margin-bottom:1.6rem;flex-wrap:wrap;}
 .hero-domain{font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:500;}
 .hero-domain.edu{color:var(--edu);}
@@ -281,6 +277,36 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
 .sat-side-label{font-size:0.56rem;font-weight:700;text-align:center;max-width:70px;line-height:1.3;}
 .sat-side-sub{font-size:0.42rem;color:var(--muted);text-align:center;max-width:70px;}
 @media(max-width:650px){.sat-left,.sat-right{display:none;}.pulse-banners{gap:0.7rem;}.pulse-banner{min-width:160px;padding:0.65rem 1rem;}.pb-main{font-size:0.75rem;}}
+
+/* GAME CHANGER */
+.game-changer{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.1rem,3.5vw,2rem);
+  font-weight:300;
+  letter-spacing:0.35em;
+  text-transform:uppercase;
+  background:linear-gradient(135deg,#8B6914,#C9A84C,#E8C97A,#F5DFA0,#C9A84C,#8B6914);
+  background-size:300% 300%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:gold-shimmer 4s ease-in-out infinite;
+  margin-bottom:0.6rem;
+  display:block;
+}
+@keyframes gold-shimmer{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+.hero-harmonic{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.5rem,5vw,3rem);
+  font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
+  background:linear-gradient(135deg,var(--gold),var(--gold2),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:0.3rem;animation:glow-text 3s ease-in-out infinite;
+}
 </style>
 </head>
 <body>
@@ -411,11 +437,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
   font-weight:300;letter-spacing:0.2em;margin-bottom:0.4rem;}
 .hero-logo b{color:var(--gold);}
 .hero-logo span{color:var(--accent);}
-.hero-harmonic{font-family:'Cormorant Garamond',serif;font-size:clamp(1.5rem,5vw,3rem);
-  font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
-  background:linear-gradient(135deg,var(--gold),var(--gold2),var(--gold));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  margin-bottom:0.3rem;animation:glow-text 3s ease-in-out infinite;}
+/* hero-harmonic moved to game-changer section */
 .hero-domains{display:flex;gap:1rem;justify-content:center;margin-bottom:1.6rem;flex-wrap:wrap;}
 .hero-domain{font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:500;}
 .hero-domain.edu{color:var(--edu);}
@@ -693,6 +715,7 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     </div>
   </div>
   <div class="hero-logo"><b>MARGIN</b>OVA<span>.AI</span></div>
+  <span class="game-changer">The Game Changer</span>
   <div class="hero-harmonic" id="t-harmonic">ХАРМОНИЧЕН ИНТЕЛЕКТ</div>
   <div class="hero-domains">
     <div class="hero-domain edu"><span class="domain-dot edu"></span><span id="t-d-edu">ЕДУКАЦИЈА</span></div>
