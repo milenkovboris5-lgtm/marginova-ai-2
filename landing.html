@@ -318,7 +318,6 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     <div>
       <div class="nav-logo-text"><b>MARGIN</b>OVA<span>.AI</span></div>
       <div class="nav-tagline">
-        <span style="color:#C9A84C;">Хармоничен интелект</span> &nbsp;·&nbsp;
         <span style="color:#4a9eff;">Едукација</span> &nbsp;·&nbsp;
         <span style="color:#2ddc7a;">Здравје</span> &nbsp;·&nbsp;
         <span style="color:#C9A84C;">Бизнис</span>
@@ -620,7 +619,6 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     <div>
       <div class="nav-logo-text"><b>MARGIN</b>OVA<span>.AI</span></div>
       <div class="nav-tagline">
-        <span style="color:#C9A84C;">Хармоничен интелект</span> &nbsp;·&nbsp;
         <span style="color:#4a9eff;">Едукација</span> &nbsp;·&nbsp;
         <span style="color:#2ddc7a;">Здравје</span> &nbsp;·&nbsp;
         <span style="color:#C9A84C;">Бизнис</span>
@@ -705,10 +703,10 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     </div>
     <div style="position:absolute;top:50%;right:0;width:105px;height:1px;background:linear-gradient(90deg,rgba(201,168,76,0.4),rgba(201,168,76,0.1));transform:translateY(-50%);"></div>
     <div class="sat-right">
-      <img src="avatar-businessai.png" class="sat-side-img" style="border-color:rgba(201,168,76,0.6);" alt="Business AI">
-      <div class="sat-side-label" style="color:var(--gold);">Business AI</div>
-      <div class="sat-side-sub">Стратегија 💼</div>
-      <div style="width:1px;height:14px;background:rgba(201,168,76,0.3);"></div>
+      <img src="avatar-liber.png" class="sat-side-img" style="border-color:rgba(74,158,255,0.6);object-position:center 20%;" alt="LIBER">
+      <div class="sat-side-label" style="color:var(--edu);">LIBER</div>
+      <div class="sat-side-sub">Енциклопедија 📚</div>
+      <div style="width:1px;height:14px;background:rgba(74,158,255,0.3);"></div>
       <img src="avatar-eva.png" class="sat-side-img" style="border-color:rgba(201,168,76,0.6);margin-top:4px;" alt="Eva">
       <div class="sat-side-label" style="color:var(--gold);">Eva</div>
       <div class="sat-side-sub">EU Funds 🇪🇺</div>
@@ -716,7 +714,7 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
   </div>
   <div class="hero-logo"><b>MARGIN</b>OVA<span>.AI</span></div>
   <span class="game-changer">The Game Changer</span>
-  <div class="hero-harmonic" id="t-harmonic">ХАРМОНИЧЕН ИНТЕЛЕКТ</div>
+  <div class="hero-harmonic" id="t-harmonic" style="display:none;"></div>
   <div class="hero-domains">
     <div class="hero-domain edu"><span class="domain-dot edu"></span><span id="t-d-edu">ЕДУКАЦИЈА</span></div>
     <div class="hero-domain health"><span class="domain-dot health"></span><span id="t-d-health">ЗДРАВЈЕ</span></div>
@@ -724,7 +722,7 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
   </div>
   <div class="hero-desc-box reveal">
     <div class="hero-desc-label" id="t-what">ШТО Е MARGINOVA.AI</div>
-    <div class="hero-desc-text" id="t-desc">Ова е <em>Marginova</em> — хармоничен интелект.</div>
+    <div class="hero-desc-text" id="t-desc">Ова е <em>Marginova</em> — The Game Changer.</div>
     <div class="hero-always" id="t-always"><b>Секогаш тука.</b> Секогаш со тебе.</div>
   </div>
   <div class="hero-stats">
@@ -948,7 +946,7 @@ const LANGS = {
     live:'Живо 24/7',navCta:'Почни бесплатно →',harmonic:'ХАРМОНИЧЕН ИНТЕЛЕКТ',
     dEdu:'ЕДУКАЦИЈА',dHealth:'ЗДРАВЈЕ',dBiz:'БИЗНИС',
     what:'Што е Marginova.AI',
-    desc:'Ова е <em>Marginova</em> — хармоничен интелект.<br>Не е веб за реклами. Тоа е портал кон примената на вештачката интелигенција во делот на едукацијата, здравјето и бизнисот — со помош на <em>20 специјализирани специјалисти</em> кои ќе ти помогнат да го усовршиш твојот живот со примена на вештачка интелигенција.',
+    desc:'Ова е <em>Marginova</em> — The Game Changer.<br>Не е веб за реклами. Тоа е портал кон примената на вештачката интелигенција во делот на едукацијата, здравјето и бизнисот — со помош на <em>20 специјализирани специјалисти</em> кои ќе ти помогнат да го усовршиш твојот живот со примена на вештачка интелигенција.',
     always:'<b>Секогаш тука.</b> Секогаш со тебе.',evaSub:'Ги наоѓам сите грантови, фондови и EU програми',tenderSub:'Те информирам секој ден за нови тендери и лицитации',quizSub:'Дневен квиз + Мандино 10-дневен предизвик',bizSub:'Стратегија, финансии и бизнис анализа',
     btnStart:'Почни бесплатно →',btnAndroid:'🤖 Android апп',btnAndroid2:'🤖 Android апп',
     nocard:'Без кредитна картичка · Бесплатно засекогаш',
@@ -974,15 +972,15 @@ const LANGS = {
     refTitle:'Покани пријатели. <em>Освои награди.</em>',refDesc:'Сподели го твојот линк и освои премиум планови — целосно бесплатно.',
     ref1:'Покани <b>10 пријатели</b> (верификувани)',rew1:'🎁 +50 бесплатни пораки',ref2:'Покани <b>30 пријатели</b> (верификувани)',rew2:'⭐ 7 дена Pro — Бесплатно',
     ctaTitle:'Подготвен да го запознаеш <em>твојот AI тим?</em>',ctaDesc:'Придружи се на илјадниците кои го открија попаметниот начин.',ctaBtn:'Почни бесплатно — Без картичка →',
-    tagline:'Хармоничен интелект · Едукација · Здравје · Бизнис',
+    tagline:'Едукација · Здравје · Бизнис',
     fprivacy:'Политика на приватност',fterms:'Услови за користење',frefund:'Политика на враќање',fcontact:'Контакт',
-    fcopy:'© 2026 Marginova.AI · Хармоничен интелект · Едукација · Здравје · Бизнис'
+    fcopy:'© 2026 Marginova.AI · The Game Changer'
   },
   sr:{
     live:'Živo 24/7',navCta:'Počni besplatno →',harmonic:'HARMONIČNI INTELEKT',
     dEdu:'EDUKACIJA',dHealth:'ZDRAVLJE',dBiz:'BIZNIS',
     what:'Šta je Marginova.AI',
-    desc:'Ovo je <em>Marginova</em> — harmonični intelekt.<br>Nije web za reklame. To je portal ka primeni veštačke inteligencije u oblasti edukacije, zdravlja i biznisa — uz pomoć <em>20 specijalizovanih specijalista</em> koji će ti pomoći da unaprediš svoj život.',
+    desc:'Ovo je <em>Marginova</em> — The Game Changer.<br>Nije web za reklame. To je portal ka primeni veštačke inteligencije u oblasti edukacije, zdravlja i biznisa — uz pomoć <em>20 specijalizovanih specijalista</em> koji će ti pomoći da unaprediš svoj život.',
     always:'<b>Uvek tu.</b> Uvek uz tebe.',evaSub:'Pronalazim sve grantove, fondove i EU programe',tenderSub:'Informišem te svaki dan o novim tenderima, lizinzima i licitacijama',
     btnStart:'Počni besplatno →',btnAndroid:'🤖 Android app',btnAndroid2:'🤖 Android app',
     nocard:'Bez kreditne kartice · Besplatno zauvek',
@@ -1002,15 +1000,15 @@ const LANGS = {
     refTitle:'Pozovi prijatelje. <em>Osvoji nagrade.</em>',refDesc:'Podeli link i osvoji premium planove — potpuno besplatno.',
     ref1:'Pozovi <b>10 prijatelja</b> (verifikovani)',rew1:'🎁 +50 besplatnih poruka',ref2:'Pozovi <b>30 prijatelja</b> (verifikovani)',rew2:'⭐ 7 dana Pro — Besplatno',
     ctaTitle:'Spreman da upoznaš <em>tvoj AI tim?</em>',ctaDesc:'Pridruži se hiljadama koji su otkrili pametniji način.',ctaBtn:'Počni besplatno — Bez kartice →',
-    tagline:'Harmonični intelekt · Edukacija · Zdravlje · Biznis',
+    tagline:'Edukacija · Zdravlje · Biznis',
     fprivacy:'Politika privatnosti',fterms:'Uslovi korišćenja',frefund:'Politika povrata',fcontact:'Kontakt',
-    fcopy:'© 2026 Marginova.AI · Harmonični intelekt'
+    fcopy:'© 2026 Marginova.AI · The Game Changer'
   },
   en:{
     live:'Live 24/7',navCta:'Start Free →',harmonic:'HARMONIOUS INTELLIGENCE',
     dEdu:'EDUCATION',dHealth:'HEALTH',dBiz:'BUSINESS',
     what:'What is Marginova.AI',
-    desc:'This is <em>Marginova</em> — harmonious intelligence.<br>Not a website for ads. This is a portal to the application of artificial intelligence in education, health and business — with the help of <em>20 specialized AI specialists</em> who will help you improve your life.',
+    desc:'This is <em>Marginova</em> — The Game Changer.<br>Not a website for ads. This is a portal to the application of artificial intelligence in education, health and business — with the help of <em>20 specialized AI specialists</em> who will help you improve your life.',
     always:'<b>Always here.</b> Always with you.',evaSub:'I find all grants, funds and EU programs',tenderSub:'I inform you every day about new tenders, leases and auctions',
     btnStart:'Start for Free →',btnAndroid:'🤖 Android App',btnAndroid2:'🤖 Download Android App',
     nocard:'No credit card needed · Free forever',
@@ -1030,9 +1028,9 @@ const LANGS = {
     refTitle:'Invite friends. <em>Earn rewards.</em>',refDesc:'Share your link and earn premium plans — completely free.',
     ref1:'Invite <b>10 friends</b> (verified)',rew1:'🎁 +50 free messages',ref2:'Invite <b>30 friends</b> (verified)',rew2:'⭐ 7 days Pro — Free',
     ctaTitle:'Ready to meet your <em>AI team?</em>',ctaDesc:'Join thousands who discovered the smarter way to live.',ctaBtn:'Start for Free — No Card Needed →',
-    tagline:'Harmonious Intelligence · Education · Health · Business',
+    tagline:'Education · Health · Business',
     fprivacy:'Privacy Policy',fterms:'Terms of Service',frefund:'Refund Policy',fcontact:'Contact',
-    fcopy:'© 2026 Marginova.AI · Harmonious Intelligence'
+    fcopy:'© 2026 Marginova.AI · The Game Changer'
   }
 };
 
