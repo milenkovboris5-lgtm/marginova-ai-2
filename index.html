@@ -913,9 +913,9 @@ nav::after{
 
 
 
-<div class="main" id="chat-page" style="display:none;flex-direction:column;">
+<div class="main" id="chat-page" style="display:none;flex-direction:column;overflow:hidden;position:relative;">
   <!-- AVATAR GRID -->
-  <div id="avatar-grid-page" style="overflow-y:auto;flex:1;background:var(--bg);">
+  <div id="avatar-grid-page" style="overflow-y:auto;flex:1;background:var(--bg);min-height:0;position:relative;">
     <style>
     .ag-section{padding:0 0.85rem 0.25rem;position:relative;z-index:1;}
     .ag-section-header{display:flex;align-items:center;gap:8px;padding:0.9rem 0 0.55rem;}
@@ -948,19 +948,20 @@ nav::after{
     .ag-card.biz:hover,.ag-card.biz.selected{border-color:var(--gold);box-shadow:0 0 12px rgba(201,168,76,0.2);}
 
     /* REDESIGNED AVATAR CARDS */
-    .ag-card{background:linear-gradient(145deg,rgba(19,19,31,0.95),rgba(14,14,26,0.9));border-radius:16px;padding:1.1rem 0.8rem 0.9rem;display:flex;flex-direction:column;align-items:center;gap:0.4rem;cursor:pointer;transition:border-color 0.2s,transform 0.15s,box-shadow 0.2s;text-align:center;animation:fadeUp 0.35s ease both;min-height:180px;}
+    .ag-card{background:linear-gradient(145deg,rgba(19,19,31,0.95),rgba(14,14,26,0.9));border-radius:14px;padding:0.85rem 0.6rem 0.75rem;display:flex;flex-direction:column;align-items:center;gap:0.3rem;cursor:pointer;transition:border-color 0.2s,transform 0.15s,box-shadow 0.2s;text-align:center;animation:fadeUp 0.35s ease both;min-height:160px;}
     .ag-card:hover{transform:translateY(-3px);}
     .ag-card:active{transform:scale(0.97);}
-    .ag-img-wrap{position:relative;width:64px;height:64px;}
-    .ag-img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--border);transition:border-color 0.2s,box-shadow 0.2s;}
+    .ag-img-wrap{position:relative;width:56px;height:56px;}
+    .ag-img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--border);transition:border-color 0.2s,box-shadow 0.2s;}
     .ag-name{font-size:0.8rem;font-weight:600;color:var(--text);line-height:1.2;margin-top:0.2rem;}
     .ag-role{font-size:0.56rem;color:var(--muted);line-height:1.3;}
     .ag-services{display:flex;flex-direction:column;gap:2px;margin-top:0.3rem;width:100%;}
-    .ag-service{font-size:0.52rem;font-weight:600;letter-spacing:0.04em;color:#C9A84C;line-height:1.4;}
+    .ag-service{font-size:0.48rem;font-weight:600;letter-spacing:0.03em;color:#C9A84C;line-height:1.35;}
     .ag-card.edu .ag-service{color:#E8C97A;}
     .ag-card.biz .ag-service{color:#C9A84C;}
-    .ag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:0.9rem;padding:0 0.6rem 0.4rem;}
-    @media(max-width:480px){.ag-grid{grid-template-columns:repeat(2,1fr);gap:0.7rem;}}
+    .ag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.75rem;padding:0 0.5rem 0.4rem;}
+    @media(max-width:600px){.ag-grid{grid-template-columns:repeat(2,1fr);gap:0.6rem;}}
+    @media(min-width:900px){.ag-grid{grid-template-columns:repeat(5,1fr);}}
     /* SECTION LABELS */
     .ag-section-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;color:var(--text);letter-spacing:0.08em;}
     .ag-section-title.edu-title{color:#4a9eff;}
@@ -974,7 +975,7 @@ nav::after{
     .ag-tagline h2{font-family:'Cormorant Garamond',serif;font-size:clamp(1.2rem,4vw,1.7rem);font-weight:300;letter-spacing:0.06em;color:var(--text);line-height:1.3;}
     .ag-tagline h2 em{color:var(--gold);font-style:italic;}
     .ag-tagline p{font-size:0.65rem;color:var(--muted);margin-top:0.25rem;}
-    .ag-chat-bar{position:fixed;bottom:0;left:0;right:0;padding:0.7rem 0.85rem 1.2rem;background:linear-gradient(180deg,transparent 0%,rgba(9,9,16,0.97) 18%);transform:translateY(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1);z-index:300;}
+    .ag-chat-bar{position:fixed;bottom:0;left:0;right:0;padding:0.7rem 0.85rem 1.4rem;background:linear-gradient(180deg,transparent 0%,rgba(9,9,16,0.99) 25%);transform:translateY(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1);z-index:9999;}
     .ag-chat-bar.show{transform:translateY(0);}
     @media(max-width:480px){.ag-chat-bar{padding:0.6rem 1rem 1.6rem;}.ag-chat-btn{width:100%;text-align:center;padding:0.75rem 1rem;font-size:0.82rem;}}
     .ag-chat-inner{display:flex;align-items:center;gap:10px;background:rgba(19,19,31,0.99);border:1px solid var(--border2);border-radius:50px;padding:0.48rem 0.55rem 0.48rem 0.85rem;box-shadow:0 -4px 30px rgba(0,0,0,0.5);}
@@ -1185,7 +1186,7 @@ nav::after{
 
       </div>
     </div>
-    <div class="ag-bottom-pad"></div>
+    <div class="ag-bottom-pad" style="height:90px;"></div>
 
     <!-- CHAT BAR -->
     <div class="ag-chat-bar" id="ag-chat-bar">
@@ -1201,7 +1202,7 @@ nav::after{
     </div>
   </div>
 
-  <div class="chat-area" id="chat-area-wrap">
+  <div class="chat-area" id="chat-area-wrap" style="position:absolute;inset:0;z-index:2;">
     <div class="avatar-stage">
       <button onclick="showAvatarGrid()" style="width:30px;height:30px;border-radius:50%;border:2px solid #2ddc7a;background:rgba(45,220,122,0.12);cursor:pointer;color:#2ddc7a;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px;animation:pulse-green 2s infinite;" title="Back to specialists">←</button>
       <div class="stage-media" id="stage-media"><img src="logo-main.png" alt="Marginova.AI" style="border-radius:50%;"/></div>
