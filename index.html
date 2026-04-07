@@ -915,7 +915,7 @@ nav::after{
 
 <div class="main" id="chat-page" style="display:none;flex-direction:column;overflow:hidden;position:relative;">
   <!-- AVATAR GRID -->
-  <div id="avatar-grid-page" style="overflow-y:auto;flex:1;background:var(--bg);min-height:0;position:relative;">
+  <div id="avatar-grid-page" style="overflow-y:auto;position:absolute;inset:0;background:var(--bg);z-index:1;">
     <style>
     .ag-section{padding:0 0.85rem 0.25rem;position:relative;z-index:1;}
     .ag-section-header{display:flex;align-items:center;gap:8px;padding:0.9rem 0 0.55rem;}
@@ -1202,7 +1202,7 @@ nav::after{
     </div>
   </div>
 
-  <div class="chat-area" id="chat-area-wrap" style="position:absolute;inset:0;z-index:2;">
+  <div class="chat-area" id="chat-area-wrap" style="display:none;flex-direction:column;position:absolute;inset:0;z-index:10;background:var(--bg);">
     <div class="avatar-stage">
       <button onclick="showAvatarGrid()" style="width:30px;height:30px;border-radius:50%;border:2px solid #2ddc7a;background:rgba(45,220,122,0.12);cursor:pointer;color:#2ddc7a;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px;animation:pulse-green 2s infinite;" title="Back to specialists">←</button>
       <div class="stage-media" id="stage-media"><img src="logo-main.png" alt="Marginova.AI" style="border-radius:50%;"/></div>
@@ -2223,7 +2223,7 @@ function selectAvatar(id){
   const grid=document.getElementById("avatar-grid-page");
   const chatWrap=document.getElementById("chat-area-wrap");
   if(grid) grid.style.display="none";
-  if(chatWrap) chatWrap.style.display="flex";
+  if(chatWrap){chatWrap.style.display="flex";chatWrap.style.flexDirection="column";}
   closeDrawer();
   const av=AVATARS[id];
   document.getElementById('stage-name').textContent=av.name;
@@ -3009,7 +3009,7 @@ function goToChat(){
   const id=agSelCard.id.replace('item-','');
   // Hide grid, show chat
   document.getElementById('avatar-grid-page').style.display='none';
-  document.getElementById('chat-area-wrap').style.display='flex';
+  const cw=document.getElementById('chat-area-wrap');cw.style.display='flex';cw.style.flexDirection='column';
   document.getElementById('ag-chat-bar').classList.remove('show');
   selectAvatar(id);
 }
@@ -3017,7 +3017,7 @@ function goToChat(){
 // ═══ SHOW GRID BACK ═══
 function showAvatarGrid(){
   document.getElementById('avatar-grid-page').style.display='block';
-  document.getElementById('chat-area-wrap').style.display='none';
+  const cw=document.getElementById('chat-area-wrap');cw.style.display='none';cw.style.flexDirection='';
   if(agSelCard){agSelCard.classList.remove('selected');agSelCard=null;}
   document.getElementById('ag-chat-bar').classList.remove('show');
 }
