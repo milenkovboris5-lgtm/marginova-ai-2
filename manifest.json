@@ -1,7 +1,7 @@
 {
-  "name": "Marginova.AI — Your AI Brain Coach",
+  "name": "Marginova.AI — The Game Changer",
   "short_name": "Marginova.AI",
-  "description": "18 specialized AI assistants available 24/7. Voice conversations. Free to start.",
+  "description": "AI specialists available 24/7. Personal Growth & AI Business OS. Free to start.",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
@@ -11,25 +11,25 @@
   "lang": "en",
   "icons": [
     {
-      "src": "/avatar-main.png",
+      "src": "/logo-main.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/avatar-main.png",
+      "src": "/logo-main.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/avatar-main.png",
+      "src": "/logo-main.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/avatar-main.png",
+      "src": "/logo-main.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -37,7 +37,7 @@
   ],
   "screenshots": [
     {
-      "src": "/avatar-main.png",
+      "src": "/logo-main.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow"
@@ -48,16 +48,16 @@
     {
       "name": "Chat with Marginova",
       "short_name": "Chat",
-      "description": "Start a conversation with Marginova",
+      "description": "Start a conversation",
       "url": "/index.html",
-      "icons": [{ "src": "/avatar-main.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/logo-main.png", "sizes": "192x192" }]
     },
     {
       "name": "EU Grants with Eva",
       "short_name": "Eva",
       "description": "Find EU funds and grants",
       "url": "/index.html",
-      "icons": [{ "src": "/avatar-main.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/logo-main.png", "sizes": "192x192" }]
     }
   ]
 }
