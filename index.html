@@ -913,9 +913,9 @@ nav::after{
 
 
 
-<div class="main" id="chat-page" style="display:none;flex-direction:column;overflow:hidden;position:relative;">
+<div class="main" id="chat-page" style="display:none;flex-direction:column;flex:1;min-height:0;">
   <!-- AVATAR GRID -->
-  <div id="avatar-grid-page" style="overflow-y:auto;position:absolute;inset:0;background:var(--bg);z-index:1;">
+  <div id="avatar-grid-page" style="overflow-y:auto;flex:1;background:var(--bg);min-height:0;">
     <style>
     .ag-section{padding:0 0.85rem 0.25rem;position:relative;z-index:1;}
     .ag-section-header{display:flex;align-items:center;gap:8px;padding:0.9rem 0 0.55rem;}
@@ -1009,7 +1009,9 @@ nav::after{
         </a>
       </div>
     </div>
+    </div>
 
+    <div style="text-align:center;padding:0.6rem 1rem 0.2rem;">
       <h2 id="ag-headline" style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.1rem,4vw,1.6rem);font-weight:300;letter-spacing:0.06em;color:var(--text);line-height:1.3;margin-bottom:0.2rem;">Твојот <em style="color:var(--gold);font-style:italic;">AI тим.</em><br>Избери специјалист.</h2>
       <p id="ag-sub" style="font-size:0.6rem;color:var(--muted);margin-top:0.15rem;">Едукација · Здравје · Бизнис · 8 јазици</p>
     </div>
@@ -1202,7 +1204,7 @@ nav::after{
     </div>
   </div>
 
-  <div class="chat-area" id="chat-area-wrap" style="display:none;flex-direction:column;position:absolute;inset:0;z-index:10;background:var(--bg);">
+  <div class="chat-area" id="chat-area-wrap" style="display:none;flex-direction:column;flex:1;min-height:0;">
     <div class="avatar-stage">
       <button onclick="showAvatarGrid()" style="width:30px;height:30px;border-radius:50%;border:2px solid #2ddc7a;background:rgba(45,220,122,0.12);cursor:pointer;color:#2ddc7a;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px;animation:pulse-green 2s infinite;" title="Back to specialists">←</button>
       <div class="stage-media" id="stage-media"><img src="logo-main.png" alt="Marginova.AI" style="border-radius:50%;"/></div>
@@ -1941,7 +1943,8 @@ function showApp(){
   window._userPlan='ultra';
   // lang flags now in nav
   document.getElementById('chat-page').style.display='flex';
-  document.getElementById('avatar-grid-page').style.display='block';
+  document.getElementById('avatar-grid-page').style.display='flex';
+  document.getElementById('avatar-grid-page').style.flexDirection='column';
   document.getElementById('chat-area-wrap').style.display='none';
   const savedLang=localStorage.getItem('mlang')||'mk';
   setLangGrid(savedLang);
@@ -3009,15 +3012,17 @@ function goToChat(){
   const id=agSelCard.id.replace('item-','');
   // Hide grid, show chat
   document.getElementById('avatar-grid-page').style.display='none';
-  const cw=document.getElementById('chat-area-wrap');cw.style.display='flex';cw.style.flexDirection='column';
+  document.getElementById('chat-area-wrap').style.display='flex';
+  document.getElementById('chat-area-wrap').style.flexDirection='column';
   document.getElementById('ag-chat-bar').classList.remove('show');
   selectAvatar(id);
 }
 
 // ═══ SHOW GRID BACK ═══
 function showAvatarGrid(){
-  document.getElementById('avatar-grid-page').style.display='block';
-  const cw=document.getElementById('chat-area-wrap');cw.style.display='none';cw.style.flexDirection='';
+  document.getElementById('avatar-grid-page').style.display='flex';
+  document.getElementById('chat-area-wrap').style.display='none';
+  document.getElementById('chat-area-wrap').style.flexDirection='';
   if(agSelCard){agSelCard.classList.remove('selected');agSelCard=null;}
   document.getElementById('ag-chat-bar').classList.remove('show');
 }
