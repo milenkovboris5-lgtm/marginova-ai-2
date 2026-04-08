@@ -1,63 +1,42 @@
 {
-  "name": "Marginova.AI — The Game Changer",
-  "short_name": "Marginova.AI",
+  "name": "Marginova.AI",
+  "short_name": "Marginova",
   "description": "AI specialists available 24/7. Personal Growth & AI Business OS. Free to start.",
   "start_url": "/index.html",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#090910",
+  "background_color": "#0a0a12",
   "theme_color": "#C9A84C",
-  "lang": "en",
+  "orientation": "portrait",
+  "lang": "mk",
   "icons": [
     {
-      "src": "/logo-main.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "/logo-main.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo-main.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/logo-main.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/logo-main.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow"
     }
   ],
-  "categories": ["productivity", "education", "lifestyle"],
+  "categories": ["education", "business", "productivity"],
   "shortcuts": [
     {
-      "name": "Chat with Marginova",
+      "name": "Почни разговор",
       "short_name": "Chat",
-      "description": "Start a conversation",
       "url": "/index.html",
-      "icons": [{ "src": "/logo-main.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "EU Grants with Eva",
-      "short_name": "Eva",
-      "description": "Find EU funds and grants",
-      "url": "/index.html",
-      "icons": [{ "src": "/logo-main.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }
