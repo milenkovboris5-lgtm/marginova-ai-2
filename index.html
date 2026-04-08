@@ -943,7 +943,7 @@ nav::after{
     .ag-card.edu:hover,.ag-card.edu.selected{border-color:#4a9eff;box-shadow:0 0 12px rgba(74,158,255,0.2);}
     .ag-card.health:hover,.ag-card.health.selected{border-color:#2ddc7a;box-shadow:0 0 12px rgba(45,220,122,0.2);}
     .ag-card.biz:hover,.ag-card.biz.selected{border-color:var(--gold);box-shadow:0 0 12px rgba(201,168,76,0.2);}
-    .ag-card{background:linear-gradient(145deg,rgba(19,19,31,0.95),rgba(14,14,26,0.9));border-radius:14px;padding:0.75rem 0.35rem 0.6rem;display:flex;flex-direction:column;align-items:center;gap:0.35rem;cursor:pointer;transition:border-color 0.2s,transform 0.15s,box-shadow 0.2s;text-align:center;animation:fadeUp 0.35s ease both;}
+    .ag-card{background:linear-gradient(145deg,rgba(19,19,31,0.97),rgba(14,14,26,0.95));border-radius:14px;padding:1rem 0.7rem 0.9rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.45rem;cursor:pointer;transition:border-color 0.2s,transform 0.15s,box-shadow 0.2s;text-align:center;animation:fadeUp 0.35s ease both;min-height:90px;}
     @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
     @keyframes pulse-edu{0%,100%{opacity:1;text-shadow:0 0 8px rgba(74,158,255,0.6);}50%{opacity:0.7;text-shadow:0 0 16px rgba(74,158,255,1);}}
     @keyframes pulse-health{0%,100%{opacity:1;text-shadow:0 0 8px rgba(45,220,122,0.6);}50%{opacity:0.7;text-shadow:0 0 16px rgba(45,220,122,1);}}
@@ -958,9 +958,14 @@ nav::after{
     .ag-img-wrap{position:relative;width:52px;height:52px;}
     .ag-img{width:52px;height:52px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border);transition:border-color 0.2s,box-shadow 0.2s;}
     .ag-online{position:absolute;bottom:1px;right:1px;width:8px;height:8px;border-radius:50%;background:var(--green);border:1.5px solid var(--bg2);box-shadow:0 0 5px var(--green);}
-    .ag-name{font-size:0.66rem;font-weight:500;color:var(--text);line-height:1.2;}
-    .ag-role{font-size:0.52rem;color:var(--muted);line-height:1.3;}
-    .ag-tag{font-size:0.44rem;padding:1px 5px;border-radius:50px;font-weight:600;letter-spacing:0.06em;margin-top:1px;}
+    .ag-name{font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:600;color:var(--gold);line-height:1.2;letter-spacing:0.04em;text-shadow:0 0 12px rgba(201,168,76,0.5);}
+    .ag-role{font-size:0.62rem;color:rgba(201,168,76,0.75);line-height:1.4;font-family:'Jost',sans-serif;font-weight:300;letter-spacing:0.02em;}
+    .ag-tag{font-size:0.44rem;padding:1px 5px;border-radius:50px;font-weight:600;letter-spacing:0.06em;margin-top:2px;}
+    .ag-desc{font-size:0.52rem;color:rgba(201,168,76,0.55);line-height:1.4;letter-spacing:0.03em;font-family:'Jost',sans-serif;font-weight:300;margin-top:1px;}
+    .ag-card.edu{border:1.5px solid rgba(74,158,255,0.45);}
+    .ag-card.edu:hover,.ag-card.edu.selected{border-color:#4a9eff;box-shadow:0 0 14px rgba(74,158,255,0.25);}
+    .ag-card.biz{border:1.5px solid rgba(201,168,76,0.4);}
+    .ag-card.biz:hover,.ag-card.biz.selected{border-color:var(--gold);box-shadow:0 0 14px rgba(201,168,76,0.25);}
     .ag-free{background:rgba(45,220,122,0.12);color:var(--green);border:1px solid rgba(45,220,122,0.25);}
     .ag-pro{background:rgba(201,168,76,0.12);color:var(--gold);border:1px solid rgba(201,168,76,0.25);}
     .ag-divider{height:1px;margin:0.3rem 0.85rem;background:linear-gradient(90deg,transparent,var(--border),transparent);}
@@ -1020,28 +1025,37 @@ nav::after{
         <div id="ag-sub-edu" style="font-size:0.58rem;color:rgba(74,158,255,0.7);letter-spacing:0.08em;animation:pulse-edu 2s infinite;">▼ Одбери аватар ▼</div>
       </div>
       <div class="ag-grid">
-        
-        <div class="ag-card edu" style="border:1.5px solid rgba(74,158,255,0.6) !important;background:linear-gradient(145deg,rgba(74,158,255,0.12),rgba(74,158,255,0.06)) !important;box-shadow:0 0 12px rgba(74,158,255,0.2);" id="item-sophie" onclick="selectAvatarGrid(this,'sophie','Sophie','avatar-sophie.png')" data-role-mk="English Teacher 🇬🇧" data-role-sr="English Teacher 🇬🇧" data-role-hr="English Teacher 🇬🇧" data-role-bs="English Teacher 🇬🇧" data-role-en="English Teacher 🇬🇧" data-role-sq="Mësuese Anglisht 🇬🇧" data-role-de="Englischlehrerin 🇬🇧" data-role-bg="Учителка по английски 🇬🇧">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-sophie.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Sophie</div><div class="ag-role" id="role-sophie">English Teacher 🇬🇧</div>
+
+        <div class="ag-card edu" id="item-sophie" onclick="selectAvatarGrid(this,'sophie','Sophie','avatar-sophie.png')" data-role-mk="English Teacher 🇬🇧" data-role-sr="English Teacher 🇬🇧" data-role-hr="English Teacher 🇬🇧" data-role-bs="English Teacher 🇬🇧" data-role-en="English Teacher 🇬🇧" data-role-sq="Mësuese Anglisht 🇬🇧" data-role-de="Englischlehrerin 🇬🇧" data-role-bg="Учителка по английски 🇬🇧">
+          <div class="ag-name">Sophie</div>
+          <div class="ag-role" id="role-sophie">English Teacher 🇬🇧</div>
+          <div class="ag-desc">Daily Word · Grammar · Conversation · XP streak</div>
         </div>
-        <div class="ag-card edu" style="border:1.5px solid rgba(74,158,255,0.6) !important;background:linear-gradient(145deg,rgba(74,158,255,0.12),rgba(74,158,255,0.06)) !important;box-shadow:0 0 12px rgba(74,158,255,0.2);" id="item-hanna" onclick="selectAvatarGrid(this,'hanna','Hanna','avatar-hanna.png')" data-role-mk="Германски 🇩🇪" data-role-sr="Nemački 🇩🇪" data-role-hr="Njemački 🇩🇪" data-role-bs="Njemački 🇩🇪" data-role-en="Deutsch Teacher 🇩🇪" data-role-sq="Gjermanisht 🇩🇪" data-role-de="Deutsch Lehrerin 🇩🇪" data-role-bg="Немски 🇩🇪">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-hanna.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Hanna</div><div class="ag-role" id="role-hanna">Германски 🇩🇪</div>
+
+        <div class="ag-card edu" id="item-hanna" onclick="selectAvatarGrid(this,'hanna','Hanna','avatar-hanna.png')" data-role-mk="Германски 🇩🇪" data-role-sr="Nemački 🇩🇪" data-role-hr="Njemački 🇩🇪" data-role-bs="Njemački 🇩🇪" data-role-en="Deutsch Teacher 🇩🇪" data-role-sq="Gjermanisht 🇩🇪" data-role-de="Deutsch Lehrerin 🇩🇪" data-role-bg="Немски 🇩🇪">
+          <div class="ag-name">Hanna</div>
+          <div class="ag-role" id="role-hanna">Германски 🇩🇪</div>
+          <div class="ag-desc">A1 → B2 · Граматика · Изговор · Вежби</div>
         </div>
-        <div class="ag-card edu" style="border:1.5px solid rgba(74,158,255,0.6) !important;background:linear-gradient(145deg,rgba(74,158,255,0.12),rgba(74,158,255,0.06)) !important;box-shadow:0 0 12px rgba(74,158,255,0.2);" id="item-leo" onclick="selectAvatarGrid(this,'leo','Leo','avatar-leo.png')" data-role-mk="Есеи & Пишување ✍️" data-role-sr="Eseji & Pisanje ✍️" data-role-hr="Eseji & Pisanje ✍️" data-role-bs="Eseji & Pisanje ✍️" data-role-en="Essay & Writing ✍️" data-role-sq="Ese & Shkrim ✍️" data-role-de="Essay & Schreiben ✍️" data-role-bg="Есета & Писане ✍️">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-leo.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Leo</div><div class="ag-role" id="role-leo">Есеи & Пишување ✍️</div>
+
+        <div class="ag-card edu" id="item-leo" onclick="selectAvatarGrid(this,'leo','Leo','avatar-leo.png')" data-role-mk="Есеи & Пишување ✍️" data-role-sr="Eseji & Pisanje ✍️" data-role-hr="Eseji & Pisanje ✍️" data-role-bs="Eseji & Pisanje ✍️" data-role-en="Essay & Writing ✍️" data-role-sq="Ese & Shkrim ✍️" data-role-de="Essay & Schreiben ✍️" data-role-bg="Есета & Писане ✍️">
+          <div class="ag-name">Leo</div>
+          <div class="ag-role" id="role-leo">Есеи & Пишување ✍️</div>
+          <div class="ag-desc">CV · Мотивациски · Академски · Блог</div>
         </div>
-        
-        <div class="ag-card edu" style="border:1.5px solid rgba(74,158,255,0.6) !important;background:linear-gradient(145deg,rgba(74,158,255,0.12),rgba(74,158,255,0.06)) !important;box-shadow:0 0 12px rgba(74,158,255,0.2);" id="item-liber" onclick="selectAvatarGrid(this,'liber','LIBER','avatar-liber.png')" data-role-mk="Енциклопедија 📚" data-role-sr="Enciklopedija 📚" data-role-hr="Enciklopedija 📚" data-role-bs="Enciklopedija 📚" data-role-en="Encyclopedia 📚" data-role-sq="Enciklopedi 📚" data-role-de="Enzyklopädie 📚" data-role-bg="Енциклопедия 📚">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-liber.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">LIBER</div><div class="ag-role" id="role-liber">Енциклопедија 📚</div>
+
+        <div class="ag-card edu" id="item-liber" onclick="selectAvatarGrid(this,'liber','LIBER','avatar-liber.png')" data-role-mk="Енциклопедија 📚" data-role-sr="Enciklopedija 📚" data-role-hr="Enciklopedija 📚" data-role-bs="Enciklopedija 📚" data-role-en="Encyclopedia 📚" data-role-sq="Enciklopedi 📚" data-role-de="Enzyklopädie 📚" data-role-bg="Енциклопедия 📚">
+          <div class="ag-name">LIBER</div>
+          <div class="ag-role" id="role-liber">Енциклопедија 📚</div>
+          <div class="ag-desc">Наука · Историја · Филозофија · Книги</div>
         </div>
-        <div class="ag-card edu" style="border:1.5px solid rgba(74,158,255,0.6) !important;background:linear-gradient(145deg,rgba(74,158,255,0.12),rgba(74,158,255,0.06)) !important;box-shadow:0 0 12px rgba(74,158,255,0.2);" id="item-fitness" onclick="selectAvatarGrid(this,'fitness','Viktor','avatar-viktor.png')" data-role-mk="Тренинг & Фитнес 💪" data-role-sr="Trening & Fitnes 💪" data-role-hr="Trening & Fitnes 💪" data-role-bs="Trening & Fitnes 💪" data-role-en="Training & Fitness 💪" data-role-sq="Stërvitje & Fitnes 💪" data-role-de="Training & Fitness 💪" data-role-bg="Тренировка & Фитнес 💪">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-viktor.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Viktor</div><div class="ag-role" id="role-fitness">Тренинг & Фитнес 💪</div>
+
+        <div class="ag-card edu" id="item-fitness" onclick="selectAvatarGrid(this,'fitness','Viktor','avatar-viktor.png')" data-role-mk="Тренинг & Фитнес 💪" data-role-sr="Trening & Fitnes 💪" data-role-hr="Trening & Fitnes 💪" data-role-bs="Trening & Fitnes 💪" data-role-en="Training & Fitness 💪" data-role-sq="Stërvitje & Fitnes 💪" data-role-de="Training & Fitness 💪" data-role-bg="Тренировка & Фитнес 💪">
+          <div class="ag-name">Viktor</div>
+          <div class="ag-role" id="role-fitness">Тренинг & Фитнес 💪</div>
+          <div class="ag-desc">Слабеење · Мускули · CrossFit · 4-нед план</div>
         </div>
+
       </div>
     </div>
 
@@ -1059,44 +1073,58 @@ nav::after{
         <div id="ag-sub-biz" style="font-size:0.58rem;color:rgba(201,168,76,0.7);letter-spacing:0.08em;animation:pulse-biz 2s infinite;">▼ Одбери аватар ▼</div>
       </div>
       <div class="ag-grid">
-        <div class="ag-card biz" style="border:1.5px solid rgba(201,168,76,0.6) !important;background:linear-gradient(145deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06)) !important;box-shadow:0 0 12px rgba(201,168,76,0.2);" id="item-businessai" onclick="selectAvatarGrid(this,'businessai','Business AI','avatar-businessai.png')" data-role-mk="Стратегија & Финансии 💼" data-role-sr="Strategija & Finansije 💼" data-role-hr="Strategija & Financije 💼" data-role-bs="Strategija & Finansije 💼" data-role-en="Strategy & Finance 💼" data-role-sq="Strategji & Financa 💼" data-role-de="Strategie & Finanzen 💼" data-role-bg="Стратегия & Финанси 💼">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-businessai.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Business AI</div><div class="ag-role" id="role-businessai">Стратегија 💼</div>
+
+        <div class="ag-card biz" id="item-businessai" onclick="selectAvatarGrid(this,'businessai','Business AI','avatar-businessai.png')" data-role-mk="Стратегија & Финансии 💼" data-role-sr="Strategija & Finansije 💼" data-role-hr="Strategija & Financije 💼" data-role-bs="Strategija & Finansije 💼" data-role-en="Strategy & Finance 💼" data-role-sq="Strategji & Financa 💼" data-role-de="Strategie & Finanzen 💼" data-role-bg="Стратегия & Финанси 💼">
+          <div class="ag-name">Business AI</div>
+          <div class="ag-role" id="role-businessai">Стратегија & Финансии 💼</div>
+          <div class="ag-desc">Бизнис план · SWOT · Проекции · Раст</div>
           <div class="ag-tag ag-pro">PRO</div>
         </div>
-        <div class="ag-card biz" style="border:1.5px solid rgba(201,168,76,0.6) !important;background:linear-gradient(145deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06)) !important;box-shadow:0 0 12px rgba(201,168,76,0.2);" id="item-creativeai" onclick="selectAvatarGrid(this,'creativeai','Creative AI','avatar-creativeai.png')" data-role-mk="Маркетинг & Бренд 🎨" data-role-sr="Marketing & Brend 🎨" data-role-hr="Marketing & Brand 🎨" data-role-bs="Marketing & Brand 🎨" data-role-en="Marketing & Branding 🎨" data-role-sq="Marketing & Brand 🎨" data-role-de="Marketing & Branding 🎨" data-role-bg="Маркетинг & Бранд 🎨">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-creativeai.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Creative AI</div><div class="ag-role" id="role-creativeai">Маркетинг 🎨</div>
+
+        <div class="ag-card biz" id="item-creativeai" onclick="selectAvatarGrid(this,'creativeai','Creative AI','avatar-creativeai.png')" data-role-mk="Маркетинг & Бренд 🎨" data-role-sr="Marketing & Brend 🎨" data-role-hr="Marketing & Brand 🎨" data-role-bs="Marketing & Brand 🎨" data-role-en="Marketing & Branding 🎨" data-role-sq="Marketing & Brand 🎨" data-role-de="Marketing & Branding 🎨" data-role-bg="Маркетинг & Бранд 🎨">
+          <div class="ag-name">Creative AI</div>
+          <div class="ag-role" id="role-creativeai">Маркетинг & Бренд 🎨</div>
+          <div class="ag-desc">Copywriting · Реклами · FB/TikTok · Бренд</div>
           <div class="ag-tag ag-pro">PRO</div>
         </div>
-        <div class="ag-card biz" style="border:1.5px solid rgba(201,168,76,0.6) !important;background:linear-gradient(145deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06)) !important;box-shadow:0 0 12px rgba(201,168,76,0.2);" id="item-developer" onclick="selectAvatarGrid(this,'developer','Dev AI','avatar-devai.png')" data-role-mk="AI Девелопер 💻" data-role-sr="AI Developer 💻" data-role-hr="AI Developer 💻" data-role-bs="AI Developer 💻" data-role-en="AI Developer 💻" data-role-sq="Zhvillues AI 💻" data-role-de="KI-Entwickler 💻" data-role-bg="AI Разработчик 💻">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-devai.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Dev AI</div><div class="ag-role" id="role-developer">AI Developer 💻</div>
+
+        <div class="ag-card biz" id="item-developer" onclick="selectAvatarGrid(this,'developer','Dev AI','avatar-devai.png')" data-role-mk="AI Девелопер 💻" data-role-sr="AI Developer 💻" data-role-hr="AI Developer 💻" data-role-bs="AI Developer 💻" data-role-en="AI Developer 💻" data-role-sq="Zhvillues AI 💻" data-role-de="KI-Entwickler 💻" data-role-bg="AI Разработчик 💻">
+          <div class="ag-name">Dev AI</div>
+          <div class="ag-role" id="role-developer">AI Developer 💻</div>
+          <div class="ag-desc">Код · Дебаг · Архитектура · Frameworks</div>
           <div class="ag-tag ag-pro">PRO</div>
         </div>
-        <div class="ag-card biz" style="border:1.5px solid rgba(201,168,76,0.6) !important;background:linear-gradient(145deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06)) !important;box-shadow:0 0 12px rgba(201,168,76,0.2);" id="item-eva" onclick="selectAvatarGrid(this,'eva','Eva','avatar-eva.png')" data-role-mk="EU Фондови 🇪🇺" data-role-sr="EU Fondovi 🇪🇺" data-role-hr="EU Fondovi 🇪🇺" data-role-bs="EU Fondovi 🇪🇺" data-role-en="EU Funds 🇪🇺" data-role-sq="Fondet BE 🇪🇺" data-role-de="EU-Fördermittel 🇪🇺" data-role-bg="ЕС Фондове 🇪🇺">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-eva.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Eva</div><div class="ag-role" id="role-eva">EU Фондови 🇪🇺</div>
+
+        <div class="ag-card biz" id="item-eva" onclick="selectAvatarGrid(this,'eva','Eva','avatar-eva.png')" data-role-mk="EU Фондови 🇪🇺" data-role-sr="EU Fondovi 🇪🇺" data-role-hr="EU Fondovi 🇪🇺" data-role-bs="EU Fondovi 🇪🇺" data-role-en="EU Funds 🇪🇺" data-role-sq="Fondet BE 🇪🇺" data-role-de="EU-Fördermittel 🇪🇺" data-role-bg="ЕС Фондове 🇪🇺">
+          <div class="ag-name">Eva</div>
+          <div class="ag-role" id="role-eva">EU Фондови & Грантови 🇪🇺</div>
+          <div class="ag-desc">IPA · IPARD · World Bank · UNDP · USAID</div>
           <div class="ag-tag ag-pro">PRO</div>
         </div>
-        <div class="ag-card biz" style="border:1.5px solid rgba(201,168,76,0.6) !important;background:linear-gradient(145deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06)) !important;box-shadow:0 0 12px rgba(201,168,76,0.2);" id="item-justinian" onclick="selectAvatarGrid(this,'justinian','Justinian','avatar-justinian.png')" data-role-mk="Правен Советник ⚖️" data-role-sr="Pravni Savetnik ⚖️" data-role-hr="Pravni Savjetnik ⚖️" data-role-bs="Pravni Savjetnik ⚖️" data-role-en="Legal Advisor ⚖️" data-role-sq="Këshilltar Ligjor ⚖️" data-role-de="Rechtsberater ⚖️" data-role-bg="Правен Съветник ⚖️">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-justinian.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Justinian</div><div class="ag-role" id="role-justinian">Правен Советник ⚖️</div>
+
+        <div class="ag-card biz" id="item-justinian" onclick="selectAvatarGrid(this,'justinian','Justinian','avatar-justinian.png')" data-role-mk="Правен Советник ⚖️" data-role-sr="Pravni Savetnik ⚖️" data-role-hr="Pravni Savjetnik ⚖️" data-role-bs="Pravni Savjetnik ⚖️" data-role-en="Legal Advisor ⚖️" data-role-sq="Këshilltar Ligjor ⚖️" data-role-de="Rechtsberater ⚖️" data-role-bg="Правен Съветник ⚖️">
+          <div class="ag-name">Justinian</div>
+          <div class="ag-role" id="role-justinian">Правен Советник ⚖️</div>
+          <div class="ag-desc">Договори · Трудово · Граѓанско · GDPR</div>
           <div class="ag-tag ag-pro">PRO</div>
         </div>
-        <div class="ag-card biz" style="border:1.5px solid rgba(201,168,76,0.6) !important;background:linear-gradient(145deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06)) !important;box-shadow:0 0 12px rgba(201,168,76,0.2);" id="item-dropshipper" onclick="selectAvatarGrid(this,'dropshipper','Drop AI','avatar-dropai.png')" data-role-mk="Dropshipping 🛒" data-role-sr="Dropshipping 🛒" data-role-hr="Dropshipping 🛒" data-role-bs="Dropshipping 🛒" data-role-en="Dropshipping 🛒" data-role-sq="Dropshipping 🛒" data-role-de="Dropshipping 🛒" data-role-bg="Дропшипинг 🛒">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-dropai.png" alt=""/><div class="ag-online"></div></div>
-          <div class="ag-name">Drop AI</div><div class="ag-role" id="role-dropshipper">Dropshipping 🛒</div>
+
+        <div class="ag-card biz" id="item-dropshipper" onclick="selectAvatarGrid(this,'dropshipper','Drop AI','avatar-dropai.png')" data-role-mk="Dropshipping 🛒" data-role-sr="Dropshipping 🛒" data-role-hr="Dropshipping 🛒" data-role-bs="Dropshipping 🛒" data-role-en="Dropshipping 🛒" data-role-sq="Dropshipping 🛒" data-role-de="Dropshipping 🛒" data-role-bg="Дропшипинг 🛒">
+          <div class="ag-name">Drop AI</div>
+          <div class="ag-role" id="role-dropshipper">Dropshipping & E-commerce 🛒</div>
+          <div class="ag-desc">Top 10 · Добавувачи · Реклами · Скалирање</div>
           <div class="ag-tag ag-pro">PRO</div>
         </div>
-        
+
+        <div class="ag-card biz" id="item-tenderai" onclick="selectAvatarGrid(this,'tenderai','Tender AI','avatar-tenderai.png')" data-role-mk="Тендери & Лицитации 📋" data-role-sr="Tenderi & Licitacije 📋" data-role-hr="Tenderi & Licitacije 📋" data-role-bs="Tenderi & Licitacije 📋" data-role-en="Tenders & Auctions 📋" data-role-sq="Tenderat & Ankandet 📋" data-role-de="Ausschreibungen & Auktionen 📋" data-role-bg="Търгове & Търгове 📋">
+          <div class="ag-name">Tender AI</div>
+          <div class="ag-role" id="role-tenderai">Тендери & Лицитации 📋</div>
+          <div class="ag-desc">EU · TED · Национални · Лизинг откуп</div>
+          <div class="ag-tag ag-pro">PRO</div>
+        </div>
+
       </div>
     </div>
-        <div class="ag-card biz" id="item-tenderai" onclick="selectAvatarGrid(this,'tenderai','Tender AI','avatar-tenderai.png')" style="border:1.5px solid rgba(201,168,76,0.5) !important;box-shadow:0 0 8px rgba(201,168,76,0.15);" data-role-mk="Тендери & Лицитации 📋" data-role-sr="Tenderi & Licitacije 📋" data-role-hr="Tenderi & Licitacije 📋" data-role-bs="Tenderi & Licitacije 📋" data-role-en="Tenders & Auctions 📋" data-role-sq="Tenderat & Ankandet 📋" data-role-de="Ausschreibungen & Auktionen 📋" data-role-bg="Търгове & Търгове 📋">
-          <div class="ag-img-wrap"><img class="ag-img" src="avatar-tenderai.png" alt="Tender AI"/><div class="ag-online"></div></div>
-          <div class="ag-name">Tender AI</div><div class="ag-role" id="role-tenderai">Тендери & Лицитации 📋</div>
-          <div class="ag-tag ag-pro">PRO</div>
-        </div>
 
     <div class="ag-bottom-pad"></div>
 
