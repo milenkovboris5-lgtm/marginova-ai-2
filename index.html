@@ -2838,14 +2838,38 @@ function setLangGrid(l){
   }
   // Update grid roles
   const UI_LABELS={
-    mk:{edu:'Едукација',health:'Здравје & Wellness',biz:'Бизнис',headline:'Твојот <em>AI тим.</em><br>Избери специјалист.',sub:'Едукација · Здравје · Бизнис · 8 јазици',chat:'Чет →',pick:'▼ Одбери аватар ▼',evaText:'Ги наоѓам сите грантови, фондови и EU програми',tenderText:'Те информирам секој ден за нови тендери и лицитации'},
-    sr:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',headline:'Tvoj <em>AI tim.</em><br>Izaberi specijalista.',sub:'Edukacija · Zdravlje · Biznis · 8 jezika',chat:'Čet →',pick:'▼ Odaberi avatar ▼'},
-    hr:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',headline:'Tvoj <em>AI tim.</em><br>Odaberi specijalista.',sub:'Edukacija · Zdravlje · Biznis · 8 jezika',chat:'Chat →',pick:'▼ Odaberi avatar ▼'},
-    bs:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',headline:'Tvoj <em>AI tim.</em><br>Odaberi specijalista.',sub:'Edukacija · Zdravlje · Biznis · 8 jezika',chat:'Chat →',pick:'▼ Odaberi avatar ▼'},
-    en:{edu:'Education',health:'Health & Wellness',biz:'Business',headline:'Your <em>AI team.</em><br>Choose your specialist.',sub:'Education · Health · Business · 8 languages',chat:'Chat →',pick:'▼ Choose avatar ▼',evaText:'I find all grants, funds and EU programs',tenderText:'Daily updates on new tenders and auctions'},
-    sq:{edu:'Edukim',health:'Shëndet & Wellness',biz:'Biznes',headline:'Ekipi juaj <em>AI.</em><br>Zgjidhni specialistin.',sub:'Edukim · Shëndet · Biznes · 8 gjuhë',chat:'Chat →',pick:'▼ Zgjidhni avatar ▼'},
-    de:{edu:'Bildung',health:'Gesundheit & Wellness',biz:'Business',headline:'Dein <em>AI-Team.</em><br>Wähle deinen Spezialisten.',sub:'Bildung · Gesundheit · Business · 8 Sprachen',chat:'Chat →',pick:'▼ Avatar wählen ▼'},
-    bg:{edu:'Образование',health:'Здраве & Wellness',biz:'Бизнес',headline:'Твоят <em>AI екип.</em><br>Избери специалист.',sub:'Образование · Здраве · Бизнес · 8 езика',chat:'Чат →',pick:'▼ Избери аватар ▼'}
+    mk:{edu:'Едукација',health:'Здравје & Wellness',biz:'Бизнис',
+      headline:'<em style="font-style:italic;color:var(--gold2);">Едуцирај се бесплатно</em> во Едукација<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">или одбери</span> <em style="font-style:italic;color:var(--gold);">Бизнис систем</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">со реална анализа &amp; екстремно брз web search</span>',
+      sub:'8 јазици · 24/7 · Бесплатно за старт',
+      chat:'Чет →',pick:'▼ Одбери аватар ▼',evaText:'Ги наоѓам сите грантови, фондови и EU програми',tenderText:'Те информирам секој ден за нови тендери и лицитации'},
+    sr:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',
+      headline:'<em style="font-style:italic;color:var(--gold2);">Edukuj se besplatno</em> u Edukaciji<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">ili odaberi</span> <em style="font-style:italic;color:var(--gold);">Biznis sistem</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">sa realnom analizom &amp; izuzetno brzim web pretraživanjem</span>',
+      sub:'8 jezika · 24/7 · Besplatno za start',
+      chat:'Čet →',pick:'▼ Odaberi avatar ▼'},
+    hr:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',
+      headline:'<em style="font-style:italic;color:var(--gold2);">Edukuj se besplatno</em> u Edukaciji<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">ili odaberi</span> <em style="font-style:italic;color:var(--gold);">Biznis sustav</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">s realnom analizom &amp; iznimno brzim web pretraživanjem</span>',
+      sub:'8 jezika · 24/7 · Besplatno za start',
+      chat:'Chat →',pick:'▼ Odaberi avatar ▼'},
+    bs:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',
+      headline:'<em style="font-style:italic;color:var(--gold2);">Edukuj se besplatno</em> u Edukaciji<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">ili odaberi</span> <em style="font-style:italic;color:var(--gold);">Biznis sistem</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">s realnom analizom &amp; izuzetno brzim web pretraživanjem</span>',
+      sub:'8 jezika · 24/7 · Besplatno za start',
+      chat:'Chat →',pick:'▼ Odaberi avatar ▼'},
+    en:{edu:'Education',health:'Health & Wellness',biz:'Business',
+      headline:'<em style="font-style:italic;color:var(--gold2);">Learn for free</em> in Education<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">or choose a</span> <em style="font-style:italic;color:var(--gold);">Business system</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">with real analysis &amp; extremely fast web search</span>',
+      sub:'8 languages · 24/7 · Free to start',
+      chat:'Chat →',pick:'▼ Choose avatar ▼',evaText:'I find all grants, funds and EU programs',tenderText:'Daily updates on new tenders and auctions'},
+    sq:{edu:'Edukim',health:'Shëndet & Wellness',biz:'Biznes',
+      headline:'<em style="font-style:italic;color:var(--gold2);">Mëso falas</em> në Edukim<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">ose zgjidhni</span> <em style="font-style:italic;color:var(--gold);">Sistem Biznesi</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">me analizë reale &amp; kërkim web jashtëzakonisht të shpejtë</span>',
+      sub:'8 gjuhë · 24/7 · Falas për fillim',
+      chat:'Chat →',pick:'▼ Zgjidhni avatar ▼'},
+    de:{edu:'Bildung',health:'Gesundheit & Wellness',biz:'Business',
+      headline:'<em style="font-style:italic;color:var(--gold2);">Lerne kostenlos</em> im Bildungsbereich<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">oder wähle ein</span> <em style="font-style:italic;color:var(--gold);">Business-System</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">mit echter Analyse &amp; extrem schneller Websuche</span>',
+      sub:'8 Sprachen · 24/7 · Kostenlos starten',
+      chat:'Chat →',pick:'▼ Avatar wählen ▼'},
+    bg:{edu:'Образование',health:'Здраве & Wellness',biz:'Бизнес',
+      headline:'<em style="font-style:italic;color:var(--gold2);">Учи безплатно</em> в Образование<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">или избери</span> <em style="font-style:italic;color:var(--gold);">Бизнес система</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">с реален анализ &amp; изключително бърз уеб търсач</span>',
+      sub:'8 езика · 24/7 · Безплатно за старт',
+      chat:'Чат →',pick:'▼ Избери аватар ▼'}
   };
   const t=UI_LABELS[l]||UI_LABELS['en'];
   const h=document.getElementById('ag-headline');
