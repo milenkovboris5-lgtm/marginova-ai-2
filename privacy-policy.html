@@ -4,114 +4,157 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Privacy Policy — Marginova.AI</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-:root{--gold:#C9A84C;--bg:#090910;--bg2:#0e0e1a;--border:rgba(201,168,76,0.18);--border2:rgba(201,168,76,0.35);--text:#f0eada;--text2:#c8bfa8;--muted:#7a7060;--accent:#a87cff;}
-body{font-family:'Jost',sans-serif;background:var(--bg);color:var(--text);line-height:1.8;}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(201,168,76,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,0.03) 1px,transparent 1px);background-size:60px 60px;}
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:1rem 3rem;background:rgba(9,9,16,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
-.nav-logo{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;letter-spacing:0.15em;text-decoration:none;color:var(--text);}
-.nav-logo b{color:var(--gold);}
-.nav-logo span{color:var(--accent);}
-.nav-back{padding:0.4rem 1.2rem;border-radius:50px;border:1px solid var(--border2);color:var(--gold);background:transparent;font-family:'Jost',sans-serif;font-size:0.78rem;cursor:pointer;text-decoration:none;transition:all 0.2s;}
-.nav-back:hover{background:rgba(201,168,76,0.1);}
-.container{max-width:800px;margin:0 auto;padding:7rem 2rem 4rem;position:relative;z-index:1;}
-h1{font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:300;color:var(--text);margin-bottom:0.5rem;}
-h1 em{color:var(--gold);font-style:italic;}
-.meta{font-size:0.75rem;color:var(--muted);margin-bottom:3rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
-h2{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold);margin:2.5rem 0 1rem;}
-p{font-size:0.9rem;color:var(--text2);margin-bottom:1rem;}
-ul{font-size:0.9rem;color:var(--text2);margin-bottom:1rem;padding-left:1.5rem;}
-ul li{margin-bottom:0.4rem;}
+:root{--gold:#C9A84C;--bg:#090910;--bg2:#0e0e1a;--border:rgba(201,168,76,0.18);--text:#f0eada;--text2:#c8bfa8;--muted:#7a7060;}
+body{font-family:'Jost',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:2rem 1rem;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(201,168,76,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,0.025) 1px,transparent 1px);background-size:60px 60px;}
+.container{max-width:780px;margin:0 auto;position:relative;z-index:1;}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--muted);text-decoration:none;margin-bottom:2rem;transition:color 0.2s;}
+.back:hover{color:var(--gold);}
+.logo{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;letter-spacing:0.2em;margin-bottom:0.3rem;}
+.logo b{color:var(--gold);}
+.logo span{color:#a87cff;}
+h1{font-family:'Cormorant Garamond',serif;font-size:clamp(1.6rem,4vw,2.2rem);font-weight:300;color:var(--text);margin-bottom:0.4rem;}
+.updated{font-size:0.68rem;color:var(--muted);margin-bottom:2.5rem;letter-spacing:0.05em;}
+.section{margin-bottom:2rem;background:rgba(14,14,26,0.7);border:1px solid var(--border);border-radius:14px;padding:1.5rem 1.8rem;}
+h2{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:400;color:var(--gold);margin-bottom:0.9rem;}
+p{font-size:0.85rem;color:var(--text2);line-height:1.8;margin-bottom:0.7rem;}
+p:last-child{margin-bottom:0;}
+ul{list-style:none;padding:0;margin:0.5rem 0;}
+ul li{font-size:0.85rem;color:var(--text2);line-height:1.8;padding:0.2rem 0 0.2rem 1.1rem;position:relative;}
+ul li::before{content:'·';position:absolute;left:0;color:var(--gold);}
 a{color:var(--gold);text-decoration:none;}
 a:hover{text-decoration:underline;}
-.highlight{background:rgba(201,168,76,0.06);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.5rem;margin:1.5rem 0;}
-footer{border-top:1px solid var(--border);padding:2rem 3rem;text-align:center;font-size:0.7rem;color:var(--muted);position:relative;z-index:1;}
+.important{background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.25);border-radius:10px;padding:1rem 1.2rem;margin-top:0.8rem;}
+.important p{font-size:0.8rem;color:var(--text2);}
+footer-doc{display:block;text-align:center;padding:2rem 0 1rem;font-size:0.65rem;color:var(--muted);}
+.footer-links{display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;margin-top:0.5rem;}
+.footer-links a{font-size:0.65rem;color:var(--muted);}
+.footer-links a:hover{color:var(--gold);}
 </style>
 </head>
 <body>
-<nav>
-  <a href="landing.html" class="nav-logo">MARGIN<b>OVA</b><span>.AI</span></a>
-  <a href="landing.html" class="nav-back">← Back to Home</a>
-</nav>
-
 <div class="container">
-  <h1>Privacy <em>Policy</em></h1>
-  <div class="meta">Last updated: March 2026 · Marginova.AI</div>
+  <a href="index.html" class="back">← Back to Marginova.AI</a>
 
-  <div class="highlight">
-    <p>Your privacy matters to us. This policy explains what data we collect, how we use it, and how we protect it. By using Marginova.AI, you agree to this policy.</p>
+  <div class="logo"><b>MARGIN</b>OVA<span>.AI</span></div>
+  <h1>Privacy Policy</h1>
+  <div class="updated">Last updated: April 2026</div>
+
+  <div class="section">
+    <h2>1. Who We Are</h2>
+    <p>Marginova.AI is an AI-powered platform offering specialized AI assistants for personal growth, education, business and productivity. We are operated as an individual business (трговец поединец) registered in North Macedonia.</p>
+    <p>Contact: <a href="mailto:contact@marginova.ai">contact@marginova.ai</a></p>
   </div>
 
-  <h2>1. Who We Are</h2>
-  <p>Marginova.AI is an AI-powered platform offering specialized AI assistants for personal growth, education, wellness and productivity. We are operated as an individual business registered in North Macedonia.</p>
-  <p>Contact: <a href="mailto:contact@marginova.ai">contact@marginova.ai</a></p>
-
-  <h2>2. What Data We Collect</h2>
-  <p>We collect the following types of data:</p>
-  <ul>
-    <li><strong>Account data:</strong> Email address and encrypted password when you register</li>
-    <li><strong>Conversation data:</strong> Messages you send to our AI assistants, stored to enable memory features</li>
-    <li><strong>Usage data:</strong> XP points, level progress, and activity within the platform</li>
-    <li><strong>Technical data:</strong> IP address, browser type, device information for security and rate limiting</li>
-    <li><strong>Payment data:</strong> Processed securely by Paddle — we never see or store your card details</li>
-  </ul>
-
-  <h2>3. How We Use Your Data</h2>
-  <ul>
-    <li>To provide and improve our AI assistant services</li>
-    <li>To enable conversation memory between sessions</li>
-    <li>To manage your account, XP and subscription</li>
-    <li>To prevent abuse and enforce usage limits</li>
-    <li>To communicate important updates about the service</li>
-  </ul>
-
-  <h2>4. Data Storage & Security</h2>
-  <p>Your data is stored securely using <strong>Supabase</strong>, a GDPR-compliant database provider. Conversations are stored encrypted and access is restricted to your account only. We do not sell, rent or share your personal data with third parties for marketing purposes.</p>
-
-  <h2>5. AI Conversations</h2>
-  <p>Messages sent to our AI assistants are processed by <strong>Groq API</strong> (powered by Llama AI models). These conversations may be used to improve AI model performance in anonymized form. We recommend not sharing sensitive personal, financial or medical information in conversations.</p>
-
-  <div class="highlight">
-    <p><strong>Important:</strong> Our AI assistants provide general informational content only. They are not licensed medical professionals, therapists, lawyers or financial advisors. Always consult a qualified professional for specific advice.</p>
+  <div class="section">
+    <h2>2. What Data We Collect</h2>
+    <ul>
+      <li><b>Account data:</b> Email address and encrypted password when you register</li>
+      <li><b>Conversation data:</b> Messages you send to our AI assistants, stored to enable memory features</li>
+      <li><b>Usage data:</b> XP points, level progress, and activity within the platform</li>
+      <li><b>Technical data:</b> IP address, browser type, device information for security and rate limiting</li>
+      <li><b>Payment data:</b> Processed securely by Paddle — we never see or store your card details</li>
+    </ul>
   </div>
 
-  <h2>6. Cookies</h2>
-  <p>We use essential cookies only — for authentication and session management. We do not use advertising or tracking cookies. You can disable cookies in your browser, but this may affect functionality.</p>
+  <div class="section">
+    <h2>3. Legal Basis for Processing (GDPR Art. 6)</h2>
+    <ul>
+      <li><b>Account &amp; conversation data:</b> Performance of a contract — Art. 6(1)(b)</li>
+      <li><b>Technical data:</b> Legitimate interest (security, abuse prevention) — Art. 6(1)(f)</li>
+      <li><b>Payment data:</b> Performance of a contract — Art. 6(1)(b)</li>
+      <li><b>Service communications:</b> Legitimate interest — Art. 6(1)(f)</li>
+    </ul>
+  </div>
 
-  <h2>7. Your Rights (GDPR)</h2>
-  <p>If you are located in the EU or EEA, you have the right to:</p>
-  <ul>
-    <li>Access your personal data</li>
-    <li>Request correction of inaccurate data</li>
-    <li>Request deletion of your account and data</li>
-    <li>Object to processing of your data</li>
-    <li>Data portability</li>
-  </ul>
-  <p>To exercise these rights, contact us at <a href="mailto:contact@marginova.ai">contact@marginova.ai</a></p>
+  <div class="section">
+    <h2>4. How We Use Your Data</h2>
+    <ul>
+      <li>To provide and improve our AI assistant services</li>
+      <li>To enable conversation memory between sessions</li>
+      <li>To manage your account, XP and subscription</li>
+      <li>To prevent abuse and enforce usage limits</li>
+      <li>To communicate important updates about the service</li>
+    </ul>
+  </div>
 
-  <h2>8. Data Retention</h2>
-  <p>We retain your data for as long as your account is active. Conversation history older than 100 messages per assistant is automatically deleted. If you delete your account, all your data will be permanently removed within 30 days.</p>
+  <div class="section">
+    <h2>5. Data Storage &amp; Security</h2>
+    <p>Your data is stored securely using Supabase, a GDPR-compliant database provider. Conversations are stored encrypted and access is restricted to your account only. We do not sell, rent or share your personal data with third parties for marketing purposes.</p>
+  </div>
 
-  <h2>9. Third-Party Services</h2>
-  <ul>
-    <li><strong>Supabase</strong> — database and authentication (supabase.com/privacy)</li>
-    <li><strong>Groq</strong> — AI model processing (groq.com/privacy)</li>
-    <li><strong>Vercel</strong> — hosting (vercel.com/legal/privacy-policy)</li>
-    <li><strong>Paddle</strong> — payment processing (paddle.com/legal/privacy)</li>
-  </ul>
+  <div class="section">
+    <h2>6. AI Conversations</h2>
+    <p>Messages sent to our AI assistants are processed by third-party AI providers in order to generate responses. These providers process your messages solely to deliver the service.</p>
+    <p>We recommend not sharing sensitive personal, financial, medical or legal information in conversations.</p>
+    <div class="important">
+      <p>⚠️ <b>Important:</b> Our AI assistants provide general informational content only. They are not licensed medical professionals, therapists, lawyers or financial advisors. Always consult a qualified professional for specific advice.</p>
+    </div>
+  </div>
 
-  <h2>10. Children's Privacy</h2>
-  <p>Marginova.AI is not intended for children under 13 years of age. We do not knowingly collect data from children. If you believe a child has provided us with personal data, please contact us immediately.</p>
+  <div class="section">
+    <h2>7. Cookies</h2>
+    <p>We use essential cookies only — for authentication and session management. We do not use advertising or tracking cookies. You can disable cookies in your browser, but this may affect functionality.</p>
+  </div>
 
-  <h2>11. Changes to This Policy</h2>
-  <p>We may update this policy from time to time. We will notify registered users of significant changes by email. Continued use of the service after changes constitutes acceptance of the updated policy.</p>
+  <div class="section">
+    <h2>8. Your Rights (GDPR)</h2>
+    <p>If you are located in the EU or EEA, you have the right to:</p>
+    <ul>
+      <li>Access your personal data</li>
+      <li>Request correction of inaccurate data</li>
+      <li>Request deletion of your account and data</li>
+      <li>Object to processing of your data</li>
+      <li>Data portability</li>
+      <li>Lodge a complaint with a supervisory authority</li>
+    </ul>
+    <p style="margin-top:0.8rem;">For users in North Macedonia, the supervisory authority is the <a href="https://dzlp.mk" target="_blank">Дирекција за заштита на личните податоци (dzlp.mk)</a>.</p>
+    <p>To exercise your rights, contact us at <a href="mailto:contact@marginova.ai">contact@marginova.ai</a>.</p>
+  </div>
 
-  <h2>12. Contact</h2>
-  <p>For any privacy-related questions or requests, contact us at: <a href="mailto:contact@marginova.ai">contact@marginova.ai</a></p>
+  <div class="section">
+    <h2>9. Data Retention</h2>
+    <p>We retain your data for as long as your account is active. Conversation history older than 100 messages per assistant is automatically deleted. If you delete your account, all your personal data will be permanently removed within 30 days. Backup copies are deleted within 90 days.</p>
+  </div>
+
+  <div class="section">
+    <h2>10. Third-Party Services</h2>
+    <ul>
+      <li><a href="https://supabase.com/privacy" target="_blank">Supabase</a> — database and authentication</li>
+      <li><a href="https://policies.google.com/privacy" target="_blank">Google</a> — AI model processing</li>
+      <li><a href="https://www.perplexity.ai/privacy" target="_blank">Perplexity AI</a> — real-time web search</li>
+      <li><a href="https://vercel.com/legal/privacy-policy" target="_blank">Vercel</a> — hosting</li>
+      <li><a href="https://www.paddle.com/legal/privacy" target="_blank">Paddle</a> — payment processing</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>11. Children's Privacy</h2>
+    <p>Marginova.AI is not intended for children under 16 years of age. We do not knowingly collect data from children. If you believe a child has provided us with personal data, please contact us immediately at <a href="mailto:contact@marginova.ai">contact@marginova.ai</a>.</p>
+  </div>
+
+  <div class="section">
+    <h2>12. Changes to This Policy</h2>
+    <p>We may update this policy from time to time. We will notify registered users of significant changes by email. Continued use of the service after changes constitutes acceptance of the updated policy.</p>
+  </div>
+
+  <div class="section">
+    <h2>13. Contact</h2>
+    <p>For any privacy-related questions or requests, contact us at: <a href="mailto:contact@marginova.ai">contact@marginova.ai</a></p>
+  </div>
+
+  <footer-doc>
+    © 2026 Marginova.AI · The Game Changer
+    <div class="footer-links">
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms-of-service.html">Terms of Service</a>
+      <a href="refund-policy.html">Refund Policy</a>
+      <a href="mailto:contact@marginova.ai">Contact</a>
+    </div>
+  </footer-doc>
 </div>
-
-<footer>© 2026 Marginova.AI · <a href="privacy-policy.html">Privacy Policy</a> · <a href="terms-of-service.html">Terms of Service</a> · <a href="refund-policy.html">Refund Policy</a></footer>
 </body>
 </html>
