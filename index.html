@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- ═══ PRIMARY SEO ═══ -->
-<title>Marginova.AI — Your AI Brain Coach | Chat with 20 AI Specialists</title>
+<title>Marginova.AI — Your AI Brain Coach | Chat with 12 AI Specialists</title>
 <meta name="description" content="Meet your personal AI Brain Coach. 20 specialized AI assistants available 24/7 in 8 languages. Free to start. Voice conversations included.">
 <meta name="keywords" content="AI assistant, AI brain coach, veštačka inteligencija, AI asistent makedonski, AI asistent srpski, personal AI, chat AI, AI coach, Marginova AI, AI specialist, AI mentor, AI nutritionist, AI fitness trainer">
 <meta name="author" content="Marginova.AI">
@@ -299,7 +299,12 @@ nav::after{
   nav{padding:0.6rem 1rem;z-index:100;}
 }
 /* Individual avatar positioning fixes */
+#item-aimentor .av-thumb img{object-position:center 20%;filter:brightness(1.3);}
 #item-sophie .av-thumb img{object-position:center 30%;}
+#item-sara .av-thumb img{object-position:center 25%;}
+#item-chef .av-thumb img{object-position:center 15%;}
+#item-planner .av-thumb img{object-position:center 15%;}
+#item-ethan .av-thumb img{object-position:center 20%;}
 .sidebar-label{
   padding:0.85rem 1rem 0.3rem;font-size:0.55rem;
   color:var(--gold);letter-spacing:0.18em;text-transform:uppercase;
@@ -747,10 +752,10 @@ nav::after{
     <div class="pro-locked-title">Го достигнавте <em>дневниот лимит</em></div>
     <div class="pro-locked-desc">Надградете го планот за повеќе пораки и пристап до сите специјалисти.</div>
     <div class="pro-locked-features">
-      <div class="pro-locked-feature"><span>✓</span> Pro — 1.500 пораки/ден · $19.99</div>
-      <div class="pro-locked-feature"><span>✓</span> Premium — 5.000 пораки/ден · $49.99</div>
-      <div class="pro-locked-feature"><span>✓</span> Ultra — Неограничено · до 5 налози · $149.99</div>
-      <div class="pro-locked-feature"><span>✓</span> Сите 20 AI специјалисти</div>
+      <div class="pro-locked-feature"><span>✓</span> Pro — 500 пораки/ден · $12.99/мес</div>
+      <div class="pro-locked-feature"><span>✓</span> Business — Неограничено · до 3 налози · $29.99/мес</div>
+      <div class="pro-locked-feature"><span>✓</span> Ultra — Неограничено · до 5 налози · $49.99/мес</div>
+      <div class="pro-locked-feature"><span>✓</span> Сите 12 AI специјалисти</div>
       <div class="pro-locked-feature"><span>✓</span> Анализа на слики 📷</div>
     </div>
     <button class="pro-locked-btn" onclick="closeProLocked()">🚀 Надгради план</button>
@@ -1838,7 +1843,7 @@ async function handleAuth(){
 
 function updateEmailPlanBtn(){
   const btn=document.getElementById("email-plan-btn");
-  if(btn)btn.style.display="none";
+  if(btn)btn.style.display=(current==="planner"||current==="anastasia")?"inline-block":"none";
 }
 function showApp(){
   document.getElementById('auth-screen').style.display='none';
@@ -1887,50 +1892,50 @@ function setLang(l){
     en:{chat:'Chat',blog:'Blog & Reviews',placeholder:'Type a message...',start:'Start conversation →',logout:'👤 Sign Out',login:'Login',register:'Register',signin:'Sign In',
       slMain:'Main Assistant',slEdu:'Education',slHealth:'Health & Wellness',slBiz:'Business',
       rMarginova:'AI Guide & Portal',
-      rSophie:'English Teacher 🇬🇧',rHanna:'German Teacher 🇩🇪',rLeo:'Essay & Writing ✍️',rLiber:'Encyclopedia & Books 📚',
-      rFitness:'Training & Fitness 💪',
+      rAimentor:'AI Learning 🤖',rSophie:'English Teacher 🇬🇧',rHanna:'German Teacher 🇩🇪',rLeo:'Essay & Writing ✍️',rSara:'Learning Support 🧩',rLiber:'Encyclopedia & Books 📚',rQuizai:'Daily Brain Quiz 🧠',rEthan:'Life Coach 🌟',rPlanner:'Daily Planner 📅',
+      rAna:'Wellness Coach 🌿',rFitness:'Training & Fitness 💪',rChef:'Recipes & Nutrition 👨‍🍳',rLuna:'Mindfulness & Dreams 🌙',
       rBusinessai:'Strategy & Finance 💼',rCreativeai:'Marketing & Branding 🎨',rDeveloper:'AI Developer 💻',rEva:'EU Funds 🇪🇺',rJustinian:'Legal Advisor ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Travel & Deals ✈️',rTenderai:'Tenders & Auctions 📋'},
     mk:{chat:'Чет',blog:'Блог & Рецензии',placeholder:'Напишете порака...',start:'Започни разговор →',logout:'👤 Одјави се',login:'Најава',register:'Регистрација',signin:'Најави се',
       slMain:'Главен Асистент',slEdu:'Едукација',slHealth:'Здравје & Велнес',slBiz:'Бизнис',
       rMarginova:'AI Водич & Портал',
-      rSophie:'Учител по Англиски 🇬🇧',rHanna:'Учителка по Германски 🇩🇪',rLeo:'Есеј & Пишување ✍️',rLiber:'Енциклопедија & Книги 📚',
-      rFitness:'Тренинг & Фитнес 💪',
+      rAimentor:'AI Учење 🤖',rSophie:'Учител по Англиски 🇬🇧',rHanna:'Учителка по Германски 🇩🇪',rLeo:'Есеј & Пишување ✍️',rSara:'Поддршка во Учење 🧩',rLiber:'Енциклопедија & Книги 📚',rQuizai:'Дневен Квиз 🧠',rEthan:'Лајф Коуч 🌟',rPlanner:'Дневен Планер 📅',
+      rAna:'Велнес Коуч 🌿',rFitness:'Тренинг & Фитнес 💪',rChef:'Рецепти & Исхрана 👨‍🍳',rLuna:'Mindfulness & Соништа 🌙',
       rBusinessai:'Стратегија & Финансии 💼',rCreativeai:'Маркетинг & Бренд 🎨',rDeveloper:'AI Програмер 💻',rEva:'ЕУ Фондови 🇪🇺',rJustinian:'Правен Советник ⚖️',rDropshipper:'Дропшипинг 🛒',rTravelai:'Патување & Понуди ✈️',rTenderai:'Тендери & Лицитации 📋'},
     sr:{chat:'Čet',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
-      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
-      rFitness:'Trening & Fitnes 💪',
+      rAimentor:'AI Učenje 🤖',rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rSara:'Podrška u Učenju 🧩',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rQuizai:'Dnevni Kviz 🧠',rEthan:'Lajf Kouč 🌟',rPlanner:'Dnevni Planer 📅',
+      rAna:'Wellness Kouč 🌿',rFitness:'Trening & Fitnes 💪',rChef:'Recepti & Ishrana 👨‍🍳',rLuna:'Mindfulness & Snovi 🌙',
       rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     hr:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
-      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
-      rFitness:'Trening & Fitnes 💪',
+      rAimentor:'AI Učenje 🤖',rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rSara:'Podrška u Učenju 🧩',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rQuizai:'Dnevni Kviz 🧠',rEthan:'Life Kouč 🌟',rPlanner:'Dnevni Planer 📅',
+      rAna:'Wellness Kouč 🌿',rFitness:'Trening & Fitnes 💪',rChef:'Recepti & Prehrana 👨‍🍳',rLuna:'Mindfulness & Snovi 🌙',
       rBusinessai:'Strategija & Financije 💼',rCreativeai:'Marketing & Brand 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     bs:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
-      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
-      rFitness:'Trening & Fitnes 💪',
+      rAimentor:'AI Učenje 🤖',rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rSara:'Podrška u Učenju 🧩',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rQuizai:'Dnevni Kviz 🧠',rEthan:'Life Kouč 🌟',rPlanner:'Dnevni Planer 📅',
+      rAna:'Wellness Kouč 🌿',rFitness:'Trening & Fitnes 💪',rChef:'Recepti & Ishrana 👨‍🍳',rLuna:'Mindfulness & Snovi 🌙',
       rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     sq:{chat:'Chat',blog:'Blog & Reviews',placeholder:'Shkruaj një mesazh...',start:'Fillo bisedën →',logout:'👤 Dil',login:'Hyrje',register:'Regjistrohu',signin:'Hyr',
       slMain:'Asistenti Kryesor',slEdu:'Edukim',slHealth:'Shëndet & Wellness',slBiz:'Biznes',
       rMarginova:'Udhëzues AI & Portal',
-      rSophie:'Mësuese Anglishtes 🇬🇧',rHanna:'Mësuese e Gjermanishtes 🇩🇪',rLeo:'Ese & Shkrim ✍️',rLiber:'Enciklopedi & Libra 📚',
-      rFitness:'Stërvitje & Fitness 💪',
+      rAimentor:'Mësim AI 🤖',rSophie:'Mësuese Anglishtes 🇬🇧',rHanna:'Mësuese e Gjermanishtes 🇩🇪',rLeo:'Ese & Shkrim ✍️',rSara:'Mbështetje Mësimi 🧩',rLiber:'Enciklopedi & Libra 📚',rQuizai:'Kuiz Ditor 🧠',rEthan:'Life Coach 🌟',rPlanner:'Planifikues Ditor 📅',
+      rAna:'Trajner Wellness 🌿',rFitness:'Stërvitje & Fitness 💪',rChef:'Receta & Ushqim 👨‍🍳',rLuna:'Mindfulness & Ëndrra 🌙',
       rBusinessai:'Strategji & Financa 💼',rCreativeai:'Marketing & Brand 🎨',rDeveloper:'Programues AI 💻',rEva:'Fondet BE 🇪🇺',rJustinian:'Këshilltar Ligjor ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Udhëtim & Oferta ✈️',rTenderai:'Tenderë & Ankande 📋'},
     bg:{chat:'Чат',blog:'Блог & Ревюта',placeholder:'Напишете съобщение...',start:'Започни разговор →',logout:'👤 Изход',login:'Вход',register:'Регистрация',signin:'Влез',
       slMain:'Главен Асистент',slEdu:'Образование',slHealth:'Здраве & Уелнес',slBiz:'Бизнес',
       rMarginova:'AI Водач & Портал',
-      rSophie:'Учителка по Английски 🇬🇧',rHanna:'Учителка по Немски 🇩🇪',rLeo:'Есе & Писане ✍️',rLiber:'Енциклопедия & Книги 📚',
-      rFitness:'Тренировка & Фитнес 💪',
+      rAimentor:'AI Обучение 🤖',rSophie:'Учителка по Английски 🇬🇧',rHanna:'Учителка по Немски 🇩🇪',rLeo:'Есе & Писане ✍️',rSara:'Учебна Подкрепа 🧩',rLiber:'Енциклопедия & Книги 📚',rQuizai:'Дневен Куиз 🧠',rEthan:'Лайф Коуч 🌟',rPlanner:'Дневен Планер 📅',
+      rAna:'Уелнес Коуч 🌿',rFitness:'Тренировка & Фитнес 💪',rChef:'Рецепти & Хранене 👨‍🍳',rLuna:'Mindfulness & Сънища 🌙',
       rBusinessai:'Стратегия & Финанси 💼',rCreativeai:'Маркетинг & Бранд 🎨',rDeveloper:'AI Програмист 💻',rEva:'ЕС Фондове 🇪🇺',rJustinian:'Правен Съветник ⚖️',rDropshipper:'Дропшипинг 🛒',rTravelai:'Пътуване & Оферти ✈️',rTenderai:'Търгове & Лицитации 📋'},
     de:{chat:'Chat',blog:'Blog & Bewertungen',placeholder:'Nachricht eingeben...',start:'Gespräch starten →',logout:'👤 Abmelden',login:'Anmelden',register:'Registrieren',signin:'Einloggen',
       slMain:'Hauptassistent',slEdu:'Bildung',slHealth:'Gesundheit & Wellness',slBiz:'Business',
       rMarginova:'AI Führer & Portal',
-      rSophie:'Englischlehrerin 🇬🇧',rHanna:'Deutschlehrerin 🇩🇪',rLeo:'Essay & Schreiben ✍️',rLiber:'Enzyklopädie & Bücher 📚',
-      rFitness:'Training & Fitness 💪',
+      rAimentor:'AI Lernen 🤖',rSophie:'Englischlehrerin 🇬🇧',rHanna:'Deutschlehrerin 🇩🇪',rLeo:'Essay & Schreiben ✍️',rSara:'Lernunterstützung 🧩',rLiber:'Enzyklopädie & Bücher 📚',rQuizai:'Tägliches Quiz 🧠',rEthan:'Life Coach 🌟',rPlanner:'Tagesplaner 📅',
+      rAna:'Wellness Coach 🌿',rFitness:'Training & Fitness 💪',rChef:'Rezepte & Ernährung 👨‍🍳',rLuna:'Mindfulness & Träume 🌙',
       rBusinessai:'Strategie & Finanzen 💼',rCreativeai:'Marketing & Branding 🎨',rDeveloper:'AI Entwickler 💻',rEva:'EU Fördermittel 🇪🇺',rJustinian:'Rechtsberater ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Reisen & Angebote ✈️',rTenderai:'Ausschreibungen & Auktionen 📋'},
   };
   const t=texts[l]||texts.en;
@@ -1953,9 +1958,10 @@ function setLang(l){
   _set('sl-biz',t.slBiz);
   // Avatar roles
   const roles={
-    'role-marginova':'rMarginova','role-sophie':'rSophie','role-hanna':'rHanna',
-    'role-leo':'rLeo','role-liber':'rLiber','role-fitness':'rFitness',
-    'role-businessai':'rBusinessai','role-creativeai':'rCreativeai',
+    'role-marginova':'rMarginova','role-aimentor':'rAimentor','role-sophie':'rSophie','role-hanna':'rHanna',
+    'role-leo':'rLeo','role-sara':'rSara','role-liber':'rLiber','role-quizai':'rQuizai','role-ethan':'rEthan',
+    'role-planner':'rPlanner','role-ana':'rAna','role-fitness':'rFitness','role-chef':'rChef',
+    'role-luna':'rLuna','role-businessai':'rBusinessai','role-creativeai':'rCreativeai',
     'role-developer':'rDeveloper','role-eva':'rEva','role-justinian':'rJustinian',
     'role-dropshipper':'rDropshipper','role-travelai':'rTravelai','role-tenderai':'rTenderai'
   };
@@ -3111,17 +3117,17 @@ function emailPlan(){
 <div id="upgrade-overlay">
   <div id="upgrade-box">
     <div class="up-icon">⚡</div>
-    <div class="up-title">Оваа функција носи реални приходи</div>
+    <div class="up-title">Отклучи ги сите 12 специјалисти</div>
     <div class="up-sub">Добиваш пристап до конкретни можности — грантови, тендери, правни совети со суми и рокови.</div>
     <ul class="up-features">
       <li>Активни EU грантови и фондови со рокови</li>
       <li>Тендери и апликации чекор по чекор</li>
       <li>Напредни правни и бизнис совети</li>
-      <li>1.500 пораки / месец</li>
+      <li>500 пораки / ден (Pro) или Неограничено (Business/Ultra)</li>
     </ul>
-    <button class="up-btn-primary" onclick="window.location.href='landing.html#pricing'">⚡ Отклучи Premium — $9.99/мес</button>
+    <button class="up-btn-primary" onclick="window.location.href='landing.html#pricing'">⚡ Отклучи Pro — $12.99/мес</button>
     <button class="up-btn-secondary" onclick="closeUpgradePopup()">Продолжи со бесплатно (ограничено)</button>
-    <div class="up-social">347 корисници го отклучија оваа недела</div>
+    <div class="up-social">Откажи кога сакаш · Без скриени такси</div>
   </div>
 </div>
 
