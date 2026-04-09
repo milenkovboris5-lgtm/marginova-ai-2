@@ -850,21 +850,21 @@ nav::after{
     </div>
     <!-- UPGRADE BTN -->
     <button onclick="window.location.href='landing.html#pricing';closeDrawer();" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:0.65rem;border-radius:50px;cursor:pointer;font-size:0.76rem;color:#0a0a12;background:linear-gradient(135deg,rgba(201,168,76,0.95),rgba(201,168,76,0.7));border:none;width:100%;font-family:'Jost',sans-serif;font-weight:700;margin-bottom:0.6rem;box-shadow:0 4px 20px rgba(201,168,76,0.3);">
-      ⚡ Надгради план →
+      ⚡ <span id="drawer-upgrade">Надгради план →</span>
     </button>
     <!-- LINKS -->
     <button onclick="window.location.href='landing.html#pricing';closeDrawer();" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
-      <span>💰</span>Планови & Цени
+      <span>💰</span><span id="drawer-pricing">Планови & Цени</span>
     </button>
     <button onclick="showShareModal();closeDrawer();" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
-      <span>🔗</span>Покани & Освои XP
+      <span>🔗</span><span id="drawer-invite">Покани & Освои XP</span>
     </button>
     <button onclick="toggleSound()" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
       <span id="sound-btn">🔇</span>Sound
     </button>
     <div style="height:1px;background:var(--border);margin:0.6rem 0;"></div>
     <a href="mailto:contact@marginova.ai" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);text-decoration:none;width:100%;font-family:'Jost',sans-serif;">
-      <span>📧</span>Контакт & Поддршка
+      <span>📧</span><span id="drawer-contact">Контакт & Поддршка</span>
     </a>
     <div style="height:1px;background:var(--border);margin:0.6rem 0;"></div>
     <button onclick="logout()" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--muted);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
@@ -1900,19 +1900,22 @@ function setLang(l){
   if(sel) sel.value=l;
 
   const texts={
-    en:{chat:'Chat',blog:'Blog & Reviews',placeholder:'Type a message...',start:'Start conversation →',logout:'👤 Sign Out',login:'Login',register:'Register',signin:'Sign In',
+    en:{chat:'Chat',blog:'Blog & Reviews'
+      upgrade:'Upgrade Plan →',pricing:'Plans & Pricing',invite:'Invite & Earn XP',contact:'Contact & Support',,placeholder:'Type a message...',start:'Start conversation →',logout:'👤 Sign Out',login:'Login',register:'Register',signin:'Sign In',
       slMain:'Main Assistant',slEdu:'Education',slHealth:'Health & Wellness',slBiz:'Business',
       rMarginova:'AI Guide & Portal',
       rSophie:'English Teacher 🇬🇧',rHanna:'German Teacher 🇩🇪',rLeo:'Essay & Writing ✍️',rLiber:'Encyclopedia & Books 📚',
       rFitness:'Training & Fitness 💪',
       rBusinessai:'Strategy & Finance 💼',rCreativeai:'Marketing & Branding 🎨',rDeveloper:'AI Developer 💻',rEva:'EU Funds 🇪🇺',rJustinian:'Legal Advisor ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Travel & Deals ✈️',rTenderai:'Tenders & Auctions 📋'},
-    mk:{chat:'Чет',blog:'Блог & Рецензии',placeholder:'Напишете порака...',start:'Започни разговор →',logout:'👤 Одјави се',login:'Најава',register:'Регистрација',signin:'Најави се',
+    mk:{chat:'Чет',blog:'Блог & Рецензии'
+      upgrade:'Надгради план →',pricing:'Планови & Цени',invite:'Покани & Освои XP',contact:'Контакт & Поддршка',,placeholder:'Напишете порака...',start:'Започни разговор →',logout:'👤 Одјави се',login:'Најава',register:'Регистрација',signin:'Најави се',
       slMain:'Главен Асистент',slEdu:'Едукација',slHealth:'Здравје & Велнес',slBiz:'Бизнис',
       rMarginova:'AI Водич & Портал',
       rSophie:'Учител по Англиски 🇬🇧',rHanna:'Учителка по Германски 🇩🇪',rLeo:'Есеј & Пишување ✍️',rLiber:'Енциклопедија & Книги 📚',
       rFitness:'Тренинг & Фитнес 💪',
       rBusinessai:'Стратегија & Финансии 💼',rCreativeai:'Маркетинг & Бренд 🎨',rDeveloper:'AI Програмер 💻',rEva:'ЕУ Фондови 🇪🇺',rJustinian:'Правен Советник ⚖️',rDropshipper:'Дропшипинг 🛒',rTravelai:'Патување & Понуди ✈️',rTenderai:'Тендери & Лицитации 📋'},
-    sr:{chat:'Čet',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
+    sr:{chat:'Čet',blog:'Blog & Recenzije'
+      upgrade:'Nadgradi plan →',pricing:'Planovi & Cene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',,placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
       rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
@@ -1920,29 +1923,34 @@ function setLang(l){
       rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     hr:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
-      rMarginova:'AI Vodič & Portal',
+      rMarginova:'AI Vodič & Portal'
+      upgrade:'Nadogradi plan →',pricing:'Planovi & Cijene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',,
       rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
       rBusinessai:'Strategija & Financije 💼',rCreativeai:'Marketing & Brand 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     bs:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
+      upgrade:'Nadogradi plan →',pricing:'Planovi & Cijene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
       rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
       rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
-    sq:{chat:'Chat',blog:'Blog & Reviews',placeholder:'Shkruaj një mesazh...',start:'Fillo bisedën →',logout:'👤 Dil',login:'Hyrje',register:'Regjistrohu',signin:'Hyr',
+    sq:{chat:'Chat',blog:'Blog & Reviews',placeholder:'Shkruaj një mesazh...'
+      upgrade:'Përmirëso planin →',pricing:'Planet & Çmimet',invite:'Fto & Fito XP',contact:'Kontakt & Mbështetje',,start:'Fillo bisedën →',logout:'👤 Dil',login:'Hyrje',register:'Regjistrohu',signin:'Hyr',
       slMain:'Asistenti Kryesor',slEdu:'Edukim',slHealth:'Shëndet & Wellness',slBiz:'Biznes',
       rMarginova:'Udhëzues AI & Portal',
       rSophie:'Mësuese Anglishtes 🇬🇧',rHanna:'Mësuese e Gjermanishtes 🇩🇪',rLeo:'Ese & Shkrim ✍️',rLiber:'Enciklopedi & Libra 📚',
       rFitness:'Stërvitje & Fitness 💪',
       rBusinessai:'Strategji & Financa 💼',rCreativeai:'Marketing & Brand 🎨',rDeveloper:'Programues AI 💻',rEva:'Fondet BE 🇪🇺',rJustinian:'Këshilltar Ligjor ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Udhëtim & Oferta ✈️',rTenderai:'Tenderë & Ankande 📋'},
-    bg:{chat:'Чат',blog:'Блог & Ревюта',placeholder:'Напишете съобщение...',start:'Започни разговор →',logout:'👤 Изход',login:'Вход',register:'Регистрация',signin:'Влез',
+    bg:{chat:'Чат',blog:'Блог & Ревюта'
+      upgrade:'Надгради план →',pricing:'Планове & Цени',invite:'Покани & Спечели XP',contact:'Контакт & Поддръжка',,placeholder:'Напишете съобщение...',start:'Започни разговор →',logout:'👤 Изход',login:'Вход',register:'Регистрация',signin:'Влез',
       slMain:'Главен Асистент',slEdu:'Образование',slHealth:'Здраве & Уелнес',slBiz:'Бизнес',
       rMarginova:'AI Водач & Портал',
       rSophie:'Учителка по Английски 🇬🇧',rHanna:'Учителка по Немски 🇩🇪',rLeo:'Есе & Писане ✍️',rLiber:'Енциклопедия & Книги 📚',
       rFitness:'Тренировка & Фитнес 💪',
       rBusinessai:'Стратегия & Финанси 💼',rCreativeai:'Маркетинг & Бранд 🎨',rDeveloper:'AI Програмист 💻',rEva:'ЕС Фондове 🇪🇺',rJustinian:'Правен Съветник ⚖️',rDropshipper:'Дропшипинг 🛒',rTravelai:'Пътуване & Оферти ✈️',rTenderai:'Търгове & Лицитации 📋'},
-    de:{chat:'Chat',blog:'Blog & Bewertungen',placeholder:'Nachricht eingeben...',start:'Gespräch starten →',logout:'👤 Abmelden',login:'Anmelden',register:'Registrieren',signin:'Einloggen',
+    de:{chat:'Chat',blog:'Blog & Bewertungen'
+      upgrade:'Plan upgraden →',pricing:'Pläne & Preise',invite:'Einladen & XP verdienen',contact:'Kontakt & Support',,placeholder:'Nachricht eingeben...',start:'Gespräch starten →',logout:'👤 Abmelden',login:'Anmelden',register:'Registrieren',signin:'Einloggen',
       slMain:'Hauptassistent',slEdu:'Bildung',slHealth:'Gesundheit & Wellness',slBiz:'Business',
       rMarginova:'AI Führer & Portal',
       rSophie:'Englischlehrerin 🇬🇧',rHanna:'Deutschlehrerin 🇩🇪',rLeo:'Essay & Schreiben ✍️',rLiber:'Enzyklopädie & Bücher 📚',
@@ -1958,6 +1966,10 @@ function setLang(l){
   _setP('msg-input',t.placeholder);
   _set('start-btn',t.start);
   _set('user-btn',t.logout);
+  _set('drawer-upgrade',t.upgrade);
+  _set('drawer-pricing',t.pricing);
+  _set('drawer-invite',t.invite);
+  _set('drawer-contact',t.contact);
   _set('tab-login',t.login);
   _set('tab-register',t.register);
   const authBtn=document.getElementById('auth-btn');
