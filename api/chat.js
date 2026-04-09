@@ -182,15 +182,6 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
   // ═══ ДОДАЈ SEARCH GROUNDING за Eva и Tender AI ═══
   if (useGrounding) {
     requestBody.tools = [{ googleSearch: {} }];
-    // Dynamic retrieval — само кога е навистина потребно
-    requestBody.toolConfig = {
-      googleSearchRetrieval: {
-        dynamicRetrievalConfig: {
-          mode: 'MODE_DYNAMIC',
-          dynamicThreshold: 0.7
-        }
-      }
-    };
   }
 
   const response = await fetch(url, {
