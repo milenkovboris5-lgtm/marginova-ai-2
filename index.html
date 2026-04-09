@@ -857,7 +857,8 @@ const LANGS = {
 
 // Add minimal translations for other languages
 ['hr','bs','sq','de','bg'].forEach(l => {
-  LANGS[l] = {...LANGS[l === 'hr' || l === 'bs' ? 'sr' : 'en']};
+  const base = (l === 'hr' || l === 'bs') ? 'sr' : 'en';
+  LANGS[l] = {...LANGS[base], ...(LANGS.en[l] || {})};
 });
 LANGS.hr.navCta = 'Počni besplatno →'; LANGS.hr.live = 'Živo 24/7'; LANGS.hr.harmonic = 'HARMONIČNI INTELEKT';
 LANGS.bs.navCta = 'Počni besplatno →'; LANGS.bs.live = 'Živo 24/7'; LANGS.bs.harmonic = 'HARMONIČNI INTELEKT';
