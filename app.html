@@ -2012,9 +2012,15 @@ window.addEventListener('DOMContentLoaded', async function() {
     const { data } = await db.auth.getSession();
     if(data && data.session && data.session.user) {
       currentUser = data.session.user;
+      showApp();
+    } else {
+      // No session — show auth screen
+      document.getElementById('auth-screen').style.display='flex';
     }
-  } catch(e){ console.warn('Session check error:', e); }
-  showApp();
+  } catch(e){
+    console.warn('Session check error:', e);
+    document.getElementById('auth-screen').style.display='flex';
+  }
 
   // Listen for auth state changes
   db.auth.onAuthStateChange(function(event, session) {
@@ -2868,7 +2874,6 @@ function processXPToastQueue(){
 let profileLoaded=false;
 async function loadProfile(){
   if(!currentUser||profileLoaded)return;
-  profileLoaded=true;
   try{
     let {data,error}=await db.from('profiles').select('*').eq('user_id',currentUser.id).single();
     if(error||!data){
@@ -2878,9 +2883,11 @@ async function loadProfile(){
         last_login:today,created_at:new Date().toISOString(),tokens:50,tokens_total:50,
         plan:'free',daily_msgs:0,last_msg_date:today
       });
+      profileLoaded=true;
       updateXPBar(0);
       streakCount=0;
     } else {
+      profileLoaded=true;
       updateXPBar(data.xp||0);
       streakCount=data.streak||0;
       lastLoginDate=data.last_login;
@@ -3008,8 +3015,9 @@ window.addEventListener('DOMContentLoaded', function(){
 
 
 // ═══ QUICK START ═══
-function quickStart(text){
-  startChat().then ? startChat().then(()=>{ setTimeout(()=>{ document.getElementById('msg-input').value=text; sendMsg(); },300); }) : (startChat(), setTimeout(()=>{ document.getElementById('msg-input').value=text; sendMsg(); },500));
+async function quickStart(text){
+  await startChat();
+  setTimeout(()=>{ document.getElementById('msg-input').value=text; sendMsg(); },300);
 }
 
 // ═══ TOKEN SYSTEM ═══
