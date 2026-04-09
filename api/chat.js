@@ -203,8 +203,16 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
     if (meta.groundingChunks && meta.groundingChunks.length > 0) {
       const sources = meta.groundingChunks
         .filter(c => c.web && c.web.uri)
+        .filter(c => !c.web.uri.includes('vertexaisearch') && !c.web.title?.toLowerCase().includes('current time'))
         .slice(0, 3)
-        .map(c => `• [${c.web.title || c.web.uri}](${c.web.uri})`)
+        .map(c => {
+          // Извади го чистиот домејн/наслов
+          const title = c.web.title && !c.web.title.includes('vertexaisearch') 
+            ? c.web.title 
+            : new URL(c.web.uri).hostname.replace('www.','');
+          const uri = c.web.uri;
+          return `• [${title}](${uri})`;
+        })
         .join('\n');
       if (sources) {
         return text + '\n\n🔍 **Извори:**\n' + sources;
