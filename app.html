@@ -1940,8 +1940,25 @@ async function logout(){
   closeDrawer();
 }
 
-// Check existing session
-window.addEventListener('DOMContentLoaded', function() { showApp(); });
+// Check existing session — restore Supabase session on load
+window.addEventListener('DOMContentLoaded', async function() {
+  try {
+    const { data } = await db.auth.getSession();
+    if(data && data.session && data.session.user) {
+      currentUser = data.session.user;
+    }
+  } catch(e){ console.warn('Session check error:', e); }
+  showApp();
+
+  // Listen for auth state changes
+  db.auth.onAuthStateChange(function(event, session) {
+    if(event === 'SIGNED_IN' && session) {
+      currentUser = session.user;
+    } else if(event === 'SIGNED_OUT') {
+      currentUser = null;
+    }
+  });
+});
 
 // LANG
 function setLang(l){
