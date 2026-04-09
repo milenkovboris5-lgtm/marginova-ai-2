@@ -713,6 +713,45 @@ nav::after{
   cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.2s;
 }
 .pro-locked-back:hover{border-color:var(--border2);color:var(--text2);}
+
+/* ═══ MEMORY PROFILE MODAL ═══ */
+#memory-profile-modal{
+  position:fixed;inset:0;z-index:5000;
+  background:rgba(9,9,16,0.92);backdrop-filter:blur(12px);
+  display:none;align-items:center;justify-content:center;padding:1rem;
+}
+#memory-profile-modal.show{display:flex;}
+.mp-box{
+  background:linear-gradient(135deg,rgba(19,19,31,0.99),rgba(14,14,26,0.99));
+  border:1px solid var(--border2);border-radius:20px;
+  padding:2rem 1.8rem;width:100%;max-width:420px;
+  box-shadow:0 0 60px rgba(201,168,76,0.15);
+  display:flex;flex-direction:column;gap:1rem;
+}
+.mp-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;color:var(--text);text-align:center;}
+.mp-title em{color:var(--gold);font-style:italic;}
+.mp-sub{font-size:0.75rem;color:var(--muted);text-align:center;line-height:1.6;}
+.mp-field{display:flex;flex-direction:column;gap:5px;}
+.mp-label{font-size:0.65rem;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;}
+.mp-select,.mp-input{
+  width:100%;background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:10px;
+  padding:0.6rem 0.9rem;color:var(--text);font-size:0.82rem;
+  font-family:'Jost',sans-serif;outline:none;transition:all 0.2s;
+  appearance:none;-webkit-appearance:none;
+}
+.mp-select:focus,.mp-input:focus{border-color:var(--gold);box-shadow:0 0 10px rgba(201,168,76,0.1);}
+.mp-select option{background:#0e0e1a;color:var(--text);}
+.mp-btn{
+  width:100%;padding:0.75rem;border-radius:50px;border:none;
+  background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));
+  color:#0a0a12;font-size:0.85rem;font-weight:700;cursor:pointer;
+  font-family:'Jost',sans-serif;transition:all 0.25s;
+  box-shadow:0 4px 20px rgba(201,168,76,0.3);margin-top:0.5rem;
+}
+.mp-btn:hover{transform:translateY(-1px);box-shadow:0 4px 30px rgba(201,168,76,0.5);}
+.mp-skip{font-size:0.7rem;color:var(--muted);text-align:center;cursor:pointer;transition:color 0.2s;}
+.mp-skip:hover{color:var(--text2);}
 </style>
 </head>
 <body>
@@ -862,8 +901,11 @@ nav::after{
     <button onclick="toggleSound()" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
       <span id="sound-btn">🔇</span>Sound
     </button>
+    <button onclick="openMemoryProfileModal()" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
+      <span>🧠</span><span id="drawer-profile">Мој AI Профил</span>
+    </button>
     <div style="height:1px;background:var(--border);margin:0.6rem 0;"></div>
-    <a href="mailto:contact@marginova.ai" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);text-decoration:none;width:100%;font-family:'Jost',sans-serif;">
+    <a href="/cdn-cgi/l/email-protection#e1828e8f95808295a18c809386888f8e9780cf8088" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);text-decoration:none;width:100%;font-family:'Jost',sans-serif;">
       <span>📧</span><span id="drawer-contact">Контакт & Поддршка</span>
     </a>
     <div style="height:1px;background:var(--border);margin:0.6rem 0;"></div>
@@ -1229,7 +1271,7 @@ nav::after{
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // MSH removed
 var MSH_REMOVED = true;
 if(false){var MSH = {
@@ -1279,6 +1321,7 @@ const db = createClient(SUPA_URL, SUPA_KEY);
 
 let lang='en', soundOn=false, selectedStars=0, current='sophie';
 let history={}, currentUser=null, authMode='login';
+let userMemoryProfile=null;
 
 const AVATARS={
   sophie:{name:'Sophie',img:'avatar-sophie.png',female:true,traits:[['patient',true],['encouraging',true],['fun',false]],mood:'"A new word every day keeps boredom away..."',desc:'English language learning with a Daily Word Challenge — learn one new word every day and build your streak!',greeting:'Hello! I am Sophie, your English teacher! 🇬🇧 Today\'s Daily Word Challenge is: ✨ RESILIENCE ✨ — it means the ability to recover quickly from difficulties. Can you make a sentence using this word? Try your best — I will give you feedback and XP! 💪',greetingSR:'Hello! Ja sam Sophie, tvoja učiteljica engleskog! 🇬🇧 Današnji Daily Word Challenge je: ✨ RESILIENCE ✨ — znači sposobnost brzog oporavka od teškoća. Možeš li napraviti rečenicu koristeći ovu reč? Pokušaj — daću ti povratnu informaciju i XP! 💪',greetingDE:'Hallo! Ich bin Sophie, deine Englischlehrerin! 🇬🇧 Die heutige Daily Word Challenge ist: ✨ RESILIENCE ✨ — Bedeutung: die Fähigkeit, sich schnell von Schwierigkeiten zu erholen. Kannst du einen Satz bilden?',greetingHR:'Bok! Ja sam Sophie, tvoja učiteljica engleskog! 🇬🇧 Današnji Daily Word Challenge je: ✨ RESILIENCE ✨ — Možeš li napraviti rečenicu?',greetingBS:'Zdravo! Ja sam Sophie, tvoja učiteljica engleskog! 🇬🇧 Današnji Daily Word je: ✨ RESILIENCE ✨',greetingBG:'Здравей! Аз съм Sophie, твоята учителка по английски! 🇬🇧 Днешното Daily Word е: ✨ RESILIENCE ✨',greetingSQ:'Përshëndetje! Unë jam Sophie, mësuese jote e anglishtes! 🇬🇧 Fjala e sotme është: ✨ RESILIENCE ✨',greetingEN:'Hello! I am Sophie, your English teacher! 🇬🇧 Today\'s Daily Word Challenge is: ✨ RESILIENCE ✨ — it means the ability to recover quickly from difficulties. Can you make a sentence using this word? Try your best — I will give you feedback and XP! 💪',system:`Ти си Sophie — ентузијастичен и стрплив учител по англиски јазик со специјална Daily Word Challenge функција.
@@ -1874,6 +1917,7 @@ function showApp(){
       // Daily login XP is handled inside checkStreak (called from loadProfile)
       // to ensure it only triggers once per 24 hours
     });
+    loadMemoryProfile();
     loadTokens();
     initReferral();
   }
@@ -2372,7 +2416,8 @@ async function sendMsg(){
     const baseSys = sysMap[lang] || av.system;
     const langInstruction = '\n\nCRITICAL INSTRUCTION: You MUST respond ONLY in ' + (langNames[lang] || 'English') + '. This is ABSOLUTE. Always reply in ' + (langNames[lang] || 'English') + ' only. Never switch languages under any circumstances.';
     const brevityInstruction = '\n\nRESPONSE STYLE — CRITICAL:\n- Maximum 120 words per response. No exceptions.\n- NEVER write long paragraphs. Be sharp and direct.\n- Give the answer immediately — no long intros, no summaries at the end.\n- Use short bullet points only when it genuinely helps.\n- Cut ALL filler text.\n- If the answer needs more detail, give the most important part first, then ask: Want me to continue?\n- If asked for a plan, list, code or analysis — give it directly in compact format.';
-    const sys = baseSys + langInstruction + brevityInstruction;
+    const memoryContext = buildMemoryContext();
+    const sys = baseSys + memoryContext + langInstruction + brevityInstruction;
     
     const userPlan = (window._userPlan || 'free');
     const payload = {
@@ -2730,6 +2775,79 @@ async function loadProfile(){
       await checkStreak(data);
     }
   }catch(e){console.warn('Profile load error:',e);updateXPBar(0);}
+}
+
+
+// ═══════════════════════════════════════════
+// MEMORY PROFILE
+// ═══════════════════════════════════════════
+async function loadMemoryProfile(){
+  if(!currentUser) return;
+  try{
+    const {data} = await db.from('profiles')
+      .select('country,industry,goal,company_size,profile_completed')
+      .eq('user_id', currentUser.id).single();
+    if(data){
+      userMemoryProfile = data;
+      // Ако профилот не е комплетиран — прикажи modal
+      if(!data.profile_completed){
+        setTimeout(()=>{
+          document.getElementById('memory-profile-modal').classList.add('show');
+        }, 1500);
+      }
+    }
+  }catch(e){ console.warn('Memory profile load error:', e); }
+}
+
+async function saveMemoryProfile(){
+  const country = document.getElementById('mp-country').value;
+  const industry = document.getElementById('mp-industry').value;
+  const goal = document.getElementById('mp-goal').value;
+  const companySize = document.getElementById('mp-company-size').value;
+
+  if(!country || !industry || !goal){
+    showXPToast('⚠️ Пополни ги задолжителните полиња');
+    return;
+  }
+
+  try{
+    await db.from('profiles').update({
+      country, industry, goal,
+      company_size: companySize,
+      profile_completed: true
+    }).eq('user_id', currentUser.id);
+
+    userMemoryProfile = { country, industry, goal, company_size: companySize, profile_completed: true };
+    document.getElementById('memory-profile-modal').classList.remove('show');
+    showXPToast('🧠 Профилот е зачуван! AI те познава сега.');
+    addXP(25, 'Профил пополнет 🧠');
+  }catch(e){
+    console.warn('Save memory profile error:', e);
+    showXPToast('⚠️ Грешка при зачувување');
+  }
+}
+
+function skipMemoryProfile(){
+  document.getElementById('memory-profile-modal').classList.remove('show');
+}
+
+function openMemoryProfileModal(){
+  document.getElementById('memory-profile-modal').classList.add('show');
+  // Пополни постоечки вредности ако постојат
+  if(userMemoryProfile){
+    const s = (id, val) => { const el=document.getElementById(id); if(el&&val) el.value=val; };
+    s('mp-country', userMemoryProfile.country);
+    s('mp-industry', userMemoryProfile.industry);
+    s('mp-goal', userMemoryProfile.goal);
+    s('mp-company-size', userMemoryProfile.company_size);
+  }
+  closeDrawer();
+}
+
+function buildMemoryContext(){
+  if(!userMemoryProfile || !userMemoryProfile.profile_completed) return '';
+  const p = userMemoryProfile;
+  return `\n\nUSER PROFILE (use this context naturally — do not mention that you read a profile):\n- Country: ${p.country || 'Unknown'}\n- Industry: ${p.industry || 'Unknown'}\n- Main goal: ${p.goal || 'Unknown'}\n- Company size: ${p.company_size || 'Unknown'}\nUse this to give more relevant, personalized answers. Do not repeat this info back to the user.`;
 }
 
 // ═══ TOKEN SYSTEM ═══
@@ -3155,9 +3273,4 @@ function emailPlan(){
 
 <script>
 function showUpgradePopup(){
-  document.getElementById('upgrade-overlay').classList.add('show');
-}
-function closeUpgradePopup(){
-  document.getElementById('upgrade-overlay').classList.remove('show');
-}
-do
+  document.getElementByI
