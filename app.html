@@ -756,6 +756,72 @@ nav::after{
 .sa-copy-btn:hover{background:rgba(201,168,76,0.2);}
 .sa-del-btn{font-size:0.65rem;padding:3px 10px;border-radius:50px;border:1px solid rgba(255,80,80,0.3);background:transparent;color:rgba(255,80,80,0.7);cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.2s;}
 .sa-del-btn:hover{background:rgba(255,80,80,0.1);}
+
+/* ═══ SEND LOADING SPINNER ═══ */
+.send-btn.loading{
+  background:rgba(201,168,76,0.3) !important;
+  pointer-events:none;
+}
+.send-btn.loading svg{display:none;}
+.send-btn.loading::after{
+  content:'';
+  width:14px;height:14px;
+  border:2px solid rgba(10,10,18,0.3);
+  border-top-color:#0a0a12;
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  display:block;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ═══ SMOOTH SCROLL ═══ */
+html{scroll-behavior:smooth;}
+
+/* ═══ MESSAGE FADE IN ═══ */
+.msg-row{
+  animation:msgFadeIn 0.3s ease both;
+}
+@keyframes msgFadeIn{
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* ═══ TYPING INDICATOR PULSE ═══ */
+.bubble.typing{
+  background:rgba(19,19,31,0.98) !important;
+}
+
+/* ═══ TOKEN DISPLAY ═══ */
+#token-display{
+  font-weight:700;
+  color:var(--gold);
+  transition:color 0.3s;
+}
+.token-low{color:#ff8c42 !important;}
+.token-critical{color:#ff5050 !important;animation:pulse-red 1s infinite;}
+@keyframes pulse-red{0%,100%{opacity:1;}50%{opacity:0.6;}}
+
+/* ═══ AVATAR CARD HOVER ═══ */
+.ag-card:hover .ag-name{
+  text-shadow:0 0 20px rgba(245,224,160,1),0 0 40px rgba(201,168,76,0.7) !important;
+}
+.ag-card:hover .ag-img{
+  transform:scale(1.05);
+  transition:transform 0.2s ease;
+}
+
+/* ═══ QUICK ACTIONS ═══ */
+.quick-actions{
+  display:flex;flex-wrap:wrap;gap:6px;justify-content:center;
+  margin-top:0.8rem;max-width:320px;
+}
+.quick-btn{
+  font-size:0.7rem;padding:0.35rem 0.85rem;border-radius:50px;
+  border:1px solid var(--border2);background:rgba(201,168,76,0.07);
+  color:var(--gold);cursor:pointer;font-family:'Jost',sans-serif;
+  transition:all 0.2s;white-space:nowrap;
+}
+.quick-btn:hover{background:rgba(201,168,76,0.18);transform:translateY(-1px);}
 </style>
 </head>
 <body>
@@ -1225,6 +1291,7 @@ nav::after{
       <div class="welcome-traits" id="welcome-traits"><span class="trait h">intelligent</span><span class="trait h">trustworthy</span><span class="trait">always available</span></div>
       <div class="welcome-desc" id="welcome-desc">Your personal AI assistant for inner clarity and balance.</div>
       <button class="welcome-start" onclick="startChat()" id="start-btn">Start conversation →</button>
+      <div class="quick-actions" id="quick-actions"></div>
     </div>
     <div id="messages" class="messages" style="display:none;"></div>
     <div class="input-area" id="input-area" style="display:none;">
@@ -2235,6 +2302,28 @@ function selectAvatar(id){
   document.getElementById('welcome-screen').style.display='flex';
   document.getElementById('messages').style.display='none';
   document.getElementById('input-area').style.display='none';
+  // Quick action suggestions per avatar
+  const QUICK_ACTIONS = {
+    eva: ['Грантови за МК бизнис', 'IPARD фондови', 'EU за стартап'],
+    tenderai: ['Тендери во Македонија', 'Судски лицитации', 'EU тендери'],
+    justinian: ['Основање фирма', 'Работен договор', 'GDPR права'],
+    businessai: ['Бизнис план', 'SWOT анализа', 'Финансиски план'],
+    sophie: ['Daily Word Challenge', 'English grammar', 'Conversation practice'],
+    hanna: ['Deutsch A1 лекција', 'Германски глаголи', 'Изговор'],
+    developer: ['Debug мој код', 'React component', 'API интеграција'],
+    creativeai: ['Facebook реклама', 'Brand стратегија', 'Copywriting'],
+    dropshipper: ['Top 10 производи', 'AliExpress добавувач', 'TikTok реклама'],
+    fitness: ['4-неделен план', 'Програма за слабеење', 'CrossFit'],
+    leo: ['Напиши ми CV', 'Мотивациско писмо', 'Есеј тема'],
+    liber: ['Marcus Aurelius', 'Sun Tzu стратегија', 'Филозофија']
+  };
+  const qaWrap = document.getElementById('quick-actions');
+  if(qaWrap){
+    const actions = QUICK_ACTIONS[id] || [];
+    qaWrap.innerHTML = actions.map(a => 
+      `<button class="quick-btn" onclick="quickStart('${a}')">${a}</button>`
+    ).join('');
+  }
   updateEmailPlanBtn();
 }
 
@@ -2413,6 +2502,7 @@ async function sendMsg(){
     return;
   }
 
+  document.getElementById('send-btn').classList.add('loading');
   addTyping();
   addXP(XP_REWARDS.message.amount, XP_REWARDS.message.label);
   if(text.length>80) addXP(XP_REWARDS.longMsg.amount, XP_REWARDS.longMsg.label);
@@ -2474,6 +2564,7 @@ async function sendMsg(){
       }
     }
   }catch(e){removeTyping();addMsg('ai','⚠️ Unable to connect. Please try again.');}
+  document.getElementById('send-btn').classList.remove('loading');
   document.getElementById('send-btn').disabled=false;inp.focus();
 }
 
@@ -2919,6 +3010,12 @@ window.addEventListener('DOMContentLoaded', function(){
   // Remove .show class usage — now using style.display
 });
 
+
+// ═══ QUICK START ═══
+function quickStart(text){
+  startChat().then ? startChat().then(()=>{ setTimeout(()=>{ document.getElementById('msg-input').value=text; sendMsg(); },300); }) : (startChat(), setTimeout(()=>{ document.getElementById('msg-input').value=text; sendMsg(); },500));
+}
+
 // ═══ TOKEN SYSTEM ═══
 function updateTokenDisplay(tokens){
   userTokens = tokens;
@@ -2988,8 +3085,12 @@ async function deductToken(){
     
     updateTokenDisplay(remaining);
     
+    const tokenEl = document.getElementById('token-display');
     if(remaining <= 5 && remaining > 0){
       showTokenWarning(`⚠️ Само ${remaining} пораки останати денес!`);
+      if(tokenEl) tokenEl.className = remaining <= 2 ? 'token-critical' : 'token-low';
+    } else if(tokenEl) {
+      tokenEl.className = '';
     }
     return true;
   }catch(e){
