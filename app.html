@@ -713,6 +713,49 @@ nav::after{
   cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.2s;
 }
 .pro-locked-back:hover{border-color:var(--border2);color:var(--text2);}
+
+/* ═══ SAVED ANSWERS ═══ */
+.save-answer-btn{
+  background:none;border:none;cursor:pointer;font-size:0.75rem;
+  opacity:0.4;margin-left:5px;transition:all 0.2s;vertical-align:middle;
+  padding:1px 4px;border-radius:4px;
+}
+.save-answer-btn:hover{opacity:1;background:rgba(201,168,76,0.15);}
+.save-answer-btn.saved{opacity:1;color:var(--gold);}
+
+#saved-answers-modal{
+  position:fixed;inset:0;z-index:5000;
+  background:rgba(9,9,16,0.92);backdrop-filter:blur(12px);
+  display:none;align-items:flex-start;justify-content:center;
+  padding:1rem;overflow-y:auto;
+}
+#saved-answers-modal.show{display:flex;}
+.sa-box{
+  background:linear-gradient(135deg,rgba(19,19,31,0.99),rgba(14,14,26,0.99));
+  border:1px solid var(--border2);border-radius:20px;
+  padding:1.5rem;width:100%;max-width:500px;margin:auto;
+  box-shadow:0 0 60px rgba(201,168,76,0.15);
+}
+.sa-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.sa-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;color:var(--text);}
+.sa-title em{color:var(--gold);font-style:italic;}
+.sa-close{background:none;border:1px solid var(--border);border-radius:50%;width:28px;height:28px;cursor:pointer;color:var(--muted);font-size:0.9rem;display:flex;align-items:center;justify-content:center;}
+.sa-empty{text-align:center;color:var(--muted);font-size:0.8rem;padding:2rem;line-height:1.8;}
+.sa-list{display:flex;flex-direction:column;gap:0.75rem;}
+.sa-item{
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  border-radius:12px;padding:0.85rem;position:relative;
+}
+.sa-item-header{display:flex;align-items:center;gap:8px;margin-bottom:0.5rem;}
+.sa-item-avatar{font-size:0.65rem;background:rgba(201,168,76,0.12);color:var(--gold);padding:2px 8px;border-radius:50px;border:1px solid var(--border2);}
+.sa-item-date{font-size:0.6rem;color:var(--muted);}
+.sa-item-text{font-size:0.78rem;color:var(--text2);line-height:1.6;max-height:80px;overflow:hidden;position:relative;}
+.sa-item-text::after{content:'';position:absolute;bottom:0;left:0;right:0;height:24px;background:linear-gradient(transparent,rgba(14,14,26,0.99));}
+.sa-item-actions{display:flex;gap:6px;margin-top:0.6rem;}
+.sa-copy-btn{font-size:0.65rem;padding:3px 10px;border-radius:50px;border:1px solid var(--border2);background:rgba(201,168,76,0.08);color:var(--gold);cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.2s;}
+.sa-copy-btn:hover{background:rgba(201,168,76,0.2);}
+.sa-del-btn{font-size:0.65rem;padding:3px 10px;border-radius:50px;border:1px solid rgba(255,80,80,0.3);background:transparent;color:rgba(255,80,80,0.7);cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.2s;}
+.sa-del-btn:hover{background:rgba(255,80,80,0.1);}
 </style>
 </head>
 <body>
@@ -858,6 +901,9 @@ nav::after{
     </button>
     <button onclick="showShareModal();closeDrawer();" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
       <span>🔗</span><span id="drawer-invite">Покани & Освои XP</span>
+    </button>
+    <button onclick="openSavedAnswers();closeDrawer();" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
+      <span>📌</span><span id="drawer-saved">Зачувани одговори</span>
     </button>
     <button onclick="toggleSound()" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
       <span id="sound-btn">🔇</span>Sound
@@ -2223,6 +2269,9 @@ function addMsg(role,text){
       navigator.clipboard.writeText(plainText).then(()=>{cb.textContent='✓ Copied';cb.classList.add('copied');setTimeout(()=>{cb.textContent='Copy';cb.classList.remove('copied');},2000);});
     };
     b.appendChild(cb);
+    const bkm=document.createElement('button');bkm.className='save-answer-btn';bkm.textContent='🔖';bkm.title='Зачувај одговор';
+    bkm.onclick=()=>saveAnswer(text, bkm);
+    b.appendChild(bkm);
   }
   row.appendChild(b);
   if(role==='user'){const ic=document.createElement('div');ic.className='msg-user-icon';ic.textContent='You';row.appendChild(ic);}
@@ -2735,6 +2784,117 @@ async function loadProfile(){
     }
   }catch(e){console.warn('Profile load error:',e);updateXPBar(0);}
 }
+
+
+// ═══════════════════════════════════════════
+// SAVED ANSWERS
+// ═══════════════════════════════════════════
+async function saveAnswer(text, btn){
+  if(!currentUser) return showXPToast('⚠️ Логирај се за да зачуваш одговори');
+  try{
+    const plainText = text.replace(/\*\*([^*]+)\*\*/g,'$1');
+    await db.from('saved_answers').insert({
+      user_id: currentUser.id,
+      avatar: current,
+      answer_text: plainText,
+      created_at: new Date().toISOString()
+    });
+    btn.textContent = '✅';
+    btn.classList.add('saved');
+    showXPToast('📌 Одговорот е зачуван!');
+    setTimeout(()=>{ btn.textContent='🔖'; btn.classList.remove('saved'); }, 2000);
+    addXP(2, 'Answer saved 📌');
+  }catch(e){
+    console.warn('Save answer error:', e);
+    showXPToast('⚠️ Грешка при зачувување');
+  }
+}
+
+async function openSavedAnswers(){
+  document.getElementById('saved-answers-modal').classList.add('show');
+  await loadSavedAnswers();
+}
+
+function closeSavedAnswers(){
+  document.getElementById('saved-answers-modal').classList.remove('show');
+}
+
+async function loadSavedAnswers(){
+  const wrap = document.getElementById('sa-list-wrap');
+  if(!currentUser){
+    wrap.innerHTML = '<div class="sa-empty">Логирај се за да ги видиш зачуваните одговори.</div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="sa-empty" style="padding:1rem;">⏳ Се вчитува...</div>';
+  try{
+    const {data, error} = await db.from('saved_answers')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', {ascending: false})
+      .limit(50);
+    
+    if(error || !data || data.length === 0){
+      wrap.innerHTML = '<div class="sa-empty">📌 Немаш зачувани одговори.<br>Кликни на 🔖 копчето до одговор за да го зачуваш.</div>';
+      return;
+    }
+    
+    const avatarNames = {
+      sophie:'Sophie 🇬🇧', hanna:'Hanna 🇩🇪', leo:'Leo ✍️',
+      liber:'LIBER 📚', fitness:'Viktor 💪', developer:'Dev AI 💻',
+      dropshipper:'Drop AI 🛒', eva:'Eva 🇪🇺', tenderai:'Tender AI 📋',
+      creativeai:'Creative AI 🎨', justinian:'Justinian ⚖️', businessai:'Business AI 💼'
+    };
+    
+    const items = data.map(item => {
+      const date = new Date(item.created_at).toLocaleDateString('mk-MK', {day:'numeric',month:'short'});
+      const avName = avatarNames[item.avatar] || item.avatar;
+      const preview = item.answer_text.substring(0, 200);
+      return `
+        <div class="sa-item" id="sa-${item.id}">
+          <div class="sa-item-header">
+            <span class="sa-item-avatar">${avName}</span>
+            <span class="sa-item-date">${date}</span>
+          </div>
+          <div class="sa-item-text">${preview}</div>
+          <div class="sa-item-actions">
+            <button class="sa-copy-btn" onclick="copySavedAnswer('${item.id}', this)" data-text="${item.answer_text.replace(/"/g,'&quot;')}">📋 Копирај</button>
+            <button class="sa-del-btn" onclick="deleteSavedAnswer('${item.id}')">🗑️ Избриши</button>
+          </div>
+        </div>`;
+    }).join('');
+    
+    wrap.innerHTML = `<div class="sa-list">${items}</div>`;
+  }catch(e){
+    console.warn('Load saved answers error:', e);
+    wrap.innerHTML = '<div class="sa-empty">⚠️ Грешка при вчитување.</div>';
+  }
+}
+
+function copySavedAnswer(id, btn){
+  const text = btn.getAttribute('data-text');
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent = '✓ Копирано!';
+    setTimeout(()=>btn.textContent='📋 Копирај', 2000);
+  });
+}
+
+async function deleteSavedAnswer(id){
+  try{
+    await db.from('saved_answers').delete().eq('id', id);
+    const el = document.getElementById('sa-'+id);
+    if(el) el.remove();
+    showXPToast('🗑️ Одговорот е избришан');
+    const list = document.getElementById('sa-list-wrap');
+    if(list && !list.querySelector('.sa-item')){
+      list.innerHTML = '<div class="sa-empty">📌 Немаш зачувани одговори.</div>';
+    }
+  }catch(e){ showXPToast('⚠️ Грешка при бришење'); }
+}
+
+// Close on backdrop click
+document.getElementById('saved-answers-modal').addEventListener('click', function(e){
+  if(e.target === this) closeSavedAnswers();
+});
 
 // ═══ TOKEN SYSTEM ═══
 function updateTokenDisplay(tokens){
