@@ -935,8 +935,7 @@ html{scroll-behavior:smooth;}
     <button class="share-close" onclick="closeShareModal()">Затвори</button>
   </div>
 </div>
-<!-- DRAWER OVERLAY -->
-<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:300;opacity:0;transition:opacity 0.3s;"></div>
+<!-- DRAWER OVERLAY: duplicate removed -->
 
 <!-- DRAWER -->
 <div id="main-drawer" style="position:fixed;top:0;right:0;bottom:0;width:270px;background:linear-gradient(160deg,rgba(14,14,26,0.99),rgba(9,9,16,0.99));border-left:1px solid var(--border2);z-index:400;transform:translateX(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;display:none;">
@@ -2001,7 +2000,7 @@ async function logout(){
   currentUser=null;profileLoaded=false;
   document.getElementById("auth-screen").style.display="flex";
   document.getElementById("main-nav").style.display="none";
-  document.getElementById("lang-bar").style.display="none";
+  const _lb=document.getElementById("lang-bar"); if(_lb)_lb.style.display="none";
   document.getElementById("chat-page").style.display="none";
   document.getElementById("blog-page").classList.remove("active");
   closeDrawer();
@@ -2395,10 +2394,7 @@ function addTyping(){
 
 function removeTyping(){const t=document.getElementById('typing');if(t)t.remove();}
 
-async function saveMessage(role,text){
-  if(!currentUser)return;
-  await db.from('conversations').insert({user_id:currentUser.id,avatar:current,role,message:text});
-}
+// saveMessage: first duplicate removed
 
 // Image upload handling
 let currentImageBase64 = null;
