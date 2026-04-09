@@ -2371,7 +2371,7 @@ async function sendMsg(){
     };
     const baseSys = sysMap[lang] || av.system;
     const langInstruction = '\n\nCRITICAL INSTRUCTION: You MUST respond ONLY in ' + (langNames[lang] || 'English') + '. This is ABSOLUTE. Always reply in ' + (langNames[lang] || 'English') + ' only. Never switch languages under any circumstances.';
-    const brevityInstruction = '\n\nRESPONSE STYLE — CRITICAL:\n- Maximum 120 words per response. No exceptions.\n- NEVER write long paragraphs. Be sharp and direct.\n- Give the answer immediately — no long intros, no summaries at the end.\n- Use short bullet points only when it genuinely helps.\n- Cut ALL filler text.\n- If the answer needs more detail, give the most important part first, then ask: Want me to continue?\n- If asked for a plan, list, code or analysis — give it directly in compact format.';
+    const brevityInstruction = '\n\nRESPONSE STYLE — CRITICAL:\n- Maximum 200 words per response. No exceptions.\n- Be direct and clear — no long intros, no filler text.\n- Give the answer immediately with the most important information first.\n- Use short bullet points only when it genuinely helps structure the answer.\n- Do NOT ask follow-up questions at the end of your response. Just give the answer.\n- If asked for a plan, list, code or analysis — give it directly in compact format.';
     const sys = baseSys + langInstruction + brevityInstruction;
     
     const userPlan = (window._userPlan || 'free');
