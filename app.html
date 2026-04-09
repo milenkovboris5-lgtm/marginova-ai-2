@@ -2811,12 +2811,16 @@ async function saveAnswer(text, btn){
 }
 
 async function openSavedAnswers(){
-  document.getElementById('saved-answers-modal').classList.add('show');
+  const saModal = document.getElementById('saved-answers-modal');
+  if(!saModal) return;
+  saModal.style.display='flex';
   await loadSavedAnswers();
 }
 
 function closeSavedAnswers(){
-  document.getElementById('saved-answers-modal').classList.remove('show');
+  const saModal = document.getElementById('saved-answers-modal');
+  if(!saModal) return;
+  saModal.style.display='none';
 }
 
 async function loadSavedAnswers(){
@@ -2895,6 +2899,7 @@ async function deleteSavedAnswer(id){
 window.addEventListener('DOMContentLoaded', function(){
   const saModal = document.getElementById('saved-answers-modal');
   if(saModal) saModal.addEventListener('click', function(e){ if(e.target===this) closeSavedAnswers(); });
+  // Remove .show class usage — now using style.display
 });
 
 // ═══ TOKEN SYSTEM ═══
@@ -3319,5 +3324,26 @@ function emailPlan(){
 </div>
 
 <script>
+<!-- SAVED ANSWERS MODAL -->
+<div id="saved-answers-modal" style="position:fixed;inset:0;z-index:5000;background:rgba(9,9,16,0.92);backdrop-filter:blur(12px);display:none;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto;">
+  <div class="sa-box">
+    <div class="sa-header">
+      <div class="sa-title">Зачувани <em>одговори</em></div>
+      <button class="sa-close" onclick="closeSavedAnswers()">✕</button>
+    </div>
+    <div id="sa-list-wrap">
+      <div class="sa-empty">📌 Немаш зачувани одговори.<br>Кликни на 🔖 копчето до одговор за да го зачуваш.</div>
+    </div>
+  </div>
+</div>
+
+<script>
 function showUpgradePopup(){
-  document.getElementByI
+  document.getElementById('upgrade-overlay').classList.add('show');
+}
+function closeUpgradePopup(){
+  document.getElementById('upgrade-overlay').classList.remove('show');
+}
+</script>
+</body>
+</html>
