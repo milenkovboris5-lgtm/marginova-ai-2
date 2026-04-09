@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// Верзија: Premium Strategy v2
+// Верзија: Premium Strategy v2 + Search Grounding
 // ═══════════════════════════════════════════
 
 const rateLimitStore = {};
@@ -52,12 +52,16 @@ const PREMIUM_TRIGGERS = [
 // ═══ АВАТАРИ КОИ БАРААТ PREMIUM ═══
 const PREMIUM_AVATARS = ['eva','tenderai','justinian','businessai','dropshipper','travelai'];
 
+// ═══ АВАТАРИ СО REAL-TIME SEARCH GROUNDING ═══
+// Само Eva и Tender AI — бараат актуелни податоци
+const GROUNDING_AVATARS = ['eva', 'tenderai'];
+
 // ═══ ПЛАНОВИ И ЛИМИТИ ═══
 const PLAN_LIMITS = {
   free:    { monthly: 50,   daily: null },
   pro:     { monthly: 1500, daily: null },
   premium: { monthly: 5000, daily: null },
-  ultra:   { monthly: null, daily: null } // неограничено
+  ultra:   { monthly: null, daily: null }
 };
 
 // ═══ ПРОВЕРИ ДАЛИ Е PREMIUM TRIGGER ═══
@@ -72,7 +76,7 @@ function isPremiumTrigger(message, avatar) {
 // ═══ ГЕНЕРИРАЈ 20% PREVIEW ОДГОВОР ═══
 async function generatePreview(systemPrompt, messages, apiKey, isMK) {
   const previewPrompt = systemPrompt + '\n\nВАЖНО: Дај само КРАТОК почеток на одговорот (максимум 3 реченици, 20% од целосниот одговор). Не завршувај го одговорот. Запри на интересно место.';
-  const preview = await callGemini(previewPrompt, messages, false, null, null, null, apiKey);
+  const preview = await callGemini(previewPrompt, messages, false, null, null, null, apiKey, null);
 
   const locked = isMK
     ? `\n\n---\n🔒 **За целосен одговор потребен е Premium план**\n\nОвој одговор содржи:\n• Листа на активни грантови/тендери\n• Чекор-по-чекор водич за апликација\n• Конкретни суми и рокови\n\n**[⚡ Отклучи Premium →](#upgrade)** &nbsp; *или* &nbsp; **[Продолжи бесплатно ↓](#continue)**`
@@ -121,11 +125,11 @@ function buildRouterResponse(category, userText) {
       ? '📊 **Категорија: Бизнис**\n\n➡️ За најдобар одговор, зборувај со **Business AI**, **Justinian**, **Eva** или **Creative AI**.'
       : '📊 **Category: Business**\n\n➡️ Talk to **Business AI**, **Justinian**, **Eva** or **Creative AI** for the best answer.',
     Education: isMK
-      ? '🎓 **Категорија: Едукација**\n\n➡️ За најдобар одговор, зборувај со **AI Mentor**, **Sophie**, **Leo** или **LIBER**.'
-      : '🎓 **Category: Education**\n\n➡️ Talk to **AI Mentor**, **Sophie**, **Leo** or **LIBER** for the best answer.',
+      ? '🎓 **Категорија: Едукација**\n\n➡️ За најдобар одговор, зборувај со **Sophie**, **Leo** или **LIBER**.'
+      : '🎓 **Category: Education**\n\n➡️ Talk to **Sophie**, **Leo** or **LIBER** for the best answer.',
     Health: isMK
-      ? '🌿 **Категорија: Здравје**\n\n➡️ За најдобар одговор, зборувај со **Ana**, **Viktor** или **Luna**.'
-      : '🌿 **Category: Health**\n\n➡️ Talk to **Ana**, **Viktor** or **Luna** for the best answer.'
+      ? '🌿 **Категорија: Здравје**\n\n➡️ За најдобар одговор, зборувај со **Viktor**.'
+      : '🌿 **Category: Health**\n\n➡️ Talk to **Viktor** for the best answer.'
   };
   const upsell = isMK
     ? '\n\n🔒 **Отклучи детален план** со надградба на Pro.'
@@ -133,7 +137,9 @@ function buildRouterResponse(category, userText) {
   return (msgs[category] || msgs.Business) + upsell;
 }
 
-async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
+// ═══ GEMINI API ПОВИК ═══
+// useGrounding = true само за Eva и Tender AI
+async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey, useGrounding) {
   const model = 'gemini-2.5-flash';
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
 
@@ -167,20 +173,55 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
     contentsWithSystem = [{ role: 'user', parts: [{ text: systemPrompt }] }];
   }
 
+  // ═══ REQUEST BODY ═══
+  const requestBody = {
+    contents: contentsWithSystem,
+    generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
+  };
+
+  // ═══ ДОДАЈ SEARCH GROUNDING за Eva и Tender AI ═══
+  if (useGrounding) {
+    requestBody.tools = [{ googleSearch: {} }];
+    // Dynamic retrieval — само кога е навистина потребно
+    requestBody.toolConfig = {
+      googleSearchRetrieval: {
+        dynamicRetrievalConfig: {
+          mode: 'MODE_DYNAMIC',
+          dynamicThreshold: 0.7
+        }
+      }
+    };
+  }
+
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: contentsWithSystem,
-      generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
-    })
+    body: JSON.stringify(requestBody)
   });
 
   const data = await response.json();
   if (data.error) throw new Error(data.error.message || 'Gemini API error');
-  return (data.candidates && data.candidates[0] && data.candidates[0].content &&
+
+  const text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
     data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
     data.candidates[0].content.parts[0].text) || 'No response generated.';
+
+  // ═══ Ако има grounding sources — додај ги на крај ═══
+  if (useGrounding && data.candidates && data.candidates[0] && data.candidates[0].groundingMetadata) {
+    const meta = data.candidates[0].groundingMetadata;
+    if (meta.groundingChunks && meta.groundingChunks.length > 0) {
+      const sources = meta.groundingChunks
+        .filter(c => c.web && c.web.uri)
+        .slice(0, 3)
+        .map(c => `• [${c.web.title || c.web.uri}](${c.web.uri})`)
+        .join('\n');
+      if (sources) {
+        return text + '\n\n🔍 **Извори:**\n' + sources;
+      }
+    }
+  }
+
+  return text;
 }
 
 module.exports = async function handler(req, res) {
@@ -207,7 +248,10 @@ module.exports = async function handler(req, res) {
     const avatar = body.avatar || 'marginova';
     const hasImage = !!body.image;
     const systemPrompt = body.system || '';
-    const userPlan = body.plan || 'free'; // ќе дојде од Supabase преку index.html
+    const userPlan = body.plan || 'free';
+
+    // ═══ Активирај Search Grounding за Eva и Tender AI ═══
+    const useGrounding = GROUNDING_AVATARS.includes(avatar);
 
     const messages = (body.messages || []).slice(-20).map(function(m) {
       return {
@@ -224,7 +268,6 @@ module.exports = async function handler(req, res) {
     const isMK = /[а-шА-Ш]/.test(userText);
 
     if (userPlan === 'free' && isPremiumTrigger(userText, avatar)) {
-      // Генерирај 20% preview + locked порака
       const previewText = await generatePreview(systemPrompt, messages, apiKey, isMK);
       return res.status(200).json({
         content: [{ type: 'text', text: previewText }],
@@ -258,10 +301,10 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // ═══ НОРМАЛЕН ОДГОВОР ═══
+    // ═══ НОРМАЛЕН ОДГОВОР (со или без Grounding) ═══
     const text = await callGemini(
       systemPrompt, messages, hasImage,
-      body.image, body.imageType, body.imageText, apiKey
+      body.image, body.imageType, body.imageText, apiKey, useGrounding
     );
 
     return res.status(200).json({
