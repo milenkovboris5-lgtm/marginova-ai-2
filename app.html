@@ -827,7 +827,7 @@ html{scroll-behavior:smooth;}
 <body>
 
 <!-- AUTH SCREEN -->
-<div class="auth-screen" id="auth-screen" style="display:none;">
+<div class="auth-screen" id="auth-screen" style="display:flex;">
   <div class="auth-box">
     <div class="auth-logo">
       <img src="logo-main.png" alt="Marginova"/>
@@ -1388,7 +1388,7 @@ const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true },
+  auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: false },
   global: { headers: { apikey: SUPA_KEY } }
 });
 
