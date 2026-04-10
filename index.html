@@ -411,6 +411,8 @@ footer{padding:2.2rem 1.2rem 1.8rem;border-top:1px solid var(--border);position:
     <button class="flag-btn" id="hf-sq" onclick="setLandingLang('sq')"><img src="https://flagcdn.com/w40/al.png" alt="SQ"><span>SQ</span></button>
     <button class="flag-btn" id="hf-de" onclick="setLandingLang('de')"><img src="https://flagcdn.com/w40/de.png" alt="DE"><span>DE</span></button>
     <button class="flag-btn" id="hf-bg" onclick="setLandingLang('bg')"><img src="https://flagcdn.com/w40/bg.png" alt="BG"><span>BG</span></button>
+    <button class="flag-btn" id="hf-tr" onclick="setLandingLang('tr')"><img src="https://flagcdn.com/w40/tr.png" alt="TR"><span>TR</span></button>
+    <button class="flag-btn" id="hf-pl" onclick="setLandingLang('pl')"><img src="https://flagcdn.com/w40/pl.png" alt="PL"><span>PL</span></button>
   </div>
 
   <div class="pulse-banners">
@@ -1102,6 +1104,107 @@ LANGS.sq = Object.assign({}, LANGS.en, {
 });
 
 
+// TR — Türkçe
+LANGS.tr = Object.assign({}, LANGS.en, {
+  live:'Canlı 24/7', navCta:'Ücretsiz Başla →', harmonic:'HARMONİK ZEKA',
+  dEdu:'EĞİTİM', dHealth:'SAĞLIK', dBiz:'İŞ DÜNYASI',
+  what:'Marginova.AI Nedir',
+  desc:'<em>12 uzman uzmanı</em> ile kişisel bir ekibe sahip olduğunuzu hayal edin — her zaman mevcut, her zaman hazır. Öğretmenler, avukatlar, iş stratejistleri, AB danışmanları... hepsi tek bir yerde. Bu <em>Marginova</em>.',
+  always:'<b>Her zaman burada.</b> Her zaman yanınızda.',
+  evaSub:'Tüm hibeleri, fonları ve AB programlarını buluyorum',
+  tenderSub:'Her gün yeni ihaleler ve açık artırmalar hakkında bilgi veriyorum',
+  btnStart:'Ücretsiz Başla →', btnAndroid:'🤖 Android Uygulama', btnAndroid2:'🤖 Android Uygulama İndir',
+  nocard:'Kredi kartı yok · Sonsuza kadar ücretsiz',
+  stat1:'AI Uzmanları', stat2:'Dil', stat3:'Mevcut', stat4:'Başlangıç için', stat4n:'Ücretsiz',
+  avLabel:'Ekibinizle tanışın', avTitle:'<em>12 Uzmanınız.</em>',
+  avDesc:'Her uzman tam olarak bir alan için AI ile eğitilmiştir. Genelcilik yok — sadece derin, hassas yardım. 24/7.',
+  sEdu:'EĞİTİM', sHealth:'SAĞLIK & WELLNESS', sBiz:'İŞ DÜNYASI', pick:'▼ Uzman Seçin ▼',
+  rSophie:'İngilizce Öğretmeni 🇬🇧', rHanna:'Almanca Öğretmeni 🇩🇪', rLeo:'Deneme & Yazma ✍️', rLiber:'Ansiklopedi 📚',
+  rViktor:'Antrenman & Fitness 💪', rBusinessai:'Strateji & Finans 💼', rCreativeai:'Pazarlama & Marka 🎨',
+  rDevai:'AI Geliştirici 💻', rEva:'AB Fonları 🇪🇺', rJustinian:'Hukuk Danışmanı ⚖️',
+  rDropai:'Dropshipping 🛒', rTravelai:'Seyahat & Teklifler ✈️', rTenderai:'İhaleler & Açık Artırmalar 📋',
+  revLabel:'Gerçek sonuçlar', revTitle:'<em>Kullanıcılarımız</em> ne diyor.',
+  rev1:'"Business AI 20 dakikada eksiksiz bir iş planı yazdı. Banka aynı hafta krediyi onayladı."',
+  rev2:'"Eva 5 dakikada 3 AB hibesi buldu. 35.000 € başvurdum ve onay aldım."',
+  rev3:'"LIBER bir akşamda Stoacılığı açıkladı ve Marcus Aurelius'u özetledi."',
+  rev4:'"Viktor bana eksiksiz 4 haftalık CrossFit programı verdi. İlk ayda 6 kg verdim."',
+  rev5:'"Justinian sözleşmemi inceledi ve 3 yasadışı madde buldu. 12.000 €'luk bir anlaşmazlıktan kurtardı."',
+  rev6:'"Mandino Mücadelesini 10 günde tamamladım. Sabah rutinimı sonsuza kadar değiştirdi."',
+  rev7:'"Tender AI 3 dakikada 180.000 €'luk aktif bir ihale buldu. Başvurdum, sözleşme aldım."',
+  priceLabel:'Planlar & Fiyatlar', priceTitle:'Ücretsiz başlayın. <em>Hazır olduğunuzda büyüyün.</em>', priceDesc:'Gizli ücret yok. İstediğinizde iptal edin.',
+  p1name:'Ücretsiz', p1period:'sonsuza kadar', p1tokens:'💬 30 mesaj / gün',
+  p1f1:'Sophie & Hanna — Ücretsiz', p1f2:'8 dil · XP sistemi', p1f3:'Sesli konuşmalar 🎙️',
+  p1f4:'Konuşma hafızası 🧠', p1f5:'30 mesaj / gün 💬', p1btn:'Ücretsiz Başla',
+  p2name:'Pro', p2period:'.99 / ay', p2tokens:'💬 500 mesaj / gün',
+  p2f1:'✦ Tüm 12 uzman', p2f2:'Eva — AB Fonları & Hibeler 🇪🇺', p2f3:'Justinian — Hukuk Danışmanı ⚖️',
+  p2f4:'Tender AI · Drop AI · Dev AI', p2f5:'Görüntü & belge analizi 📷', p2f6:'Öncelikli yanıtlar ⚡', p2btn:'Pro'ya Başla →',
+  p3name:'Business', p3period:'.99 / ay', p3tokens:'💬 Sınırsız',
+  p3f1:'✦ Pro'dan her şey', p3f2:'Sınırsız mesaj 🚀', p3f3:'Web Search — Gerçek zamanlı veri 🌐',
+  p3f4:'3 hesaba kadar (ekip)', p3f5:'Gelişmiş analiz & PDF 📊', p3f6:'Öncelikli destek 24/7', p3btn:'Business'a Başla →',
+  p4name:'Ultra', p4period:'.99 / ay · 5 hesaba kadar', p4tokens:'💬 Sınırsız · 5 hesaba kadar',
+  p4f1:'✦ Business'tan her şey', p4f2:'5 hesaba kadar', p4f3:'Ekip & aile planı 👨‍👩‍👧',
+  p4f4:'Kişiselleştirilmiş AI ayarları', p4f5:'Özel hesap yöneticisi', p4f6:'Şirketler, STK & ajanslar için', p4btn:'Ultra'ya Başla →',
+  refTitle:'Arkadaş davet et. <em>Ödül kazan.</em>', refDesc:'Bağlantını paylaş ve premium planlar kazan — tamamen ücretsiz.',
+  ref1:'<b>10 arkadaş</b> davet et (doğrulanmış)', rew1:'🎁 +50 ücretsiz mesaj',
+  ref2:'<b>30 arkadaş</b> davet et (doğrulanmış)', rew2:'⭐ 7 gün Pro — Ücretsiz',
+  ctaTitle:'<em>AI ekibinizle</em> tanışmaya hazır mısınız?', ctaDesc:'Daha akıllı yolu keşfeden binlere katılın.',
+  ctaBtn:'Ücretsiz Başla — Kart yok →',
+  tagline:'Eğitim · Sağlık · İş Dünyası',
+  fprivacy:'Gizlilik Politikası', fterms:'Kullanım Şartları', frefund:'İade Politikası', fcontact:'İletişim',
+  fcopy:'© 2026 Marginova.AI · The Game Changer'
+});
+
+// PL — Polski
+LANGS.pl = Object.assign({}, LANGS.en, {
+  live:'Na żywo 24/7', navCta:'Zacznij za darmo →', harmonic:'HARMONICZNA INTELIGENCJA',
+  dEdu:'EDUKACJA', dHealth:'ZDROWIE', dBiz:'BIZNES',
+  what:'Czym jest Marginova.AI',
+  desc:'Wyobraź sobie, że masz osobisty zespół <em>12 najlepszych specjalistów</em> — zawsze dostępnych, zawsze gotowych. Nauczyciele, prawnicy, stratedzy biznesowi, doradcy UE... wszystko w jednym miejscu. To jest <em>Marginova</em>.',
+  always:'<b>Zawsze tutaj.</b> Zawsze przy Tobie.',
+  evaSub:'Znajduję wszystkie granty, fundusze i programy UE',
+  tenderSub:'Każdego dnia informuję o nowych przetargach i aukcjach',
+  btnStart:'Zacznij za darmo →', btnAndroid:'🤖 Aplikacja Android', btnAndroid2:'🤖 Pobierz aplikację Android',
+  nocard:'Bez karty kredytowej · Za darmo na zawsze',
+  stat1:'Specjaliści AI', stat2:'Języki', stat3:'Dostępny', stat4:'Na start', stat4n:'Bezpłatnie',
+  avLabel:'Poznaj swój zespół', avTitle:'Twoich <em>12 Specjalistów.</em>',
+  avDesc:'Każdy specjalista jest szkolony AI dla dokładnie jednej dziedziny. Bez generalizmu — tylko głęboka, precyzyjna pomoc. 24/7.',
+  sEdu:'EDUKACJA', sHealth:'ZDROWIE & WELLNESS', sBiz:'BIZNES', pick:'▼ Wybierz specjalistę ▼',
+  rSophie:'Nauczycielka Angielskiego 🇬🇧', rHanna:'Nauczycielka Niemieckiego 🇩🇪', rLeo:'Eseje & Pisanie ✍️', rLiber:'Encyklopedia 📚',
+  rViktor:'Trening & Fitness 💪', rBusinessai:'Strategia & Finanse 💼', rCreativeai:'Marketing & Marka 🎨',
+  rDevai:'Programista AI 💻', rEva:'Fundusze UE 🇪🇺', rJustinian:'Doradca Prawny ⚖️',
+  rDropai:'Dropshipping 🛒', rTravelai:'Podróże & Oferty ✈️', rTenderai:'Przetargi & Aukcje 📋',
+  revLabel:'Prawdziwe wyniki', revTitle:'Co mówią <em>nasi użytkownicy.</em>',
+  rev1:'"Business AI napisał kompletny biznesplan w 20 minut. Bank zatwierdził kredyt w tym samym tygodniu."',
+  rev2:'"Eva znalazła 3 granty UE w 5 minut. Złożyłam wniosek o 35 000 € i otrzymałam zatwierdzenie."',
+  rev3:'"LIBER wyjaśnił mi stoicyzm i streścił Marka Aureliusza w jeden wieczór."',
+  rev4:'"Viktor dał mi kompletny 4-tygodniowy program CrossFit. Schudłem 6 kg w pierwszym miesiącu."',
+  rev5:'"Justinian przejrzał moją umowę i znalazł 3 nielegalne klauzule. Uratował mnie przed sporem o 12 000 €."',
+  rev6:'"Ukończyłem Wyzwanie Mandino w 10 dni. Każdego dnia nowy zwój, nowe zadanie."',
+  rev7:'"Tender AI znalazł aktywny przetarg na 180 000 € w 3 minuty. Złożyłem wniosek, dostałem kontrakt."',
+  priceLabel:'Plany & Ceny', priceTitle:'Zacznij za darmo. <em>Rozwijaj się gdy gotowy.</em>', priceDesc:'Bez ukrytych opłat. Anuluj kiedy chcesz.',
+  p1name:'Bezpłatny', p1period:'na zawsze', p1tokens:'💬 30 wiadomości / dzień',
+  p1f1:'Sophie & Hanna — Bezpłatne', p1f2:'8 języków · System XP', p1f3:'Rozmowy głosowe 🎙️',
+  p1f4:'Pamięć rozmów 🧠', p1f5:'30 wiadomości / dzień 💬', p1btn:'Zacznij za darmo',
+  p2name:'Pro', p2period:'.99 / miesiąc', p2tokens:'💬 500 wiadomości / dzień',
+  p2f1:'✦ Wszyscy 12 specjalistów', p2f2:'Eva — Fundusze UE & Granty 🇪🇺', p2f3:'Justinian — Doradca Prawny ⚖️',
+  p2f4:'Tender AI · Drop AI · Dev AI', p2f5:'Analiza obrazów & dokumentów 📷', p2f6:'Priorytetowe odpowiedzi ⚡', p2btn:'Zacznij Pro →',
+  p3name:'Business', p3period:'.99 / miesiąc', p3tokens:'💬 Nieograniczone',
+  p3f1:'✦ Wszystko z Pro', p3f2:'Nieograniczone wiadomości 🚀', p3f3:'Web Search — Dane w czasie rzeczywistym 🌐',
+  p3f4:'Do 3 kont (zespół)', p3f5:'Zaawansowana analiza & PDF 📊', p3f6:'Priorytetowe wsparcie 24/7', p3btn:'Zacznij Business →',
+  p4name:'Ultra', p4period:'.99 / mies. · do 5 kont', p4tokens:'💬 Nieograniczone · do 5 kont',
+  p4f1:'✦ Wszystko z Business', p4f2:'Do 5 kont', p4f3:'Plan zespołowy & rodzinny 👨‍👩‍👧',
+  p4f4:'Spersonalizowane ustawienia AI', p4f5:'Dedykowany menedżer konta', p4f6:'Dla firm, NGO & agencji', p4btn:'Zacznij Ultra →',
+  refTitle:'Zaproś znajomych. <em>Zdobądź nagrody.</em>', refDesc:'Udostępnij link i zdobądź plany premium — całkowicie za darmo.',
+  ref1:'Zaproś <b>10 znajomych</b> (zweryfikowanych)', rew1:'🎁 +50 darmowych wiadomości',
+  ref2:'Zaproś <b>30 znajomych</b> (zweryfikowanych)', rew2:'⭐ 7 dni Pro — Za darmo',
+  ctaTitle:'Gotowy poznać <em>swój zespół AI?</em>', ctaDesc:'Dołącz do tysięcy, którzy odkryli mądrzejszy sposób.',
+  ctaBtn:'Zacznij za darmo — Bez karty →',
+  tagline:'Edukacja · Zdrowie · Biznes',
+  fprivacy:'Polityka prywatności', fterms:'Warunki korzystania', frefund:'Polityka zwrotów', fcontact:'Kontakt',
+  fcopy:'© 2026 Marginova.AI · The Game Changer'
+});
+
+
 let currentLang = localStorage.getItem('mlang') || 'mk';
 
 function setLandingLang(l) {
@@ -1110,7 +1213,7 @@ function setLandingLang(l) {
   const t = LANGS[l] || LANGS['mk'];
 
   // Update flags
-  ['mk','sr','hr','bs','en','sq','de','bg'].forEach(function(code){
+  ['mk','sr','hr','bs','en','sq','de','bg','tr','pl'].forEach(function(code){
     var b = document.getElementById('hf-'+code);
     if(!b) return;
     var sp = b.querySelector('span');
@@ -1173,7 +1276,7 @@ function setLandingLang(l) {
 }
 
 // Pulsing banner keys
-['mk','sr','hr','bs','en','sq','de','bg'].forEach(function(l){
+['mk','sr','hr','bs','en','sq','de','bg','tr','pl'].forEach(function(l){
   if(!LANGS[l].pbGrant) LANGS[l].pbGrant = LANGS['en'].pbGrant||'Find a grant in 2 min';
   if(!LANGS[l].pbGrantSub) LANGS[l].pbGrantSub = LANGS['en'].pbGrantSub||'€50,000 · EU Funds · Available now';
   if(!LANGS[l].pbTender) LANGS[l].pbTender = LANGS['en'].pbTender||'New tender every day';
