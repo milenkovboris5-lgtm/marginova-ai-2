@@ -1387,7 +1387,10 @@ function msHeroRender(l){}
 const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
 const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
+const db = createClient(SUPA_URL, SUPA_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true },
+  global: { headers: { apikey: SUPA_KEY } }
+});
 
 let lang='en', soundOn=false, selectedStars=0, current='sophie';
 let history={}, currentUser=null, authMode='login';
