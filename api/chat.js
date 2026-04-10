@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// Верзија: Hybrid v3 — Gemini + Gemma 4 + Grounding
+// Верзија: Hybrid v4 — Gemini + Gemma 4 + Grounding + Serper Real-Time
 // ═══════════════════════════════════════════
 
 const rateLimitStore = {};
@@ -38,29 +38,153 @@ function checkRateLimit(req) {
 // МОДЕЛ ROUTING
 // ═══════════════════════════════════════════
 const AVATAR_MODEL_MAP = {
-  // Gemini 2.5 Flash + Search Grounding
-  eva:         { model: 'gemini-2.5-flash', grounding: true  },
-  tenderai:    { model: 'gemini-2.5-flash', grounding: true  },
-  dropshipper: { model: 'gemini-2.5-flash', grounding: true  },
-  businessai:  { model: 'gemini-2.5-flash', grounding: true  },
-  justinian:   { model: 'gemini-2.5-flash', grounding: true  },
-
-  // Gemma 4 27B (fallback: Gemini Flash)
-  leo:         { model: 'gemma-4-27b-it',   grounding: false },
-  liber:       { model: 'gemma-4-27b-it',   grounding: false },
-  creativeai:  { model: 'gemma-4-27b-it',   grounding: false },
-  developer:   { model: 'gemma-4-27b-it',   grounding: false },
-
-  // Gemma 4 E4B (fallback: Gemini Flash)
-  sophie:      { model: 'gemma-4-e4b-it',   grounding: false },
-  hanna:       { model: 'gemma-4-e4b-it',   grounding: false },
-  fitness:     { model: 'gemma-4-e4b-it',   grounding: false },
-
-  default:     { model: 'gemini-2.5-flash', grounding: false },
+  eva:         { model: 'gemini-2.5-flash', grounding: true,  serper: true  },
+  tenderai:    { model: 'gemini-2.5-flash', grounding: true,  serper: true  },
+  dropshipper: { model: 'gemini-2.5-flash', grounding: true,  serper: false },
+  businessai:  { model: 'gemini-2.5-flash', grounding: true,  serper: false },
+  justinian:   { model: 'gemini-2.5-flash', grounding: true,  serper: false },
+  leo:         { model: 'gemma-4-27b-it',   grounding: false, serper: false },
+  liber:       { model: 'gemma-4-27b-it',   grounding: false, serper: false },
+  creativeai:  { model: 'gemma-4-27b-it',   grounding: false, serper: false },
+  developer:   { model: 'gemma-4-27b-it',   grounding: false, serper: false },
+  sophie:      { model: 'gemma-4-e4b-it',   grounding: false, serper: false },
+  hanna:       { model: 'gemma-4-e4b-it',   grounding: false, serper: false },
+  fitness:     { model: 'gemma-4-e4b-it',   grounding: false, serper: false },
+  default:     { model: 'gemini-2.5-flash', grounding: false, serper: false },
 };
 
 function getAvatarConfig(avatar) {
   return AVATAR_MODEL_MAP[avatar] || AVATAR_MODEL_MAP.default;
+}
+
+// ═══════════════════════════════════════════
+// SERPER REAL-TIME SEARCH
+// ═══════════════════════════════════════════
+const SERPER_TRIGGER_KEYWORDS = [
+  'тендер','тендери','лицитација','лицитации','оглас','огласи','набавка','набавки',
+  'грант','грантови','фонд','фондови','конкурс','аплицира',
+  'tender','tenderi','licitacija','licitacije','oglas','oglasi','nabavka',
+  'grant','grantovi','fond','fondovi','konkurs','aplicira',
+  'auction','auctions','procurement','grants','funds','bid','rfp','apply',
+  'ausschreibung','auktion','förderung','fördermittel',
+  'ihale','ihaleler','hibe','fon','tedarik',
+  'przetarg','licytacja','dotacja','fundusze',
+];
+
+function needsSerperSearch(userText, avatar) {
+  if (!['tenderai', 'eva'].includes(avatar)) return false;
+  const lower = userText.toLowerCase();
+  return SERPER_TRIGGER_KEYWORDS.some(k => lower.includes(k));
+}
+
+function buildSerperQuery(userText, avatar) {
+  const lower = userText.toLowerCase();
+  const today = new Date().toISOString().split('T')[0];
+  const month = today.slice(0, 7);
+
+  if (avatar === 'tenderai') {
+    const countryMap = {
+      'македонија': 'site:e-nabavki.gov.mk OR site:ujp.gov.mk',
+      'македон': 'site:e-nabavki.gov.mk OR site:ujp.gov.mk',
+      'mk': 'site:e-nabavki.gov.mk OR site:ujp.gov.mk',
+      'srbija': 'site:portal.ujn.gov.rs OR site:e-javnenabavke.gov.rs',
+      'србија': 'site:portal.ujn.gov.rs OR site:e-javnenabavke.gov.rs',
+      'hrvatska': 'site:eojn.hr',
+      'хрватска': 'site:eojn.hr',
+      'bosna': 'site:ejn.ba',
+      'босна': 'site:ejn.ba',
+      'bугарија': 'site:appalti.bg OR site:rop.bg',
+      'albanija': 'site:pprc.rks-gov.net',
+      'eu': 'site:ted.europa.eu',
+      'европ': 'site:ted.europa.eu',
+      'europe': 'site:ted.europa.eu',
+    };
+
+    let siteFilter = 'site:e-nabavki.gov.mk OR site:ted.europa.eu OR site:portal.ujn.gov.rs';
+    for (const [key, val] of Object.entries(countryMap)) {
+      if (lower.includes(key)) { siteFilter = val; break; }
+    }
+
+    let sector = 'јавна набавка';
+    if (lower.match(/градеж|construction|bau|inşaat/)) sector = 'градежни работи';
+    else if (lower.match(/ит|software|digital/)) sector = 'IT услуги';
+    else if (lower.match(/медицин|health|болниц/)) sector = 'медицинска опрема';
+    else if (lower.match(/образован|school|училишт/)) sector = 'образование';
+    else if (lower.match(/храна|food/)) sector = 'прехранбени производи';
+    else if (lower.match(/транспорт|transport/)) sector = 'транспорт';
+    else if (lower.match(/лицитаци|auction/)) sector = 'лицитација имот возила';
+
+    return `${sector} тендер ${month} ${siteFilter}`;
+  }
+
+  if (avatar === 'eva') {
+    let grantType = 'EU грант фонд отворен конкурс';
+    if (lower.match(/ipard|земјоделств|agri/)) grantType = 'IPARD грант земјоделство';
+    else if (lower.match(/ipa|претпристапн/)) grantType = 'IPA фонд';
+    else if (lower.match(/стартап|startup|иновац/)) grantType = 'EU грант стартап иновации';
+    else if (lower.match(/нго|ngo|невладин/)) grantType = 'EU грант НВО';
+    else if (lower.match(/мал.*бизнис|sme/)) grantType = 'EU фонд МСП';
+    else if (lower.match(/жен|women/)) grantType = 'EU грант жени претприемачи';
+    return `${grantType} ${month} рок за аплицирање Западен Балкан Македонија`;
+  }
+
+  return userText + ' тендер ' + month;
+}
+
+async function searchSerper(query, serperKey) {
+  try {
+    const response = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': serperKey,
+      },
+      body: JSON.stringify({ q: query, num: 8, gl: 'mk', hl: 'mk' }),
+    });
+
+    if (!response.ok) {
+      console.warn('Serper error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const results = [];
+
+    if (data.organic) {
+      data.organic.slice(0, 6).forEach(r => {
+        results.push({ title: r.title||'', snippet: r.snippet||'', link: r.link||'', date: r.date||'' });
+      });
+    }
+    if (data.news) {
+      data.news.slice(0, 3).forEach(r => {
+        results.push({ title: r.title||'', snippet: r.snippet||'', link: r.link||'', date: r.date||'' });
+      });
+    }
+
+    return results.length > 0 ? results : null;
+  } catch (e) {
+    console.warn('Serper fetch error:', e.message);
+    return null;
+  }
+}
+
+function formatSerperContext(results) {
+  if (!results || results.length === 0) return '';
+  const today = new Date().toLocaleDateString('mk-MK', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+  let ctx = `\n\n═══ REAL-TIME ПРЕБАРУВАЊЕ (${today}) ═══\n`;
+  ctx += `Следниве резултати се пронајдени во реално време:\n\n`;
+  results.forEach((r, i) => {
+    ctx += `[${i+1}] ${r.title}\n`;
+    if (r.date) ctx += `    Датум: ${r.date}\n`;
+    if (r.snippet) ctx += `    ${r.snippet}\n`;
+    ctx += `    Линк: ${r.link}\n\n`;
+  });
+  ctx += `═══ КРАЈ НА REAL-TIME РЕЗУЛТАТИ ═══\n\n`;
+  ctx += `Анализирај ги овие реални резултати и презентирај ги според твојот output формат. `;
+  ctx += `Ако резултатите содржат активни огласи со иднини рокови, прикажи ги со детали и линкови. `;
+  ctx += `Ако не се актуелни, кажи го јасно и упати кон официјалните портали.`;
+  return ctx;
 }
 
 // ═══ PREMIUM TRIGGERS ═══
@@ -87,60 +211,37 @@ function isPremiumTrigger(message, avatar) {
 
 // ═══ PREVIEW ═══
 async function generatePreview(systemPrompt, messages, apiKey, isMK) {
-  const previewPrompt = systemPrompt + '\n\nВАЖНО: Дај само КРАТОК почеток на одговорот (максимум 3 реченици, 20% од целосниот одговор). Не завршувај го одговорот. Запри на интересно место.';
+  const previewPrompt = systemPrompt + '\n\nВАЖНО: Дај само КРАТОК почеток (максимум 3 реченици). Не завршувај го одговорот.';
   const preview = await callGemini('gemini-2.5-flash', false, previewPrompt, messages, false, null, null, null, apiKey);
-
   const locked = isMK
-    ? `\n\n---\n🔒 **За целосен одговор потребен е Premium план**\n\nОвој одговор содржи:\n• Листа на активни грантови/тендери\n• Чекор-по-чекор водич за апликација\n• Конкретни суми и рокови\n\n**[⚡ Отклучи Premium →](#upgrade)**`
-    : `\n\n---\n🔒 **Full answer requires Premium plan**\n\nThis answer includes:\n• List of active grants/tenders\n• Step-by-step application guide\n• Specific amounts and deadlines\n\n**[⚡ Unlock Premium →](#upgrade)**`;
-
+    ? `\n\n---\n🔒 **За целосен одговор потребен е Premium план**\n\n**[⚡ Отклучи Premium →](#upgrade)**`
+    : `\n\n---\n🔒 **Full answer requires Premium plan**\n\n**[⚡ Unlock Premium →](#upgrade)**`;
   return preview + locked;
 }
 
 // ═══ ROUTER ═══
 const ROUTER_AVATARS = ['marginova'];
-
 const ADVANCED_INTENT_KEYWORDS = [
-  'strategy','plan','analysis','analyze','step by step','detailed',
-  'стратегија','план','анализа','чекор по чекор','детално',
-  'strategija','analiza','korak po korak','detaljno',
-  'how to grow','how to scale','invest','инвестиција','раст',
-  'compete','конкуренција','market','пазар','revenue','приход'
+  'strategy','plan','analysis','analyze','стратегија','план','анализа',
+  'how to grow','invest','инвестиција','раст','пазар','revenue','приход'
 ];
-
 const BUSINESS_KEYWORDS = [
-  'business','money','marketing','startup','strategy','revenue','profit',
-  'бизнис','пари','маркетинг','стартап','стратегија','приход','профит',
-  'invest','инвестиција','brand','sales','продажба','клиент','client',
-  'dropship','ecommerce','shop','продавница','закон','law','legal',
-  'eu fond','grant','договор','contract'
+  'business','money','marketing','startup','бизнис','пари','маркетинг',
+  'invest','brand','sales','dropship','ecommerce','закон','law','grant','договор'
 ];
-
 const EDUCATION_KEYWORDS = [
-  'learn','study','language','english','course','skill','knowledge',
-  'учи','јазик','курс','вештина','знаење','образование','essay',
-  'book','книга','quiz','тест','exam','испит','german','deutsch',
-  'write','пишувај','homework','домашна','school','училиште'
+  'learn','study','language','english','учи','јазик','essay','book','quiz','german'
 ];
-
 const HEALTH_KEYWORDS = [
-  'health','fitness','diet','stress','sleep','workout','wellness',
-  'здравје','фитнес','диета','стрес','спиење','тренинг',
-  'food','храна','meditation','медитација','anxiety','анксиозност'
+  'health','fitness','diet','stress','здравје','фитнес','диета','тренинг','food'
 ];
 
 function buildRouterResponse(category, userText) {
   const isMK = /[а-шА-Ш]/.test(userText);
   const msgs = {
-    Business: isMK
-      ? '📊 **Категорија: Бизнис**\n\n➡️ Зборувај со **Business AI**, **Justinian**, **Eva** или **Creative AI**.'
-      : '📊 **Category: Business**\n\n➡️ Talk to **Business AI**, **Justinian**, **Eva** or **Creative AI**.',
-    Education: isMK
-      ? '🎓 **Категорија: Едукација**\n\n➡️ Зборувај со **Sophie**, **Leo** или **LIBER**.'
-      : '🎓 **Category: Education**\n\n➡️ Talk to **Sophie**, **Leo** or **LIBER**.',
-    Health: isMK
-      ? '🌿 **Категорија: Здравје**\n\n➡️ Зборувај со **Viktor**.'
-      : '🌿 **Category: Health**\n\n➡️ Talk to **Viktor**.'
+    Business: isMK ? '📊 **Категорија: Бизнис**\n\n➡️ Зборувај со **Business AI**, **Justinian**, **Eva** или **Creative AI**.' : '📊 **Category: Business**\n\n➡️ Talk to **Business AI**, **Justinian**, **Eva** or **Creative AI**.',
+    Education: isMK ? '🎓 **Категорија: Едукација**\n\n➡️ Зборувај со **Sophie**, **Leo** или **LIBER**.' : '🎓 **Category: Education**\n\n➡️ Talk to **Sophie**, **Leo** or **LIBER**.',
+    Health: isMK ? '🌿 **Категорија: Здравје**\n\n➡️ Зборувај со **Viktor**.' : '🌿 **Category: Health**\n\n➡️ Talk to **Viktor**.'
   };
   return (msgs[category] || msgs.Business);
 }
@@ -174,14 +275,9 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
   }
 
   const requestBody = {
-    systemInstruction: {
-      parts: [{ text: systemPrompt }]
-    },
+    systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: {
-      maxOutputTokens: 1500,
-      temperature: 0.7
-    }
+    generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
   };
 
   if (useGrounding && !isGemma) {
@@ -207,33 +303,22 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
   if (data.error) throw new Error(data.error.message || 'Gemini API error');
 
   const text = (
-    data.candidates &&
-    data.candidates[0] &&
-    data.candidates[0].content &&
-    data.candidates[0].content.parts &&
-    data.candidates[0].content.parts[0] &&
-    data.candidates[0].content.parts[0].text
+    data.candidates?.[0]?.content?.parts?.[0]?.text
   ) || 'No response generated.';
 
-  // Grounding sources
-  if (useGrounding && data.candidates && data.candidates[0] && data.candidates[0].groundingMetadata) {
-    const meta = data.candidates[0].groundingMetadata;
-    if (meta.groundingChunks && meta.groundingChunks.length > 0) {
-      const sources = meta.groundingChunks
-        .filter(c => c.web && c.web.uri)
-        .filter(c => !c.web.uri.includes('vertexaisearch') && !c.web.title?.toLowerCase().includes('current time'))
-        .slice(0, 3)
-        .map(c => {
-          const title = c.web.title && !c.web.title.includes('vertexaisearch')
-            ? c.web.title
-            : new URL(c.web.uri).hostname.replace('www.', '');
-          return '• [' + title + '](' + c.web.uri + ')';
-        })
-        .join('\n');
-      if (sources) {
-        return text + '\n\n🔍 **Извори:**\n' + sources;
-      }
-    }
+  if (useGrounding && data.candidates?.[0]?.groundingMetadata?.groundingChunks?.length > 0) {
+    const sources = data.candidates[0].groundingMetadata.groundingChunks
+      .filter(c => c.web && c.web.uri)
+      .filter(c => !c.web.uri.includes('vertexaisearch') && !c.web.title?.toLowerCase().includes('current time'))
+      .slice(0, 3)
+      .map(c => {
+        const title = c.web.title && !c.web.title.includes('vertexaisearch')
+          ? c.web.title
+          : new URL(c.web.uri).hostname.replace('www.', '');
+        return '• [' + title + '](' + c.web.uri + ')';
+      })
+      .join('\n');
+    if (sources) return text + '\n\n🔍 **Извори:**\n' + sources;
   }
 
   return text;
@@ -251,15 +336,13 @@ module.exports = async function handler(req, res) {
 
   const limit = checkRateLimit(req);
   if (!limit.allowed) {
-    return res.status(429).json({
-      error: { message: 'Дневниот лимит е достигнат. Обидете се утре.' }
-    });
+    return res.status(429).json({ error: { message: 'Дневниот лимит е достигнат. Обидете се утре.' } });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: { message: 'Server misconfiguration: missing GEMINI_API_KEY.' } });
-  }
+  if (!apiKey) return res.status(500).json({ error: { message: 'Server misconfiguration: missing GEMINI_API_KEY.' } });
+
+  const serperKey = process.env.SERPER_API_KEY;
 
   try {
     const body = req.body;
@@ -271,6 +354,7 @@ module.exports = async function handler(req, res) {
     const avatarConfig = getAvatarConfig(avatar);
     const model = avatarConfig.model;
     const useGrounding = avatarConfig.grounding;
+    const useSerper = avatarConfig.serper && !!serperKey;
 
     const messages = (body.messages || []).slice(-20).map(function(m) {
       return {
@@ -320,10 +404,34 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    console.log('[' + avatar + '] → ' + model + (useGrounding ? ' + Grounding' : '') + ' | plan:' + userPlan);
+    // ═══ SERPER REAL-TIME SEARCH ═══
+    let enrichedSystemPrompt = systemPrompt;
+    let serperUsed = false;
+
+    if (useSerper && needsSerperSearch(userText, avatar)) {
+      const query = buildSerperQuery(userText, avatar);
+      console.log('[' + avatar + '] Serper query:', query);
+      const serperResults = await searchSerper(query, serperKey);
+      if (serperResults && serperResults.length > 0) {
+        enrichedSystemPrompt = systemPrompt + formatSerperContext(serperResults);
+        serperUsed = true;
+        console.log('[' + avatar + '] Serper: ' + serperResults.length + ' results injected');
+      } else {
+        console.log('[' + avatar + '] Serper: no results');
+      }
+    }
+
+    const logLabel = [
+      avatar,
+      model,
+      useGrounding ? 'Grounding' : null,
+      serperUsed ? 'Serper' : null,
+      'plan:' + userPlan
+    ].filter(Boolean).join(' + ');
+    console.log('[' + logLabel + ']');
 
     const text = await callGemini(
-      model, useGrounding, systemPrompt, messages,
+      model, useGrounding, enrichedSystemPrompt, messages,
       hasImage, body.image, body.imageType, body.imageText, apiKey
     );
 
