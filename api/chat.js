@@ -35,30 +35,27 @@ function checkRateLimit(req) {
 }
 
 // ═══════════════════════════════════════════
-// МОДЕЛ ROUTING — кој аватар користи кој модел
+// МОДЕЛ ROUTING
 // ═══════════════════════════════════════════
 const AVATAR_MODEL_MAP = {
-  // Gemini 2.5 Flash + Search Grounding — реални податоци
+  // Gemini 2.5 Flash + Search Grounding
   eva:         { model: 'gemini-2.5-flash', grounding: true  },
   tenderai:    { model: 'gemini-2.5-flash', grounding: true  },
   dropshipper: { model: 'gemini-2.5-flash', grounding: true  },
+  businessai:  { model: 'gemini-2.5-flash', grounding: true  },
+  justinian:   { model: 'gemini-2.5-flash', grounding: true  },
 
-  // Gemini 2.5 Flash — прецизност и аналитика
-  businessai:  { model: 'gemini-2.5-flash', grounding: false },
-  justinian:   { model: 'gemini-2.5-flash', grounding: false },
-
-  // Gemma 4 27B — знаење, пишување, креативност
+  // Gemma 4 27B (fallback: Gemini Flash)
   leo:         { model: 'gemma-4-27b-it',   grounding: false },
   liber:       { model: 'gemma-4-27b-it',   grounding: false },
   creativeai:  { model: 'gemma-4-27b-it',   grounding: false },
   developer:   { model: 'gemma-4-27b-it',   grounding: false },
 
-  // Gemma 4 E4B — брзо, лесно, јазични лекции
+  // Gemma 4 E4B (fallback: Gemini Flash)
   sophie:      { model: 'gemma-4-e4b-it',   grounding: false },
   hanna:       { model: 'gemma-4-e4b-it',   grounding: false },
   fitness:     { model: 'gemma-4-e4b-it',   grounding: false },
 
-  // Default fallback
   default:     { model: 'gemini-2.5-flash', grounding: false },
 };
 
@@ -66,7 +63,7 @@ function getAvatarConfig(avatar) {
   return AVATAR_MODEL_MAP[avatar] || AVATAR_MODEL_MAP.default;
 }
 
-// ═══ PREMIUM TRIGGER ЗБОРОВИ ═══
+// ═══ PREMIUM TRIGGERS ═══
 const PREMIUM_TRIGGERS = [
   'најди грант','најди тендер','направи договор','правен совет','eu фонд',
   'аплицирај','апликација за тендер','бизнис план','финансиска проекција',
@@ -88,7 +85,7 @@ function isPremiumTrigger(message, avatar) {
   return false;
 }
 
-// ═══ PREVIEW ЗА FREE КОРИСНИЦИ ═══
+// ═══ PREVIEW ═══
 async function generatePreview(systemPrompt, messages, apiKey, isMK) {
   const previewPrompt = systemPrompt + '\n\nВАЖНО: Дај само КРАТОК почеток на одговорот (максимум 3 реченици, 20% од целосниот одговор). Не завршувај го одговорот. Запри на интересно место.';
   const preview = await callGemini('gemini-2.5-flash', false, previewPrompt, messages, false, null, null, null, apiKey);
@@ -100,7 +97,7 @@ async function generatePreview(systemPrompt, messages, apiKey, isMK) {
   return preview + locked;
 }
 
-// ═══ ROUTER ЛОГИКА ═══
+// ═══ ROUTER ═══
 const ROUTER_AVATARS = ['marginova'];
 
 const ADVANCED_INTENT_KEYWORDS = [
@@ -149,17 +146,12 @@ function buildRouterResponse(category, userText) {
 }
 
 // ═══════════════════════════════════════════
-// ГЛАВНА GEMINI/GEMMA API ФУНКЦИЈА
+// GEMINI/GEMMA API
 // ═══════════════════════════════════════════
 async function callGemini(model, useGrounding, systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
-
-  // Gemma 4 модели користат различен endpoint
   const isGemma = model.startsWith('gemma');
-  const url = isGemma
-    ? 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey
-    : 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
 
-  // Подготви contents
   const contents = messages.map(function(m) {
     return {
       role: m.role === 'assistant' ? 'model' : 'user',
@@ -167,7 +159,6 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
     };
   });
 
-  // Ако има слика — замени ја последната порака
   if (hasImage && imageData) {
     const lastText = imageText || 'Please analyze this image carefully and respond helpfully.';
     const historyWithoutLast = contents.slice(0, -1);
@@ -182,9 +173,6 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
     });
   }
 
-  // ═══ СИСТЕМСКИ ПРОМПТ — правилно интегриран ═══
-  // Gemini/Gemma немаат посебен system field во v1beta
-  // Правилниот начин: systemInstruction (поддржан од gemini-1.5+)
   const requestBody = {
     systemInstruction: {
       parts: [{ text: systemPrompt }]
@@ -196,7 +184,6 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
     }
   };
 
-  // Search Grounding — само за Gemini Flash (Gemma не поддржува)
   if (useGrounding && !isGemma) {
     requestBody.tools = [{ googleSearch: {} }];
   }
@@ -209,9 +196,8 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
 
   if (!response.ok) {
     const errText = await response.text();
-    // Fallback: ако Gemma не е достапен, користи Gemini Flash
     if (isGemma && (response.status === 404 || response.status === 400)) {
-      console.warn('Gemma model unavailable, falling back to gemini-2.5-flash:', errText);
+      console.warn('Gemma model unavailable, falling back to gemini-2.5-flash:', model);
       return callGemini('gemini-2.5-flash', false, systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey);
     }
     throw new Error('API error ' + response.status + ': ' + errText.slice(0, 200));
@@ -229,7 +215,7 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
     data.candidates[0].content.parts[0].text
   ) || 'No response generated.';
 
-  // ═══ Grounding sources ═══
+  // Grounding sources
   if (useGrounding && data.candidates && data.candidates[0] && data.candidates[0].groundingMetadata) {
     const meta = data.candidates[0].groundingMetadata;
     if (meta.groundingChunks && meta.groundingChunks.length > 0) {
@@ -282,12 +268,10 @@ module.exports = async function handler(req, res) {
     const systemPrompt = body.system || '';
     const userPlan = body.plan || 'free';
 
-    // ═══ Земи го конфигот за овој аватар ═══
     const avatarConfig = getAvatarConfig(avatar);
     const model = avatarConfig.model;
     const useGrounding = avatarConfig.grounding;
 
-    // ═══ Подготви пораки ═══
     const messages = (body.messages || []).slice(-20).map(function(m) {
       return {
         role: m.role,
@@ -301,7 +285,7 @@ module.exports = async function handler(req, res) {
     const userText = (lastUserMsg && lastUserMsg.content) || '';
     const isMK = /[а-шА-Ш]/.test(userText);
 
-    // ═══ Premium trigger check ═══
+    // Premium check
     if (userPlan === 'free' && isPremiumTrigger(userText, avatar)) {
       const previewText = await generatePreview(systemPrompt, messages, apiKey, isMK);
       return res.status(200).json({
@@ -312,7 +296,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // ═══ Router логика ═══
+    // Router
     if (ROUTER_AVATARS.includes(avatar) && messages.length > 0) {
       const wordCount = userText.trim().split(/\s+/).length;
       if (wordCount >= 8) {
@@ -336,20 +320,11 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // ═══ Логирај кој модел се користи (за debug) ═══
     console.log('[' + avatar + '] → ' + model + (useGrounding ? ' + Grounding' : '') + ' | plan:' + userPlan);
 
-    // ═══ Главен повик ═══
     const text = await callGemini(
-      model,
-      useGrounding,
-      systemPrompt,
-      messages,
-      hasImage,
-      body.image,
-      body.imageType,
-      body.imageText,
-      apiKey
+      model, useGrounding, systemPrompt, messages,
+      hasImage, body.image, body.imageType, body.imageText, apiKey
     );
 
     return res.status(200).json({
