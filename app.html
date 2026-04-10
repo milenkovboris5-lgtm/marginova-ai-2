@@ -2548,6 +2548,8 @@ async function sendMsg(){
       'bg': 'Bulgarian (Български)',
       'de': 'German (Deutsch)',
       'sq': 'Albanian (Shqip)',
+      'tr': 'Turkish (Türkçe)',
+      'pl': 'Polish (Polski)',
     };
     const sysMap = {
       'en': av.systemEN || av.system,
@@ -2558,6 +2560,8 @@ async function sendMsg(){
       'bg': av.systemBG || av.systemEN || av.system,
       'de': av.systemDE || av.systemEN || av.system,
       'sq': av.systemSQ || av.systemEN || av.system,
+      'tr': av.systemTR || av.systemEN || av.system,
+      'pl': av.systemPL || av.systemEN || av.system,
     };
     const baseSys = sysMap[lang] || av.system;
     const langInstruction = '\n\nCRITICAL INSTRUCTION: You MUST respond ONLY in ' + (langNames[lang] || 'English') + '. This is ABSOLUTE. Always reply in ' + (langNames[lang] || 'English') + ' only. Never switch languages under any circumstances.';
