@@ -1029,6 +1029,12 @@ html{scroll-behavior:smooth;}
     <button class="lang-flag-btn" id="lb-bg" onclick="setLangGrid('bg')" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:0.28rem 0.2rem;border-radius:7px;border:1px solid rgba(255,255,255,0.1);background:transparent;cursor:pointer;transition:all 0.2s;min-width:36px;">
       <img src="https://flagcdn.com/w40/bg.png" style="width:26px;height:18px;object-fit:cover;border-radius:2px;" alt="BG"/><span style="font-size:0.42rem;color:#7a7060;font-family:'Jost',sans-serif;">BG</span>
     </button>
+    <button class="lang-flag-btn" id="lb-tr" onclick="setLangGrid('tr')" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:0.28rem 0.2rem;border-radius:7px;border:1px solid rgba(255,255,255,0.1);background:transparent;cursor:pointer;transition:all 0.2s;min-width:36px;">
+      <img src="https://flagcdn.com/w40/tr.png" style="width:26px;height:18px;object-fit:cover;border-radius:2px;" alt="TR"/><span style="font-size:0.42rem;color:#7a7060;font-family:'Jost',sans-serif;">TR</span>
+    </button>
+    <button class="lang-flag-btn" id="lb-pl" onclick="setLangGrid('pl')" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:0.28rem 0.2rem;border-radius:7px;border:1px solid rgba(255,255,255,0.1);background:transparent;cursor:pointer;transition:all 0.2s;min-width:36px;">
+      <img src="https://flagcdn.com/w40/pl.png" style="width:26px;height:18px;object-fit:cover;border-radius:2px;" alt="PL"/><span style="font-size:0.42rem;color:#7a7060;font-family:'Jost',sans-serif;">PL</span>
+    </button>
   </div>
 </nav>
 
@@ -1380,7 +1386,26 @@ if(false){var MSH = {
     {l:"Scroll X",m:"I will pray for <em style='color:#E8C97A;font-style:normal;'>guidance.</em>"}]}
 }}
 // msHeroRender removed
-function msHeroRender(l){}
+function msHeroRender(l){
+  // Avatar role labels per language
+  const roles = {
+    mk:{ sophie:'Учител по Англиски 🇬🇧',hanna:'Учителка по Германски 🇩🇪',leo:'Есеи & Пишување ✍️',liber:'Енциклопедија 📚',viktor:'Тренинг & Фитнес 💪',businessai:'Стратегија & Финансии 💼',creativeai:'Маркетинг & Бренд 🎨',developer:'AI Програмер 💻',eva:'EU Фондови 🇪🇺',justinian:'Правен Советник ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Патување & Понуди ✈️',tenderai:'Тендери & Лицитации 📋' },
+    sr:{ sophie:'English Teacher 🇬🇧',hanna:'Deutsch Lehrerin 🇩🇪',leo:'Eseji & Pisanje ✍️',liber:'Enciklopedija 📚',viktor:'Trening & Fitnes 💪',businessai:'Strategija & Finansije 💼',creativeai:'Marketing & Brend 🎨',developer:'AI Programer 💻',eva:'EU Fondovi 🇪🇺',justinian:'Pravni Savetnik ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Putovanje & Ponude ✈️',tenderai:'Tenderi & Licitacije 📋' },
+    hr:{ sophie:'English Teacher 🇬🇧',hanna:'Deutsch Lehrerin 🇩🇪',leo:'Eseji & Pisanje ✍️',liber:'Enciklopedija 📚',viktor:'Trening & Fitnes 💪',businessai:'Strategija & Financije 💼',creativeai:'Marketing & Brand 🎨',developer:'AI Developer 💻',eva:'EU Fondovi 🇪🇺',justinian:'Pravni Savjetnik ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Putovanje & Ponude ✈️',tenderai:'Tenderi & Licitacije 📋' },
+    bs:{ sophie:'English Teacher 🇬🇧',hanna:'Deutsch Lehrerin 🇩🇪',leo:'Eseji & Pisanje ✍️',liber:'Enciklopedija 📚',viktor:'Trening & Fitnes 💪',businessai:'Strategija & Finansije 💼',creativeai:'Marketing & Brend 🎨',developer:'AI Developer 💻',eva:'EU Fondovi 🇪🇺',justinian:'Pravni Savjetnik ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Putovanje & Ponude ✈️',tenderai:'Tenderi & Licitacije 📋' },
+    en:{ sophie:'English Teacher 🇬🇧',hanna:'German Teacher 🇩🇪',leo:'Essays & Writing ✍️',liber:'Encyclopedia 📚',viktor:'Training & Fitness 💪',businessai:'Strategy & Finance 💼',creativeai:'Marketing & Brand 🎨',developer:'AI Developer 💻',eva:'EU Funds 🇪🇺',justinian:'Legal Advisor ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Travel & Deals ✈️',tenderai:'Tenders & Auctions 📋' },
+    de:{ sophie:'Englischlehrerin 🇬🇧',hanna:'Deutschlehrerin 🇩🇪',leo:'Essay & Schreiben ✍️',liber:'Enzyklopädie 📚',viktor:'Training & Fitness 💪',businessai:'Strategie & Finanzen 💼',creativeai:'Marketing & Branding 🎨',developer:'KI-Entwickler 💻',eva:'EU-Fördermittel 🇪🇺',justinian:'Rechtsberater ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Reisen & Angebote ✈️',tenderai:'Ausschreibungen & Auktionen 📋' },
+    bg:{ sophie:'Учителка по Английски 🇬🇧',hanna:'Учителка по Немски 🇩🇪',leo:'Есета & Писане ✍️',liber:'Енциклопедия 📚',viktor:'Тренировка & Фитнес 💪',businessai:'Стратегия & Финанси 💼',creativeai:'Маркетинг & Бранд 🎨',developer:'AI Програмист 💻',eva:'ЕС Фондове 🇪🇺',justinian:'Правен Съветник ⚖️',dropshipper:'Дропшипинг 🛒',travelai:'Пътуване & Оферти ✈️',tenderai:'Търгове & Лицитации 📋' },
+    sq:{ sophie:'Mësuese Anglishtes 🇬🇧',hanna:'Mësuese Gjermanishtes 🇩🇪',leo:'Ese & Shkrim ✍️',liber:'Enciklopedi 📚',viktor:'Stërvitje & Fitness 💪',businessai:'Strategji & Financa 💼',creativeai:'Marketing & Brand 🎨',developer:'Zhvillues AI 💻',eva:'Fondet BE 🇪🇺',justinian:'Këshilltar Ligjor ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Udhëtim & Oferta ✈️',tenderai:'Tenderë & Ankande 📋' },
+    tr:{ sophie:'İngilizce Öğretmeni 🇬🇧',hanna:'Almanca Öğretmeni 🇩🇪',leo:'Deneme & Yazma ✍️',liber:'Ansiklopedi 📚',viktor:'Antrenman & Fitness 💪',businessai:'Strateji & Finans 💼',creativeai:'Pazarlama & Marka 🎨',developer:'AI Geliştirici 💻',eva:'AB Fonları 🇪🇺',justinian:'Hukuk Danışmanı ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Seyahat & Teklifler ✈️',tenderai:'İhaleler & Açık Artırmalar 📋' },
+    pl:{ sophie:'Nauczycielka Angielskiego 🇬🇧',hanna:'Nauczycielka Niemieckiego 🇩🇪',leo:'Eseje & Pisanie ✍️',liber:'Encyklopedia 📚',viktor:'Trening & Fitness 💪',businessai:'Strategia & Finanse 💼',creativeai:'Marketing & Marka 🎨',developer:'Programista AI 💻',eva:'Fundusze UE 🇪🇺',justinian:'Doradca Prawny ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Podróże & Oferty ✈️',tenderai:'Przetargi & Aukcje 📋' }
+  };
+  const r = roles[l] || roles.en;
+  Object.keys(r).forEach(function(av){
+    const el = document.getElementById('role-'+av);
+    if(el) el.textContent = r[av];
+  });
+}
 
 </script><script>
 // SUPABASE
