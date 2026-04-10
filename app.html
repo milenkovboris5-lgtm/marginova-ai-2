@@ -2336,23 +2336,142 @@ function selectAvatar(id){
   document.getElementById('messages').style.display='none';
   document.getElementById('input-area').style.display='none';
   // Quick action suggestions per avatar
-  const QUICK_ACTIONS = {
-    eva: ['Грантови за МК бизнис', 'IPARD фондови', 'EU за стартап'],
-    tenderai: ['Тендери во Македонија', 'Судски лицитации', 'EU тендери'],
-    justinian: ['Основање фирма', 'Работен договор', 'GDPR права'],
-    businessai: ['Бизнис план', 'SWOT анализа', 'Финансиски план'],
-    sophie: ['Daily Word Challenge', 'English grammar', 'Conversation practice'],
-    hanna: ['Deutsch A1 лекција', 'Германски глаголи', 'Изговор'],
-    developer: ['Debug мој код', 'React component', 'API интеграција'],
-    creativeai: ['Facebook реклама', 'Brand стратегија', 'Copywriting'],
-    dropshipper: ['Top 10 производи', 'AliExpress добавувач', 'TikTok реклама'],
-    fitness: ['4-неделен план', 'Програма за слабеење', 'CrossFit'],
-    leo: ['Напиши ми CV', 'Мотивациско писмо', 'Есеј тема'],
-    liber: ['Marcus Aurelius', 'Sun Tzu стратегија', 'Филозофија']
+  const QUICK_ACTIONS_ALL = {
+    eva: {
+      mk:['Грантови за МК бизнис','IPARD фондови','EU за стартап'],
+      sr:['Grantovi za biznis','IPARD fondovi','EU za startup'],
+      hr:['Grantovi za biznis','IPARD fondovi','EU za startup'],
+      bs:['Grantovi za biznis','IPARD fondovi','EU za startup'],
+      en:['Grants for my business','IPARD funds','EU for startups'],
+      de:['Fördermittel für Unternehmen','IPARD-Fonds','EU für Startups'],
+      bg:['Грантове за бизнес','IPARD фондове','ЕС за стартапи'],
+      sq:['Grante për biznes','Fondet IPARD','BE për startup'],
+      tr:['İşletmem için hibeler','IPARD fonları','AB girişimler için'],
+      pl:['Dotacje dla firmy','Fundusze IPARD','UE dla startupów'],
+    },
+    tenderai: {
+      mk:['Тендери во Македонија','Судски лицитации','EU тендери'],
+      sr:['Tenderi u Srbiji','Sudske licitacije','EU tenderi'],
+      hr:['Tenderi u Hrvatskoj','Sudske licitacije','EU tenderi'],
+      bs:['Tenderi u BiH','Sudske licitacije','EU tenderi'],
+      en:['Tenders in my country','Court auctions','EU tenders'],
+      de:['Ausschreibungen','Gerichtsauktionen','EU-Ausschreibungen'],
+      bg:['Търгове в България','Съдебни търгове','ЕС търгове'],
+      sq:['Tenderat në vendin tim','Ankande gjyqësore','Tenderat BE'],
+      tr:['Ülkemizdeki ihaleler','Mahkeme açık artırmaları','AB ihaleleri'],
+      pl:['Przetargi w Polsce','Licytacje sądowe','Przetargi UE'],
+    },
+    justinian: {
+      mk:['Основање фирма','Работен договор','GDPR права'],
+      sr:['Osnivanje firme','Ugovor o radu','GDPR prava'],
+      hr:['Osnivanje tvrtke','Ugovor o radu','GDPR prava'],
+      bs:['Osnivanje firme','Ugovor o radu','GDPR prava'],
+      en:['Company registration','Employment contract','GDPR rights'],
+      de:['Firmengründung','Arbeitsvertrag','GDPR-Rechte'],
+      bg:['Регистрация на фирма','Трудов договор','GDPR права'],
+      sq:['Regjistrim kompanie','Kontratë pune','Të drejta GDPR'],
+      tr:['Şirket kurma','İş sözleşmesi','GDPR hakları'],
+      pl:['Zakładanie firmy','Umowa o pracę','Prawa GDPR'],
+    },
+    businessai: {
+      mk:['Бизнис план','SWOT анализа','Финансиски план'],
+      sr:['Biznis plan','SWOT analiza','Finansijski plan'],
+      hr:['Poslovni plan','SWOT analiza','Financijski plan'],
+      bs:['Biznis plan','SWOT analiza','Finansijski plan'],
+      en:['Business plan','SWOT analysis','Financial plan'],
+      de:['Businessplan','SWOT-Analyse','Finanzplan'],
+      bg:['Бизнес план','SWOT анализ','Финансов план'],
+      sq:['Plan biznesi','Analiza SWOT','Plan financiar'],
+      tr:['İş planı','SWOT analizi','Finansal plan'],
+      pl:['Plan biznesowy','Analiza SWOT','Plan finansowy'],
+    },
+    sophie: {
+      mk:['Daily Word Challenge','Англиска граматика','Разговор'],
+      sr:['Daily Word Challenge','Engleska gramatika','Razgovor'],
+      hr:['Daily Word Challenge','Engleska gramatika','Razgovor'],
+      bs:['Daily Word Challenge','Engleska gramatika','Razgovor'],
+      en:['Daily Word Challenge','English grammar','Conversation practice'],
+      de:['Tägliche Wortherausforderung','Englische Grammatik','Konversation'],
+      bg:['Ежедневно предизвикателство','Английска граматика','Разговор'],
+      sq:['Sfida e Fjalës','Gramatikë angleze','Praktikë bisede'],
+      tr:['Günlük Kelime Mücadelesi','İngilizce dilbilgisi','Konuşma pratiği'],
+      pl:['Wyzwanie słowa dnia','Gramatyka angielska','Praktyka rozmowy'],
+    },
+    hanna: {
+      mk:['Deutsch A1 лекција','Германски глаголи','Изговор'],
+      sr:['Deutsch A1 lekcija','Nemački glagoli','Izgovor'],
+      en:['Deutsch A1 lesson','German verbs','Pronunciation'],
+      de:['Deutsch A1 Lektion','Deutsche Verben','Aussprache'],
+      bg:['Немски A1 урок','Немски глаголи','Произношение'],
+      sq:['Mësim Gjermanisht A1','Folje gjermane','Shqiptim'],
+      tr:['Almanca A1 dersi','Almanca fiiller','Telaffuz'],
+      pl:['Lekcja Deutsch A1','Niemieckie czasowniki','Wymowa'],
+    },
+    developer: {
+      mk:['Debug мој код','React component','API интеграција'],
+      sr:['Debug moj kod','React component','API integracija'],
+      en:['Debug my code','React component','API integration'],
+      de:['Meinen Code debuggen','React Komponente','API-Integration'],
+      bg:['Дебъгване на код','React компонент','API интеграция'],
+      sq:['Debug kodin tim','Komponent React','Integrim API'],
+      tr:['Kodumu hata ayıkla','React bileşeni','API entegrasyonu'],
+      pl:['Debug mojego kodu','Komponent React','Integracja API'],
+    },
+    creativeai: {
+      mk:['Facebook реклама','Brand стратегија','Copywriting'],
+      sr:['Facebook reklama','Brand strategija','Copywriting'],
+      en:['Facebook ad','Brand strategy','Copywriting'],
+      de:['Facebook-Werbung','Markenstrategie','Copywriting'],
+      bg:['Facebook реклама','Бранд стратегия','Копирайтинг'],
+      sq:['Reklamë Facebook','Strategji marke','Copywriting'],
+      tr:['Facebook reklamı','Marka stratejisi','Metin yazarlığı'],
+      pl:['Reklama Facebook','Strategia marki','Copywriting'],
+    },
+    dropshipper: {
+      mk:['Top 10 производи','AliExpress добавувач','TikTok реклама'],
+      sr:['Top 10 proizvoda','AliExpress dobavljač','TikTok reklama'],
+      en:['Top 10 products','AliExpress supplier','TikTok ad'],
+      de:['Top 10 Produkte','AliExpress-Lieferant','TikTok-Werbung'],
+      bg:['Топ 10 продукти','AliExpress доставчик','TikTok реклама'],
+      sq:['Top 10 produkte','Furnizues AliExpress','Reklamë TikTok'],
+      tr:['Top 10 ürün','AliExpress tedarikçi','TikTok reklamı'],
+      pl:['Top 10 produktów','Dostawca AliExpress','Reklama TikTok'],
+    },
+    fitness: {
+      mk:['4-неделен план','Програма за слабеење','CrossFit'],
+      sr:['4-nedeljni plan','Program za mršavljenje','CrossFit'],
+      en:['4-week plan','Weight loss program','CrossFit'],
+      de:['4-Wochen-Plan','Abnehmprogramm','CrossFit'],
+      bg:['4-седмичен план','Програма за отслабване','CrossFit'],
+      sq:['Plan 4-javor','Program humbje peshe','CrossFit'],
+      tr:['4 haftalık plan','Kilo verme programı','CrossFit'],
+      pl:['Plan 4-tygodniowy','Program odchudzania','CrossFit'],
+    },
+    leo: {
+      mk:['Напиши ми CV','Мотивациско писмо','Есеј тема'],
+      sr:['Napiši mi CV','Motivaciono pismo','Tema za esej'],
+      en:['Write my CV','Motivational letter','Essay topic'],
+      de:['Schreib meinen Lebenslauf','Motivationsschreiben','Aufsatzthema'],
+      bg:['Напиши ми CV','Мотивационно писмо','Тема за есе'],
+      sq:['Shkruaj CV-në time','Letër motivimi','Temë ese'],
+      tr:['CV yaz','Motivasyon mektubu','Deneme konusu'],
+      pl:['Napisz moje CV','List motywacyjny','Temat eseju'],
+    },
+    liber: {
+      mk:['Marcus Aurelius','Sun Tzu стратегија','Филозофија'],
+      sr:['Marcus Aurelius','Sun Tzu strategija','Filozofija'],
+      en:['Marcus Aurelius','Sun Tzu strategy','Philosophy'],
+      de:['Marcus Aurelius','Sun Tzu Strategie','Philosophie'],
+      bg:['Марк Аврелий','Стратегия Сун Дзъ','Философия'],
+      sq:['Marcus Aurelius','Strategji Sun Tzu','Filozofi'],
+      tr:['Marcus Aurelius','Sun Tzu stratejisi','Felsefe'],
+      pl:['Marcus Aurelius','Strategia Sun Tzu','Filozofia'],
+    },
   };
   const qaWrap = document.getElementById('quick-actions');
   if(qaWrap){
-    const actions = QUICK_ACTIONS[id] || [];
+    const langActions = QUICK_ACTIONS_ALL[id];
+    const actions = langActions ? (langActions[lang] || langActions['en'] || []) : [];
     qaWrap.innerHTML = actions.map(a => 
       `<button class="quick-btn" onclick="quickStart('${a}')">${a}</button>`
     ).join('');
@@ -2371,21 +2490,35 @@ async function startChat(){
   if(mem.length>0){
     const memNote=document.createElement('div');
     memNote.style.cssText='text-align:center;font-size:0.65rem;color:var(--muted);padding:0.3rem;opacity:0.7;';
-    const memText=lang==='en'?`🧠 ${av.name} remembers your previous conversations (${Math.floor(mem.length/2)} sessions)`:lang==='sr'?`🧠 ${av.name} pamti vaše prethodne razgovore (${Math.floor(mem.length/2)} sesija)`:`🧠 ${av.name} се сеќава на вашите претходни разговори (${Math.floor(mem.length/2)} сесии)`;
+    const memTexts = {
+      'en': `🧠 ${av.name} remembers your previous conversations (${Math.floor(mem.length/2)} sessions)`,
+      'sr': `🧠 ${av.name} pamti vaše prethodne razgovore (${Math.floor(mem.length/2)} sesija)`,
+      'hr': `🧠 ${av.name} pamti vaše prethodne razgovore (${Math.floor(mem.length/2)} sesija)`,
+      'bs': `🧠 ${av.name} pamti vaše prethodne razgovore (${Math.floor(mem.length/2)} sesija)`,
+      'de': `🧠 ${av.name} erinnert sich an Ihre früheren Gespräche (${Math.floor(mem.length/2)} Sitzungen)`,
+      'bg': `🧠 ${av.name} помни предишните ви разговори (${Math.floor(mem.length/2)} сесии)`,
+      'sq': `🧠 ${av.name} mban mend bisedat tuaja të mëparshme (${Math.floor(mem.length/2)} sesione)`,
+      'tr': `🧠 ${av.name} önceki konuşmalarınızı hatırlıyor (${Math.floor(mem.length/2)} oturum)`,
+      'pl': `🧠 ${av.name} pamięta poprzednie rozmowy (${Math.floor(mem.length/2)} sesji)`,
+    };
+    const memText = memTexts[lang] || `🧠 ${av.name} се сеќава на вашите претходни разговори (${Math.floor(mem.length/2)} сесии)`;
     memNote.textContent=memText;
     msgs.appendChild(memNote);
   }
-  const greetMap = {
-    'en': av.greetingEN || av.greeting,
-    'mk': av.greetingMK || av.greeting,
-    'sr': av.greetingSR || av.greeting,
-    'hr': av.greetingHR || av.greetingSR || av.greeting,
-    'bs': av.greetingBS || av.greetingSR || av.greeting,
-    'bg': av.greetingBG || av.greetingEN || av.greeting,
-    'de': av.greetingDE || av.greetingEN || av.greeting,
-    'sq': av.greetingSQ || av.greetingEN || av.greeting,
+  // Simple greeting per language - just "How can I help you?"
+  const simpleGreet = {
+    'mk': `Здраво! Јас сум **${av.name}** — ${av.taglineMK || av.tagline || ''}\n\nКако можам да ви помогнам?`,
+    'sr': `Zdravo! Ja sam **${av.name}** — ${av.taglineSR || av.tagline || ''}\n\nKako mogu da vam pomognem?`,
+    'hr': `Zdravo! Ja sam **${av.name}** — ${av.taglineHR || av.taglineSR || av.tagline || ''}\n\nKako vam mogu pomoći?`,
+    'bs': `Zdravo! Ja sam **${av.name}** — ${av.taglineBS || av.taglineSR || av.tagline || ''}\n\nKako vam mogu pomoći?`,
+    'en': `Hello! I am **${av.name}** — ${av.taglineEN || av.tagline || ''}\n\nHow can I help you?`,
+    'de': `Hallo! Ich bin **${av.name}** — ${av.taglineDE || av.taglineEN || av.tagline || ''}\n\nWie kann ich Ihnen helfen?`,
+    'bg': `Здравейте! Аз съм **${av.name}** — ${av.taglineBG || av.taglineEN || av.tagline || ''}\n\nКак мога да ви помогна?`,
+    'sq': `Përshëndetje! Unë jam **${av.name}** — ${av.taglineSQ || av.taglineEN || av.tagline || ''}\n\nSi mund t’ju ndihmoj?`,
+    'tr': `Merhaba! Ben **${av.name}** — ${av.taglineTR || av.taglineEN || av.tagline || ''}\n\nSize nasıl yardımcı olabilirim?`,
+    'pl': `Cześć! Jestem **${av.name}** — ${av.taglinePL || av.taglineEN || av.tagline || ''}\n\nJak mogę Ci pomóc?`,
   };
-  const g = greetMap[lang] || av.greeting;
+  const g = simpleGreet[lang] || simpleGreet['en'];
   addMsg('ai',g);speak(g);
   addXP(XP_REWARDS.newChat.amount, XP_REWARDS.newChat.label+' with '+av.name);
   setTimeout(()=>document.getElementById('msg-input').focus(),100);
