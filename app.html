@@ -2160,6 +2160,8 @@ function setLang(l){
       rSophie:'Englischlehrerin 🇬🇧',rHanna:'Deutschlehrerin 🇩🇪',rLeo:'Essay & Schreiben ✍️',rLiber:'Enzyklopädie & Bücher 📚',
       rFitness:'Training & Fitness 💪',
       rBusinessai:'Strategie & Finanzen 💼',rCreativeai:'Marketing & Branding 🎨',rDeveloper:'AI Entwickler 💻',rEva:'EU Fördermittel 🇪🇺',rJustinian:'Rechtsberater ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Reisen & Angebote ✈️',rTenderai:'Ausschreibungen & Auktionen 📋'},
+    tr:{chat:'Sohbet',blog:'Blog & Yorumlar',upgrade:'Planı yükselt →',pricing:'Planlar & Fiyatlar',invite:'Davet et & XP kazan',contact:'İletişim & Destek',placeholder:'Mesaj yazın...',start:'Konuşmayı başlat →',logout:'👤 Çıkış',login:'Giriş',register:'Kayıt',signin:'Giriş yap',slMain:'Ana Asistan',slEdu:'Eğitim',slHealth:'Sağlık & Wellness',slBiz:'İş Dünyası',rMarginova:'AI Rehber & Portal',rSophie:'İngilizce Öğretmeni 🇬🇧',rHanna:'Almanca Öğretmeni 🇩🇪',rLeo:'Deneme & Yazma ✍️',rLiber:'Ansiklopedi 📚',rFitness:'Antrenman & Fitness 💪',rBusinessai:'Strateji & Finans 💼',rCreativeai:'Pazarlama & Marka 🎨',rDeveloper:'AI Geliştirici 💻',rEva:'AB Fonları 🇪🇺',rJustinian:'Hukuk Danışmanı ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Seyahat & Teklifler ✈️',rTenderai:'İhaleler & Açık Artırmalar 📋'},
+    pl:{chat:'Czat',blog:'Blog & Recenzje',upgrade:'Ulepsz plan →',pricing:'Plany & Ceny',invite:'Zaproś & Zdobądź XP',contact:'Kontakt & Wsparcie',placeholder:'Napisz wiadomość...',start:'Rozpocznij rozmowę →',logout:'👤 Wyloguj',login:'Logowanie',register:'Rejestracja',signin:'Zaloguj się',slMain:'Główny Asystent',slEdu:'Edukacja',slHealth:'Zdrowie & Wellness',slBiz:'Biznes',rMarginova:'Przewodnik AI & Portal',rSophie:'Nauczycielka Angielskiego 🇬🇧',rHanna:'Nauczycielka Niemieckiego 🇩🇪',rLeo:'Eseje & Pisanie ✍️',rLiber:'Encyklopedia 📚',rFitness:'Trening & Fitness 💪',rBusinessai:'Strategia & Finanse 💼',rCreativeai:'Marketing & Marka 🎨',rDeveloper:'Programista AI 💻',rEva:'Fundusze UE 🇪🇺',rJustinian:'Doradca Prawny ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Podróże & Oferty ✈️',rTenderai:'Przetargi & Aukcje 📋'},
   };
   const t=texts[l]||texts.en;
   const _set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
@@ -2758,6 +2760,15 @@ async function sendMsg(){
     const data=await res.json();removeTyping();
     if(data.error){addMsg('ai','⚠️ '+(data.error.message||'An error occurred.'));}
     else{
+      // Auto-retry once if empty (Gemini timeout)
+      if(!data.content||!data.content[0]||!data.content[0].text||data.content[0].text==='No response generated.'){
+        try{
+          console.warn('Empty response, retrying...');
+          const rr=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+          const rd=await rr.json();
+          if(rd.content&&rd.content[0]&&rd.content[0].text&&rd.content[0].text!=='No response generated.')data=rd;
+        }catch(e){console.warn('Retry failed:',e);}
+      }
       const rawReply=data.content[0].text;
       const reply=rawReply;
       history[current].push({role:'assistant',content:reply});
