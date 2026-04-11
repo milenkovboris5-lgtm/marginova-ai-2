@@ -2300,7 +2300,7 @@ function toggleSound(){soundOn=!soundOn;document.getElementById('sound-btn').tex
 // ═══════════════════════════════════════════
 // GOOGLE TTS — Natural voices for 9 languages
 // ═══════════════════════════════════════════
-const GOOGLE_TTS_KEY = ''; // Add your Google TTS API key here
+const GOOGLE_TTS_KEY = 'AIzaSyANgY4C_G0r0kwKW68lYKo2cFY9g0GNh00';
 
 const LANG_VOICES = {
   'en': { lang: 'en-US', female: 'en-US-Neural2-F', male: 'en-US-Neural2-D' },
@@ -2311,6 +2311,9 @@ const LANG_VOICES = {
   'sq': { lang: 'sq-AL', female: 'sq-AL-Standard-A', male: 'sq-AL-Standard-A' },
   'bg': { lang: 'bg-BG', female: 'bg-BG-Standard-A', male: 'bg-BG-Standard-A' },
   'de': { lang: 'de-DE', female: 'de-DE-Neural2-F', male: 'de-DE-Neural2-B' },
+  'tr': { lang: 'tr-TR', female: 'tr-TR-Standard-D', male: 'tr-TR-Standard-B' },
+  'pl': { lang: 'pl-PL', female: 'pl-PL-Neural2-A', male: 'pl-PL-Neural2-B' },
+  'bg': { lang: 'bg-BG', female: 'bg-BG-Standard-A', male: 'bg-BG-Standard-A' },
 };
 
 let currentAudio = null;
@@ -2352,16 +2355,14 @@ async function speak(text) {
   if(!soundOn) return;
   if(!text) return;
 
-  // Glasovno samo za EN i DE — drugite jazici nemaat kvalitetni glasovi
-  if(lang !== 'en' && lang !== 'de') return;
-
-  // Try Google TTS first (if key available)
+  // Try Google TTS first (if key available) - supports all languages
   if(GOOGLE_TTS_KEY) {
     const success = await speakWithGoogle(text);
     if(success) return;
   }
 
-  // Browser TTS - samo EN i DE
+  // Browser TTS fallback - samo EN i DE (Google TTS handles the rest)
+  if(lang !== 'en' && lang !== 'de') return;
   if(!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
 
