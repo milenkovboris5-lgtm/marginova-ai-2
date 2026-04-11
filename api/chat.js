@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// Верзија: Hybrid v4 — Gemini + Gemma 4 + Grounding + Serper Real-Time
+// Верзија: Hybrid v5 — Gemini + Gemma 4 + Grounding + Serper Real-Time
 // ═══════════════════════════════════════════
 
 const rateLimitStore = {};
@@ -98,6 +98,10 @@ function buildSerperQuery(userText, avatar) {
       'eu': 'site:ted.europa.eu',
       'европ': 'site:ted.europa.eu',
       'europe': 'site:ted.europa.eu',
+      'türkiye': 'site:ekap.kik.gov.tr',
+      'turkey': 'site:ekap.kik.gov.tr',
+      'polska': 'site:ted.europa.eu',
+      'poland': 'site:ted.europa.eu',
     };
 
     let siteFilter = 'site:e-nabavki.gov.mk OR site:ted.europa.eu OR site:portal.ujn.gov.rs';
@@ -106,25 +110,25 @@ function buildSerperQuery(userText, avatar) {
     }
 
     let sector = 'јавна набавка';
-    if (lower.match(/градеж|construction|bau|inşaat/)) sector = 'градежни работи';
-    else if (lower.match(/ит|software|digital/)) sector = 'IT услуги';
-    else if (lower.match(/медицин|health|болниц/)) sector = 'медицинска опрема';
-    else if (lower.match(/образован|school|училишт/)) sector = 'образование';
-    else if (lower.match(/храна|food/)) sector = 'прехранбени производи';
-    else if (lower.match(/транспорт|transport/)) sector = 'транспорт';
-    else if (lower.match(/лицитаци|auction/)) sector = 'лицитација имот возила';
+    if (lower.match(/градеж|construction|bau|inşaat|budowl/)) sector = 'градежни работи';
+    else if (lower.match(/ит|software|digital|yazılım/)) sector = 'IT услуги';
+    else if (lower.match(/медицин|health|болниц|sağlık|zdrowie/)) sector = 'медицинска опрема';
+    else if (lower.match(/образован|school|училишт|eğitim|edukacja/)) sector = 'образование';
+    else if (lower.match(/храна|food|gıda|żywność/)) sector = 'прехранбени производи';
+    else if (lower.match(/транспорт|transport|ulaşım|transport/)) sector = 'транспорт';
+    else if (lower.match(/лицитаци|auction|açık artırma|licytacja/)) sector = 'лицитација имот возила';
 
     return `${sector} тендер ${month} ${siteFilter}`;
   }
 
   if (avatar === 'eva') {
     let grantType = 'EU грант фонд отворен конкурс';
-    if (lower.match(/ipard|земјоделств|agri/)) grantType = 'IPARD грант земјоделство';
+    if (lower.match(/ipard|земјоделств|agri|tarım|rolnic/)) grantType = 'IPARD грант земјоделство';
     else if (lower.match(/ipa|претпристапн/)) grantType = 'IPA фонд';
-    else if (lower.match(/стартап|startup|иновац/)) grantType = 'EU грант стартап иновации';
-    else if (lower.match(/нго|ngo|невладин/)) grantType = 'EU грант НВО';
-    else if (lower.match(/мал.*бизнис|sme/)) grantType = 'EU фонд МСП';
-    else if (lower.match(/жен|women/)) grantType = 'EU грант жени претприемачи';
+    else if (lower.match(/стартап|startup|иновац|girişim|startup/)) grantType = 'EU грант стартап иновации';
+    else if (lower.match(/нго|ngo|невладин|sivil toplum/)) grantType = 'EU грант НВО';
+    else if (lower.match(/мал.*бизнис|sme|küçük işletme|małe firmy/)) grantType = 'EU фонд МСП';
+    else if (lower.match(/жен|women|kadın|kobiety/)) grantType = 'EU грант жени претприемачи';
     return `${grantType} ${month} рок за аплицирање Западен Балкан Македонија`;
   }
 
@@ -168,22 +172,44 @@ async function searchSerper(query, serperKey) {
   }
 }
 
-function formatSerperContext(results) {
+function formatSerperContext(results, avatar) {
   if (!results || results.length === 0) return '';
   const today = new Date().toLocaleDateString('mk-MK', { day:'2-digit', month:'2-digit', year:'numeric' });
 
-  let ctx = `\n\n═══ REAL-TIME ПРЕБАРУВАЊЕ (${today}) ═══\n`;
-  ctx += `Следниве резултати се пронајдени во реално време:\n\n`;
+  let ctx = `\n\n═══════════════════════════════════════\n`;
+  ctx += `REAL-TIME ПРЕБАРУВАЊЕ — ${today}\n`;
+  ctx += `═══════════════════════════════════════\n`;
+  ctx += `КРИТИЧНО: Ги имаш следниве РЕАЛНИ резултати од интернет пребарување.\n`;
+  ctx += `МОРА да ги прикажеш овие конкретни резултати во твојот одговор.\n`;
+  ctx += `НЕ генерирај генерички одговор — користи ги ОВИЕ реални податоци!\n\n`;
+
   results.forEach((r, i) => {
-    ctx += `[${i+1}] ${r.title}\n`;
-    if (r.date) ctx += `    Датум: ${r.date}\n`;
-    if (r.snippet) ctx += `    ${r.snippet}\n`;
-    ctx += `    Линк: ${r.link}\n\n`;
+    ctx += `РЕЗУЛТАТ ${i+1}:\n`;
+    ctx += `  Наслов: ${r.title}\n`;
+    if (r.date) ctx += `  Датум: ${r.date}\n`;
+    if (r.snippet) ctx += `  Опис: ${r.snippet}\n`;
+    ctx += `  Линк: ${r.link}\n\n`;
   });
-  ctx += `═══ КРАЈ НА REAL-TIME РЕЗУЛТАТИ ═══\n\n`;
-  ctx += `Анализирај ги овие реални резултати и презентирај ги според твојот output формат. `;
-  ctx += `Ако резултатите содржат активни огласи со иднини рокови, прикажи ги со детали и линкови. `;
-  ctx += `Ако не се актуелни, кажи го јасно и упати кон официјалните портали.`;
+
+  ctx += `═══════════════════════════════════════\n`;
+
+  if (avatar === 'tenderai') {
+    ctx += `ИНСТРУКЦИИ ЗА ОДГОВОР:\n`;
+    ctx += `1. Прикажи ги горните резултати во формат 🎯 Можности\n`;
+    ctx += `2. За секој резултат наведи: Назив — Институција — Линк\n`;
+    ctx += `3. Ако резултатите се стари или нема активни, кажи тоа ЈАСНО\n`;
+    ctx += `4. Секогаш завршувај со ⚠️ disclaimer\n`;
+    ctx += `НЕ измислувај тендери кои не се во горните резултати!\n`;
+  } else if (avatar === 'eva') {
+    ctx += `ИНСТРУКЦИИ ЗА ОДГОВОР:\n`;
+    ctx += `1. Прикажи ги горните резултати во формат 🎯 Достапни грантови\n`;
+    ctx += `2. За секој грант наведи: Назив — Донатор — Линк — Датум\n`;
+    ctx += `3. Ако резултатите се стари, кажи тоа ЈАСНО\n`;
+    ctx += `4. Секогаш завршувај со ⚠️ disclaimer\n`;
+    ctx += `НЕ измислувај грантови кои не се во горните резултати!\n`;
+  }
+
+  ctx += `═══════════════════════════════════════\n`;
   return ctx;
 }
 
@@ -277,7 +303,7 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
   const requestBody = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
+    generationConfig: { maxOutputTokens: 2000, temperature: 0.5 }
   };
 
   if (useGrounding && !isGemma) {
@@ -413,7 +439,7 @@ module.exports = async function handler(req, res) {
       console.log('[' + avatar + '] Serper query:', query);
       const serperResults = await searchSerper(query, serperKey);
       if (serperResults && serperResults.length > 0) {
-        enrichedSystemPrompt = systemPrompt + formatSerperContext(serperResults);
+        enrichedSystemPrompt = systemPrompt + formatSerperContext(serperResults, avatar);
         serperUsed = true;
         console.log('[' + avatar + '] Serper: ' + serperResults.length + ' results injected');
       } else {
