@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Marginova COO — Business Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C9A84C;--gold2:#E8C97A;--gold3:#F5E0A0;
+  --goldglow:rgba(201,168,76,0.25);--goldglow2:rgba(201,168,76,0.08);
+  --bg:#090910;--bg2:#0e0e1a;--bg3:#13131f;--bg4:#1a1a2e;
+  --border:rgba(201,168,76,0.18);--border2:rgba(201,168,76,0.35);
+  --border3:rgba(201,168,76,0.55);
+  --text:#f0eada;--text2:#c8bfa8;--muted:#7a7060;
+  --accent:#a87cff;--green:#2ddc7a;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Jost',sans-serif;overflow:hidden}
+
+/* ═══ AUTH ═══ */
+#auth-screen{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);z-index:1000;
+}
+.auth-box{
+  background:linear-gradient(135deg,rgba(19,19,31,0.98),rgba(14,14,26,0.98));
+  border:1px solid var(--border2);border-radius:20px;padding:2.5rem;
+  width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:1.2rem;
+  box-shadow:0 0 60px rgba(201,168,76,0.1);
+}
+.auth-logo{text-align:center;display:flex;flex-direction:column;align-items:center;gap:0.5rem}
+.auth-logo img{width:60px;height:60px;object-fit:contain}
+.auth-logo h1{font-family:'Orbitron',sans-serif;font-size:1.4rem;letter-spacing:0.1em;color:var(--text)}
+.auth-logo h1 b{color:var(--gold)}
+.auth-logo h1 span{color:var(--gold2)}
+.auth-logo p{font-size:0.72rem;color:var(--muted);letter-spacing:0.05em}
+.auth-tabs{display:flex;gap:0.5rem;width:100%}
+.auth-tab{flex:1;padding:0.5rem;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-family:'Jost',sans-serif;font-size:0.85rem;transition:all 0.2s}
+.auth-tab.active{border-color:var(--gold);color:var(--gold);background:var(--goldglow2)}
+.auth-input{width:100%;padding:0.75rem 1rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Jost',sans-serif;font-size:0.9rem;outline:none;transition:border 0.2s}
+.auth-input:focus{border-color:var(--gold2)}
+.auth-btn{width:100%;padding:0.8rem;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:#090910;font-family:'Orbitron',sans-serif;font-size:0.8rem;font-weight:700;letter-spacing:0.08em;cursor:pointer;transition:opacity 0.2s}
+.auth-btn:hover{opacity:0.9}
+.auth-msg{font-size:0.8rem;text-align:center;min-height:1.2rem}
+.auth-msg.error{color:#ff6b6b}
+.auth-msg.success{color:var(--green)}
+
+/* ═══ MAIN LAYOUT ═══ */
+#app{display:none;height:100vh;flex-direction:row}
+
+/* ═══ SIDEBAR ═══ */
+#sidebar{
+  width:72px;min-width:72px;height:100vh;
+  background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;
+  padding:1rem 0;gap:0.5rem;overflow-y:auto;overflow-x:hidden;
+  transition:width 0.3s;z-index:10;
+}
+#sidebar:hover{width:200px}
+.sb-logo{
+  width:44px;height:44px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',sans-serif;font-size:0.55rem;font-weight:700;
+  color:#090910;letter-spacing:0.05em;cursor:pointer;
+  margin-bottom:0.5rem;flex-shrink:0;
+}
+.sb-divider{width:40px;height:1px;background:var(--border);margin:0.3rem 0;flex-shrink:0}
+.sb-avatar{
+  width:100%;display:flex;align-items:center;gap:0.75rem;
+  padding:0.5rem 0.75rem;cursor:pointer;border-radius:10px;
+  transition:all 0.2s;position:relative;overflow:hidden;
+}
+.sb-avatar:hover{background:var(--goldglow2)}
+.sb-avatar.active{background:var(--goldglow2);border-right:2px solid var(--gold)}
+.sb-avatar-img{
+  width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;
+  border:1.5px solid var(--border);
+}
+.sb-avatar-info{display:none;flex-direction:column;min-width:0}
+#sidebar:hover .sb-avatar-info{display:flex}
+.sb-avatar-name{font-size:0.78rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-avatar-role{font-size:0.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-badge{
+  position:absolute;top:4px;right:6px;
+  background:var(--gold);color:#090910;
+  font-size:0.5rem;font-weight:700;padding:1px 4px;border-radius:4px;
+  opacity:0;transition:opacity 0.2s;
+}
+#sidebar:hover .sb-badge{opacity:1}
+
+/* ═══ MAIN AREA ═══ */
+#main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative}
+
+/* ═══ TOP BAR ═══ */
+#topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0.75rem 1.25rem;
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+#topbar-left{display:flex;align-items:center;gap:0.75rem}
+#coo-title{
+  font-family:'Orbitron',sans-serif;font-size:0.85rem;font-weight:500;
+  letter-spacing:0.1em;color:var(--gold);
+}
+#coo-subtitle{font-size:0.7rem;color:var(--muted);letter-spacing:0.05em}
+#topbar-right{display:flex;align-items:center;gap:0.75rem}
+
+/* Language selector */
+#lang-bar{display:flex;align-items:center;gap:0.3rem}
+.lang-flag{
+  font-size:1.1rem;cursor:pointer;opacity:0.5;transition:opacity 0.2s;
+  padding:2px 4px;border-radius:4px;
+}
+.lang-flag.active{opacity:1;background:var(--goldglow2)}
+.lang-flag:hover{opacity:0.85}
+
+/* User menu */
+#user-menu-btn{
+  background:transparent;border:1px solid var(--border);border-radius:8px;
+  padding:0.35rem 0.7rem;color:var(--text2);cursor:pointer;
+  font-size:0.75rem;font-family:'Jost',sans-serif;transition:all 0.2s;
+}
+#user-menu-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* Limit display */
+#limit-display{
+  display:flex;align-items:center;gap:0.4rem;
+  background:var(--goldglow2);border:1px solid var(--border);
+  border-radius:8px;padding:0.3rem 0.7rem;
+  font-size:0.7rem;color:var(--gold2);
+}
+#limit-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0}
+
+/* ═══ ATOM LANDING ═══ */
+#atom-landing{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2rem;padding:2rem;
+}
+.atom-wrap{position:relative;width:180px;height:180px}
+.atom-nucleus{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:28px;height:28px;border-radius:50%;
+  background:radial-gradient(circle,var(--gold2),var(--gold));
+  box-shadow:0 0 20px var(--goldglow),0 0 40px var(--goldglow);
+  z-index:3;
+}
+.atom-orbit{
+  position:absolute;top:50%;left:50%;border-radius:50%;
+  border:1px solid var(--border2);
+}
+.atom-orbit:nth-child(2){
+  width:120px;height:60px;margin:-30px 0 0 -60px;
+  animation:orbit1 3s linear infinite;
+}
+.atom-orbit:nth-child(3){
+  width:120px;height:60px;margin:-30px 0 0 -60px;
+  transform:rotate(60deg);
+  animation:orbit2 3.5s linear infinite;
+}
+.atom-orbit:nth-child(4){
+  width:120px;height:60px;margin:-30px 0 0 -60px;
+  transform:rotate(120deg);
+  animation:orbit3 4s linear infinite;
+}
+.atom-electron{
+  position:absolute;width:8px;height:8px;border-radius:50%;
+  background:var(--gold2);box-shadow:0 0 8px var(--goldglow);
+  top:-4px;left:50%;margin-left:-4px;
+}
+@keyframes orbit1{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes orbit2{from{transform:rotate(60deg)}to{transform:rotate(420deg)}}
+@keyframes orbit3{from{transform:rotate(120deg)}to{transform:rotate(480deg)}}
+
+.atom-landing-title{
+  text-align:center;
+}
+.atom-landing-title h2{
+  font-family:'Orbitron',sans-serif;font-size:1.3rem;font-weight:500;
+  letter-spacing:0.12em;color:var(--text);margin-bottom:0.4rem;
+}
+.atom-landing-title p{font-size:0.85rem;color:var(--muted);max-width:400px;line-height:1.6;text-align:center}
+
+.atom-quick-btns{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;max-width:500px}
+.atom-quick-btn{
+  font-size:0.72rem;padding:0.4rem 0.9rem;border-radius:50px;
+  border:1px solid var(--border2);background:var(--goldglow2);
+  color:var(--gold);cursor:pointer;font-family:'Jost',sans-serif;
+  transition:all 0.2s;
+}
+.atom-quick-btn:hover{background:var(--goldglow);border-color:var(--gold)}
+
+/* ═══ CHAT AREA ═══ */
+#chat-area{display:none;flex:1;flex-direction:column;overflow:hidden}
+#messages{
+  flex:1;overflow-y:auto;padding:1.25rem;
+  display:flex;flex-direction:column;gap:1rem;
+  scroll-behavior:smooth;
+}
+#messages::-webkit-scrollbar{width:4px}
+#messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* Messages */
+.msg-row{display:flex;gap:0.75rem;align-items:flex-start}
+.msg-row.user{flex-direction:row-reverse}
+.msg-av{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  border:1.5px solid var(--border2);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  font-family:'Orbitron',sans-serif;font-size:0.5rem;color:#090910;font-weight:700;
+}
+.msg-av img{width:100%;height:100%;object-fit:cover}
+.bubble{
+  max-width:70%;padding:0.85rem 1rem;border-radius:16px;
+  font-size:0.88rem;line-height:1.65;position:relative;
+}
+.bubble.ai{
+  background:var(--bg3);border:1px solid var(--border);
+  border-top-left-radius:4px;color:var(--text);
+}
+.bubble.user{
+  background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.08));
+  border:1px solid var(--border2);border-top-right-radius:4px;
+  color:var(--text);
+}
+.bubble .ai-highlight{color:var(--gold2);font-weight:500}
+.msg-user-icon{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  background:var(--bg3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.65rem;color:var(--muted);
+}
+
+/* COO Decision card */
+.coo-card{
+  background:linear-gradient(135deg,rgba(19,19,31,0.95),rgba(14,14,26,0.95));
+  border:1px solid var(--border2);border-radius:16px;padding:1.2rem;
+  max-width:80%;
+}
+.coo-card .coo-header{
+  display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;
+  font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:0.1em;
+  color:var(--gold);
+}
+.coo-card .coo-score{
+  display:inline-block;padding:0.2rem 0.6rem;border-radius:20px;
+  background:var(--goldglow2);border:1px solid var(--border2);
+  font-size:0.7rem;color:var(--gold2);margin-left:auto;
+}
+.coo-section{margin-bottom:0.75rem}
+.coo-section-label{font-size:0.68rem;color:var(--muted);margin-bottom:0.2rem;letter-spacing:0.05em}
+.coo-section-value{font-size:0.85rem;color:var(--text);line-height:1.55}
+
+/* Action buttons on bubble */
+.bubble-actions{display:flex;gap:0.4rem;margin-top:0.6rem;flex-wrap:wrap}
+.bubble-btn{
+  font-size:0.65rem;padding:0.25rem 0.6rem;border-radius:6px;
+  border:1px solid var(--border);background:transparent;
+  color:var(--muted);cursor:pointer;font-family:'Jost',sans-serif;
+  transition:all 0.2s;
+}
+.bubble-btn:hover{border-color:var(--gold2);color:var(--gold2)}
+
+/* Typing indicator */
+.typing{display:flex;gap:5px;align-items:center;padding:0.85rem 1rem}
+.td{width:7px;height:7px;border-radius:50%;background:var(--gold2);animation:tdot 1.2s infinite}
+.td:nth-child(2){animation-delay:0.2s}
+.td:nth-child(3){animation-delay:0.4s}
+@keyframes tdot{0%,60%,100%{opacity:0.3;transform:scale(0.8)}30%{opacity:1;transform:scale(1)}}
+
+/* ═══ INPUT AREA ═══ */
+#input-area{
+  padding:1rem 1.25rem;
+  background:var(--bg2);border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+.input-wrap{
+  display:flex;align-items:flex-end;gap:0.75rem;
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:14px;padding:0.6rem 0.75rem;
+  transition:border 0.2s;
+}
+.input-wrap:focus-within{border-color:var(--gold)}
+#msg-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-family:'Jost',sans-serif;font-size:0.88rem;
+  resize:none;max-height:120px;line-height:1.5;
+  min-height:24px;
+}
+#msg-input::placeholder{color:var(--muted)}
+#send-btn{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:opacity 0.2s;
+}
+#send-btn:hover{opacity:0.85}
+#send-btn svg{width:16px;height:16px;fill:#090910}
+
+/* Drag & Drop */
+#drop-zone{
+  border:2px dashed var(--border2);border-radius:12px;
+  padding:0.6rem 1rem;text-align:center;
+  font-size:0.72rem;color:var(--muted);
+  cursor:pointer;transition:all 0.2s;margin-bottom:0.5rem;
+  display:flex;align-items:center;justify-content:center;gap:0.5rem;
+}
+#drop-zone.drag-over{border-color:var(--gold);color:var(--gold);background:var(--goldglow2)}
+#drop-zone.has-file{border-color:var(--gold2);color:var(--gold2);background:var(--goldglow2)}
+
+/* ═══ UPGRADE MODAL ═══ */
+#upgrade-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);
+  z-index:500;align-items:center;justify-content:center;
+}
+#upgrade-modal.show{display:flex}
+.upgrade-box{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:20px;
+  padding:2rem;max-width:360px;width:90%;text-align:center;
+  box-shadow:0 0 60px rgba(201,168,76,0.15);
+}
+.upgrade-box h3{font-family:'Orbitron',sans-serif;font-size:1rem;color:var(--gold);margin-bottom:0.75rem;letter-spacing:0.1em}
+.upgrade-box p{font-size:0.82rem;color:var(--text2);line-height:1.6;margin-bottom:1.2rem}
+.upgrade-btn{
+  display:inline-block;padding:0.75rem 1.5rem;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border:none;border-radius:10px;color:#090910;
+  font-family:'Orbitron',sans-serif;font-size:0.75rem;font-weight:700;
+  letter-spacing:0.08em;cursor:pointer;transition:opacity 0.2s;
+  text-decoration:none;
+}
+.upgrade-btn:hover{opacity:0.9}
+.upgrade-close{
+  display:block;margin-top:0.75rem;font-size:0.75rem;
+  color:var(--muted);cursor:pointer;
+}
+.upgrade-close:hover{color:var(--text)}
+
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:600px){
+  #sidebar{width:56px;min-width:56px}
+  #sidebar:hover{width:56px}
+  #sidebar:hover .sb-avatar-info{display:none}
+  .bubble{max-width:85%}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <img src="logo-main.png" alt="Marginova"/>
+      <h1>MARGIN<b>OVA</b><span>.AI</span></h1>
+      <p>Chief Operating Officer — Business Intelligence</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuth('login')" id="tab-login">Login</button>
+      <button class="auth-tab" onclick="switchAuth('register')" id="tab-register">Register</button>
+    </div>
+    <input class="auth-input" type="email" id="auth-email" placeholder="Email address"/>
+    <input class="auth-input" type="password" id="auth-password" placeholder="Password"/>
+    <div id="gdpr-notice" style="display:none;font-size:0.68rem;color:var(--muted);text-align:center;line-height:1.6;">
+      By registering you agree to our <a href="terms-of-service.html" style="color:var(--gold)">Terms</a> and <a href="privacy-policy.html" style="color:var(--gold)">Privacy Policy</a>.
+    </div>
+    <button class="auth-btn" id="auth-btn" onclick="handleAuth()">Sign In</button>
+    <div class="auth-msg" id="auth-msg"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sb-logo" onclick="selectAvatar('coo')">COO</div>
+    <div class="sb-divider"></div>
+
+    <div class="sb-avatar active" id="sb-coo" onclick="selectAvatar('coo')">
+      <div class="sb-avatar-img" style="background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:0.55rem;color:#090910;font-weight:700;">COO</div>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">Business COO</div>
+        <div class="sb-avatar-role">Executive Intelligence</div>
+      </div>
+    </div>
+
+    <div class="sb-avatar" id="sb-businessai" onclick="selectAvatar('businessai')">
+      <img class="sb-avatar-img" src="avatar-businessai.png" alt="Business AI"/>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">Business AI</div>
+        <div class="sb-avatar-role">Strategy & Finance</div>
+      </div>
+    </div>
+
+    <div class="sb-avatar" id="sb-eva" onclick="selectAvatar('eva')">
+      <img class="sb-avatar-img" src="avatar-eva.png" alt="Eva"/>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">Eva</div>
+        <div class="sb-avatar-role">EU Funds & Grants</div>
+      </div>
+    </div>
+
+    <div class="sb-avatar" id="sb-tenderai" onclick="selectAvatar('tenderai')">
+      <img class="sb-avatar-img" src="avatar-tenderai.png" alt="Tender AI"/>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">Tender AI</div>
+        <div class="sb-avatar-role">Tenders & Auctions</div>
+      </div>
+    </div>
+
+    <div class="sb-avatar" id="sb-justinian" onclick="selectAvatar('justinian')">
+      <img class="sb-avatar-img" src="avatar-justinian.png" alt="Justinian"/>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">Justinian</div>
+        <div class="sb-avatar-role">Legal Advisor</div>
+      </div>
+    </div>
+
+    <div class="sb-avatar" id="sb-creativeai" onclick="selectAvatar('creativeai')">
+      <img class="sb-avatar-img" src="avatar-creativeai.png" alt="Creative AI"/>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">Creative AI</div>
+        <div class="sb-avatar-role">Marketing & Brand</div>
+      </div>
+    </div>
+
+    <div class="sb-avatar" id="sb-dropshipper" onclick="selectAvatar('dropshipper')">
+      <img class="sb-avatar-img" src="avatar-dropai.png" alt="Drop AI"/>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">Drop AI</div>
+        <div class="sb-avatar-role">Dropshipping</div>
+      </div>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <div class="sb-avatar" id="sb-leo" onclick="selectAvatar('leo')">
+      <img class="sb-avatar-img" src="avatar-leo.png" alt="Leo"/>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">Leo</div>
+        <div class="sb-avatar-role">Writing & Essays</div>
+      </div>
+      <div class="sb-badge">20/d</div>
+    </div>
+
+    <div class="sb-avatar" id="sb-liber" onclick="selectAvatar('liber')">
+      <img class="sb-avatar-img" src="avatar-liber.png" alt="LIBER"/>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">LIBER</div>
+        <div class="sb-avatar-role">Encyclopedia</div>
+      </div>
+      <div class="sb-badge">20/d</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <div id="topbar-left">
+        <div>
+          <div id="coo-title">MARGINOVA COO</div>
+          <div id="coo-subtitle" id="current-avatar-subtitle">Executive Business Intelligence</div>
+        </div>
+      </div>
+      <div id="topbar-right">
+        <div id="limit-display">
+          <div id="limit-dot"></div>
+          <span id="limit-text">5 real-time left</span>
+        </div>
+        <div id="lang-bar">
+          <span class="lang-flag active" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</span>
+          <span class="lang-flag" data-lang="mk" onclick="setLang('mk')" title="Македонски">🇲🇰</span>
+          <span class="lang-flag" data-lang="sr" onclick="setLang('sr')" title="Srpski">🇷🇸</span>
+          <span class="lang-flag" data-lang="hr" onclick="setLang('hr')" title="Hrvatski">🇭🇷</span>
+          <span class="lang-flag" data-lang="bs" onclick="setLang('bs')" title="Bosanski">🇧🇦</span>
+          <span class="lang-flag" data-lang="sq" onclick="setLang('sq')" title="Shqip">🇦🇱</span>
+          <span class="lang-flag" data-lang="bg" onclick="setLang('bg')" title="Български">🇧🇬</span>
+          <span class="lang-flag" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</span>
+          <span class="lang-flag" data-lang="tr" onclick="setLang('tr')" title="Türkçe">🇹🇷</span>
+          <span class="lang-flag" data-lang="pl" onclick="setLang('pl')" title="Polski">🇵🇱</span>
+        </div>
+        <button id="user-menu-btn" onclick="logout()">↩ Sign Out</button>
+      </div>
+    </div>
+
+    <!-- ATOM LANDING -->
+    <div id="atom-landing">
+      <div class="atom-wrap">
+        <div class="atom-nucleus"></div>
+        <div class="atom-orbit"><div class="atom-electron"></div></div>
+        <div class="atom-orbit"><div class="atom-electron"></div></div>
+        <div class="atom-orbit"><div class="atom-electron"></div></div>
+      </div>
+      <div class="atom-landing-title">
+        <h2 id="landing-title">BUSINESS COO</h2>
+        <p id="landing-sub">Your executive AI advisor. Ask anything about your business — tenders, grants, legal, strategy, marketing. Get a structured decision.</p>
+      </div>
+      <div class="atom-quick-btns" id="quick-btns">
+        <button class="atom-quick-btn" onclick="quickStart('Analyze this tender document for me')">Analyze tender document</button>
+        <button class="atom-quick-btn" onclick="quickStart('Find EU grants for my business')">EU grants for my business</button>
+        <button class="atom-quick-btn" onclick="quickStart('Is this business idea viable?')">Business viability check</button>
+        <button class="atom-quick-btn" onclick="quickStart('Review this contract for legal risks')">Legal risk review</button>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="chat-area">
+      <div id="messages"></div>
+    </div>
+
+    <!-- INPUT -->
+    <div id="input-area">
+      <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <span>📎</span>
+        <span id="drop-text">Drop document here or click to upload (PDF, DOCX, image)</span>
+      </div>
+      <input type="file" id="file-input" style="display:none" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg" onchange="handleFileUpload(this)"/>
+      <div class="input-wrap">
+        <textarea id="msg-input" placeholder="Ask your COO anything..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+        <button id="send-btn" onclick="sendMsg()">
+          <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL -->
+<div id="upgrade-modal">
+  <div class="upgrade-box">
+    <h3 id="upgrade-title">UPGRADE PLAN</h3>
+    <p id="upgrade-msg">You have used all 5 free real-time searches. Upgrade to continue with unlimited searches.</p>
+    <a href="app.html#upgrade" class="upgrade-btn" id="upgrade-btn">⚡ Upgrade Now</a>
+    <span class="upgrade-close" onclick="closeUpgrade()">Maybe later</span>
+  </div>
+</div>
+
+<script>
+// ═══ SUPABASE ═══
+const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY, {
+  auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: false },
+  global: { headers: { apikey: SUPA_KEY } }
+});
+
+// ═══ STATE ═══
+let currentUser = null;
+let authMode = 'login';
+let lang = localStorage.getItem('coo-lang') || 'en';
+let currentAvatar = 'coo';
+let history = {};
+let realtimeUsed = 0;
+let realtimeLimit = 5;
+let dailyMsgsLeo = 0;
+let dailyMsgsLiber = 0;
+let uploadedFile = null;
+let uploadedFileData = null;
+
+// ═══ AVATARS CONFIG ═══
+const AVATARS = {
+  coo: { name: 'Business COO', role: 'Executive Intelligence', img: null, isCOO: true },
+  businessai: { name: 'Business AI', role: 'Strategy & Finance', img: 'avatar-businessai.png' },
+  eva: { name: 'Eva', role: 'EU Funds & Grants', img: 'avatar-eva.png' },
+  tenderai: { name: 'Tender AI', role: 'Tenders & Auctions', img: 'avatar-tenderai.png' },
+  justinian: { name: 'Justinian', role: 'Legal Advisor', img: 'avatar-justinian.png' },
+  creativeai: { name: 'Creative AI', role: 'Marketing & Brand', img: 'avatar-creativeai.png' },
+  dropshipper: { name: 'Drop AI', role: 'Dropshipping', img: 'avatar-dropai.png' },
+  leo: { name: 'Leo', role: 'Writing & Essays', img: 'avatar-leo.png', dailyLimit: 20 },
+  liber: { name: 'LIBER', role: 'Encyclopedia', img: 'avatar-liber.png', dailyLimit: 20 },
+};
+
+// ═══ LANG CONFIG ═══
+const LANG_TEXTS = {
+  en: {
+    landing_title: 'BUSINESS COO',
+    landing_sub: 'Your executive AI advisor. Ask anything about your business — tenders, grants, legal, strategy, marketing. Get a structured decision.',
+    placeholder: 'Ask your COO anything...',
+    drop_text: 'Drop document here or click to upload (PDF, DOCX, image)',
+    quick1: 'Analyze tender document', quick2: 'EU grants for my business',
+    quick3: 'Business viability check', quick4: 'Legal risk review',
+    limit_text: (n) => `${n} real-time left`,
+    upgrade_title: 'UPGRADE PLAN',
+    upgrade_msg: 'You have used all 5 free real-time searches. Upgrade to continue.',
+    sign_out: '↩ Sign Out',
+  },
+  mk: {
+    landing_title: 'БИЗНИС COO',
+    landing_sub: 'Твојот извршен AI советник. Прашај сè за твојот бизнис — тендери, грантови, право, стратегија, маркетинг. Добиј структурирана одлука.',
+    placeholder: 'Прашај го твојот COO...',
+    drop_text: 'Фрли документ тука или кликни за прикачување (PDF, DOCX, слика)',
+    quick1: 'Анализирај тендер документ', quick2: 'EU грантови за мој бизнис',
+    quick3: 'Провери бизнис идеа', quick4: 'Правен преглед на договор',
+    limit_text: (n) => `${n} пребарувања останати`,
+    upgrade_title: 'НАДГРАДИ ПЛАН',
+    upgrade_msg: 'Ги искористи сите 5 бесплатни real-time пребарувања. Надгради за да продолжиш.',
+    sign_out: '↩ Одјави се',
+  },
+  sr: {
+    landing_title: 'BIZNIS COO',
+    landing_sub: 'Tvoj izvršni AI savetnik. Pitaj bilo šta o svom biznisu — tenderi, grantovi, pravo, strategija, marketing. Dobij strukturisanu odluku.',
+    placeholder: 'Pitaj svog COO-a...',
+    drop_text: 'Prevuci dokument ovde ili klikni za upload (PDF, DOCX, slika)',
+    quick1: 'Analiziraj tender dokument', quick2: 'EU grantovi za moj biznis',
+    quick3: 'Proveri biznis ideju', quick4: 'Pravni pregled ugovora',
+    limit_text: (n) => `${n} pretragā preostalo`,
+    upgrade_title: 'NADGRADI PLAN',
+    upgrade_msg: 'Iskoristio si svih 5 besplatnih real-time pretraga. Nadgradi da nastaviš.',
+    sign_out: '↩ Odjavi se',
+  },
+  hr: { landing_title:'BIZNIS COO',landing_sub:'Tvoj izvršni AI savjetnik.',placeholder:'Pitaj svog COO...',drop_text:'Povuci dokument ili klikni za upload',quick1:'Analiziraj tender',quick2:'EU grantovi',quick3:'Provjeri poslovnu ideju',quick4:'Pravni pregled',limit_text:(n)=>`${n} pretraga preostalo`,upgrade_title:'NADOGRADI PLAN',upgrade_msg:'Iskoristio si 5 besplatnih pretraga.',sign_out:'↩ Odjavi se' },
+  bs: { landing_title:'BIZNIS COO',landing_sub:'Tvoj izvršni AI savjetnik.',placeholder:'Pitaj svog COO...',drop_text:'Prevuci dokument ili klikni za upload',quick1:'Analiziraj tender',quick2:'EU grantovi',quick3:'Provjeri poslovnu ideju',quick4:'Pravni pregled',limit_text:(n)=>`${n} pretraga preostalo`,upgrade_title:'NADOGRADI PLAN',upgrade_msg:'Iskoristio si 5 besplatnih pretraga.',sign_out:'↩ Odjavi se' },
+  sq: { landing_title:'BIZNES COO',landing_sub:'Këshilltari juaj ekzekutiv AI.',placeholder:'Pyete COO-in tuaj...',drop_text:'Tërhiq dokumentin ose kliko për ngarkim',quick1:'Analizoni tenderin',quick2:'Grante BE',quick3:'Kontrollo idenë',quick4:'Rishikim ligjor',limit_text:(n)=>`${n} kërkime të mbetura`,upgrade_title:'PËRMIRËSO PLANIN',upgrade_msg:'Keni përdorur 5 kërkimet falas.',sign_out:'↩ Dil' },
+  bg: { landing_title:'БИЗНЕС COO',landing_sub:'Вашият изпълнителен AI съветник.',placeholder:'Попитайте вашия COO...',drop_text:'Пуснете документ тук или кликнете за качване',quick1:'Анализирай търг',quick2:'ЕС грантове',quick3:'Провери бизнес идея',quick4:'Правен преглед',limit_text:(n)=>`${n} търсения останали`,upgrade_title:'НАДГРАДИ ПЛАН',upgrade_msg:'Изхарчихте 5 безплатни търсения.',sign_out:'↩ Изход' },
+  de: { landing_title:'BUSINESS COO',landing_sub:'Ihr KI-Exekutivberater.',placeholder:'Fragen Sie Ihren COO...',drop_text:'Dokument hierher ziehen oder klicken',quick1:'Ausschreibung analysieren',quick2:'EU-Fördermittel',quick3:'Geschäftsidee prüfen',quick4:'Rechtliche Prüfung',limit_text:(n)=>`${n} Suchen übrig`,upgrade_title:'PLAN UPGRADEN',upgrade_msg:'Sie haben alle 5 Suchen genutzt.',sign_out:'↩ Abmelden' },
+  tr: { landing_title:'İŞ COO',landing_sub:'Yönetici AI danışmanınız.',placeholder:'COO\'nuza sorun...',drop_text:'Belgeyi buraya sürükleyin veya tıklayın',quick1:'İhaleyi analiz et',quick2:'AB hibeleri',quick3:'İş fikrini kontrol et',quick4:'Hukuki inceleme',limit_text:(n)=>`${n} arama kaldı`,upgrade_title:'PLANI YÜKSELT',upgrade_msg:'5 ücretsiz aramayı kullandınız.',sign_out:'↩ Çıkış' },
+  pl: { landing_title:'BIZNES COO',landing_sub:'Twój wykonawczy doradca AI.',placeholder:'Zapytaj swojego COO...',drop_text:'Przeciągnij dokument lub kliknij',quick1:'Analizuj przetarg',quick2:'Granty UE',quick3:'Sprawdź pomysł',quick4:'Przegląd prawny',limit_text:(n)=>`${n} wyszukiwań pozostało`,upgrade_title:'ULEPSZ PLAN',upgrade_msg:'Wykorzystałeś 5 bezpłatnych wyszukiwań.',sign_out:'↩ Wyloguj' },
+};
+
+function t(key) {
+  const texts = LANG_TEXTS[lang] || LANG_TEXTS.en;
+  return texts[key] || LANG_TEXTS.en[key] || '';
+}
+
+// ═══ AUTH ═══
+function switchAuth(mode) {
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+  document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+  const gdpr = document.getElementById('gdpr-notice');
+  if (gdpr) gdpr.style.display = mode === 'register' ? 'block' : 'none';
+  document.getElementById('auth-btn').textContent = mode === 'login' ? 'Sign In' : 'Register';
+  document.getElementById('auth-msg').textContent = '';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value.trim();
+  const msg = document.getElementById('auth-msg');
+  const btn = document.getElementById('auth-btn');
+  if (!email || !password) { msg.textContent = 'Please enter email and password.'; msg.className = 'auth-msg error'; return; }
+  btn.disabled = true; msg.textContent = 'Processing...'; msg.className = 'auth-msg';
+  try {
+    let res;
+    if (authMode === 'register') {
+      res = await db.auth.signUp({ email, password });
+      if (res.error) throw res.error;
+      msg.textContent = '✅ Registration successful! Check your email.';
+      msg.className = 'auth-msg success';
+    } else {
+      res = await db.auth.signInWithPassword({ email, password });
+      if (res.error) throw res.error;
+      currentUser = res.data.user;
+      showApp();
+    }
+  } catch(e) {
+    let errMsg = e.message || 'Unknown error';
+    if (errMsg.includes('Invalid login credentials') || errMsg.includes('400'))
+      errMsg = authMode === 'login' ? '⚠️ Wrong email or password.' : '⚠️ Registration failed.';
+    msg.textContent = errMsg; msg.className = 'auth-msg error';
+  }
+  btn.disabled = false;
+}
+
+async function logout() {
+  await db.auth.signOut();
+  currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+window.addEventListener('DOMContentLoaded', async function() {
+  try {
+    const { data } = await db.auth.getSession();
+    if (data && data.session && data.session.user) {
+      currentUser = data.session.user;
+      showApp();
+    } else {
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+  } catch(e) {
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
+});
+
+// ═══ SHOW APP ═══
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  setLang(lang);
+  loadLimits();
+  setupDragDrop();
+}
+
+// ═══ LOAD LIMITS FROM SUPABASE ═══
+async function loadLimits() {
+  if (!currentUser) return;
+  try {
+    const { data } = await db.from('profiles').select('realtime_used, realtime_limit, daily_msgs_leo, daily_msgs_liber, last_reset_date').eq('id', currentUser.id).single();
+    if (data) {
+      // Check daily reset
+      const today = new Date().toISOString().split('T')[0];
+      if (data.last_reset_date !== today) {
+        await db.from('profiles').update({ daily_msgs_leo: 0, daily_msgs_liber: 0, last_reset_date: today }).eq('id', currentUser.id);
+        dailyMsgsLeo = 0; dailyMsgsLiber = 0;
+      } else {
+        dailyMsgsLeo = data.daily_msgs_leo || 0;
+        dailyMsgsLiber = data.daily_msgs_liber || 0;
+      }
+      realtimeUsed = data.realtime_used || 0;
+      realtimeLimit = data.realtime_limit || 5;
+    } else {
+      // Create profile
+      await db.from('profiles').insert({ id: currentUser.id, realtime_used: 0, realtime_limit: 5, daily_msgs_leo: 0, daily_msgs_liber: 0, last_reset_date: new Date().toISOString().split('T')[0] });
+    }
+  } catch(e) { console.warn('loadLimits error:', e); }
+  updateLimitDisplay();
+}
+
+function updateLimitDisplay() {
+  const remaining = Math.max(0, realtimeLimit - realtimeUsed);
+  document.getElementById('limit-text').textContent = typeof t('limit_text') === 'function' ? t('limit_text')(remaining) : `${remaining} left`;
+  const dot = document.getElementById('limit-dot');
+  dot.style.background = remaining > 2 ? 'var(--green)' : remaining > 0 ? 'var(--gold)' : '#ff6b6b';
+}
+
+async function incrementRealtimeUsed() {
+  realtimeUsed++;
+  updateLimitDisplay();
+  if (currentUser) {
+    await db.from('profiles').update({ realtime_used: realtimeUsed }).eq('id', currentUser.id);
+  }
+}
+
+async function incrementDailyMsg(avatar) {
+  if (avatar === 'leo') { dailyMsgsLeo++; await db.from('profiles').update({ daily_msgs_leo: dailyMsgsLeo }).eq('id', currentUser.id); }
+  if (avatar === 'liber') { dailyMsgsLiber++; await db.from('profiles').update({ daily_msgs_liber: dailyMsgsLiber }).eq('id', currentUser.id); }
+}
+
+// ═══ LANG ═══
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('coo-lang', l);
+  document.querySelectorAll('.lang-flag').forEach(f => f.classList.toggle('active', f.dataset.lang === l));
+  const texts = LANG_TEXTS[l] || LANG_TEXTS.en;
+  document.getElementById('landing-title').textContent = texts.landing_title;
+  document.getElementById('landing-sub').textContent = texts.landing_sub;
+  document.getElementById('msg-input').placeholder = texts.placeholder;
+  document.getElementById('drop-text').textContent = texts.drop_text;
+  document.getElementById('user-menu-btn').textContent = texts.sign_out;
+  document.getElementById('upgrade-title').textContent = texts.upgrade_title;
+  document.getElementById('upgrade-msg').textContent = texts.upgrade_msg;
+  const qb = document.querySelectorAll('.atom-quick-btn');
+  if (qb[0]) qb[0].textContent = texts.quick1;
+  if (qb[1]) qb[1].textContent = texts.quick2;
+  if (qb[2]) qb[2].textContent = texts.quick3;
+  if (qb[3]) qb[3].textContent = texts.quick4;
+  updateLimitDisplay();
+}
+
+// ═══ AVATAR SELECT ═══
+function selectAvatar(id) {
+  currentAvatar = id;
+  document.querySelectorAll('.sb-avatar').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('sb-' + id);
+  if (el) el.classList.add('active');
+  const av = AVATARS[id];
+  if (av) {
+    document.getElementById('coo-title').textContent = av.isCOO ? 'MARGINOVA COO' : av.name.toUpperCase();
+    document.getElementById('coo-subtitle').textContent = av.role;
+  }
+  // Clear chat and show landing or start fresh
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('chat-area').style.display = 'none';
+  document.getElementById('atom-landing').style.display = 'flex';
+  history[id] = history[id] || [];
+}
+
+// ═══ QUICK START ═══
+function quickStart(text) {
+  document.getElementById('msg-input').value = text;
+  sendMsg();
+}
+
+// ═══ DRAG & DROP ═══
+function setupDragDrop() {
+  const dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+}
+
+function handleFileUpload(input) {
+  const file = input.files[0];
+  if (file) processFile(file);
+  input.value = '';
+}
+
+function processFile(file) {
+  uploadedFile = file;
+  const dz = document.getElementById('drop-zone');
+  dz.classList.add('has-file');
+  document.getElementById('drop-text').textContent = `📄 ${file.name} — ready`;
+
+  if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+    const reader = new FileReader();
+    reader.onload = e => { uploadedFileData = e.target.result.split(',')[1]; };
+    reader.readAsDataURL(file);
+  }
+}
+
+// ═══ MESSAGES ═══
+function addMsg(role, text, avatar) {
+  const av = AVATARS[avatar || currentAvatar];
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row' + (role === 'user' ? ' user' : '');
+
+  if (role === 'ai') {
+    const avEl = document.createElement('div');
+    avEl.className = 'msg-av';
+    if (av && av.img) { avEl.innerHTML = `<img src="${av.img}" alt="${av.name}"/>`; }
+    else { avEl.textContent = 'COO'; }
+    row.appendChild(avEl);
+  }
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + role;
+  const formatted = text.replace(/\*\*([^*]+)\*\*/g, '<span class="ai-highlight">$1</span>').replace(/\n/g, '<br>');
+  bubble.innerHTML = `<span>${formatted}</span>`;
+
+  if (role === 'ai') {
+    const actions = document.createElement('div');
+    actions.className = 'bubble-actions';
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'bubble-btn';
+    copyBtn.textContent = 'Copy';
+    copyBtn.onclick = () => { navigator.clipboard.writeText(text); copyBtn.textContent = '✓ Copied'; setTimeout(() => copyBtn.textContent = 'Copy', 2000); };
+    actions.appendChild(copyBtn);
+    bubble.appendChild(actions);
+  }
+
+  row.appendChild(bubble);
+
+  if (role === 'user') {
+    const ic = document.createElement('div');
+    ic.className = 'msg-user-icon';
+    ic.textContent = 'You';
+    row.appendChild(ic);
+  }
+
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping() {
+  const av = AVATARS[currentAvatar];
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div'); row.className = 'msg-row'; row.id = 'typing-row';
+  const avEl = document.createElement('div'); avEl.className = 'msg-av';
+  if (av && av.img) avEl.innerHTML = `<img src="${av.img}" alt=""/>`;
+  else avEl.textContent = 'COO';
+  row.appendChild(avEl);
+  const b = document.createElement('div'); b.className = 'bubble ai typing';
+  b.innerHTML = '<div class="td"></div><div class="td"></div><div class="td"></div>';
+  row.appendChild(b); msgs.appendChild(row); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() { const t = document.getElementById('typing-row'); if (t) t.remove(); }
+
+// ═══ SEND MESSAGE ═══
+async function sendMsg() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text && !uploadedFile) return;
+
+  // Show chat
+  document.getElementById('atom-landing').style.display = 'none';
+  document.getElementById('chat-area').style.display = 'flex';
+
+  // Check limits for Leo/LIBER
+  if (currentAvatar === 'leo' && dailyMsgsLeo >= 20) {
+    showUpgrade('daily'); return;
+  }
+  if (currentAvatar === 'liber' && dailyMsgsLiber >= 20) {
+    showUpgrade('daily'); return;
+  }
+
+  // Check real-time for COO (and other premium avatars)
+  const isRealtime = ['coo', 'eva', 'tenderai', 'businessai', 'justinian', 'creativeai', 'dropshipper'].includes(currentAvatar);
+  if (isRealtime && realtimeUsed >= realtimeLimit) {
+    showUpgrade('realtime'); return;
+  }
+
+  input.value = ''; input.style.height = 'auto';
+  addMsg('user', text + (uploadedFile ? `\n📎 ${uploadedFile.name}` : ''));
+
+  if (!history[currentAvatar]) history[currentAvatar] = [];
+  history[currentAvatar].push({ role: 'user', content: text });
+
+  addTyping();
+
+  try {
+    const isCOO = currentAvatar === 'coo';
+    const endpoint = isCOO ? '/api/coo' : '/api/chat';
+
+    const payload = {
+      avatar: currentAvatar,
+      messages: history[currentAvatar].slice(-20),
+      language: lang,
+      plan: 'ultra', // TODO: read from Supabase
+    };
+
+    if (uploadedFileData) {
+      payload.image = uploadedFileData;
+      payload.imageType = uploadedFile.type;
+      payload.imageText = text;
+    }
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    removeTyping();
+
+    const reply = (data.content && data.content[0] && data.content[0].text) || 'No response.';
+    addMsg('ai', reply);
+    history[currentAvatar].push({ role: 'assistant', content: reply });
+
+    // Update limits
+    if (isRealtime) await incrementRealtimeUsed();
+    if (currentAvatar === 'leo') await incrementDailyMsg('leo');
+    if (currentAvatar === 'liber') await incrementDailyMsg('liber');
+
+  } catch(e) {
+    removeTyping();
+    addMsg('ai', '⚠️ Error: ' + e.message);
+  }
+
+  // Clear file
+  if (uploadedFile) {
+    uploadedFile = null; uploadedFileData = null;
+    const dz = document.getElementById('drop-zone');
+    dz.classList.remove('has-file');
+    const texts = LANG_TEXTS[lang] || LANG_TEXTS.en;
+    document.getElementById('drop-text').textContent = texts.drop_text;
+  }
+}
+
+// ═══ UPGRADE ═══
+function showUpgrade(type) {
+  document.getElementById('upgrade-modal').classList.add('show');
+}
+function closeUpgrade() {
+  document.getElementById('upgrade-modal').classList.remove('show');
+}
+</script>
+</body>
+</html>
