@@ -1158,12 +1158,6 @@ html{scroll-behavior:smooth;}
         <div id="ag-sub-edu" style="font-size:0.58rem;color:rgba(74,158,255,0.7);letter-spacing:0.08em;animation:pulse-edu 2s infinite;">▼ Одбери аватар ▼</div>
       </div>
       <div class="ag-grid">
-          <div class="ag-role" id="role-sophie">English Teacher 🇬🇧</div>
-          <div class="ag-desc">Daily Word · Grammar · Conversation · XP streak</div>
-        </div>
-          <div class="ag-role" id="role-hanna">Германски 🇩🇪</div>
-          <div class="ag-desc">A1 → B2 · Граматика · Изговор · Вежби</div>
-        </div>
 
         <div class="ag-card edu" id="item-leo" onclick="selectAvatarGrid(this,'leo','Leo','avatar-leo.png')" data-role-mk="Есеи & Пишување ✍️" data-role-sr="Eseji & Pisanje ✍️" data-role-hr="Eseji & Pisanje ✍️" data-role-bs="Eseji & Pisanje ✍️" data-role-en="Essay & Writing ✍️" data-role-sq="Ese & Shkrim ✍️" data-role-de="Essay & Schreiben ✍️" data-role-bg="Есета & Писане ✍️">
           <div class="ag-name">Leo</div>
@@ -1175,9 +1169,6 @@ html{scroll-behavior:smooth;}
           <div class="ag-name">LIBER</div>
           <div class="ag-role" id="role-liber">Енциклопедија 📚</div>
           <div class="ag-desc">Наука · Историја · Филозофија · Книги</div>
-        </div>
-          <div class="ag-role" id="role-fitness">Тренинг & Фитнес 💪</div>
-          <div class="ag-desc">Слабеење · Мускули · CrossFit · 4-нед план</div>
         </div>
 
       </div>
@@ -1211,11 +1202,6 @@ html{scroll-behavior:smooth;}
           <div class="ag-desc">Copywriting · Реклами · FB/TikTok · Бренд</div>
           <div class="ag-tag ag-pro">PRO</div>
         </div>
-          <div class="ag-role" id="role-developer">AI Developer 💻</div>
-          <div class="ag-desc">Код · Дебаг · Архитектура · Frameworks</div>
-          <div class="ag-tag ag-pro">PRO</div>
-        </div>
-
         <div class="ag-card biz" id="item-eva" onclick="selectAvatarGrid(this,'eva','Eva','avatar-eva.png')" data-role-mk="EU Фондови 🇪🇺" data-role-sr="EU Fondovi 🇪🇺" data-role-hr="EU Fondovi 🇪🇺" data-role-bs="EU Fondovi 🇪🇺" data-role-en="EU Funds 🇪🇺" data-role-sq="Fondet BE 🇪🇺" data-role-de="EU-Fördermittel 🇪🇺" data-role-bg="ЕС Фондове 🇪🇺">
           <div class="ag-name">Eva</div>
           <div class="ag-role" id="role-eva">EU Фондови & Грантови 🇪🇺</div>
@@ -2249,10 +2235,10 @@ function setLang(l){
   _set('sl-biz',t.slBiz);
   // Avatar roles
   const roles={
-    'role-marginova':'rMarginova','role-sophie':'rSophie','role-hanna':'rHanna',
-    'role-leo':'rLeo','role-liber':'rLiber','role-fitness':'rFitness',
+    'role-marginova':'rMarginova',
+    'role-leo':'rLeo','role-liber':'rLiber',
     'role-businessai':'rBusinessai','role-creativeai':'rCreativeai',
-    'role-developer':'rDeveloper','role-eva':'rEva','role-justinian':'rJustinian',
+    'role-eva':'rEva','role-justinian':'rJustinian',
     'role-dropshipper':'rDropshipper','role-travelai':'rTravelai','role-tenderai':'rTenderai'
   };
   Object.entries(roles).forEach(([id,key])=>{
