@@ -207,29 +207,64 @@ function buildSerperQuery(userText, avatar, intent) {
     return `лизинг понуда ${month} site:sparkasse.mk OR site:stopanska.mk OR site:nlb.mk`;
   }
 
-  if (intent === 'grants') {
-    // Detect country
-    let countryTag = 'Makedonija OR "Western Balkans" OR "Zapadni Balkan"';
-    if (lower.match(/македон|makedon/)) countryTag = 'Makedonija OR "North Macedonia" OR "Северна Македонија"';
-    else if (lower.match(/srbij|србиј/)) countryTag = 'Srbija OR Serbia';
-    else if (lower.match(/hrvat|хрват/)) countryTag = 'Hrvatska OR Croatia';
-    else if (lower.match(/bosn|босн/)) countryTag = 'Bosna OR Bosnia';
+  if (intent === 'grants' || avatar === 'eva') {
+    // Detect country — all 10 languages
+    let countryTag = '"Western Balkans" OR Balkans OR Europe';
+    let countryPortals = 'site:mk.undp.org OR site:westernbalkansfund.org OR site:efb.org OR site:ipard.gov.mk OR site:usaid.gov OR site:fitr.mk OR site:funding.mk OR site:ec.europa.eu OR site:avrm.gov.mk';
 
-    // Detect sector
-    let sectorTag = 'grant fond otvoreni poziv 2025 2026';
-    if (lower.match(/it|digital|software|веб|web|едукативн|edukativ/)) sectorTag = 'IT digital web edukacija grant fond 2025 2026';
-    else if (lower.match(/ipard|земјоделств|agri|poljopriv/)) sectorTag = 'IPARD grant zemjodelstvo agri 2025 2026';
-    else if (lower.match(/стартап|startup|иновац|inovac/)) sectorTag = 'startup inovacije grant fond 2025 2026';
-    else if (lower.match(/нго|ngo|невладин|civilno/)) sectorTag = 'NVO civilno drustvo grant 2025 2026';
+    if (lower.match(/македон|makedon|severna|north mac/)) {
+      countryTag = '"North Macedonia" OR Makedonija OR "Северна Македонија"';
+      countryPortals = 'site:mk.undp.org OR site:fitr.mk OR site:funding.mk OR site:avrm.gov.mk OR site:westernbalkansfund.org OR site:ipard.gov.mk OR site:ec.europa.eu';
+    } else if (lower.match(/srbij|србиј|serbia/)) {
+      countryTag = 'Srbija OR Serbia';
+      countryPortals = 'site:rs.undp.org OR site:minrzs.gov.rs OR site:privreda.gov.rs OR site:westernbalkansfund.org OR site:ipard.rs OR site:ec.europa.eu';
+    } else if (lower.match(/hrvat|хрват|croatia|hrvatska/)) {
+      countryTag = 'Hrvatska OR Croatia';
+      countryPortals = 'site:hr.undp.org OR site:strukturnifondovi.hr OR site:apprrr.hr OR site:westernbalkansfund.org OR site:ec.europa.eu';
+    } else if (lower.match(/bosn|босн|bosnia/)) {
+      countryTag = 'Bosna OR Bosnia Herzegovina';
+      countryPortals = 'site:ba.undp.org OR site:eu.ba OR site:dei.gov.ba OR site:westernbalkansfund.org OR site:ec.europa.eu';
+    } else if (lower.match(/бугар|bulgar|bugars/)) {
+      countryTag = 'Bulgaria OR България';
+      countryPortals = 'site:bg.undp.org OR site:eufunds.bg OR site:dfz.bg OR site:mzh.government.bg OR site:ec.europa.eu';
+    } else if (lower.match(/албан|albania|shqip|shqiperi/)) {
+      countryTag = 'Albania OR Shqipëri OR Albanija';
+      countryPortals = 'site:al.undp.org OR site:financa.gov.al OR site:westernbalkansfund.org OR site:ec.europa.eu';
+    } else if (lower.match(/türkiy|turkey|турциj|turkiye|turska/)) {
+      countryTag = 'Türkiye OR Turkey';
+      countryPortals = 'site:tr.undp.org OR site:tkdk.gov.tr OR site:kosgeb.gov.tr OR site:tika.gov.tr OR site:ec.europa.eu';
+    } else if (lower.match(/deutsch|german|german|almanij/)) {
+      countryTag = 'Deutschland OR Germany';
+      countryPortals = 'site:foerderdatenbank.de OR site:bafa.de OR site:kfw.de OR site:ec.europa.eu OR site:bmbf.de';
+    } else if (lower.match(/polsk|poland|polska/)) {
+      countryTag = 'Polska OR Poland';
+      countryPortals = 'site:parp.gov.pl OR site:gov.pl/fundusze OR site:funduszeeuropejskie.gov.pl OR site:ec.europa.eu';
+    } else if (lower.match(/kosovo|косов|kosov/)) {
+      countryTag = 'Kosovo OR Kosovë';
+      countryPortals = 'site:ks.undp.org OR site:pprc.rks-gov.net OR site:westernbalkansfund.org OR site:ec.europa.eu';
+    } else if (lower.match(/slovenij|slovenia|слов/)) {
+      countryTag = 'Slovenija OR Slovenia';
+      countryPortals = 'site:eu-skladi.si OR site:sio.si OR site:spirit.si OR site:ec.europa.eu';
+    }
+
+    // Detect sector — extract from user message
+    let sectorTag = 'grant fond finansiranje otvoreni poziv 2025 2026';
+    if (lower.match(/it |it\.|дигитал|digital|software|веб|web|app|едукативн|edukativ|online/)) sectorTag = 'IT digital web edukacija grant finansiranje 2025 2026';
+    else if (lower.match(/ipard|земјоделств|agri|poljopriv|фарм|farm/)) sectorTag = 'IPARD grant zemjodelstvo agri 2025 2026';
+    else if (lower.match(/стартап|startup|иновац|inovac|pretpriemac/)) sectorTag = 'startup inovacije preduzetnistvo grant finansiranje 2025 2026';
+    else if (lower.match(/нго|ngo|невладин|civilno|граѓанск/)) sectorTag = 'NVO civilno drustvo grant 2025 2026';
     else if (lower.match(/млад|youth|omladina/)) sectorTag = 'mladi youth grant fond 2025 2026';
-    else if (lower.match(/жен|women|rodova/)) sectorTag = 'zene rodova ravnopravnost grant 2025 2026';
+    else if (lower.match(/жен|women|rodova|претприемач.*жен/)) sectorTag = 'zene rodova ravnopravnost grant 2025 2026';
+    else if (lower.match(/градеж|construction|fasad|gradez/)) sectorTag = 'gradjevinarstvo infrastruktura grant fond 2025 2026';
+    else if (lower.match(/земјоделств|agri|poljopriv/)) sectorTag = 'zemjodelstvo ruralni razvoj IPARD 2025 2026';
+    else if (lower.match(/туризм|tourism|ugostitel/)) sectorTag = 'turizam ugostitelstvo grant fond 2025 2026';
 
     // Budget hint
     let budgetTag = '';
-    if (lower.match(/до 10000|до 10\.000|up to 10/)) budgetTag = 'mali grantovi mikro';
-    else if (lower.match(/до 50000|до 50\.000/)) budgetTag = 'mali srednji grantovi';
+    if (lower.match(/до 10|10000|10\.000|10k/)) budgetTag = '"mali grantovi" OR "small grants" OR mikro';
+    else if (lower.match(/до 50|50000|50\.000/)) budgetTag = '"mali grantovi" OR "medium grants"';
 
-    return `${sectorTag} ${budgetTag} ${countryTag} site:mk.undp.org OR site:westernbalkansfund.org OR site:efb.org OR site:ec.europa.eu OR site:ipard.gov.mk OR site:usaid.gov OR site:fitr.mk OR site:funding.mk`;
+    return `${sectorTag} ${budgetTag} ${countryTag} ${countryPortals}`;
   }
 
   if (intent === 'private') {
@@ -258,14 +293,36 @@ function buildSerperQuery(userText, avatar, intent) {
 
   // Tender — detect countries (support both latin and cyrillic)
   const countryMap = {
+    // Macedonia
     'македонија': 'site:e-nabavki.gov.mk', 'македон': 'site:e-nabavki.gov.mk',
     'makedonija': 'site:e-nabavki.gov.mk', 'makedon': 'site:e-nabavki.gov.mk',
-    'severna makedonija': 'site:e-nabavki.gov.mk', 'north macedonia': 'site:e-nabavki.gov.mk',
+    'severna': 'site:e-nabavki.gov.mk', 'north mac': 'site:e-nabavki.gov.mk',
+    // Serbia
     'srbija': 'site:portal.ujn.gov.rs', 'србија': 'site:portal.ujn.gov.rs', 'serbia': 'site:portal.ujn.gov.rs',
+    // Croatia
     'hrvatska': 'site:eojn.hr', 'хрватска': 'site:eojn.hr', 'croatia': 'site:eojn.hr',
+    // Bosnia
     'bosna': 'site:ejn.ba', 'босна': 'site:ejn.ba', 'bosnia': 'site:ejn.ba',
-    'bugarska': 'site:app.eop.bg', 'бугарија': 'site:app.eop.bg',
+    // Bulgaria
+    'bugarska': 'site:app.eop.bg', 'бугарија': 'site:app.eop.bg', 'bulgaria': 'site:app.eop.bg',
+    // Albania
     'albanija': 'site:app.e-albania.al', 'albania': 'site:app.e-albania.al',
+    'shqiperi': 'site:app.e-albania.al', 'shqip': 'site:app.e-albania.al',
+    // Turkey
+    'türkiye': 'site:ihale.gov.tr', 'turkey': 'site:ihale.gov.tr', 'turska': 'site:ihale.gov.tr',
+    'турција': 'site:ihale.gov.tr',
+    // Poland
+    'polska': 'site:ezamowienia.gov.pl', 'poland': 'site:ezamowienia.gov.pl',
+    'полска': 'site:ezamowienia.gov.pl',
+    // Germany
+    'deutschland': 'site:ted.europa.eu', 'germany': 'site:ted.europa.eu',
+    'германија': 'site:ted.europa.eu',
+    // Kosovo
+    'kosovo': 'site:pprc.rks-gov.net', 'косово': 'site:pprc.rks-gov.net',
+    // Slovenia
+    'slovenija': 'site:ejn.si', 'slovenia': 'site:ejn.si',
+    // EU general
+    'eu': 'site:ted.europa.eu', 'europe': 'site:ted.europa.eu',
   };
 
   const siteFilters = [];
@@ -524,8 +581,10 @@ module.exports = async function handler(req, res) {
     // ═══ EVA ═══
     if (useSerper && avatar === 'eva') {
       const intent = detectIntent(userText);
-      if (intent === 'grants' || intent === 'tender' || !intent) {
-        const query = buildSerperQuery(userText, 'eva', 'grants');
+      // For Eva: always search regardless of detected intent
+    const evaIntent = intent || 'grants';
+    if (true) {
+        const query = buildSerperQuery(userText, 'eva', evaIntent === 'grants' || !intent ? 'grants' : evaIntent);
         console.log('[eva] Serper query:', query);
         let serperResults = await searchSerper(query, serperKey);
 
