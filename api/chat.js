@@ -181,32 +181,37 @@ function buildSerperQuery(userText, avatar, intent) {
     return `${grantType} ${month} рок за аплицирање Западен Балкан`;
   }
 
-  // Tender — detect countries
+  // Tender — detect countries (support both latin and cyrillic)
   const countryMap = {
-    'македонија': 'site:e-nabavki.gov.mk',
-    'македон': 'site:e-nabavki.gov.mk',
-    'srbija': 'site:portal.ujn.gov.rs',
-    'србија': 'site:portal.ujn.gov.rs',
-    'hrvatska': 'site:eojn.hr',
-    'хрватска': 'site:eojn.hr',
-    'bosna': 'site:ejn.ba',
+    'македонија': 'site:e-nabavki.gov.mk', 'македон': 'site:e-nabavki.gov.mk',
+    'makedonija': 'site:e-nabavki.gov.mk', 'makedon': 'site:e-nabavki.gov.mk',
+    'severna makedonija': 'site:e-nabavki.gov.mk', 'north macedonia': 'site:e-nabavki.gov.mk',
+    'srbija': 'site:portal.ujn.gov.rs', 'србија': 'site:portal.ujn.gov.rs', 'serbia': 'site:portal.ujn.gov.rs',
+    'hrvatska': 'site:eojn.hr', 'хрватска': 'site:eojn.hr', 'croatia': 'site:eojn.hr',
+    'bosna': 'site:ejn.ba', 'босна': 'site:ejn.ba', 'bosnia': 'site:ejn.ba',
+    'bugarska': 'site:app.eop.bg', 'бугарија': 'site:app.eop.bg',
+    'albanija': 'site:app.e-albania.al', 'albania': 'site:app.e-albania.al',
   };
 
-  // Multiple countries
   const siteFilters = [];
   for (const [key, val] of Object.entries(countryMap)) {
-    if (lower.includes(key)) siteFilters.push(val);
+    if (lower.includes(key) && !siteFilters.includes(val)) siteFilters.push(val);
   }
   const siteFilter = siteFilters.length > 0
     ? siteFilters.join(' OR ')
     : 'site:e-nabavki.gov.mk OR site:portal.ujn.gov.rs';
 
-  let sector = 'јавна набавка';
-  if (lower.match(/градеж|фасад|construction|fasad/)) sector = 'градежни работи фасада';
-  else if (lower.match(/ит|software|digital/)) sector = 'IT услуги';
-  else if (lower.match(/медицин|health|болниц/)) sector = 'медицинска опрема';
+  // Sector detection — latin + cyrillic
+  let sector = 'tender javna nabavka';
+  if (lower.match(/градеж|фасад|fasad|gradez|fasada|construction|rekonstrukcija|реконструкц/)) sector = 'fasadni raboti gradezni rekonstrukcija fasada';
+  else if (lower.match(/ит|it|software|digital|програм|softver/)) sector = 'IT softver usluge';
+  else if (lower.match(/медицин|health|болниц|medical|lekovi/)) sector = 'medicinska oprema zdravstvo';
+  else if (lower.match(/транспорт|transport|vozila|vozilo/)) sector = 'transport vozila';
+  else if (lower.match(/храна|hrana|food|namirnice/)) sector = 'hrana prehrambeni proizvodi';
+  else if (lower.match(/образован|school|училишт|skola|edukacija/)) sector = 'obrazovanje skola';
+  else if (lower.match(/опрема|oprema|equipment/)) sector = 'oprema masini';
 
-  return `${sector} тендер ${month} ${siteFilter}`;
+  return `${sector} ${month} ${siteFilter}`;
 }
 
 async function searchSerper(query, serperKey) {
@@ -214,7 +219,7 @@ async function searchSerper(query, serperKey) {
     const response = await fetch('https://google.serper.dev/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-KEY': serperKey },
-      body: JSON.stringify({ q: query, num: 8, gl: 'mk', hl: 'mk' }),
+      body: JSON.stringify({ q: query, num: 10, gl: 'mk', hl: 'mk' }),
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -415,7 +420,16 @@ module.exports = async function handler(req, res) {
         if (!found) {
           const query = buildSerperQuery(userText, avatar, intent);
           console.log('[tenderai] Serper query:', query);
-          const serperResults = await searchSerper(query, serperKey);
+          let serperResults = await searchSerper(query, serperKey);
+          
+          // Fallback: broader search without site: filter
+          if (!serperResults || serperResults.length === 0) {
+            const month = new Date().toISOString().slice(0, 7);
+            const fallbackQuery = `tender javna nabavka fasada gradez ${month} Macedonia Srbija site:e-nabavki.gov.mk OR site:portal.ujn.gov.rs OR site:ted.europa.eu`;
+            console.log('[tenderai] Fallback query:', fallbackQuery);
+            serperResults = await searchSerper(fallbackQuery, serperKey);
+          }
+          
           if (serperResults && serperResults.length > 0) {
             enrichedSystemPrompt = systemPrompt + formatSerperContext(serperResults, intent);
             found = true;
