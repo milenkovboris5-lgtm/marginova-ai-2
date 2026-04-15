@@ -3015,14 +3015,27 @@ async function sendMsg(){
     const sys = baseSys + langInstruction + brevityInstruction;
     
     const userPlan = (window._userPlan || 'free');
-    const payload = {
-      model:'claude-sonnet-4-20250514',
-      max_tokens:2000,
-      system:sys,
-      messages:messagesForAPI,
-      avatar:current,
-      plan:userPlan
-    };
+         // Автоматско бирање модел според аватарот
+      const modelMap = {
+        'eva': 'gemini-2.5-flash',
+        'tenderai': 'gemini-2.5-flash',
+        'businessai': 'gemini-2.5-flash',
+        'justinian': 'gemini-2.5-flash',
+        'creativeai': 'gemini-2.5-flash',
+        'dropshipper': 'gemini-2.5-flash',
+        'leo': 'gemini-2.5-flash',
+        'liber': 'gemini-2.5-flash'
+      };
+      const selectedModel = modelMap[current] || 'gemini-2.0-flash';
+      
+      const payload = {
+        model: selectedModel,
+        max_tokens: 2000,
+        system: sys,
+        messages: messagesForAPI,
+        avatar: current,
+        plan: userPlan
+      };
 
     if(savedImage){
       payload.image = savedImage;
