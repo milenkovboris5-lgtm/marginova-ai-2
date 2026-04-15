@@ -1387,7 +1387,12 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'marginova_auth' },
-  global: { headers: { apikey: SUPA_KEY } }
+  global: {
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY
+    }
+  }
 });
 
 let lang='en', soundOn=false, selectedStars=0, current='leo';
@@ -2213,6 +2218,53 @@ async function logout(){
   closeDrawer();
 }
 
+// ═══ SUPABASE AUTH — session patch ═══
+// Ensure apikey + Authorization are always sent with every request
+async function getSupaHeaders() {
+  const { data } = await db.auth.getSession();
+  const token = data?.session?.access_token || SUPA_KEY;
+  return {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+}
+
+// Patched db helper — always injects correct headers
+const dbQ = {
+  from: (table) => ({
+    _table: table,
+    select: (cols) => supaFetch('GET', table, cols),
+    upsert: (data) => supaFetch('POST', table, null, data, 'resolution=merge-duplicates'),
+    insert: (data) => supaFetch('POST', table, null, data),
+    update: (data) => ({ eq: (col, val) => supaFetch('PATCH', table, null, data, null, col, val) }),
+    delete: () => ({ eq: (col, val) => supaFetch('DELETE', table, null, null, null, col, val),
+                     in: (col, vals) => supaFetch('DELETE', table, null, null, null, col, null, vals) }),
+  })
+};
+
+async function supaFetch(method, table, select, body, prefer, filterCol, filterVal, filterIn) {
+  const headers = await getSupaHeaders();
+  if (prefer) headers['Prefer'] = prefer;
+  let url = SUPA_URL + '/rest/v1/' + table;
+  const params = [];
+  if (select) params.push('select=' + encodeURIComponent(select));
+  if (filterCol && filterVal !== null && filterVal !== undefined && !filterIn) params.push(filterCol + '=eq.' + encodeURIComponent(filterVal));
+  if (filterIn) params.push(filterCol + '=in.(' + filterIn.map(v => encodeURIComponent(v)).join(',') + ')');
+  if (params.length) url += '?' + params.join('&');
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const res = await fetch(url, opts);
+    const data = res.ok ? await res.json().catch(()=>null) : null;
+    const error = !res.ok ? { message: 'Supabase error ' + res.status } : null;
+    return { data, error };
+  } catch(e) {
+    return { data: null, error: { message: e.message } };
+  }
+}
+
 // Check existing session — restore Supabase session on load
 window.addEventListener('DOMContentLoaded', async function() {
   try {
@@ -2221,7 +2273,6 @@ window.addEventListener('DOMContentLoaded', async function() {
       currentUser = data.session.user;
       showApp();
     } else {
-      // No session — show auth screen
       document.getElementById('auth-screen').style.display='flex';
     }
   } catch(e){
@@ -3027,20 +3078,20 @@ function generateRefCode(userId){
 async function initReferral(){
   if(!currentUser)return;
   try{
-    let {data,error}=await db.from('profiles').select('referral_code,referral_count').eq('user_id',currentUser.id).single();
+    let {data,error}=await dbQ.from('profiles').select('referral_code,referral_count').eq('user_id',currentUser.id).single();
     if(!data?.referral_code){
       const code=generateRefCode(currentUser.id);
-      await db.from('profiles').update({referral_code:code}).eq('user_id',currentUser.id);
+      await dbQ.from('profiles').update({referral_code:code}).eq('user_id',currentUser.id);
     }
     // Check if this user was referred (from URL param)
     const params=new URLSearchParams(window.location.search);
     const refCode=params.get('ref');
     if(refCode && refCode!==data?.referral_code){
-      const {data:referrer}=await db.from('profiles').select('user_id,referral_count').eq('referral_code',refCode).single();
+      const {data:referrer}=await dbQ.from('profiles').select('user_id,referral_count').eq('referral_code',refCode).single();
       if(referrer){
         const newCount=(referrer.referral_count||0)+1;
-        await db.from('profiles').update({referral_count:newCount}).eq('user_id',referrer.user_id);
-        await db.from('profiles').update({referred_by:refCode}).eq('user_id',currentUser.id);
+        await dbQ.from('profiles').update({referral_count:newCount}).eq('user_id',referrer.user_id);
+        await dbQ.from('profiles').update({referred_by:refCode}).eq('user_id',currentUser.id);
         checkMilestone(newCount);
       }
     }
@@ -3056,10 +3107,10 @@ async function showShareModal(){
   if(!currentUser)return;
   document.getElementById('share-modal').classList.add('open');
   try{
-    let {data}=await db.from('profiles').select('referral_code,referral_count').eq('user_id',currentUser.id).single();
+    let {data}=await dbQ.from('profiles').select('referral_code,referral_count').eq('user_id',currentUser.id).single();
     if(!data?.referral_code){
       const code=generateRefCode(currentUser.id);
-      await db.from('profiles').update({referral_code:code}).eq('user_id',currentUser.id);
+      await dbQ.from('profiles').update({referral_code:code}).eq('user_id',currentUser.id);
       data={referral_code:code,referral_count:0};
     }
     const refUrl=`https://marginova.tech/?ref=${data.referral_code}`;
@@ -3261,10 +3312,10 @@ let profileLoaded=false;
 async function loadProfile(){
   if(!currentUser||profileLoaded)return;
   try{
-    let {data,error}=await db.from('profiles').select('*').eq('user_id',currentUser.id).single();
+    let {data,error}=await dbQ.from('profiles').select('*').eq('user_id',currentUser.id).single();
     if(error||!data){
       const today=new Date().toISOString().split('T')[0];
-      await db.from('profiles').upsert({
+      await dbQ.from('profiles').upsert({
         user_id:currentUser.id,xp:0,level:1,streak:0,
         last_login:today,created_at:new Date().toISOString(),tokens:50,tokens_total:50,
         plan:'free',daily_msgs:0,last_msg_date:today
@@ -3290,7 +3341,7 @@ async function saveAnswer(text, btn){
   if(!currentUser) return showXPToast('⚠️ Логирај се за да зачуваш одговори');
   try{
     const plainText = text.replace(/\*\*([^*]+)\*\*/g,'$1');
-    await db.from('saved_answers').insert({
+    await dbQ.from('saved_answers').insert({
       user_id: currentUser.id,
       avatar: current,
       answer_text: plainText,
@@ -3328,7 +3379,7 @@ async function loadSavedAnswers(){
   }
   wrap.innerHTML = '<div class="sa-empty" style="padding:1rem;">⏳ Се вчитува...</div>';
   try{
-    const {data, error} = await db.from('saved_answers')
+    const {data, error} = await dbQ.from('saved_answers')
       .select('*')
       .eq('user_id', currentUser.id)
       .order('created_at', {ascending: false})
@@ -3381,7 +3432,7 @@ function copySavedAnswer(id, btn){
 
 async function deleteSavedAnswer(id){
   try{
-    await db.from('saved_answers').delete().eq('id', id);
+    await dbQ.from('saved_answers').delete().eq('id', id);
     const el = document.getElementById('sa-'+id);
     if(el) el.remove();
     showXPToast('🗑️ Одговорот е избришан');
@@ -3430,7 +3481,7 @@ async function loadTokens(){
   if(!currentUser) return;
   try{
     const today = new Date().toISOString().split('T')[0];
-    const {data} = await db.from('profiles').select('plan,last_msg_date,daily_msgs').eq('user_id', currentUser.id).single();
+    const {data} = await dbQ.from('profiles').select('plan,last_msg_date,daily_msgs').eq('user_id', currentUser.id).single();
     const plan = data?.plan || 'free';
     userPlan = plan;
     const planLimit = PLANS[plan]?.daily ?? 50;
@@ -3447,7 +3498,7 @@ async function deductToken(){
   return true;
   try{
     const today = new Date().toISOString().split('T')[0];
-    const {data} = await db.from('profiles').select('tokens,tokens_total,plan,last_msg_date,daily_msgs').eq('user_id', currentUser.id).single();
+    const {data} = await dbQ.from('profiles').select('tokens,tokens_total,plan,last_msg_date,daily_msgs').eq('user_id', currentUser.id).single();
     
     const plan = data?.plan || 'free';
     const planLimit = PLANS[plan]?.daily ?? 50;
@@ -3468,7 +3519,7 @@ async function deductToken(){
     const newCount = usedToday + 1;
     const remaining = planLimit - newCount;
     
-    await db.from('profiles').update({
+    await dbQ.from('profiles').update({
       daily_msgs: newCount,
       last_msg_date: today
     }).eq('user_id', currentUser.id);
@@ -3496,7 +3547,7 @@ async function checkStreak(profileData){
   const yesterday=new Date(Date.now()-86400000).toISOString().split('T')[0];
   let newStreak=last===yesterday?(profileData.streak||0)+1:1;
   streakCount=newStreak;
-  await db.from('profiles').update({last_login:today,streak:newStreak}).eq('user_id',currentUser.id);
+  await dbQ.from('profiles').update({last_login:today,streak:newStreak}).eq('user_id',currentUser.id);
   // Daily login XP — samo ednas na 24 casa
   addXP(XP_REWARDS.login.amount, XP_REWARDS.login.label);
   if(newStreak===3)setTimeout(()=>showXPToast('🔥 '+XP_REWARDS.streak3.label+' +'+XP_REWARDS.streak3.amount+' XP'),3000);
@@ -3688,7 +3739,7 @@ async function addXP(amount,reason){
     const newXP=userXP+amount;
     const oldLv=getLevelInfo(userXP).idx;
     const newLv=getLevelInfo(newXP).idx;
-    await db.from('profiles').upsert({
+    await dbQ.from('profiles').upsert({
       user_id:currentUser.id, xp:newXP,
       level:newLv, updated_at:new Date().toISOString()
     });
@@ -3710,7 +3761,7 @@ async function loadMemory(avatarId){
   if(!currentUser)return[];
   if(memoryCache[avatarId])return memoryCache[avatarId];
   try{
-    const {data,error}=await db.from('conversations')
+    const {data,error}=await dbQ.from('conversations')
       .select('role,message,created_at')
       .eq('user_id',currentUser.id)
       .eq('avatar',avatarId)
@@ -3729,7 +3780,7 @@ async function loadMemory(avatarId){
 async function saveMessage(role,text){
   if(!currentUser)return;
   try{
-    await db.from('conversations').insert({
+    await dbQ.from('conversations').insert({
       user_id:currentUser.id,
       avatar:current,
       role,
@@ -3745,14 +3796,14 @@ async function saveMessage(role,text){
 async function cleanOldMessages(avatarId){
   if(!currentUser)return;
   try{
-    const {data}=await db.from('conversations')
+    const {data}=await dbQ.from('conversations')
       .select('id')
       .eq('user_id',currentUser.id)
       .eq('avatar',avatarId)
       .order('created_at',{ascending:true});
     if(data&&data.length>100){
       const toDelete=data.slice(0,data.length-100).map(r=>r.id);
-      await db.from('conversations').delete().in('id',toDelete);
+      await dbQ.from('conversations').delete().in('id',toDelete);
     }
   }catch(e){console.warn('Cleanup error:',e);}
 }
