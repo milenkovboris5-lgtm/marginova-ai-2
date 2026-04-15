@@ -134,20 +134,34 @@ function formatTEDResults(results) {
 // ═══════════════════════════════════════════
 const TENDER_KEYWORDS = [
   // Cyrillic
-  'тендер','тендери','набавка','набавки','оглас','конкурс','јавна набавка',
-  'пребарај тендер','најди тендер','активни тендери',
+  'тендер','тендери','набавка','набавки','јавна набавка','конкурс','оглас',
+  'пребарај тендер','најди тендер','активни тендери','јавна набавка',
   // Latin
-  'tender','tenderi','nabavka','nabavki','oglas','konkurs','javna nabavka',
+  'tender','tenderi','nabavka','nabavki','javna nabavka','konkurs','oglas',
   'pronajdi tender','aktivni tenderi','najdi tender','prebaraj tender',
   'procurement','bid','rfp','rfq','ausschreibung','ihale','przetarg',
-  // Sector keywords that imply tender search
+  // Sector + action keywords
   'fasadni radovi','fasadni raboti','gradezni raboti','gradezni radovi',
   'izvedba na','izvedba fasada','izgradnja','rekonstrukcija','sanacija',
-  'fasada tender','gradez tender','construction tender',
+  'fasada tender','gradez tender','construction tender','javna nabavka',
 ];
+
+const PRIVATE_KEYWORDS = [
+  // Cyrillic
+  'приватна понуда','приватни понуди','бизнис понуда','деловна понуда',
+  'подизведувач','соработка','партнерство','договор за изведба',
+  'баратели','барат фирма','барат компанија','потребна фирма',
+  // Latin
+  'privatna ponuda','privatne ponude','biznis ponuda','poslovna ponuda',
+  'podizvođač','podizvođac','saradnja','partnerstvo','ugovor za izvedbu',
+  'traže firmu','traže kompaniju','potrebna firma','potreban izvodjac',
+  'b2b','subcontracting','private offer','business offer','partnership offer',
+  'outsourcing','freelance','podugovaranje','suradnja',
+];
+
 const AUCTION_KEYWORDS = [
   'лицитација','аукција','судска продажба','licitacija','aukcija','auction',
-  'licytacja','търг','судска лицитација','javna licitacija',
+  'licytacja','търг','судска лицитација','javna licitacija','bankrot','stecaj','stečaj',
 ];
 const LEASING_KEYWORDS = ['лизинг','lizing','leasing','lease','лизинг откуп','lizing otkup'];
 const EVA_KEYWORDS = [
@@ -160,9 +174,9 @@ function detectIntent(userText) {
   if (AUCTION_KEYWORDS.some(k => lower.includes(k))) return 'auction';
   if (LEASING_KEYWORDS.some(k => lower.includes(k))) return 'leasing';
   if (EVA_KEYWORDS.some(k => lower.includes(k))) return 'grants';
+  if (PRIVATE_KEYWORDS.some(k => lower.includes(k))) return 'private';
   if (TENDER_KEYWORDS.some(k => lower.includes(k))) return 'tender';
-  // Fallback: if user is asking about finding something in construction/services context
-  if (lower.match(/pronajdi|najdi|prebaraj|find|search|potrazi/)) return 'tender';
+  if (lower.match(/pronajdi|najdi|prebaraj|find|search|potrazi|pobari/)) return 'tender';
   return null;
 }
 
@@ -200,6 +214,30 @@ function buildSerperQuery(userText, avatar, intent) {
     else if (lower.match(/нго|ngo|невладин/)) grantType = 'EU грант НВО';
     return `${grantType} ${month} рок за аплицирање Западен Балкан`;
   }
+
+  if (intent === 'private') {
+    // Detect sector for private offers
+    let sector = 'biznis ponuda oglasi';
+    if (lower.match(/градеж|фасад|fasad|gradez|fasada|construction|rekonstrukcija/)) sector = 'fasadni raboti gradezni podizvođač oglasi';
+    else if (lower.match(/ит|it |software|digital|програм|web|app/)) sector = 'IT outsourcing softver razvoj ponuda';
+    else if (lower.match(/транспорт|transport|превоз|prevoz|kamion|logistics/)) sector = 'transport prevoz logistika ponuda ugovor';
+    else if (lower.match(/производств|manufacturing|fabrik|production/)) sector = 'proizvodnja manufacturing ugovor ponuda';
+    else if (lower.match(/угостителств|restoran|catering|hotel|hospitality/)) sector = 'ugostiteljstvo catering dostava ponuda';
+    else if (lower.match(/земјоделств|agri|poljopriv|farmа/)) sector = 'poljoprivreda otkup produce ugovor ponuda';
+    else if (lower.match(/медицин|health|medical|pharma/)) sector = 'medicinа zdravstvo oprema ponuda';
+    else if (lower.match(/трговија|retail|veleprodaja|wholesale/)) sector = 'veleprodaja retail ponuda distributor';
+    else if (lower.match(/енергетик|energy|solar|renewable/)) sector = 'energia solar obnovljiva ponuda ugovor';
+
+    // Country filter
+    let countryFilter = '';
+    if (lower.match(/македон|makedon/)) countryFilter = 'site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk OR site:facebook.com';
+    else if (lower.match(/srbij|србиј/)) countryFilter = 'site:halo.rs OR site:oglasi.rs OR site:facebook.com';
+    else if (lower.match(/hrvat|хрват/)) countryFilter = 'site:njuskalo.hr OR site:facebook.com';
+    else if (lower.match(/bosn|босн/)) countryFilter = 'site:facebook.com OR site:oglasi.ba';
+    else countryFilter = 'site:pazar3.mk OR site:halo.rs OR site:njuskalo.hr OR site:linkedin.com';
+
+    return `${sector} ${month} ${countryFilter}`;
+  }`
 
   // Tender — detect countries (support both latin and cyrillic)
   const countryMap = {
@@ -253,7 +291,7 @@ async function searchSerper(query, serperKey) {
 function formatSerperContext(results, intent) {
   if (!results || results.length === 0) return '';
   const today = new Date().toLocaleDateString('mk-MK', { day:'2-digit', month:'2-digit', year:'numeric' });
-  const label = intent === 'auction' ? 'ЛИЦИТАЦИИ' : intent === 'leasing' ? 'ЛИЗИНГ' : intent === 'grants' ? 'ГРАНТОВИ' : 'ТЕНДЕРИ';
+  const label = intent === 'auction' ? 'ЛИЦИТАЦИИ' : intent === 'leasing' ? 'ЛИЗИНГ' : intent === 'grants' ? 'ГРАНТОВИ' : intent === 'private' ? 'ПРИВАТНИ ПОНУДИ' : 'ТЕНДЕРИ';
   let ctx = `\n\n═══ РЕАЛНИ ${label} — ${today} ═══\n`;
   ctx += `КРИТИЧНО: Прикажи САМО овие реални резултати со ТОЧНИТЕ линкови.\n`;
   ctx += `ЗАБРАНЕТО: Не додавај фиктивни линкови, не измислувај тендери, не генерирај примери.\n\n`;
@@ -276,6 +314,7 @@ function formatNoResults(intent, lang) {
     auction: 'e-aukcii.ujp.gov.mk · fine.hr · uisug.rs',
     grants: 'mk.undp.org · ec.europa.eu/info/funding-tenders · ipard.gov.mk',
     leasing: 'sparkasse.mk · stopanska.mk · nlb.mk',
+    private: 'pazar3.mk · biznis.mk · halo.rs · njuskalo.hr · linkedin.com',
   };
   const portal = portals[intent] || portals.tender;
   return `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\n` +
