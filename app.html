@@ -2162,6 +2162,7 @@ async function handleAuth(){
       res=await db.auth.signInWithPassword({email,password});
       if(res.error)throw res.error;
       currentUser=res.data.user;
+      if(res.data.session?.access_token) _cachedToken = res.data.session.access_token;
       showApp();
     }
   }catch(e){
@@ -2184,24 +2185,25 @@ function updateEmailPlanBtn(){
   const btn=document.getElementById("email-plan-btn");
   if(btn)btn.style.display=(current==="planner"||current==="anastasia")?"inline-block":"none";
 }
-function showApp(){
+async function showApp(){
   document.getElementById('auth-screen').style.display='none';
   window._userPlan='ultra';
   var mn=document.getElementById('main-nav');mn.style.display='flex';
-  // lang flags now in nav
   document.getElementById('chat-page').style.display='flex';
   document.getElementById('avatar-grid-page').style.display='block';
   document.getElementById('chat-area-wrap').style.display='none';
   const savedLang=localStorage.getItem('mlang')||'mk';
   setLangGrid(savedLang);
   if(currentUser){
+    // Ensure session token is active before any DB calls
+    try {
+      const { data: sd } = await db.auth.getSession();
+      if(sd?.session) await db.auth.setSession(sd.session);
+    } catch(e){ console.warn('Session set error:', e); }
     const email=currentUser.email;
     const drawerEmail=document.getElementById('drawer-email');
     if(drawerEmail)drawerEmail.textContent=email;
-    loadProfile().then(()=>{
-      // Daily login XP is handled inside checkStreak (called from loadProfile)
-      // to ensure it only triggers once per 24 hours
-    });
+    loadProfile().then(()=>{});
     loadTokens();
     initReferral();
   }
@@ -2218,76 +2220,26 @@ async function logout(){
   closeDrawer();
 }
 
-// ═══ SUPABASE AUTH — full fluent query builder ═══
-async function _supaHeaders() {
-  const { data } = await db.auth.getSession();
-  const token = data?.session?.access_token || SUPA_KEY;
-  return {
-    'apikey': SUPA_KEY,
-    'Authorization': 'Bearer ' + token,
-    'Content-Type': 'application/json',
-  };
-}
-
-function _supaBuilder(method, table, body, prefer) {
-  const state = {
-    method, table, body,
-    prefer: prefer || 'return=representation',
-    params: [],
-    _single: false,
-  };
-
-  const builder = {
-    select(cols) { state.params.push('select=' + encodeURIComponent(cols)); state.method='GET'; state.body=null; return builder; },
-    eq(col, val) { state.params.push(encodeURIComponent(col) + '=eq.' + encodeURIComponent(val)); return builder; },
-    order(col, opts) { state.params.push('order=' + col + (opts&&opts.ascending===false?'.desc':'.asc')); return builder; },
-    limit(n) { state.params.push('limit=' + n); return builder; },
-    single() { state._single=true; state.prefer='return=representation'; return builder; },
-    in(col, vals) { state.params.push(encodeURIComponent(col) + '=in.(' + vals.map(v=>encodeURIComponent(v)).join(',') + ')'); return builder; },
-    then(resolve, reject) {
-      return _supaExec(state).then(resolve, reject);
-    }
-  };
-  return builder;
-}
-
-async function _supaExec(state) {
-  const headers = await _supaHeaders();
-  if (state.prefer) headers['Prefer'] = state.prefer;
-  let url = SUPA_URL + '/rest/v1/' + state.table;
-  if (state.params.length) url += '?' + state.params.join('&');
-  const opts = { method: state.method, headers };
-  if (state.body) opts.body = JSON.stringify(state.body);
+// ═══ SUPABASE AUTH — global fetch patch ═══
+// Caches the session token and injects it into every Supabase REST call
+let _cachedToken = SUPA_KEY;
+async function _refreshCachedToken() {
   try {
-    const res = await fetch(url, opts);
-    let data = null;
-    if (res.status !== 204) {
-      try { data = await res.json(); } catch(e) { data = null; }
-    }
-    if (!res.ok) {
-      const msg = (data && data.message) ? data.message : 'Supabase error ' + res.status;
-      return { data: null, error: { message: msg, status: res.status } };
-    }
-    if (state._single) {
-      const row = Array.isArray(data) ? (data[0] || null) : data;
-      return { data: row, error: row ? null : { message: 'No rows found' } };
-    }
-    return { data: Array.isArray(data) ? data : (data ? [data] : []), error: null };
-  } catch(e) {
-    return { data: null, error: { message: e.message } };
-  }
+    const { data } = await db.auth.getSession();
+    if (data?.session?.access_token) _cachedToken = data.session.access_token;
+  } catch(e) {}
 }
 
-const dbQ = {
-  from(table) {
-    return {
-      select(cols) { return _supaBuilder('GET', table, null).select(cols); },
-      insert(body) { return _supaBuilder('POST', table, body); },
-      upsert(body) { return _supaBuilder('POST', table, body, 'resolution=merge-duplicates,return=representation'); },
-      update(body) { return _supaBuilder('PATCH', table, body); },
-      delete() { return _supaBuilder('DELETE', table, null, 'return=minimal'); },
-    };
+const _origFetch = window.fetch.bind(window);
+window.fetch = function(url, opts) {
+  opts = opts || {};
+  if (typeof url === 'string' && url.includes(SUPA_URL + '/rest/v1/')) {
+    opts.headers = Object.assign({}, opts.headers || {}, {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + _cachedToken,
+    });
   }
+  return _origFetch(url, opts);
 };
 
 // Check existing session — restore Supabase session on load
@@ -2296,6 +2248,7 @@ window.addEventListener('DOMContentLoaded', async function() {
     const { data } = await db.auth.getSession();
     if(data && data.session && data.session.user) {
       currentUser = data.session.user;
+      _cachedToken = data.session.access_token || SUPA_KEY;
       showApp();
     } else {
       document.getElementById('auth-screen').style.display='flex';
@@ -2309,8 +2262,10 @@ window.addEventListener('DOMContentLoaded', async function() {
   db.auth.onAuthStateChange(function(event, session) {
     if(event === 'SIGNED_IN' && session) {
       currentUser = session.user;
+      _cachedToken = session.access_token || SUPA_KEY;
     } else if(event === 'SIGNED_OUT') {
       currentUser = null;
+      _cachedToken = SUPA_KEY;
     }
   });
 });
@@ -3103,20 +3058,20 @@ function generateRefCode(userId){
 async function initReferral(){
   if(!currentUser)return;
   try{
-    let {data,error}=await dbQ.from('profiles').select('referral_code,referral_count').eq('user_id',currentUser.id).single();
+    let {data,error}=await db.from('profiles').select('referral_code,referral_count').eq('user_id',currentUser.id).single();
     if(!data?.referral_code){
       const code=generateRefCode(currentUser.id);
-      await dbQ.from('profiles').update({referral_code:code}).eq('user_id',currentUser.id);
+      await db.from('profiles').update({referral_code:code}).eq('user_id',currentUser.id);
     }
     // Check if this user was referred (from URL param)
     const params=new URLSearchParams(window.location.search);
     const refCode=params.get('ref');
     if(refCode && refCode!==data?.referral_code){
-      const {data:referrer}=await dbQ.from('profiles').select('user_id,referral_count').eq('referral_code',refCode).single();
+      const {data:referrer}=await db.from('profiles').select('user_id,referral_count').eq('referral_code',refCode).single();
       if(referrer){
         const newCount=(referrer.referral_count||0)+1;
-        await dbQ.from('profiles').update({referral_count:newCount}).eq('user_id',referrer.user_id);
-        await dbQ.from('profiles').update({referred_by:refCode}).eq('user_id',currentUser.id);
+        await db.from('profiles').update({referral_count:newCount}).eq('user_id',referrer.user_id);
+        await db.from('profiles').update({referred_by:refCode}).eq('user_id',currentUser.id);
         checkMilestone(newCount);
       }
     }
@@ -3132,10 +3087,10 @@ async function showShareModal(){
   if(!currentUser)return;
   document.getElementById('share-modal').classList.add('open');
   try{
-    let {data}=await dbQ.from('profiles').select('referral_code,referral_count').eq('user_id',currentUser.id).single();
+    let {data}=await db.from('profiles').select('referral_code,referral_count').eq('user_id',currentUser.id).single();
     if(!data?.referral_code){
       const code=generateRefCode(currentUser.id);
-      await dbQ.from('profiles').update({referral_code:code}).eq('user_id',currentUser.id);
+      await db.from('profiles').update({referral_code:code}).eq('user_id',currentUser.id);
       data={referral_code:code,referral_count:0};
     }
     const refUrl=`https://marginova.tech/?ref=${data.referral_code}`;
@@ -3337,10 +3292,10 @@ let profileLoaded=false;
 async function loadProfile(){
   if(!currentUser||profileLoaded)return;
   try{
-    let {data,error}=await dbQ.from('profiles').select('*').eq('user_id',currentUser.id).single();
+    let {data,error}=await db.from('profiles').select('*').eq('user_id',currentUser.id).single();
     if(error||!data){
       const today=new Date().toISOString().split('T')[0];
-      await dbQ.from('profiles').upsert({
+      await db.from('profiles').upsert({
         user_id:currentUser.id,xp:0,level:1,streak:0,
         last_login:today,created_at:new Date().toISOString(),tokens:50,tokens_total:50,
         plan:'free',daily_msgs:0,last_msg_date:today
@@ -3366,7 +3321,7 @@ async function saveAnswer(text, btn){
   if(!currentUser) return showXPToast('⚠️ Логирај се за да зачуваш одговори');
   try{
     const plainText = text.replace(/\*\*([^*]+)\*\*/g,'$1');
-    await dbQ.from('saved_answers').insert({
+    await db.from('saved_answers').insert({
       user_id: currentUser.id,
       avatar: current,
       answer_text: plainText,
@@ -3404,7 +3359,7 @@ async function loadSavedAnswers(){
   }
   wrap.innerHTML = '<div class="sa-empty" style="padding:1rem;">⏳ Се вчитува...</div>';
   try{
-    const {data, error} = await dbQ.from('saved_answers')
+    const {data, error} = await db.from('saved_answers')
       .select('*')
       .eq('user_id', currentUser.id)
       .order('created_at', {ascending: false})
@@ -3457,7 +3412,7 @@ function copySavedAnswer(id, btn){
 
 async function deleteSavedAnswer(id){
   try{
-    await dbQ.from('saved_answers').delete().eq('id', id);
+    await db.from('saved_answers').delete().eq('id', id);
     const el = document.getElementById('sa-'+id);
     if(el) el.remove();
     showXPToast('🗑️ Одговорот е избришан');
@@ -3506,7 +3461,7 @@ async function loadTokens(){
   if(!currentUser) return;
   try{
     const today = new Date().toISOString().split('T')[0];
-    const {data} = await dbQ.from('profiles').select('plan,last_msg_date,daily_msgs').eq('user_id', currentUser.id).single();
+    const {data} = await db.from('profiles').select('plan,last_msg_date,daily_msgs').eq('user_id', currentUser.id).single();
     const plan = data?.plan || 'free';
     userPlan = plan;
     const planLimit = PLANS[plan]?.daily ?? 50;
@@ -3523,7 +3478,7 @@ async function deductToken(){
   return true;
   try{
     const today = new Date().toISOString().split('T')[0];
-    const {data} = await dbQ.from('profiles').select('tokens,tokens_total,plan,last_msg_date,daily_msgs').eq('user_id', currentUser.id).single();
+    const {data} = await db.from('profiles').select('tokens,tokens_total,plan,last_msg_date,daily_msgs').eq('user_id', currentUser.id).single();
     
     const plan = data?.plan || 'free';
     const planLimit = PLANS[plan]?.daily ?? 50;
@@ -3544,7 +3499,7 @@ async function deductToken(){
     const newCount = usedToday + 1;
     const remaining = planLimit - newCount;
     
-    await dbQ.from('profiles').update({
+    await db.from('profiles').update({
       daily_msgs: newCount,
       last_msg_date: today
     }).eq('user_id', currentUser.id);
@@ -3572,7 +3527,7 @@ async function checkStreak(profileData){
   const yesterday=new Date(Date.now()-86400000).toISOString().split('T')[0];
   let newStreak=last===yesterday?(profileData.streak||0)+1:1;
   streakCount=newStreak;
-  await dbQ.from('profiles').update({last_login:today,streak:newStreak}).eq('user_id',currentUser.id);
+  await db.from('profiles').update({last_login:today,streak:newStreak}).eq('user_id',currentUser.id);
   // Daily login XP — samo ednas na 24 casa
   addXP(XP_REWARDS.login.amount, XP_REWARDS.login.label);
   if(newStreak===3)setTimeout(()=>showXPToast('🔥 '+XP_REWARDS.streak3.label+' +'+XP_REWARDS.streak3.amount+' XP'),3000);
@@ -3764,7 +3719,7 @@ async function addXP(amount,reason){
     const newXP=userXP+amount;
     const oldLv=getLevelInfo(userXP).idx;
     const newLv=getLevelInfo(newXP).idx;
-    await dbQ.from('profiles').upsert({
+    await db.from('profiles').upsert({
       user_id:currentUser.id, xp:newXP,
       level:newLv, updated_at:new Date().toISOString()
     });
@@ -3786,7 +3741,7 @@ async function loadMemory(avatarId){
   if(!currentUser)return[];
   if(memoryCache[avatarId])return memoryCache[avatarId];
   try{
-    const {data,error}=await dbQ.from('conversations')
+    const {data,error}=await db.from('conversations')
       .select('role,message,created_at')
       .eq('user_id',currentUser.id)
       .eq('avatar',avatarId)
@@ -3805,7 +3760,7 @@ async function loadMemory(avatarId){
 async function saveMessage(role,text){
   if(!currentUser)return;
   try{
-    await dbQ.from('conversations').insert({
+    await db.from('conversations').insert({
       user_id:currentUser.id,
       avatar:current,
       role,
@@ -3821,14 +3776,14 @@ async function saveMessage(role,text){
 async function cleanOldMessages(avatarId){
   if(!currentUser)return;
   try{
-    const {data}=await dbQ.from('conversations')
+    const {data}=await db.from('conversations')
       .select('id')
       .eq('user_id',currentUser.id)
       .eq('avatar',avatarId)
       .order('created_at',{ascending:true});
     if(data&&data.length>100){
       const toDelete=data.slice(0,data.length-100).map(r=>r.id);
-      await dbQ.from('conversations').delete().in('id',toDelete);
+      await db.from('conversations').delete().in('id',toDelete);
     }
   }catch(e){console.warn('Cleanup error:',e);}
 }
