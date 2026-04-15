@@ -2995,6 +2995,7 @@ async function sendMsg(){
         setTimeout(()=>showUpgradePopup(),800);
       }
       }
+    }
   }catch(e){removeTyping();addMsg('ai','⚠️ Unable to connect. Please try again.');}
   document.getElementById('send-btn').classList.remove('loading');
   document.getElementById('send-btn').disabled=false;inp.focus();
