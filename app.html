@@ -2849,59 +2849,6 @@ async function compressImage(base64, maxSize=800){
 // ═══════════════════════════════════════════════════════════
 // TENDER AI — LIVE SEARCH via Supabase Edge Function
 // ═══════════════════════════════════════════════════════════
-const TENDER_SEARCH_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co/functions/v1/tender-search';
-const TENDER_SEARCH_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
-
-const TENDER_TRIGGERS = [
-  // МК
-  'најди тендер','пребарај тендер','активни тендери','отворени набавки','кои тендери',
-  'тендери за','грантови за','eu фондови','тед тендери','јавна набавка',
-  // SR/HR/BS
-  'pronađi tender','pretraži tender','aktivni tenderi','otvorene nabavke','koji tenderi',
-  'tenderi za','grantovi za','eu fondovi','ted tenderi','javna nabavka',
-  'pronađi natječaj','aktivni natječaji',
-  // EN
-  'find tender','search tender','active tenders','open procurement','which tenders',
-  'tenders for','grants for','eu funds','ted tenders','find procurement',
-  'find grants','search grants',
-  // DE
-  'ausschreibung finden','ausschreibungen suchen','aktive ausschreibungen',
-  'eu fördermittel','tender suchen',
-  // BG
-  'намери търг','търсене на търгове','активни търгове','eu фондове',
-  // SQ
-  'gjej tender','kërko tender','tenderat aktiv','fondet be',
-  // TR
-  'ihale bul','ihale ara','aktif ihaleler','ab fonları',
-  // PL
-  'znajdź przetarg','szukaj przetargów','aktywne przetargi','fundusze ue',
-];
-
-function isTenderSearchQuery(text) {
-  if (current !== 'tenderai') return false;
-  const lower = text.toLowerCase();
-  return TENDER_TRIGGERS.some(t => lower.includes(t));
-}
-
-async function doTenderLiveSearch(userText) {
-  try {
-    const res = await fetch(TENDER_SEARCH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${TENDER_SEARCH_ANON}`,
-        'apikey': TENDER_SEARCH_ANON,
-      },
-      body: JSON.stringify({ query: userText, lang: lang }),
-    });
-    const data = await res.json();
-    return data.result || data.error || '⚠️ Search returned no results.';
-  } catch(e) {
-    console.error('Tender search error:', e);
-    return '⚠️ Live search temporarily unavailable. Please try again in a moment.';
-  }
-}
-
 async function sendMsg(){
   const inp=document.getElementById('msg-input');
   const text=inp.value.trim();
@@ -2913,7 +2860,6 @@ async function sendMsg(){
   const imgSrc = hasImage ? `data:${currentImageType};base64,${currentImageBase64}` : null;
   addMsgWithImage('user', text, imgSrc);
   
-  // Add to history as string (server handles vision separately via payload.image)
   history[current].push({role:'user', content: hasImage ? (text ? `[Image + text: ${text}]` : '[Image sent]') : text});
   saveMessage('user', hasImage ? (text || '[Image sent]') : text);
   
@@ -2921,26 +2867,7 @@ async function sendMsg(){
   const savedImageType = currentImageType;
   removeImage();
 
-  // ═══ TENDER AI LIVE SEARCH ═══
-  if(isTenderSearchQuery(text) && !hasImage) {
-    const hasTokens = await deductToken();
-    if(!hasTokens){ document.getElementById('send-btn').disabled=false; return; }
-    document.getElementById('send-btn').classList.add('loading');
-    addTyping();
-    const searchResult = await doTenderLiveSearch(text);
-    removeTyping();
-    history[current].push({role:'assistant', content: searchResult});
-    addMsg('ai', searchResult);
-    speak(searchResult);
-    saveMessage('assistant', searchResult);
-    document.getElementById('send-btn').classList.remove('loading');
-    document.getElementById('send-btn').disabled=false;
-    inp.focus();
-    return;
-  }
-
-  // Build messages for API - ensure all content is string
-  // Ograni na poslednite 20 poraki za da ostane prostor za odgovor
+  // Build messages for API
   let messagesForAPI = history[current].slice(-20).map(m => ({
     role: m.role,
     content: typeof m.content === 'string' ? m.content : 
