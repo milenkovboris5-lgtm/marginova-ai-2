@@ -2218,52 +2218,77 @@ async function logout(){
   closeDrawer();
 }
 
-// ═══ SUPABASE AUTH — session patch ═══
-// Ensure apikey + Authorization are always sent with every request
-async function getSupaHeaders() {
+// ═══ SUPABASE AUTH — full fluent query builder ═══
+async function _supaHeaders() {
   const { data } = await db.auth.getSession();
   const token = data?.session?.access_token || SUPA_KEY;
   return {
     'apikey': SUPA_KEY,
     'Authorization': 'Bearer ' + token,
     'Content-Type': 'application/json',
-    'Prefer': 'return=representation'
   };
 }
 
-// Patched db helper — always injects correct headers
-const dbQ = {
-  from: (table) => ({
-    _table: table,
-    select: (cols) => supaFetch('GET', table, cols),
-    upsert: (data) => supaFetch('POST', table, null, data, 'resolution=merge-duplicates'),
-    insert: (data) => supaFetch('POST', table, null, data),
-    update: (data) => ({ eq: (col, val) => supaFetch('PATCH', table, null, data, null, col, val) }),
-    delete: () => ({ eq: (col, val) => supaFetch('DELETE', table, null, null, null, col, val),
-                     in: (col, vals) => supaFetch('DELETE', table, null, null, null, col, null, vals) }),
-  })
-};
+function _supaBuilder(method, table, body, prefer) {
+  const state = {
+    method, table, body,
+    prefer: prefer || 'return=representation',
+    params: [],
+    _single: false,
+  };
 
-async function supaFetch(method, table, select, body, prefer, filterCol, filterVal, filterIn) {
-  const headers = await getSupaHeaders();
-  if (prefer) headers['Prefer'] = prefer;
-  let url = SUPA_URL + '/rest/v1/' + table;
-  const params = [];
-  if (select) params.push('select=' + encodeURIComponent(select));
-  if (filterCol && filterVal !== null && filterVal !== undefined && !filterIn) params.push(filterCol + '=eq.' + encodeURIComponent(filterVal));
-  if (filterIn) params.push(filterCol + '=in.(' + filterIn.map(v => encodeURIComponent(v)).join(',') + ')');
-  if (params.length) url += '?' + params.join('&');
-  const opts = { method, headers };
-  if (body) opts.body = JSON.stringify(body);
+  const builder = {
+    select(cols) { state.params.push('select=' + encodeURIComponent(cols)); state.method='GET'; state.body=null; return builder; },
+    eq(col, val) { state.params.push(encodeURIComponent(col) + '=eq.' + encodeURIComponent(val)); return builder; },
+    order(col, opts) { state.params.push('order=' + col + (opts&&opts.ascending===false?'.desc':'.asc')); return builder; },
+    limit(n) { state.params.push('limit=' + n); return builder; },
+    single() { state._single=true; state.prefer='return=representation'; return builder; },
+    in(col, vals) { state.params.push(encodeURIComponent(col) + '=in.(' + vals.map(v=>encodeURIComponent(v)).join(',') + ')'); return builder; },
+    then(resolve, reject) {
+      return _supaExec(state).then(resolve, reject);
+    }
+  };
+  return builder;
+}
+
+async function _supaExec(state) {
+  const headers = await _supaHeaders();
+  if (state.prefer) headers['Prefer'] = state.prefer;
+  let url = SUPA_URL + '/rest/v1/' + state.table;
+  if (state.params.length) url += '?' + state.params.join('&');
+  const opts = { method: state.method, headers };
+  if (state.body) opts.body = JSON.stringify(state.body);
   try {
     const res = await fetch(url, opts);
-    const data = res.ok ? await res.json().catch(()=>null) : null;
-    const error = !res.ok ? { message: 'Supabase error ' + res.status } : null;
-    return { data, error };
+    let data = null;
+    if (res.status !== 204) {
+      try { data = await res.json(); } catch(e) { data = null; }
+    }
+    if (!res.ok) {
+      const msg = (data && data.message) ? data.message : 'Supabase error ' + res.status;
+      return { data: null, error: { message: msg, status: res.status } };
+    }
+    if (state._single) {
+      const row = Array.isArray(data) ? (data[0] || null) : data;
+      return { data: row, error: row ? null : { message: 'No rows found' } };
+    }
+    return { data: Array.isArray(data) ? data : (data ? [data] : []), error: null };
   } catch(e) {
     return { data: null, error: { message: e.message } };
   }
 }
+
+const dbQ = {
+  from(table) {
+    return {
+      select(cols) { return _supaBuilder('GET', table, null).select(cols); },
+      insert(body) { return _supaBuilder('POST', table, body); },
+      upsert(body) { return _supaBuilder('POST', table, body, 'resolution=merge-duplicates,return=representation'); },
+      update(body) { return _supaBuilder('PATCH', table, body); },
+      delete() { return _supaBuilder('DELETE', table, null, 'return=minimal'); },
+    };
+  }
+};
 
 // Check existing session — restore Supabase session on load
 window.addEventListener('DOMContentLoaded', async function() {
