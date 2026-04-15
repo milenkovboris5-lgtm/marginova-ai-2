@@ -213,56 +213,56 @@ function buildSerperQuery(userText, avatar, intent) {
     let countryPortals = 'site:mk.undp.org OR site:westernbalkansfund.org OR site:efb.org OR site:ipard.gov.mk OR site:usaid.gov OR site:fitr.mk OR site:funding.mk OR site:ec.europa.eu OR site:avrm.gov.mk';
 
     if (lower.match(/македон|makedon|severna|north mac/)) {
-      countryTag = '"North Macedonia" OR Makedonija OR "Северна Македонија"';
-      countryPortals = 'site:mk.undp.org OR site:fitr.mk OR site:funding.mk OR site:avrm.gov.mk OR site:westernbalkansfund.org OR site:ipard.gov.mk OR site:ec.europa.eu';
+      countryTag = 'North Macedonia Makedonija';
+      countryPortals = 'site:fitr.mk OR site:funding.mk OR site:westernbalkansfund.org';
     } else if (lower.match(/srbij|србиј|serbia/)) {
-      countryTag = 'Srbija OR Serbia';
-      countryPortals = 'site:rs.undp.org OR site:minrzs.gov.rs OR site:privreda.gov.rs OR site:westernbalkansfund.org OR site:ipard.rs OR site:ec.europa.eu';
-    } else if (lower.match(/hrvat|хрват|croatia|hrvatska/)) {
-      countryTag = 'Hrvatska OR Croatia';
-      countryPortals = 'site:hr.undp.org OR site:strukturnifondovi.hr OR site:apprrr.hr OR site:westernbalkansfund.org OR site:ec.europa.eu';
+      countryTag = 'Srbija Serbia';
+      countryPortals = 'site:privreda.gov.rs OR site:westernbalkansfund.org OR site:rs.undp.org';
+    } else if (lower.match(/hrvat|хрват|croatia/)) {
+      countryTag = 'Hrvatska Croatia';
+      countryPortals = 'site:strukturnifondovi.hr OR site:westernbalkansfund.org OR site:apprrr.hr';
     } else if (lower.match(/bosn|босн|bosnia/)) {
-      countryTag = 'Bosna OR Bosnia Herzegovina';
-      countryPortals = 'site:ba.undp.org OR site:eu.ba OR site:dei.gov.ba OR site:westernbalkansfund.org OR site:ec.europa.eu';
+      countryTag = 'Bosna Bosnia';
+      countryPortals = 'site:eu.ba OR site:westernbalkansfund.org OR site:ba.undp.org';
     } else if (lower.match(/бугар|bulgar|bugars/)) {
-      countryTag = 'Bulgaria OR България';
-      countryPortals = 'site:bg.undp.org OR site:eufunds.bg OR site:dfz.bg OR site:mzh.government.bg OR site:ec.europa.eu';
-    } else if (lower.match(/албан|albania|shqip|shqiperi/)) {
-      countryTag = 'Albania OR Shqipëri OR Albanija';
-      countryPortals = 'site:al.undp.org OR site:financa.gov.al OR site:westernbalkansfund.org OR site:ec.europa.eu';
-    } else if (lower.match(/türkiy|turkey|турциj|turkiye|turska/)) {
-      countryTag = 'Türkiye OR Turkey';
-      countryPortals = 'site:tr.undp.org OR site:tkdk.gov.tr OR site:kosgeb.gov.tr OR site:tika.gov.tr OR site:ec.europa.eu';
-    } else if (lower.match(/deutsch|german|german|almanij/)) {
-      countryTag = 'Deutschland OR Germany';
-      countryPortals = 'site:foerderdatenbank.de OR site:bafa.de OR site:kfw.de OR site:ec.europa.eu OR site:bmbf.de';
+      countryTag = 'Bulgaria Bulgarija';
+      countryPortals = 'site:eufunds.bg OR site:bg.undp.org OR site:ec.europa.eu';
+    } else if (lower.match(/албан|albania|shqip/)) {
+      countryTag = 'Albania Shqiperi';
+      countryPortals = 'site:financa.gov.al OR site:westernbalkansfund.org OR site:al.undp.org';
+    } else if (lower.match(/türkiy|turkey|turkiye|turska|турциj/)) {
+      countryTag = 'Turkiye Turkey';
+      countryPortals = 'site:kosgeb.gov.tr OR site:tkdk.gov.tr OR site:tr.undp.org';
+    } else if (lower.match(/deutsch|german|almanij/)) {
+      countryTag = 'Deutschland Germany';
+      countryPortals = 'site:foerderdatenbank.de OR site:kfw.de OR site:bafa.de';
     } else if (lower.match(/polsk|poland|polska/)) {
-      countryTag = 'Polska OR Poland';
-      countryPortals = 'site:parp.gov.pl OR site:gov.pl/fundusze OR site:funduszeeuropejskie.gov.pl OR site:ec.europa.eu';
+      countryTag = 'Polska Poland';
+      countryPortals = 'site:parp.gov.pl OR site:funduszeeuropejskie.gov.pl OR site:ec.europa.eu';
     } else if (lower.match(/kosovo|косов|kosov/)) {
-      countryTag = 'Kosovo OR Kosovë';
-      countryPortals = 'site:ks.undp.org OR site:pprc.rks-gov.net OR site:westernbalkansfund.org OR site:ec.europa.eu';
+      countryTag = 'Kosovo Kosove';
+      countryPortals = 'site:ks.undp.org OR site:westernbalkansfund.org OR site:pprc.rks-gov.net';
     } else if (lower.match(/slovenij|slovenia|слов/)) {
-      countryTag = 'Slovenija OR Slovenia';
-      countryPortals = 'site:eu-skladi.si OR site:sio.si OR site:spirit.si OR site:ec.europa.eu';
+      countryTag = 'Slovenija Slovenia';
+      countryPortals = 'site:eu-skladi.si OR site:spirit.si OR site:ec.europa.eu';
     }
 
     // Detect sector — extract from user message
-    let sectorTag = 'grant fond finansiranje otvoreni poziv 2025 2026';
-    if (lower.match(/it |it\.|дигитал|digital|software|веб|web|app|едукативн|edukativ|online/)) sectorTag = 'IT digital web edukacija grant finansiranje 2025 2026';
-    else if (lower.match(/ipard|земјоделств|agri|poljopriv|фарм|farm/)) sectorTag = 'IPARD grant zemjodelstvo agri 2025 2026';
-    else if (lower.match(/стартап|startup|иновац|inovac|pretpriemac/)) sectorTag = 'startup inovacije preduzetnistvo grant finansiranje 2025 2026';
-    else if (lower.match(/нго|ngo|невладин|civilno|граѓанск/)) sectorTag = 'NVO civilno drustvo grant 2025 2026';
-    else if (lower.match(/млад|youth|omladina/)) sectorTag = 'mladi youth grant fond 2025 2026';
-    else if (lower.match(/жен|women|rodova|претприемач.*жен/)) sectorTag = 'zene rodova ravnopravnost grant 2025 2026';
-    else if (lower.match(/градеж|construction|fasad|gradez/)) sectorTag = 'gradjevinarstvo infrastruktura grant fond 2025 2026';
-    else if (lower.match(/земјоделств|agri|poljopriv/)) sectorTag = 'zemjodelstvo ruralni razvoj IPARD 2025 2026';
-    else if (lower.match(/туризм|tourism|ugostitel/)) sectorTag = 'turizam ugostitelstvo grant fond 2025 2026';
+    let sectorTag = 'grant fond otvoreni poziv finansiranje';
+    if (lower.match(/it |it\.|дигитал|digital|software|веб|web|app|едукативн|edukativ|online/)) sectorTag = 'IT digital startup grant financiranje';
+    else if (lower.match(/ipard|земјоделств|agri|poljopriv|фарм|farm/)) sectorTag = 'IPARD grant zemjodelstvo agri';
+    else if (lower.match(/стартап|startup|иновац|inovac|pretpriemac/)) sectorTag = 'startup inovacije grant finansiranje';
+    else if (lower.match(/нго|ngo|невладин|civilno|граѓанск/)) sectorTag = 'NVO civilno drustvo grant';
+    else if (lower.match(/млад|youth|omladina/)) sectorTag = 'mladi youth grant';
+    else if (lower.match(/жен|women|rodova|претприемач.*жен/)) sectorTag = 'zene preduzetnistvo grant';
+    else if (lower.match(/градеж|construction|fasad|gradez/)) sectorTag = 'gradjevinarstvo infrastruktura grant';
+    else if (lower.match(/земјоделств|agri|poljopriv/)) sectorTag = 'zemjodelstvo ruralni razvoj IPARD';
+    else if (lower.match(/туризм|tourism|ugostitel/)) sectorTag = 'turizam ugostitelstvo grant';
 
     // Budget hint
     let budgetTag = '';
-    if (lower.match(/до 10|10000|10\.000|10k/)) budgetTag = '"mali grantovi" OR "small grants" OR mikro';
-    else if (lower.match(/до 50|50000|50\.000/)) budgetTag = '"mali grantovi" OR "medium grants"';
+    if (lower.match(/до 10|10000|10\.000|10k/)) budgetTag = 'mali grantovi small grants';
+    else if (lower.match(/до 50|50000|50\.000/)) budgetTag = 'grantovi srednji iznos';
 
     return `${sectorTag} ${budgetTag} ${countryTag} ${countryPortals}`;
   }
