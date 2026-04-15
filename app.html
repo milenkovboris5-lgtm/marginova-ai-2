@@ -1401,53 +1401,50 @@ function _supaFetch(url, opts) {
 // ═══ supa() — fluent Supabase REST builder using _supaFetch ═══
 function supa(table) {
   const BASE = SUPA_URL + '/rest/v1/' + table;
-  const state = { filters: [], order: null, lim: null, isSingle: false, prefer: 'return=representation' };
 
-  function buildUrl(extra) {
-    const p = [...state.filters];
-    if (state.order) p.push('order=' + state.order);
-    if (state.lim) p.push('limit=' + state.lim);
-    if (extra) p.push(extra);
-    return BASE + (p.length ? '?' + p.join('&') : '');
+  function buildUrl(params) {
+    const parts = params.filter(Boolean);
+    return BASE + (parts.length ? '?' + parts.join('&') : '');
   }
 
-  async function exec(method, body, prefer) {
+  async function exec(method, params, body, prefer) {
     const opts = { method };
-    if (prefer || state.prefer) {
-      const h = new Headers();
-      h.set('Prefer', prefer || state.prefer);
-      opts.headers = h;
-    }
+    const h = new Headers();
+    if (prefer) h.set('Prefer', prefer);
+    opts.headers = h;
     if (body !== undefined) opts.body = JSON.stringify(body);
-    const res = await _supaFetch(buildUrl(), opts);
+    const res = await _supaFetch(buildUrl(params), opts);
     let data = null;
     if (res.status !== 204) { try { data = await res.json(); } catch(e){} }
-    if (!res.ok) return { data: null, error: { message: (data&&data.message)||'Supabase '+res.status, status: res.status } };
-    if (state.isSingle) { const row = Array.isArray(data)?(data[0]||null):data; return { data: row, error: row?null:{message:'No rows'} }; }
-    return { data: Array.isArray(data)?data:(data?[data]:[]), error: null };
+    if (!res.ok) return { data: null, error: { message: (data&&data.message)||'Error '+res.status } };
+    return { data: data, error: null };
   }
 
-  const builder = {
-    select(cols) {
-      state.filters.unshift('select=' + encodeURIComponent(cols));
-      return {
-        eq(col,val) { state.filters.push(encodeURIComponent(col)+'=eq.'+encodeURIComponent(val)); return this; },
-        order(col,opts) { state.order='order='+col+(opts&&opts.ascending===false?'.desc':'.asc'); return this; },
-        limit(n) { state.lim=n; return this; },
-        single() { state.isSingle=true; state.prefer='return=representation'; return { then:(r,j)=>exec('GET').then(r,j) }; },
-        then(r,j) { return exec('GET').then(r,j); }
-      };
-    },
-    insert(body) { return { then:(r,j)=>exec('POST',body).then(r,j) }; },
-    upsert(body) { return { then:(r,j)=>exec('POST',body,'resolution=merge-duplicates,return=representation').then(r,j) }; },
-    update(body) { return { eq(col,val){ state.filters.push(encodeURIComponent(col)+'=eq.'+encodeURIComponent(val)); return { then:(r,j)=>exec('PATCH',body).then(r,j) }; } }; },
-    delete() { return {
-      eq(col,val) { state.filters.push(encodeURIComponent(col)+'=eq.'+encodeURIComponent(val)); return { then:(r,j)=>exec('DELETE',undefined,'return=minimal').then(r,j) }; },
-      in(col,vals) { state.filters.push(encodeURIComponent(col)+'=in.('+vals.map(v=>encodeURIComponent(v)).join(',')+')');
-return { then:(r,j)=>exec('DELETE',undefined,'return=minimal').then(r,j) }; }
+  // Returns a chainable query object for SELECT
+  function selectQuery(cols, params) {
+    params = params || ['select='+cols];
+    let isSingle = false;
+    const q = {
+      eq(col, val)     { params.push(col+'=eq.'+encodeURIComponent(val)); return q; },
+      order(col, opts) { params.push('order='+col+(opts&&opts.ascending===false?'.desc':'.asc')); return q; },
+      limit(n)         { params.push('limit='+n); return q; },
+      single()         { isSingle = true; return { then(r,j){ return exec('GET',params).then(res=>{ if(res.error) return r({data:null,error:res.error}); const row=Array.isArray(res.data)?(res.data[0]||null):res.data; return r({data:row,error:row?null:{message:'No rows'}}); },j); } }; },
+      then(r, j)       { return exec('GET', params).then(res=>{ if(res.error) return r(res); const d=Array.isArray(res.data)?res.data:(res.data?[res.data]:[]); return r({data:d,error:null}); }, j); }
+    };
+    return q;
+  }
+
+  return {
+    select(cols)   { return selectQuery(cols); },
+    insert(body)   { return { then(r,j){ return exec('POST',[],body,'return=representation').then(r,j); } }; },
+    upsert(body)   { return { then(r,j){ return exec('POST',[],body,'resolution=merge-duplicates,return=representation').then(r,j); } }; },
+    update(body)   { const params=[]; return { eq(col,val){ params.push(col+'=eq.'+encodeURIComponent(val)); return { then(r,j){ return exec('PATCH',params,body,'return=representation').then(r,j); } }; } }; },
+    delete()       { const params=[]; return {
+      eq(col,val)  { params.push(col+'=eq.'+encodeURIComponent(val)); return { then(r,j){ return exec('DELETE',params,undefined,'return=minimal').then(r,j); } }; },
+      in(col,vals) { params.push(col+'=in.('+vals.map(v=>encodeURIComponent(v)).join(',')+')');
+      return { then(r,j){ return exec('DELETE',params,undefined,'return=minimal').then(r,j); } }; }
     }; }
   };
-  return builder;
 }
 
 const { createClient } = supabase;
