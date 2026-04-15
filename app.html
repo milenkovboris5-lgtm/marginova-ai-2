@@ -996,7 +996,7 @@ html{scroll-behavior:smooth;}
     <div class="nav-right">
       
       <style>@keyframes apk-pulse{0%,100%{box-shadow:0 0 8px rgba(45,220,122,0.4),0 0 0 0 rgba(45,220,122,0.3);}50%{box-shadow:0 0 16px rgba(45,220,122,0.7),0 0 0 6px rgba(45,220,122,0);}}</style>
-      <a href="#" style="font-size:0.58rem;font-weight:500;display:flex;align-items:center;gap:4px;border:1.5px solid rgba(45,220,122,0.5);background:rgba(45,220,122,0.08);color:#2ddc7a;padding:0.3rem 0.75rem;border-radius:50px;text-decoration:none;white-space:nowrap;font-family:'Jost',sans-serif;animation:apk-pulse 2s ease-in-out infinite;" id="nav-apk-btn">🤖 Android App</a>
+      <a href="https://play.google.com/store/apps/details?id=tech.marginova.app" target="_blank" rel="noopener" style="font-size:0.58rem;font-weight:500;display:flex;align-items:center;gap:4px;border:1.5px solid rgba(45,220,122,0.5);background:rgba(45,220,122,0.08);color:#2ddc7a;padding:0.3rem 0.75rem;border-radius:50px;text-decoration:none;white-space:nowrap;font-family:'Jost',sans-serif;animation:apk-pulse 2s ease-in-out infinite;" id="nav-apk-btn">🤖 Android App</a>
       <style>@keyframes apk-pulse{0%,100%{box-shadow:0 0 8px rgba(45,220,122,0.3);}50%{box-shadow:0 0 16px rgba(45,220,122,0.6),0 0 0 5px rgba(45,220,122,0);}}</style>
       <a href="#" onclick="document.getElementById('auth-screen').style.display='flex';switchAuth('register');return false;" style="font-size:0.6rem;font-weight:600;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:0.3rem 0.7rem;border-radius:50px;text-decoration:none;white-space:nowrap;font-family:'Jost',sans-serif;" id="nav-free-btn">Почни бесплатно</a>
       <button onclick="openDrawer()" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text2);font-size:1rem;display:flex;align-items:center;justify-content:center;">☰</button>
@@ -2334,7 +2334,7 @@ async function handleAuth(){
 
 function updateEmailPlanBtn(){
   const btn=document.getElementById("email-plan-btn");
-  if(btn)btn.style.display=(current==="planner"||current==="anastasia")?"inline-block":"none";
+  if(btn)btn.style.display=(current==="businessai"||current==="eva")?"inline-block":"none";
 }
 async function showApp(){
   document.getElementById('auth-screen').style.display='none';
@@ -2434,21 +2434,21 @@ function setLang(l){
       upgrade:'Nadgradi plan →',pricing:'Planovi & Cene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
-      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
+      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
       rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     hr:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
       upgrade:'Nadogradi plan →',pricing:'Planovi & Cijene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',
-      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
+      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
       rBusinessai:'Strategija & Financije 💼',rCreativeai:'Marketing & Brand 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     bs:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       upgrade:'Nadogradi plan →',pricing:'Planovi & Cijene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
-      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
+      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
       rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     sq:{chat:'Chat',blog:'Blog & Reviews',placeholder:'Shkruaj një mesazh...',
@@ -2522,12 +2522,14 @@ function setLang(l){
       'bg': av.descBG || av.descEN || av.desc,
       'de': av.descDE || av.descEN || av.desc,
       'sq': av.descSQ || av.descEN || av.desc,
+      'tr': av.descTR || av.descEN || av.desc,
+      'pl': av.descPL || av.descEN || av.desc,
     };
     const localDesc = descMap[l] || av.desc;
     const wdEl = document.getElementById('welcome-desc');
     if(wdEl) wdEl.textContent = localDesc;
     // Azuriraj placeholder so nov jazik
-    const placeholders={en:'Type a message...',mk:'Напишете порака...',sr:'Napišite poruku...',hr:'Napišite poruku...',bs:'Napišite poruku...',sq:'Shkruaj një mesazh...',bg:'Напишете съобщение...',de:'Nachricht eingeben...'};
+    const placeholders={en:'Type a message...',mk:'Напишете порака...',sr:'Napišite poruku...',hr:'Napišite poruku...',bs:'Napišite poruku...',sq:'Shkruaj një mesazh...',bg:'Напишете съобщение...',de:'Nachricht eingeben...',tr:'Mesaj yazın...',pl:'Napisz wiadomość...'};
     const inp = document.getElementById('msg-input');
     if(inp) inp.placeholder = placeholders[l] || placeholders.en;
   }
