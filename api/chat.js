@@ -41,7 +41,7 @@ const AVATAR_MODEL_MAP = {
   justinian:   { model: 'gemini-2.5-flash', grounding: true,  serper: false },
   leo:         { model: 'gemma-3-27b-it',   grounding: false, serper: false },
   liber:       { model: 'gemma-3-27b-it',   grounding: false, serper: false },
-  creativeai:  { model: 'gemma-3-27b-it',   grounding: false, serper: false },
+  creativeai:  { model: 'gemini-2.5-flash', grounding: true,  serper: false },
   default:     { model: 'gemini-2.5-flash', grounding: false, serper: false },
 };
 
