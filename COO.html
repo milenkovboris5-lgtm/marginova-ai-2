@@ -3,157 +3,287 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Marginova COO — Executive Intelligence</title>
+<title>MARGINOVA COO — Executive Business Intelligence</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --gold:#C9A84C;--gold2:#E8C97A;
+  --gold:#C9A84C;--gold2:#E8C97A;--gold3:#F5E0A0;
   --goldglow:rgba(201,168,76,0.25);--goldglow2:rgba(201,168,76,0.08);
-  --bg:#090910;--bg2:#0e0e1a;--bg3:#13131f;
+  --bg:#090910;--bg2:#0e0e1a;--bg3:#13131f;--bg4:#1a1a2e;
   --border:rgba(201,168,76,0.18);--border2:rgba(201,168,76,0.35);
-  --text:#f0eada;--text2:#c8bfa8;--muted:#7a7060;--green:#2ddc7a;
+  --text:#f0eada;--text2:#c8bfa8;--muted:#7a7060;
+  --accent:#a87cff;--green:#2ddc7a;
 }
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Jost',sans-serif;overflow:hidden}
 
-/* AUTH */
-#auth-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:1000}
-.auth-box{background:linear-gradient(135deg,rgba(19,19,31,0.98),rgba(14,14,26,0.98));border:1px solid var(--border2);border-radius:20px;padding:2.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:1.2rem;box-shadow:0 0 60px rgba(201,168,76,0.1)}
-.auth-logo{text-align:center;display:flex;flex-direction:column;align-items:center;gap:0.5rem}
-.auth-logo img{width:56px;height:56px;object-fit:contain}
-.auth-logo h1{font-family:'Orbitron',sans-serif;font-size:1.3rem;letter-spacing:0.12em;color:var(--text)}
-.auth-logo h1 b{color:var(--gold)}.auth-logo h1 span{color:var(--gold2)}
-.auth-logo p{font-size:0.68rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase}
-.auth-tabs{display:flex;gap:0.5rem;width:100%}
-.auth-tab{flex:1;padding:0.5rem;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-family:'Jost',sans-serif;font-size:0.85rem;transition:all 0.2s}
-.auth-tab.active{border-color:var(--gold);color:var(--gold);background:var(--goldglow2)}
-.auth-input{width:100%;padding:0.75rem 1rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Jost',sans-serif;font-size:0.9rem;outline:none;transition:border 0.2s}
-.auth-input:focus{border-color:var(--gold2)}
-.auth-btn{width:100%;padding:0.8rem;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:#090910;font-family:'Orbitron',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.1em;cursor:pointer;transition:opacity 0.2s}
-.auth-btn:hover{opacity:0.88}
+html,body{
+  height:100%;background:var(--bg);color:var(--text);
+  font-family:'Jost',sans-serif;overflow:hidden;
+  background-image:
+    radial-gradient(ellipse at 15% 25%,rgba(168,124,255,0.05) 0%,transparent 55%),
+    radial-gradient(ellipse at 85% 75%,rgba(201,168,76,0.04) 0%,transparent 50%);
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,168,76,0.025) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+
+/* ═══ AUTH ═══ */
+#auth-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:1000;
+  background-image:radial-gradient(ellipse at 20% 30%,rgba(168,124,255,0.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(201,168,76,0.07) 0%,transparent 50%)}
+.auth-box{
+  background:linear-gradient(135deg,rgba(19,19,31,0.98),rgba(14,14,26,0.98));
+  border:1px solid var(--border2);border-radius:24px;padding:2.5rem;
+  width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:1.2rem;
+  box-shadow:0 0 80px rgba(201,168,76,0.1),inset 0 1px 0 rgba(201,168,76,0.1);
+  position:relative;
+}
+.auth-box::before{content:'';position:absolute;inset:-1px;border-radius:25px;
+  background:linear-gradient(135deg,rgba(201,168,76,0.3),transparent 40%,transparent 60%,rgba(168,124,255,0.15));z-index:-1}
+.auth-logo{text-align:center;display:flex;flex-direction:column;align-items:center;gap:0.6rem}
+.auth-logo img{width:64px;height:64px;border-radius:50%;border:2px solid var(--gold);box-shadow:0 0 20px var(--goldglow);object-fit:contain}
+.auth-logo h1{font-family:'Orbitron',sans-serif;font-size:1.35rem;letter-spacing:0.12em;color:var(--text)}
+.auth-logo h1 b{color:var(--gold);text-shadow:0 0 20px var(--goldglow)}
+.auth-logo h1 span{color:var(--gold2)}
+.auth-logo p{font-size:0.68rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+.auth-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.03);padding:3px;border-radius:50px;width:100%;border:1px solid var(--border)}
+.auth-tab{flex:1;padding:0.45rem;border-radius:50px;font-size:0.78rem;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'Jost',sans-serif;transition:all 0.25s}
+.auth-tab.active{background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.08));color:var(--gold)}
+.auth-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-family:'Jost',sans-serif;font-size:0.88rem;outline:none;transition:all 0.2s}
+.auth-input:focus{border-color:var(--gold2);box-shadow:0 0 12px var(--goldglow2)}
+.auth-input::placeholder{color:var(--muted)}
+.auth-btn{width:100%;padding:0.75rem;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:50px;color:#090910;font-family:'Orbitron',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.1em;cursor:pointer;transition:all 0.25s;box-shadow:0 4px 20px rgba(201,168,76,0.3)}
+.auth-btn:hover{opacity:0.9;box-shadow:0 6px 30px rgba(201,168,76,0.4)}
 .auth-msg{font-size:0.78rem;text-align:center;min-height:1.2rem}
 .auth-msg.error{color:#ff6b6b}.auth-msg.success{color:var(--green)}
-#gdpr-notice{font-size:0.66rem;color:var(--muted);text-align:center;line-height:1.6}
+#gdpr-notice{font-size:0.67rem;color:var(--muted);text-align:center;line-height:1.6}
 #gdpr-notice a{color:var(--gold)}
 
-/* APP */
-#app{display:none;height:100vh;flex-direction:row}
+/* ═══ LAYOUT ═══ */
+#app{display:none;height:100vh;flex-direction:row;position:relative;z-index:1}
 
-/* SIDEBAR */
-#sidebar{width:66px;min-width:66px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:0.75rem 0;gap:0.35rem;overflow-y:auto;overflow-x:hidden;transition:width 0.28s ease;z-index:10}
-#sidebar:hover{width:192px}
-.sb-label{font-size:0.5rem;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;padding:0.35rem 0.75rem;display:none;width:100%}
-#sidebar:hover .sb-label{display:block}
-.sb-div{width:34px;height:1px;background:var(--border);margin:0.15rem 0;flex-shrink:0;transition:width 0.28s}
-#sidebar:hover .sb-div{width:calc(100% - 1.5rem);margin:0.15rem 0.75rem}
-.sb-item{width:100%;display:flex;align-items:center;gap:0.65rem;padding:0.42rem 0.6rem;cursor:pointer;border-radius:8px;transition:all 0.18s;border-left:2px solid transparent}
-.sb-item:hover{background:var(--goldglow2)}
-.sb-item.active{background:var(--goldglow2);border-left-color:var(--gold)}
-.sb-av{width:34px;height:34px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center}
-.sb-av img{width:100%;height:100%;object-fit:cover}
-.sb-av.coo{background:linear-gradient(135deg,var(--gold),var(--gold2));font-family:'Orbitron',sans-serif;font-size:0.48rem;color:#090910;font-weight:700;letter-spacing:0.04em}
-.sb-info{display:none;flex-direction:column;min-width:0;flex:1}
-#sidebar:hover .sb-info{display:flex}
-.sb-name{font-size:0.74rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sb-role{font-size:0.58rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sb-badge{font-size:0.46rem;font-weight:700;padding:2px 5px;border-radius:4px;background:var(--goldglow2);border:1px solid var(--border2);color:var(--gold);white-space:nowrap;flex-shrink:0;display:none}
+/* ═══ SIDEBAR ═══ */
+#sidebar{
+  width:68px;min-width:68px;height:100vh;
+  background:linear-gradient(180deg,var(--bg2),var(--bg));
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;
+  padding:0.75rem 0;gap:0.35rem;overflow-y:auto;overflow-x:hidden;
+  transition:width 0.25s ease;z-index:10;
+  box-shadow:2px 0 20px rgba(0,0,0,0.3);
+}
+#sidebar:hover{width:215px}
+#sidebar::-webkit-scrollbar{width:2px}
+#sidebar::-webkit-scrollbar-thumb{background:var(--border)}
+
+.sb-logo-wrap{width:100%;display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.85rem;margin-bottom:0.3rem;cursor:pointer;flex-shrink:0;transition:all 0.2s}
+.sb-logo-wrap:hover{opacity:0.85}
+.sb-logo-img{width:36px;height:36px;border-radius:50%;object-fit:contain;flex-shrink:0;
+  border:1.5px solid var(--gold);padding:3px;
+  background:radial-gradient(circle,rgba(201,168,76,0.15),transparent);
+  box-shadow:0 0 10px var(--goldglow2)}
+.sb-logo-text{display:none;flex-direction:column}
+#sidebar:hover .sb-logo-text{display:flex}
+.sb-logo-name{font-family:'Orbitron',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.14em;color:var(--gold);white-space:nowrap;text-shadow:0 0 10px var(--goldglow)}
+.sb-logo-sub{font-size:0.56rem;color:var(--muted);letter-spacing:0.08em;white-space:nowrap;text-transform:uppercase}
+
+.sb-divider{width:36px;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:0.3rem 0;flex-shrink:0;transition:width 0.25s}
+#sidebar:hover .sb-divider{width:185px}
+
+.sb-avatar{width:100%;display:flex;align-items:center;gap:0.75rem;padding:0.4rem 0.85rem;cursor:pointer;border-radius:0 10px 10px 0;transition:all 0.2s;position:relative;overflow:hidden;flex-shrink:0;border-left:2px solid transparent}
+.sb-avatar::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,var(--goldglow2),transparent);opacity:0;transition:opacity 0.2s}
+.sb-avatar:hover::before{opacity:1}
+.sb-avatar.active{border-left-color:var(--gold);background:linear-gradient(90deg,rgba(201,168,76,0.1),transparent)}
+.sb-avatar-img{width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid var(--border);transition:all 0.2s;position:relative;z-index:1}
+.sb-avatar:hover .sb-avatar-img{border-color:var(--border2)}
+.sb-avatar.active .sb-avatar-img{border-color:var(--gold);box-shadow:0 0 10px var(--goldglow2)}
+.sb-avatar-info{display:none;flex-direction:column;min-width:0;position:relative;z-index:1}
+#sidebar:hover .sb-avatar-info{display:flex}
+.sb-avatar-name{font-size:0.76rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-avatar-role{font-size:0.59rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-badge{position:absolute;top:4px;right:6px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#090910;font-size:0.47rem;font-weight:700;padding:1px 5px;border-radius:4px;display:none;z-index:2}
 #sidebar:hover .sb-badge{display:block}
 
-/* MAIN */
+.sb-coo-img{width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',sans-serif;font-size:0.5rem;font-weight:700;color:#090910;letter-spacing:0.05em;
+  border:1.5px solid var(--gold2);box-shadow:0 0 12px var(--goldglow);position:relative;z-index:1}
+
+/* ═══ MAIN ═══ */
 #main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-/* TOPBAR */
-#topbar{display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;height:50px;min-height:50px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
-#topbar-left{display:flex;align-items:center;gap:0.6rem}
-#tb-logo{width:26px;height:26px;object-fit:contain;flex-shrink:0}
-#tb-brand{font-family:'Orbitron',sans-serif;font-size:0.8rem;font-weight:500;letter-spacing:0.14em;color:var(--text)}
-#tb-brand b{color:var(--gold)}#tb-brand span{color:var(--gold2)}
-#tb-sep{width:1px;height:18px;background:var(--border);margin:0 0.35rem}
-#tb-ctx{font-size:0.66rem;color:var(--muted);letter-spacing:0.04em}
-#topbar-right{display:flex;align-items:center;gap:0.4rem}
+/* ═══ TOPBAR ═══ */
+#topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.5rem;height:52px;
+  background:linear-gradient(90deg,var(--bg2),var(--bg3));
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  box-shadow:0 2px 20px rgba(0,0,0,0.3);
+  position:relative;
+}
+#topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0.3}
+#topbar-left{display:flex;align-items:center;gap:0.85rem}
+.topbar-logo{width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(201,168,76,0.4))}
+.topbar-divider{width:1px;height:22px;background:var(--border2)}
+#topbar-brand{display:flex;flex-direction:column}
+#coo-title{font-family:'Orbitron',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.18em;color:var(--gold);line-height:1;text-shadow:0 0 15px var(--goldglow)}
+#coo-subtitle{font-size:0.56rem;color:var(--muted);letter-spacing:0.08em;margin-top:2px;text-transform:uppercase}
+#topbar-right{display:flex;align-items:center;gap:0.75rem}
 
-/* FLAGS */
-#lang-bar{display:flex;align-items:center;gap:2px}
-.lf{font-size:1.12rem;cursor:pointer;padding:3px 4px;border-radius:5px;border:1.5px solid transparent;transition:border-color 0.15s,background 0.15s;line-height:1}
-.lf:hover{background:var(--goldglow2)}
-.lf.active{border-color:var(--gold);background:var(--goldglow2)}
+/* ═══ FLAGS ═══ */
+#lang-bar{display:flex;align-items:center;gap:0.12rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:3px 5px}
+.lang-flag{font-size:1.2rem;cursor:pointer;padding:2px 4px;border-radius:4px;border:1.5px solid transparent;transition:all 0.15s;line-height:1;filter:saturate(0.7)}
+.lang-flag:hover{filter:saturate(1);border-color:var(--border2)}
+.lang-flag.active{filter:saturate(1) drop-shadow(0 0 4px rgba(201,168,76,0.5));border-color:var(--gold);background:var(--goldglow2)}
 
-#signout-btn{background:transparent;border:1px solid var(--border);border-radius:7px;padding:0.28rem 0.6rem;color:var(--muted);cursor:pointer;font-size:0.68rem;font-family:'Jost',sans-serif;transition:all 0.2s}
-#signout-btn:hover{border-color:var(--gold2);color:var(--gold2)}
+#signout-btn{background:transparent;border:1px solid var(--border);border-radius:7px;padding:0.28rem 0.7rem;color:var(--muted);cursor:pointer;font-size:0.7rem;font-family:'Jost',sans-serif;transition:all 0.2s;white-space:nowrap;letter-spacing:0.03em}
+#signout-btn:hover{border-color:var(--border2);color:var(--text2)}
 
-/* ATOM LANDING */
-#atom-landing{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.6rem;padding:2rem;overflow:hidden}
-.atom-wrap{position:relative;width:150px;height:150px;flex-shrink:0}
-.atom-nucleus{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:radial-gradient(circle,var(--gold2),var(--gold));box-shadow:0 0 16px var(--goldglow),0 0 32px var(--goldglow);z-index:3}
-.atom-orbit{position:absolute;top:50%;left:50%;border-radius:50%;border:1px solid var(--border2)}
-.atom-orbit:nth-child(2){width:100px;height:48px;margin:-24px 0 0 -50px;animation:o1 3s linear infinite}
-.atom-orbit:nth-child(3){width:100px;height:48px;margin:-24px 0 0 -50px;transform:rotate(60deg);animation:o2 3.5s linear infinite}
-.atom-orbit:nth-child(4){width:100px;height:48px;margin:-24px 0 0 -50px;transform:rotate(120deg);animation:o3 4s linear infinite}
-.atom-electron{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--gold2);box-shadow:0 0 5px var(--goldglow);top:-3px;left:50%;margin-left:-3px}
-@keyframes o1{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-@keyframes o2{from{transform:rotate(60deg)}to{transform:rotate(420deg)}}
-@keyframes o3{from{transform:rotate(120deg)}to{transform:rotate(480deg)}}
-.land-text{text-align:center}
-.land-text h2{font-family:'Orbitron',sans-serif;font-size:1.15rem;font-weight:500;letter-spacing:0.14em;color:var(--text);margin-bottom:0.38rem}
-.land-text p{font-size:0.8rem;color:var(--muted);max-width:370px;line-height:1.65;margin:0 auto}
-.quick-btns{display:flex;flex-wrap:wrap;gap:0.4rem;justify-content:center;max-width:460px}
-.qbtn{font-size:0.68rem;padding:0.35rem 0.8rem;border-radius:50px;border:1px solid var(--border2);background:var(--goldglow2);color:var(--gold);cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.18s}
-.qbtn:hover{background:var(--goldglow);border-color:var(--gold)}
+/* ═══ LANDING ═══ */
+#atom-landing{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2rem;padding:2.5rem;position:relative;overflow:hidden;
+}
 
-/* CHAT */
+/* Gold particles background */
+#atom-landing::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 20% 50%,rgba(201,168,76,0.04) 0%,transparent 50%),
+    radial-gradient(circle at 80% 30%,rgba(168,124,255,0.03) 0%,transparent 40%),
+    radial-gradient(circle at 50% 100%,rgba(201,168,76,0.03) 0%,transparent 40%);
+}
+
+/* Executive seal / emblem instead of atom */
+.exec-emblem{
+  position:relative;width:140px;height:140px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.exec-ring-outer{
+  position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(201,168,76,0.25);
+  animation:ring-pulse 4s ease-in-out infinite;
+}
+.exec-ring-mid{
+  position:absolute;inset:12px;border-radius:50%;
+  border:1px solid rgba(201,168,76,0.4);
+  animation:ring-pulse 4s ease-in-out infinite 0.5s;
+}
+.exec-ring-inner{
+  position:absolute;inset:24px;border-radius:50%;
+  border:1px solid rgba(201,168,76,0.6);
+}
+.exec-core{
+  position:relative;z-index:2;
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.05));
+  border:1.5px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 30px var(--goldglow),inset 0 0 20px rgba(201,168,76,0.05);
+}
+.exec-core img{width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(201,168,76,0.6))}
+.exec-dot{
+  position:absolute;width:5px;height:5px;border-radius:50%;
+  background:var(--gold2);box-shadow:0 0 6px var(--gold);
+}
+.exec-dot:nth-child(1){top:8px;left:50%;margin-left:-2.5px;animation:dot-blink 3s ease-in-out infinite}
+.exec-dot:nth-child(2){bottom:8px;left:50%;margin-left:-2.5px;animation:dot-blink 3s ease-in-out infinite 1s}
+.exec-dot:nth-child(3){left:8px;top:50%;margin-top:-2.5px;animation:dot-blink 3s ease-in-out infinite 2s}
+.exec-dot:nth-child(4){right:8px;top:50%;margin-top:-2.5px;animation:dot-blink 3s ease-in-out infinite 1.5s}
+.exec-corner{
+  position:absolute;width:12px;height:12px;
+  border-color:var(--gold2);border-style:solid;opacity:0.6;
+}
+.exec-corner.tl{top:16px;left:16px;border-width:1px 0 0 1px}
+.exec-corner.tr{top:16px;right:16px;border-width:1px 1px 0 0}
+.exec-corner.bl{bottom:16px;left:16px;border-width:0 0 1px 1px}
+.exec-corner.br{bottom:16px;right:16px;border-width:0 1px 1px 0}
+
+@keyframes ring-pulse{0%,100%{opacity:0.4;transform:scale(1)}50%{opacity:0.8;transform:scale(1.02)}}
+@keyframes dot-blink{0%,100%{opacity:0.3}50%{opacity:1}}
+
+.landing-title-wrap{text-align:center}
+.landing-title-wrap h2{
+  font-family:'Orbitron',sans-serif;font-size:1.35rem;font-weight:500;
+  letter-spacing:0.18em;color:var(--text);margin-bottom:0.6rem;
+  text-shadow:0 0 30px rgba(201,168,76,0.15);
+}
+.landing-title-wrap p{font-size:0.82rem;color:var(--muted);max-width:440px;line-height:1.7;text-align:center}
+
+.quick-btns{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;max-width:540px}
+.quick-btn{
+  font-size:0.7rem;padding:0.42rem 1rem;border-radius:50px;
+  border:1px solid var(--border2);
+  background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.04));
+  color:var(--gold2);cursor:pointer;font-family:'Jost',sans-serif;
+  transition:all 0.2s;letter-spacing:0.02em;
+}
+.quick-btn:hover{background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.1));border-color:var(--gold);box-shadow:0 0 12px var(--goldglow2)}
+
+/* ═══ CHAT ═══ */
 #chat-area{display:none;flex:1;flex-direction:column;overflow:hidden}
-#messages{flex:1;overflow-y:auto;padding:1.2rem;display:flex;flex-direction:column;gap:0.85rem;scroll-behavior:smooth}
+#messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:1rem;scroll-behavior:smooth}
 #messages::-webkit-scrollbar{width:3px}
 #messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-.msg-row{display:flex;gap:0.6rem;align-items:flex-start}
-.msg-row.user{flex-direction:row-reverse}
-.msg-av{width:32px;height:32px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--gold),var(--gold2));font-family:'Orbitron',sans-serif;font-size:0.45rem;color:#090910;font-weight:700}
-.msg-av img{width:100%;height:100%;object-fit:cover}
-.bubble{max-width:72%;padding:0.78rem 0.95rem;border-radius:13px;font-size:0.85rem;line-height:1.65}
-.bubble.ai{background:var(--bg3);border:1px solid var(--border);border-top-left-radius:4px;color:var(--text)}
-.bubble.user{background:linear-gradient(135deg,rgba(201,168,76,0.13),rgba(201,168,76,0.05));border:1px solid var(--border2);border-top-right-radius:4px;color:var(--text)}
-.bubble .hi{color:var(--gold2);font-weight:500}
-.msg-user-icon{width:32px;height:32px;border-radius:50%;flex-shrink:0;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.58rem;color:var(--muted)}
-.bubble-actions{display:flex;gap:0.3rem;margin-top:0.45rem}
-.bubble-btn{font-size:0.6rem;padding:0.2rem 0.5rem;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.18s}
-.bubble-btn:hover{border-color:var(--gold2);color:var(--gold2)}
-.typing{display:flex;gap:5px;align-items:center;padding:0.78rem 0.95rem}
-.td{width:6px;height:6px;border-radius:50%;background:var(--gold2);animation:td 1.2s infinite}
-.td:nth-child(2){animation-delay:.2s}.td:nth-child(3){animation-delay:.4s}
-@keyframes td{0%,60%,100%{opacity:.3;transform:scale(.8)}30%{opacity:1;transform:scale(1)}}
 
-/* INPUT */
-#input-area{padding:0.8rem 1.2rem;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0}
-#drop-zone{border:1.5px dashed var(--border2);border-radius:10px;padding:0.48rem 1rem;text-align:center;font-size:0.68rem;color:var(--muted);cursor:pointer;transition:all 0.2s;margin-bottom:0.45rem;display:flex;align-items:center;justify-content:center;gap:0.45rem}
+.msg-row{display:flex;gap:0.75rem;align-items:flex-start}
+.msg-row.user{flex-direction:row-reverse}
+.msg-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--gold),var(--gold2));font-family:'Orbitron',sans-serif;font-size:0.48rem;color:#090910;font-weight:700;box-shadow:0 0 8px var(--goldglow2)}
+.msg-av img{width:100%;height:100%;object-fit:cover}
+.bubble{max-width:72%;padding:0.85rem 1.1rem;border-radius:18px;font-size:0.87rem;line-height:1.7;position:relative}
+.bubble.ai{background:linear-gradient(135deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-top-left-radius:4px;color:var(--text)}
+.bubble.user{background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06));border:1px solid var(--border2);border-top-right-radius:4px;color:var(--text)}
+.bubble .hi{color:var(--gold2);font-weight:500}
+.msg-user-icon{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.62rem;color:var(--muted)}
+.bubble-actions{display:flex;gap:0.4rem;margin-top:0.6rem}
+.bubble-btn{font-size:0.62rem;padding:0.2rem 0.55rem;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.2s}
+.bubble-btn:hover{border-color:var(--gold2);color:var(--gold2)}
+
+.typing{display:flex;gap:5px;align-items:center;padding:0.85rem 1rem}
+.td{width:6px;height:6px;border-radius:50%;background:var(--gold2);animation:tdot 1.2s infinite}
+.td:nth-child(2){animation-delay:0.2s}.td:nth-child(3){animation-delay:0.4s}
+@keyframes tdot{0%,60%,100%{opacity:0.3;transform:scale(0.8)}30%{opacity:1;transform:scale(1)}}
+
+/* ═══ INPUT ═══ */
+#input-area{padding:0.85rem 1.5rem;background:linear-gradient(0deg,var(--bg2),var(--bg3));border-top:1px solid var(--border);flex-shrink:0}
+#drop-zone{border:1.5px dashed rgba(201,168,76,0.2);border-radius:10px;padding:0.5rem 1rem;text-align:center;font-size:0.7rem;color:var(--muted);cursor:pointer;transition:all 0.2s;margin-bottom:0.6rem;display:flex;align-items:center;justify-content:center;gap:0.5rem;letter-spacing:0.02em}
 #drop-zone.drag-over{border-color:var(--gold);color:var(--gold);background:var(--goldglow2)}
 #drop-zone.has-file{border-color:var(--gold2);color:var(--gold2);background:var(--goldglow2)}
-.input-wrap{display:flex;align-items:flex-end;gap:0.6rem;background:var(--bg3);border:1px solid var(--border2);border-radius:11px;padding:0.5rem 0.65rem;transition:border 0.2s}
-.input-wrap:focus-within{border-color:var(--gold)}
-#msg-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Jost',sans-serif;font-size:0.85rem;resize:none;max-height:100px;line-height:1.5;min-height:20px}
+.input-wrap{display:flex;align-items:flex-end;gap:0.75rem;background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:14px;padding:0.6rem 0.75rem;transition:border 0.2s;box-shadow:0 2px 10px rgba(0,0,0,0.2)}
+.input-wrap:focus-within{border-color:var(--gold);box-shadow:0 0 20px var(--goldglow2)}
+#msg-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Jost',sans-serif;font-size:0.87rem;resize:none;max-height:120px;line-height:1.55;min-height:24px}
 #msg-input::placeholder{color:var(--muted)}
-#send-btn{width:32px;height:32px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s}
-#send-btn:hover{opacity:0.85}
-#send-btn svg{width:14px;height:14px;fill:#090910}
+#send-btn{width:36px;height:36px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 2px 10px rgba(201,168,76,0.3)}
+#send-btn:hover{opacity:0.88;box-shadow:0 4px 16px rgba(201,168,76,0.4)}
+#send-btn svg{width:15px;height:15px;fill:#090910}
 
-/* UPGRADE MODAL */
-#upgrade-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:500;align-items:center;justify-content:center}
+/* ═══ UPGRADE ═══ */
+#upgrade-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 #upgrade-modal.show{display:flex}
-.upgrade-box{background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:2rem;max-width:330px;width:90%;text-align:center;box-shadow:0 0 50px rgba(201,168,76,0.12)}
-.upgrade-box h3{font-family:'Orbitron',sans-serif;font-size:0.92rem;color:var(--gold);margin-bottom:0.65rem;letter-spacing:0.1em}
-.upgrade-box p{font-size:0.78rem;color:var(--text2);line-height:1.6;margin-bottom:1.1rem}
-.upgrade-btn{display:inline-block;padding:0.65rem 1.3rem;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:9px;color:#090910;font-family:'Orbitron',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;cursor:pointer;transition:opacity 0.2s;text-decoration:none}
+.upgrade-box{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border2);border-radius:20px;padding:2.2rem;max-width:340px;width:90%;text-align:center;box-shadow:0 0 80px rgba(201,168,76,0.12)}
+.upgrade-box h3{font-family:'Orbitron',sans-serif;font-size:0.95rem;color:var(--gold);margin-bottom:0.75rem;letter-spacing:0.12em;text-shadow:0 0 15px var(--goldglow)}
+.upgrade-box p{font-size:0.8rem;color:var(--text2);line-height:1.65;margin-bottom:1.2rem}
+.upgrade-btn{display:inline-block;padding:0.7rem 1.5rem;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:50px;color:#090910;font-family:'Orbitron',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,0.3)}
 .upgrade-btn:hover{opacity:0.9}
-.upgrade-close{display:block;margin-top:0.65rem;font-size:0.7rem;color:var(--muted);cursor:pointer}
+.upgrade-close{display:block;margin-top:0.8rem;font-size:0.72rem;color:var(--muted);cursor:pointer;transition:color 0.2s}
 .upgrade-close:hover{color:var(--text)}
 
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
 @media(max-width:600px){
-  #sidebar{width:52px;min-width:52px}
-  #sidebar:hover{width:52px}
-  #sidebar:hover .sb-info{display:none}
-  .bubble{max-width:86%}
+  #sidebar{width:54px;min-width:54px}
+  #sidebar:hover{width:54px}
+  #sidebar:hover .sb-avatar-info,.sb-logo-text{display:none!important}
+  .bubble{max-width:88%}
+  .lang-flag{font-size:1rem;padding:2px 3px}
 }
 </style>
 </head>
@@ -165,13 +295,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Jost',
     <div class="auth-logo">
       <img src="logo-main.png" alt="Marginova"/>
       <h1>MARGIN<b>OVA</b><span>.AI</span></h1>
-      <p>Chief Operating Officer — Executive Intelligence</p>
+      <p>Chief Operating Officer</p>
     </div>
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchAuth('login')" id="tab-login">Login</button>
       <button class="auth-tab" onclick="switchAuth('register')" id="tab-register">Register</button>
     </div>
-    <input class="auth-input" type="email" id="auth-email" placeholder="Email address"/>
+    <input class="auth-input" type="email" id="auth-email" placeholder="Email"/>
     <input class="auth-input" type="password" id="auth-password" placeholder="Password"/>
     <div id="gdpr-notice" style="display:none">
       By registering you agree to our <a href="terms-of-service.html">Terms</a> and <a href="privacy-policy.html">Privacy Policy</a>.
@@ -186,100 +316,115 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Jost',
 
   <!-- SIDEBAR -->
   <div id="sidebar">
-    <div class="sb-label">Executive</div>
-    <div class="sb-item active" id="sb-coo" onclick="selectAvatar('coo')">
-      <div class="sb-av coo">COO</div>
-      <div class="sb-info"><div class="sb-name">Business COO</div><div class="sb-role">Executive Intelligence</div></div>
+    <div class="sb-logo-wrap" onclick="selectAvatar('coo')">
+      <img class="sb-logo-img" src="logo-main.png" alt="Marginova"/>
+      <div class="sb-logo-text">
+        <div class="sb-logo-name">MARGINOVA</div>
+        <div class="sb-logo-sub">COO</div>
+      </div>
     </div>
+    <div class="sb-divider"></div>
 
-    <div class="sb-div"></div>
-    <div class="sb-label">Specialists</div>
-
-    <div class="sb-item" id="sb-businessai" onclick="selectAvatar('businessai')">
-      <div class="sb-av"><img src="avatar-businessai.png" alt=""/></div>
-      <div class="sb-info"><div class="sb-name">Business AI</div><div class="sb-role">Strategy & Finance</div></div>
+    <div class="sb-avatar active" id="sb-coo" onclick="selectAvatar('coo')">
+      <div class="sb-coo-img">COO</div>
+      <div class="sb-avatar-info">
+        <div class="sb-avatar-name">Business COO</div>
+        <div class="sb-avatar-role">Executive Intelligence</div>
+      </div>
     </div>
-    <div class="sb-item" id="sb-eva" onclick="selectAvatar('eva')">
-      <div class="sb-av"><img src="avatar-eva.png" alt=""/></div>
-      <div class="sb-info"><div class="sb-name">Eva</div><div class="sb-role">EU Funds & Grants</div></div>
+    <div class="sb-avatar" id="sb-businessai" onclick="selectAvatar('businessai')">
+      <img class="sb-avatar-img" src="avatar-businessai.png" alt="Business AI"/>
+      <div class="sb-avatar-info"><div class="sb-avatar-name">Business AI</div><div class="sb-avatar-role">Strategy & Finance</div></div>
     </div>
-    <div class="sb-item" id="sb-tenderai" onclick="selectAvatar('tenderai')">
-      <div class="sb-av"><img src="avatar-tenderai.png" alt=""/></div>
-      <div class="sb-info"><div class="sb-name">Tender AI</div><div class="sb-role">Tenders & Auctions</div></div>
+    <div class="sb-avatar" id="sb-eva" onclick="selectAvatar('eva')">
+      <img class="sb-avatar-img" src="avatar-eva.png" alt="Eva"/>
+      <div class="sb-avatar-info"><div class="sb-avatar-name">Eva</div><div class="sb-avatar-role">EU Funds & Grants</div></div>
     </div>
-    <div class="sb-item" id="sb-justinian" onclick="selectAvatar('justinian')">
-      <div class="sb-av"><img src="avatar-justinian.png" alt=""/></div>
-      <div class="sb-info"><div class="sb-name">Justinian</div><div class="sb-role">Legal Advisor</div></div>
+    <div class="sb-avatar" id="sb-tenderai" onclick="selectAvatar('tenderai')">
+      <img class="sb-avatar-img" src="avatar-tenderai.png" alt="Tender AI"/>
+      <div class="sb-avatar-info"><div class="sb-avatar-name">Tender AI</div><div class="sb-avatar-role">Tenders & Auctions</div></div>
     </div>
-    <div class="sb-item" id="sb-creativeai" onclick="selectAvatar('creativeai')">
-      <div class="sb-av"><img src="avatar-creativeai.png" alt=""/></div>
-      <div class="sb-info"><div class="sb-name">Creative AI</div><div class="sb-role">Marketing & Brand</div></div>
+    <div class="sb-avatar" id="sb-justinian" onclick="selectAvatar('justinian')">
+      <img class="sb-avatar-img" src="avatar-justinian.png" alt="Justinian"/>
+      <div class="sb-avatar-info"><div class="sb-avatar-name">Justinian</div><div class="sb-avatar-role">Legal Advisor</div></div>
     </div>
-    <div class="sb-item" id="sb-dropshipper" onclick="selectAvatar('dropshipper')">
-      <div class="sb-av"><img src="avatar-dropai.png" alt=""/></div>
-      <div class="sb-info"><div class="sb-name">Drop AI</div><div class="sb-role">Dropshipping</div></div>
+    <div class="sb-avatar" id="sb-creativeai" onclick="selectAvatar('creativeai')">
+      <img class="sb-avatar-img" src="avatar-creativeai.png" alt="Creative AI"/>
+      <div class="sb-avatar-info"><div class="sb-avatar-name">Creative AI</div><div class="sb-avatar-role">Marketing & Brand</div></div>
     </div>
-
-    <div class="sb-div"></div>
-    <div class="sb-label">Tools</div>
-
-    <div class="sb-item" id="sb-leo" onclick="selectAvatar('leo')">
-      <div class="sb-av"><img src="avatar-leo.png" alt=""/></div>
-      <div class="sb-info"><div class="sb-name">Leo</div><div class="sb-role">Writing & Essays</div></div>
-      <div class="sb-badge">20/day</div>
+    <div class="sb-avatar" id="sb-dropshipper" onclick="selectAvatar('dropshipper')">
+      <img class="sb-avatar-img" src="avatar-dropai.png" alt="Drop AI"/>
+      <div class="sb-avatar-info"><div class="sb-avatar-name">Drop AI</div><div class="sb-avatar-role">Dropshipping</div></div>
     </div>
-    <div class="sb-item" id="sb-liber" onclick="selectAvatar('liber')">
-      <div class="sb-av"><img src="avatar-liber.png" alt=""/></div>
-      <div class="sb-info"><div class="sb-name">LIBER</div><div class="sb-role">Encyclopedia</div></div>
-      <div class="sb-badge">20/day</div>
+    <div class="sb-divider"></div>
+    <div class="sb-avatar" id="sb-leo" onclick="selectAvatar('leo')">
+      <img class="sb-avatar-img" src="avatar-leo.png" alt="Leo"/>
+      <div class="sb-avatar-info"><div class="sb-avatar-name">Leo</div><div class="sb-avatar-role">Writing & Essays</div></div>
+      <div class="sb-badge">20/d</div>
+    </div>
+    <div class="sb-avatar" id="sb-liber" onclick="selectAvatar('liber')">
+      <img class="sb-avatar-img" src="avatar-liber.png" alt="LIBER"/>
+      <div class="sb-avatar-info"><div class="sb-avatar-name">LIBER</div><div class="sb-avatar-role">Encyclopedia</div></div>
+      <div class="sb-badge">20/d</div>
     </div>
   </div>
 
   <!-- MAIN -->
   <div id="main">
-
     <!-- TOPBAR -->
     <div id="topbar">
       <div id="topbar-left">
-        <img id="tb-logo" src="logo-main.png" alt="Marginova"/>
-        <div id="tb-brand">MARGIN<b>OVA</b><span> COO</span></div>
-        <div id="tb-sep"></div>
-        <div id="tb-ctx">Executive Business Intelligence</div>
+        <img class="topbar-logo" src="logo-main.png" alt="Marginova"/>
+        <div class="topbar-divider"></div>
+        <div id="topbar-brand">
+          <div id="coo-title">MARGINOVA COO</div>
+          <div id="coo-subtitle">Executive Business Intelligence</div>
+        </div>
       </div>
       <div id="topbar-right">
         <div id="lang-bar">
-          <span class="lf active" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</span>
-          <span class="lf" data-lang="mk" onclick="setLang('mk')" title="Македонски">🇲🇰</span>
-          <span class="lf" data-lang="sr" onclick="setLang('sr')" title="Srpski">🇷🇸</span>
-          <span class="lf" data-lang="hr" onclick="setLang('hr')" title="Hrvatski">🇭🇷</span>
-          <span class="lf" data-lang="bs" onclick="setLang('bs')" title="Bosanski">🇧🇦</span>
-          <span class="lf" data-lang="sq" onclick="setLang('sq')" title="Shqip">🇦🇱</span>
-          <span class="lf" data-lang="bg" onclick="setLang('bg')" title="Български">🇧🇬</span>
-          <span class="lf" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</span>
-          <span class="lf" data-lang="tr" onclick="setLang('tr')" title="Türkçe">🇹🇷</span>
-          <span class="lf" data-lang="pl" onclick="setLang('pl')" title="Polski">🇵🇱</span>
+          <span class="lang-flag active" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</span>
+          <span class="lang-flag" data-lang="mk" onclick="setLang('mk')" title="Македонски">🇲🇰</span>
+          <span class="lang-flag" data-lang="sr" onclick="setLang('sr')" title="Srpski">🇷🇸</span>
+          <span class="lang-flag" data-lang="hr" onclick="setLang('hr')" title="Hrvatski">🇭🇷</span>
+          <span class="lang-flag" data-lang="bs" onclick="setLang('bs')" title="Bosanski">🇧🇦</span>
+          <span class="lang-flag" data-lang="sq" onclick="setLang('sq')" title="Shqip">🇦🇱</span>
+          <span class="lang-flag" data-lang="bg" onclick="setLang('bg')" title="Български">🇧🇬</span>
+          <span class="lang-flag" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</span>
+          <span class="lang-flag" data-lang="tr" onclick="setLang('tr')" title="Türkçe">🇹🇷</span>
+          <span class="lang-flag" data-lang="pl" onclick="setLang('pl')" title="Polski">🇵🇱</span>
         </div>
         <button id="signout-btn" onclick="logout()">↩ Sign Out</button>
       </div>
     </div>
 
-    <!-- ATOM LANDING -->
+    <!-- EXECUTIVE LANDING -->
     <div id="atom-landing">
-      <div class="atom-wrap">
-        <div class="atom-nucleus"></div>
-        <div class="atom-orbit"><div class="atom-electron"></div></div>
-        <div class="atom-orbit"><div class="atom-electron"></div></div>
-        <div class="atom-orbit"><div class="atom-electron"></div></div>
+      <div class="exec-emblem">
+        <div class="exec-ring-outer"></div>
+        <div class="exec-ring-mid"></div>
+        <div class="exec-ring-inner"></div>
+        <div class="exec-core">
+          <img src="logo-main.png" alt="COO"/>
+        </div>
+        <div class="exec-dot"></div>
+        <div class="exec-dot"></div>
+        <div class="exec-dot"></div>
+        <div class="exec-dot"></div>
+        <div class="exec-corner tl"></div>
+        <div class="exec-corner tr"></div>
+        <div class="exec-corner bl"></div>
+        <div class="exec-corner br"></div>
       </div>
-      <div class="land-text">
+      <div class="landing-title-wrap">
         <h2 id="landing-title">BUSINESS COO</h2>
-        <p id="landing-sub">Your executive AI advisor. Ask anything about your business — tenders, grants, legal, strategy, marketing. Get a structured executive decision.</p>
+        <p id="landing-sub">Your executive AI advisor. Ask anything about your business — tenders, grants, legal, strategy, marketing. Get a structured decision.</p>
       </div>
       <div class="quick-btns">
-        <button class="qbtn" id="qb1" onclick="quickStart(this.dataset.msg)" data-msg="Analyze this tender document for me">Analyze tender document</button>
-        <button class="qbtn" id="qb2" onclick="quickStart(this.dataset.msg)" data-msg="Find EU grants for my business">EU grants for my business</button>
-        <button class="qbtn" id="qb3" onclick="quickStart(this.dataset.msg)" data-msg="Is this business idea viable?">Business viability check</button>
-        <button class="qbtn" id="qb4" onclick="quickStart(this.dataset.msg)" data-msg="Review this contract for legal risks">Legal risk review</button>
+        <button class="quick-btn" id="qb1" onclick="quickStart(document.getElementById('qb1').textContent)">Analyze tender document</button>
+        <button class="quick-btn" id="qb2" onclick="quickStart(document.getElementById('qb2').textContent)">EU grants for my business</button>
+        <button class="quick-btn" id="qb3" onclick="quickStart(document.getElementById('qb3').textContent)">Business viability check</button>
+        <button class="quick-btn" id="qb4" onclick="quickStart(document.getElementById('qb4').textContent)">Legal risk review</button>
       </div>
     </div>
 
@@ -311,113 +456,188 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Jost',
 <div id="upgrade-modal">
   <div class="upgrade-box">
     <h3 id="upgrade-title">UPGRADE PLAN</h3>
-    <p id="upgrade-msg">Upgrade to continue with unlimited executive intelligence.</p>
+    <p id="upgrade-msg">Upgrade to continue with unlimited access.</p>
     <a href="app.html#upgrade" class="upgrade-btn">⚡ Upgrade Now</a>
     <span class="upgrade-close" id="upgrade-close-text" onclick="closeUpgrade()">Maybe later</span>
   </div>
 </div>
 
 <script>
-// SUPABASE
-const SUPA_URL='https://yidalveetwkcrjkvzbsn.supabase.co';
-const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
-let _tok=SUPA_KEY;
-function _sf(url,opts={}){const h=new Headers(opts.headers||{});h.set('apikey',SUPA_KEY);h.set('Authorization','Bearer '+_tok);return fetch(url,{...opts,headers:h});}
-const{createClient}=supabase;
-const db=createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false},global:{fetch:_sf}});
-db.auth.onAuthStateChange((ev,sess)=>{if((ev==='SIGNED_IN'||ev==='TOKEN_REFRESHED')&&sess){currentUser=sess.user;_tok=sess.access_token||SUPA_KEY;}else if(ev==='SIGNED_OUT'){currentUser=null;_tok=SUPA_KEY;}});
-setInterval(async()=>{try{const{data}=await db.auth.refreshSession();if(data?.session?.access_token)_tok=data.session.access_token;}catch(e){}},10*60*1000);
+// ═══ SUPABASE ═══
+const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
+let _tok = SUPA_KEY;
+const { createClient } = supabase;
 
-// STATE
-let currentUser=null,authMode='login',lang=localStorage.getItem('coo-lang')||'en';
-let currentAvatar='coo',chatHistory={},realtimeUsed=0,realtimeLimit=5;
-let dailyMsgsLeo=0,dailyMsgsLiber=0,uploadedFile=null,uploadedFileData=null,userPlan='free';
+function _sf(url, opts={}) {
+  const h = new Headers(opts.headers||{});
+  h.set('apikey', SUPA_KEY); h.set('Authorization','Bearer '+_tok);
+  return fetch(url,{...opts,headers:h});
+}
+const db = createClient(SUPA_URL, SUPA_KEY, {
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false},
+  global:{fetch:_sf}
+});
 
-const AVATARS={
-  coo:{name:'Business COO',role:'Executive Intelligence',img:null,isCOO:true},
-  businessai:{name:'Business AI',role:'Strategy & Finance',img:'avatar-businessai.png'},
-  eva:{name:'Eva',role:'EU Funds & Grants',img:'avatar-eva.png'},
-  tenderai:{name:'Tender AI',role:'Tenders & Auctions',img:'avatar-tenderai.png'},
-  justinian:{name:'Justinian',role:'Legal Advisor',img:'avatar-justinian.png'},
-  creativeai:{name:'Creative AI',role:'Marketing & Brand',img:'avatar-creativeai.png'},
-  dropshipper:{name:'Drop AI',role:'Dropshipping',img:'avatar-dropai.png'},
-  leo:{name:'Leo',role:'Writing & Essays',img:'avatar-leo.png',dailyLimit:20},
-  liber:{name:'LIBER',role:'Encyclopedia',img:'avatar-liber.png',dailyLimit:20},
+// ═══ STATE ═══
+let currentUser=null, authMode='login', lang=localStorage.getItem('mcoo-lang')||'en';
+let currentAvatar='coo', chatHistory={};
+let realtimeUsed=0, realtimeLimit=5, dailyLeo=0, dailyLiber=0;
+let upFile=null, upFileData=null;
+
+const AVATARS = {
+  coo:        {name:'Business COO',  role:'Executive Intelligence',  img:null, isCOO:true},
+  businessai: {name:'Business AI',   role:'Strategy & Finance',      img:'avatar-businessai.png'},
+  eva:        {name:'Eva',           role:'EU Funds & Grants',       img:'avatar-eva.png'},
+  tenderai:   {name:'Tender AI',     role:'Tenders & Auctions',      img:'avatar-tenderai.png'},
+  justinian:  {name:'Justinian',     role:'Legal Advisor',           img:'avatar-justinian.png'},
+  creativeai: {name:'Creative AI',   role:'Marketing & Brand',       img:'avatar-creativeai.png'},
+  dropshipper:{name:'Drop AI',       role:'Dropshipping',            img:'avatar-dropai.png'},
+  leo:        {name:'Leo',           role:'Writing & Essays',        img:'avatar-leo.png', dailyLimit:20},
+  liber:      {name:'LIBER',         role:'Encyclopedia',            img:'avatar-liber.png', dailyLimit:20},
 };
 
-// LANG
-const L={
-  en:{lt:'BUSINESS COO',ls:'Your executive AI advisor. Ask anything about your business — tenders, grants, legal, strategy, marketing. Get a structured executive decision.',ph:'Ask your COO anything...',dt:'Drop document here or click to upload (PDF, DOCX, image)',q1:'Analyze tender document',q1m:'Analyze this tender document for me',q2:'EU grants for my business',q2m:'Find EU grants for my business',q3:'Business viability check',q3m:'Is this business idea viable?',q4:'Legal risk review',q4m:'Review this contract for legal risks',ctx:'Executive Business Intelligence',ut:'UPGRADE PLAN',um:'Upgrade to continue with unlimited executive intelligence.',uc:'Maybe later',so:'↩ Sign Out'},
-  mk:{lt:'БИЗНИС COO',ls:'Твојот извршен AI советник. Прашај сè за твојот бизнис — тендери, грантови, право, стратегија, маркетинг. Добиј структурирана извршна одлука.',ph:'Прашај го твојот COO...',dt:'Фрли документ или кликни за прикачување (PDF, DOCX, слика)',q1:'Анализирај тендер',q1m:'Анализирај ми тендер документ',q2:'EU грантови за бизнис',q2m:'Најди EU грантови за мојот бизнис',q3:'Провери бизнис идеа',q3m:'Дали оваа бизнис идеа е исплатлива?',q4:'Правен преглед',q4m:'Прегледај го договорот за правни ризици',ctx:'Извршна Бизнис Интелигенција',ut:'НАДГРАДИ ПЛАН',um:'Надгради за неограничена извршна интелигенција.',uc:'Можеби подоцна',so:'↩ Одјави се'},
-  sr:{lt:'BIZNIS COO',ls:'Tvoj izvršni AI savetnik. Pitaj bilo šta o svom biznisu — tenderi, grantovi, pravo, strategija, marketing.',ph:'Pitaj svog COO-a...',dt:'Prevuci dokument ili klikni za upload',q1:'Analiziraj tender',q1m:'Analiziraj mi tender dokument',q2:'EU grantovi za biznis',q2m:'Pronađi EU grantove za moj biznis',q3:'Provjeri biznis ideju',q3m:'Da li je ova biznis ideja isplativa?',q4:'Pravni pregled',q4m:'Pregledaj ugovor za pravne rizike',ctx:'Izvršna Poslovna Inteligencija',ut:'NADGRADI PLAN',um:'Nadgradi za neograničenu izvršnu inteligenciju.',uc:'Možda kasnije',so:'↩ Odjavi se'},
-  hr:{lt:'BIZNIS COO',ls:'Tvoj izvršni AI savjetnik.',ph:'Pitaj svog COO...',dt:'Povuci dokument ili klikni',q1:'Analiziraj tender',q1m:'Analiziraj mi tender',q2:'EU grantovi',q2m:'Pronađi EU grantove',q3:'Provjeri poslovnu ideju',q3m:'Je li ova ideja isplativa?',q4:'Pravni pregled',q4m:'Pregledaj ugovor',ctx:'Izvršna Poslovna Inteligencija',ut:'NADOGRADI PLAN',um:'Nadogradi za neograničenu inteligenciju.',uc:'Možda kasnije',so:'↩ Odjavi se'},
-  bs:{lt:'BIZNIS COO',ls:'Tvoj izvršni AI savjetnik.',ph:'Pitaj svog COO...',dt:'Prevuci dokument ili klikni',q1:'Analiziraj tender',q1m:'Analiziraj mi tender',q2:'EU grantovi',q2m:'Pronađi EU grantove',q3:'Provjeri poslovnu ideju',q3m:'Je li ova ideja isplativa?',q4:'Pravni pregled',q4m:'Pregledaj ugovor',ctx:'Izvršna Poslovna Inteligencija',ut:'NADOGRADI PLAN',um:'Nadogradi za neograničenu inteligenciju.',uc:'Možda kasnije',so:'↩ Odjavi se'},
-  sq:{lt:'BIZNES COO',ls:'Këshilltari juaj ekzekutiv AI.',ph:'Pyete COO-in tuaj...',dt:'Tërhiq dokumentin ose kliko',q1:'Analizoni tenderin',q1m:'Analizoni dokumentin e tenderit',q2:'Grante BE',q2m:'Gjeni grante BE',q3:'Kontrollo idenë',q3m:'A është kjo ide e realizueshme?',q4:'Rishikim ligjor',q4m:'Rishikoni kontratën',ctx:'Inteligjencë Ekzekutive',ut:'PËRMIRËSO PLANIN',um:'Përmirëso për inteligjencë të pakufizuar.',uc:'Ndoshta më vonë',so:'↩ Dil'},
-  bg:{lt:'БИЗНЕС COO',ls:'Вашият изпълнителен AI съветник.',ph:'Попитайте вашия COO...',dt:'Пуснете документ тук или кликнете',q1:'Анализирай търг',q1m:'Анализирай ми тръжен документ',q2:'ЕС грантове',q2m:'Намери ЕС грантове',q3:'Провери бизнес идея',q3m:'Тази идея изпълнима ли е?',q4:'Правен преглед',q4m:'Прегледай договора',ctx:'Изпълнителна Бизнес Интелигентност',ut:'НАДГРАДИ ПЛАН',um:'Надгради за неограничена интелигентност.',uc:'Може би по-късно',so:'↩ Изход'},
-  de:{lt:'BUSINESS COO',ls:'Ihr KI-Exekutivberater.',ph:'Fragen Sie Ihren COO...',dt:'Dokument hierher ziehen oder klicken',q1:'Ausschreibung analysieren',q1m:'Analysiere diese Ausschreibung',q2:'EU-Fördermittel',q2m:'EU-Fördergelder finden',q3:'Geschäftsidee prüfen',q3m:'Ist diese Idee rentabel?',q4:'Rechtliche Prüfung',q4m:'Vertrag auf Risiken prüfen',ctx:'Executive Business Intelligence',ut:'PLAN UPGRADEN',um:'Upgrade für unbegrenzte Intelligenz.',uc:'Vielleicht später',so:'↩ Abmelden'},
-  tr:{lt:'İŞ COO',ls:'Yönetici AI danışmanınız.',ph:"COO'nuza sorun...",dt:'Belgeyi buraya sürükleyin veya tıklayın',q1:'İhaleyi analiz et',q1m:'Bu ihaleyi analiz et',q2:'AB hibeleri',q2m:'AB hibelerini bul',q3:'İş fikrini kontrol et',q3m:'Bu fikir uygulanabilir mi?',q4:'Hukuki inceleme',q4m:'Sözleşmeyi incele',ctx:'Yönetici İş Zekası',ut:'PLANI YÜKSELT',um:'Sınırsız zeka için yükseltin.',uc:'Belki daha sonra',so:'↩ Çıkış'},
-  pl:{lt:'BIZNES COO',ls:'Twój wykonawczy doradca AI.',ph:'Zapytaj swojego COO...',dt:'Przeciągnij dokument lub kliknij',q1:'Analizuj przetarg',q1m:'Przeanalizuj ten przetarg',q2:'Granty UE',q2m:'Znajdź granty UE',q3:'Sprawdź pomysł',q3m:'Czy ten pomysł jest opłacalny?',q4:'Przegląd prawny',q4m:'Przejrzyj umowę',ctx:'Wykonawcza Inteligencja Biznesowa',ut:'ULEPSZ PLAN',um:'Ulepsz dla nieograniczonej inteligencji.',uc:'Może później',so:'↩ Wyloguj'},
+const L = {
+  en:{lt:'BUSINESS COO',ls:'Your executive AI advisor. Ask anything about your business — tenders, grants, legal, strategy, marketing. Get a structured decision.',ph:'Ask your COO anything...',dt:'Drop document here or click to upload (PDF, DOCX, image)',q1:'Analyze tender document',q2:'EU grants for my business',q3:'Business viability check',q4:'Legal risk review',so:'↩ Sign Out',ut:'UPGRADE PLAN',um:'Upgrade to continue with unlimited access.',uc:'Maybe later',li:'Login',re:'Register',si:'Sign In',pr:'Processing...',wc:'⚠️ Wrong email or password.',rf:'⚠️ Registration failed.',ro:'✅ Registered! Check your email.',ee:'Please enter email and password.'},
+  mk:{lt:'БИЗНИС COO',ls:'Твојот извршен AI советник. Прашај сè за твојот бизнис — тендери, грантови, право, стратегија, маркетинг. Добиј структурирана одлука.',ph:'Прашај го твојот COO...',dt:'Фрли документ тука или кликни (PDF, DOCX, слика)',q1:'Анализирај тендер документ',q2:'EU грантови за мој бизнис',q3:'Провери бизнис идеа',q4:'Правен преглед на договор',so:'↩ Одјави се',ut:'НАДГРАДИ ПЛАН',um:'Надгради за неограничен пристап.',uc:'Можеби подоцна',li:'Логирај се',re:'Регистрирај се',si:'Влез',pr:'Обработка...',wc:'⚠️ Грешна email или лозинка.',rf:'⚠️ Регистрацијата не успеа.',ro:'✅ Регистриран! Провери го email-от.',ee:'Внеси email и лозинка.'},
+  sr:{lt:'BIZNIS COO',ls:'Tvoj izvršni AI savetnik. Pitaj bilo šta o svom biznisu — tenderi, grantovi, pravo, strategija, marketing.',ph:'Pitaj svog COO-a...',dt:'Prevuci dokument ili klikni (PDF, DOCX, slika)',q1:'Analiziraj tender dokument',q2:'EU grantovi za moj biznis',q3:'Proveri biznis ideju',q4:'Pravni pregled ugovora',so:'↩ Odjavi se',ut:'NADGRADI PLAN',um:'Nadgradi za neograničen pristup.',uc:'Možda kasnije',li:'Prijava',re:'Registracija',si:'Uđi',pr:'Obrada...',wc:'⚠️ Pogrešan email ili lozinka.',rf:'⚠️ Registracija nije uspela.',ro:'✅ Registrovan! Proveri email.',ee:'Unesi email i lozinku.'},
+  hr:{lt:'BIZNIS COO',ls:'Tvoj izvršni AI savjetnik.',ph:'Pitaj svog COO...',dt:'Povuci dokument ili klikni',q1:'Analiziraj tender',q2:'EU grantovi',q3:'Provjeri poslovnu ideju',q4:'Pravni pregled',so:'↩ Odjavi se',ut:'NADOGRADI PLAN',um:'Nadogradi za neograničen pristup.',uc:'Možda kasnije',li:'Prijava',re:'Registracija',si:'Uđi',pr:'Obrada...',wc:'⚠️ Pogrešan email.',rf:'⚠️ Registracija nije uspjela.',ro:'✅ Registriran!',ee:'Unesi email i lozinku.'},
+  bs:{lt:'BIZNIS COO',ls:'Tvoj izvršni AI savjetnik.',ph:'Pitaj svog COO...',dt:'Prevuci dokument ili klikni',q1:'Analiziraj tender',q2:'EU grantovi',q3:'Provjeri poslovnu ideju',q4:'Pravni pregled',so:'↩ Odjavi se',ut:'NADOGRADI PLAN',um:'Nadogradi za neograničen pristup.',uc:'Možda kasnije',li:'Prijava',re:'Registracija',si:'Uđi',pr:'Obrada...',wc:'⚠️ Pogrešan email.',rf:'⚠️ Registracija nije uspjela.',ro:'✅ Registriran!',ee:'Unesi email i lozinku.'},
+  sq:{lt:'BIZNES COO',ls:'Këshilltari juaj ekzekutiv AI.',ph:'Pyete COO-in tuaj...',dt:'Tërhiq dokumentin ose kliko',q1:'Analizoni tenderin',q2:'Grante BE',q3:'Kontrollo idenë',q4:'Rishikim ligjor',so:'↩ Dil',ut:'PËRMIRËSO PLANIN',um:'Përmirëso për akses të pakufizuar.',uc:'Ndoshta më vonë',li:'Hyrje',re:'Regjistrim',si:'Hyr',pr:'Duke procesuar...',wc:'⚠️ Email ose fjalëkalim i gabuar.',rf:'⚠️ Regjistrimi dështoi.',ro:'✅ Regjistruar!',ee:'Vendos email dhe fjalëkalim.'},
+  bg:{lt:'БИЗНЕС COO',ls:'Вашият изпълнителен AI съветник.',ph:'Попитайте вашия COO...',dt:'Пуснете документ тук или кликнете',q1:'Анализирай търг',q2:'ЕС грантове',q3:'Провери бизнес идея',q4:'Правен преглед',so:'↩ Изход',ut:'НАДГРАДИ ПЛАН',um:'Надгради за неограничен достъп.',uc:'Може би по-късно',li:'Вход',re:'Регистрация',si:'Влез',pr:'Обработка...',wc:'⚠️ Грешен имейл или парола.',rf:'⚠️ Регистрацията не успя.',ro:'✅ Регистриран!',ee:'Въведи имейл и парола.'},
+  de:{lt:'BUSINESS COO',ls:'Ihr KI-Exekutivberater.',ph:'Fragen Sie Ihren COO...',dt:'Dokument hierher ziehen oder klicken',q1:'Ausschreibung analysieren',q2:'EU-Fördermittel',q3:'Geschäftsidee prüfen',q4:'Rechtliche Prüfung',so:'↩ Abmelden',ut:'PLAN UPGRADEN',um:'Upgrade für unbegrenzten Zugang.',uc:'Vielleicht später',li:'Anmelden',re:'Registrieren',si:'Einloggen',pr:'Verarbeitung...',wc:'⚠️ Falsche E-Mail oder Passwort.',rf:'⚠️ Registrierung fehlgeschlagen.',ro:'✅ Registriert!',ee:'E-Mail und Passwort eingeben.'},
+  tr:{lt:'İŞ COO',ls:'Yönetici AI danışmanınız.',ph:"COO'nuza sorun...",dt:'Belgeyi buraya sürükleyin veya tıklayın',q1:'İhaleyi analiz et',q2:'AB hibeleri',q3:'İş fikrini kontrol et',q4:'Hukuki inceleme',so:'↩ Çıkış',ut:'PLANI YÜKSELT',um:'Sınırsız erişim için yükseltin.',uc:'Belki sonra',li:'Giriş',re:'Kayıt',si:'Giriş Yap',pr:'İşleniyor...',wc:'⚠️ Yanlış e-posta veya şifre.',rf:'⚠️ Kayıt başarısız.',ro:'✅ Kayıt olundu!',ee:'E-posta ve şifre girin.'},
+  pl:{lt:'BIZNES COO',ls:'Twój wykonawczy doradca AI.',ph:'Zapytaj swojego COO...',dt:'Przeciągnij dokument lub kliknij',q1:'Analizuj przetarg',q2:'Granty UE',q3:'Sprawdź pomysł biznesowy',q4:'Przegląd prawny',so:'↩ Wyloguj',ut:'ULEPSZ PLAN',um:'Ulepsz dla nieograniczonego dostępu.',uc:'Może później',li:'Logowanie',re:'Rejestracja',si:'Zaloguj',pr:'Przetwarzanie...',wc:'⚠️ Nieprawidłowy email lub hasło.',rf:'⚠️ Rejestracja nie powiodła się.',ro:'✅ Zarejestrowano!',ee:'Wpisz email i hasło.'},
 };
-function tx(k){return(L[lang]&&L[lang][k])||L.en[k]||'';}
 
-// AUTH
-function switchAuth(m){authMode=m;document.getElementById('tab-login').classList.toggle('active',m==='login');document.getElementById('tab-register').classList.toggle('active',m==='register');document.getElementById('gdpr-notice').style.display=m==='register'?'block':'none';document.getElementById('auth-btn').textContent=m==='login'?'Sign In':'Register';document.getElementById('auth-msg').textContent='';}
+function t(k){ return (L[lang]||L.en)[k]||(L.en)[k]||''; }
+
+// ═══ AUTH ═══
+function switchAuth(mode){
+  authMode=mode;
+  document.getElementById('tab-login').classList.toggle('active',mode==='login');
+  document.getElementById('tab-register').classList.toggle('active',mode==='register');
+  document.getElementById('gdpr-notice').style.display=mode==='register'?'block':'none';
+  document.getElementById('auth-btn').textContent=mode==='login'?t('si'):t('re');
+  document.getElementById('auth-msg').textContent='';
+}
+
 async function handleAuth(){
-  const email=document.getElementById('auth-email').value.trim(),password=document.getElementById('auth-password').value.trim();
-  const msg=document.getElementById('auth-msg'),btn=document.getElementById('auth-btn');
-  if(!email||!password){msg.textContent='Please enter email and password.';msg.className='auth-msg error';return;}
-  btn.disabled=true;msg.textContent='Processing...';msg.className='auth-msg';
+  const email=document.getElementById('auth-email').value.trim();
+  const pw=document.getElementById('auth-password').value.trim();
+  const msg=document.getElementById('auth-msg');
+  const btn=document.getElementById('auth-btn');
+  if(!email||!pw){msg.textContent=t('ee');msg.className='auth-msg error';return;}
+  btn.disabled=true;msg.textContent=t('pr');msg.className='auth-msg';
   try{
-    if(authMode==='register'){const r=await db.auth.signUp({email,password});if(r.error)throw r.error;msg.textContent='✅ Registration successful! Check your email.';msg.className='auth-msg success';}
-    else{const r=await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;currentUser=r.data.user;_tok=r.data.session?.access_token||SUPA_KEY;showApp();}
-  }catch(e){let m2=e.message||'Error';if(m2.includes('Invalid')||m2.includes('400'))m2=authMode==='login'?'⚠️ Wrong email or password.':'⚠️ Registration failed.';msg.textContent=m2;msg.className='auth-msg error';}
+    if(authMode==='register'){
+      const r=await db.auth.signUp({email,password:pw});
+      if(r.error)throw r.error;
+      msg.textContent=t('ro');msg.className='auth-msg success';
+    }else{
+      const r=await db.auth.signInWithPassword({email,password:pw});
+      if(r.error)throw r.error;
+      currentUser=r.data.user;_tok=r.data.session?.access_token||SUPA_KEY;
+      showApp();
+    }
+  }catch(e){
+    let err=e.message||'Error';
+    if(err.includes('Invalid login')||err.includes('400'))err=authMode==='login'?t('wc'):t('rf');
+    msg.textContent=err;msg.className='auth-msg error';
+  }
   btn.disabled=false;
 }
-async function logout(){await db.auth.signOut();currentUser=null;_tok=SUPA_KEY;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
-window.addEventListener('DOMContentLoaded',async()=>{try{const{data}=await db.auth.getSession();if(data?.session?.user){currentUser=data.session.user;_tok=data.session.access_token||SUPA_KEY;showApp();}else{document.getElementById('auth-screen').style.display='flex';}}catch(e){document.getElementById('auth-screen').style.display='flex';}});
 
-function showApp(){document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';setLang(lang);loadLimits();setupDragDrop();}
+async function logout(){
+  await db.auth.signOut();
+  currentUser=null;_tok=SUPA_KEY;
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
 
-// LIMITS
+window.addEventListener('DOMContentLoaded',async()=>{
+  applyLang(lang);
+  try{
+    const{data}=await db.auth.getSession();
+    if(data?.session?.user){currentUser=data.session.user;_tok=data.session.access_token||SUPA_KEY;showApp();}
+    else document.getElementById('auth-screen').style.display='flex';
+  }catch(e){document.getElementById('auth-screen').style.display='flex';}
+
+  db.auth.onAuthStateChange((ev,ses)=>{
+    if((ev==='SIGNED_IN'||ev==='TOKEN_REFRESHED')&&ses){currentUser=ses.user;_tok=ses.access_token||SUPA_KEY;}
+    else if(ev==='SIGNED_OUT'){currentUser=null;_tok=SUPA_KEY;}
+  });
+  setInterval(async()=>{try{const{data}=await db.auth.refreshSession();if(data?.session?.access_token)_tok=data.session.access_token;}catch(e){}},10*60*1000);
+});
+
+function showApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  applyLang(lang);loadLimits();setupDragDrop();
+}
+
+// ═══ LIMITS ═══
 async function loadLimits(){
   if(!currentUser)return;
   try{
-    const{data}=await db.from('profiles').select('realtime_used,realtime_limit,daily_msgs_leo,daily_msgs_liber,last_reset_date,plan').eq('id',currentUser.id).single();
-    if(data){
+    const url=SUPA_URL+'/rest/v1/profiles?select=realtime_used,realtime_limit,daily_msgs_leo,daily_msgs_liber,last_reset_date&id=eq.'+currentUser.id;
+    const res=await _sf(url,{headers:{'Accept':'application/vnd.pgrst.object+json'}});
+    const data=await res.json().catch(()=>null);
+    if(data&&!data.code){
       const today=new Date().toISOString().split('T')[0];
-      if(data.last_reset_date!==today){await db.from('profiles').update({daily_msgs_leo:0,daily_msgs_liber:0,last_reset_date:today}).eq('id',currentUser.id);dailyMsgsLeo=0;dailyMsgsLiber=0;}
-      else{dailyMsgsLeo=data.daily_msgs_leo||0;dailyMsgsLiber=data.daily_msgs_liber||0;}
-      realtimeUsed=data.realtime_used||0;realtimeLimit=data.realtime_limit||5;userPlan=data.plan||'free';
-    }else{await db.from('profiles').insert({id:currentUser.id,realtime_used:0,realtime_limit:5,daily_msgs_leo:0,daily_msgs_liber:0,last_reset_date:new Date().toISOString().split('T')[0],plan:'free'});}
+      if(data.last_reset_date!==today){
+        await _sf(SUPA_URL+'/rest/v1/profiles?id=eq.'+currentUser.id,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({daily_msgs_leo:0,daily_msgs_liber:0,last_reset_date:today})});
+        dailyLeo=0;dailyLiber=0;
+      }else{dailyLeo=data.daily_msgs_leo||0;dailyLiber=data.daily_msgs_liber||0;}
+      realtimeUsed=data.realtime_used||0;realtimeLimit=data.realtime_limit||5;
+    }else{
+      await _sf(SUPA_URL+'/rest/v1/profiles',{method:'POST',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:currentUser.id,realtime_used:0,realtime_limit:5,daily_msgs_leo:0,daily_msgs_liber:0,last_reset_date:new Date().toISOString().split('T')[0]})});
+    }
   }catch(e){console.warn('limits:',e);}
 }
-async function incRT(){realtimeUsed++;if(currentUser)await db.from('profiles').update({realtime_used:realtimeUsed}).eq('id',currentUser.id);}
-async function incDaily(a){if(a==='leo'){dailyMsgsLeo++;await db.from('profiles').update({daily_msgs_leo:dailyMsgsLeo}).eq('id',currentUser.id);}if(a==='liber'){dailyMsgsLiber++;await db.from('profiles').update({daily_msgs_liber:dailyMsgsLiber}).eq('id',currentUser.id);}}
 
-// LANG
-function setLang(l){
-  lang=l;localStorage.setItem('coo-lang',l);
-  document.querySelectorAll('.lf').forEach(f=>f.classList.toggle('active',f.dataset.lang===l));
-  document.getElementById('landing-title').textContent=tx('lt');
-  document.getElementById('landing-sub').textContent=tx('ls');
-  document.getElementById('msg-input').placeholder=tx('ph');
-  document.getElementById('drop-text').textContent=tx('dt');
-  document.getElementById('tb-ctx').textContent=currentAvatar==='coo'?tx('ctx'):(AVATARS[currentAvatar]?.name+' — '+AVATARS[currentAvatar]?.role);
-  document.getElementById('signout-btn').textContent=tx('so');
-  document.getElementById('upgrade-title').textContent=tx('ut');
-  document.getElementById('upgrade-msg').textContent=tx('um');
-  document.getElementById('upgrade-close-text').textContent=tx('uc');
-  const q=[1,2,3,4];
-  q.forEach(n=>{const b=document.getElementById('qb'+n);if(b){b.textContent=tx('q'+n);b.dataset.msg=tx('q'+n+'m');}});
+async function incRealtime(){
+  realtimeUsed++;
+  if(currentUser)await _sf(SUPA_URL+'/rest/v1/profiles?id=eq.'+currentUser.id,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({realtime_used:realtimeUsed})});
+}
+async function incDaily(av){
+  if(av==='leo'){dailyLeo++;await _sf(SUPA_URL+'/rest/v1/profiles?id=eq.'+currentUser.id,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({daily_msgs_leo:dailyLeo})});}
+  if(av==='liber'){dailyLiber++;await _sf(SUPA_URL+'/rest/v1/profiles?id=eq.'+currentUser.id,{method:'PATCH',headers:{'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({daily_msgs_liber:dailyLiber})});}
 }
 
-// AVATAR
+// ═══ LANG ═══
+function setLang(l){lang=l;localStorage.setItem('mcoo-lang',l);applyLang(l);}
+function applyLang(l){
+  lang=l;
+  document.querySelectorAll('.lang-flag').forEach(f=>f.classList.toggle('active',f.dataset.lang===l));
+  const T=L[l]||L.en;
+  document.getElementById('landing-title').textContent=T.lt;
+  document.getElementById('landing-sub').textContent=T.ls;
+  document.getElementById('msg-input').placeholder=T.ph;
+  document.getElementById('drop-text').textContent=T.dt;
+  document.getElementById('signout-btn').textContent=T.so;
+  document.getElementById('upgrade-title').textContent=T.ut;
+  document.getElementById('upgrade-msg').textContent=T.um;
+  document.getElementById('upgrade-close-text').textContent=T.uc;
+  document.getElementById('tab-login').textContent=T.li;
+  document.getElementById('tab-register').textContent=T.re;
+  document.getElementById('auth-btn').textContent=authMode==='login'?T.si:T.re;
+  document.getElementById('qb1').textContent=T.q1;
+  document.getElementById('qb2').textContent=T.q2;
+  document.getElementById('qb3').textContent=T.q3;
+  document.getElementById('qb4').textContent=T.q4;
+}
+
+// ═══ AVATAR ═══
 function selectAvatar(id){
   currentAvatar=id;
-  document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
-  const el=document.getElementById('sb-'+id);if(el)el.classList.add('active');
+  document.querySelectorAll('.sb-avatar').forEach(el=>el.classList.remove('active'));
+  document.getElementById('sb-'+id)?.classList.add('active');
   const av=AVATARS[id];
-  document.getElementById('tb-ctx').textContent=av?.isCOO?tx('ctx'):(av?.name+' — '+av?.role);
+  if(av){
+    document.getElementById('coo-title').textContent=av.isCOO?'MARGINOVA COO':av.name.toUpperCase();
+    document.getElementById('coo-subtitle').textContent=av.role;
+  }
   document.getElementById('messages').innerHTML='';
   document.getElementById('chat-area').style.display='none';
   document.getElementById('atom-landing').style.display='flex';
@@ -426,59 +646,111 @@ function selectAvatar(id){
 
 function quickStart(text){document.getElementById('msg-input').value=text;sendMsg();}
 
-// DRAG DROP
-function setupDragDrop(){const dz=document.getElementById('drop-zone');dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processFile(f);});}
-function handleFileUpload(input){const f=input.files[0];if(f)processFile(f);input.value='';}
-function processFile(file){uploadedFile=file;document.getElementById('drop-zone').classList.add('has-file');document.getElementById('drop-text').textContent='📄 '+file.name+' — ready';if(file.type.startsWith('image/')||file.type==='application/pdf'){const r=new FileReader();r.onload=e=>{uploadedFileData=e.target.result.split(',')[1];};r.readAsDataURL(file);}}
+// ═══ DRAG & DROP ═══
+function setupDragDrop(){
+  const dz=document.getElementById('drop-zone');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processFile(f);});
+}
+function handleFileUpload(inp){if(inp.files[0])processFile(inp.files[0]);inp.value='';}
+function processFile(file){
+  upFile=file;
+  document.getElementById('drop-zone').classList.add('has-file');
+  document.getElementById('drop-text').textContent=`📄 ${file.name} — ready`;
+  if(file.type.startsWith('image/')||file.type==='application/pdf'){
+    const r=new FileReader();r.onload=e=>{upFileData=e.target.result.split(',')[1];};r.readAsDataURL(file);
+  }
+}
 
-// MESSAGES
-function addMsg(role,text){
-  const av=AVATARS[currentAvatar],msgs=document.getElementById('messages');
+// ═══ MESSAGES ═══
+function addMsg(role,text,avId){
+  const av=AVATARS[avId||currentAvatar];
+  const msgs=document.getElementById('messages');
   const row=document.createElement('div');row.className='msg-row'+(role==='user'?' user':'');
-  if(role==='ai'){const a=document.createElement('div');a.className='msg-av';if(av?.img)a.innerHTML=`<img src="${av.img}" alt=""/>`;else a.textContent='COO';row.appendChild(a);}
-  const b=document.createElement('div');b.className='bubble '+role;
-  b.innerHTML=`<span>${text.replace(/\*\*([^*]+)\*\*/g,'<span class="hi">$1</span>').replace(/\n/g,'<br>')}</span>`;
-  if(role==='ai'){const ac=document.createElement('div');ac.className='bubble-actions';const cb=document.createElement('button');cb.className='bubble-btn';cb.textContent='Copy';cb.onclick=()=>{navigator.clipboard.writeText(text);cb.textContent='✓';setTimeout(()=>cb.textContent='Copy',2000);};ac.appendChild(cb);b.appendChild(ac);}
-  row.appendChild(b);
+  if(role==='ai'){
+    const avEl=document.createElement('div');avEl.className='msg-av';
+    if(av?.img)avEl.innerHTML=`<img src="${av.img}" alt="${av.name}"/>`;else avEl.textContent='COO';
+    row.appendChild(avEl);
+  }
+  const bub=document.createElement('div');bub.className='bubble '+role;
+  const fmt=text.replace(/\*\*([^*]+)\*\*/g,'<span class="hi">$1</span>').replace(/\n/g,'<br>');
+  bub.innerHTML=`<span>${fmt}</span>`;
+  if(role==='ai'){
+    const act=document.createElement('div');act.className='bubble-actions';
+    const cb=document.createElement('button');cb.className='bubble-btn';cb.textContent='Copy';
+    cb.onclick=()=>{navigator.clipboard.writeText(text);cb.textContent='✓';setTimeout(()=>cb.textContent='Copy',2000);};
+    act.appendChild(cb);bub.appendChild(act);
+  }
+  row.appendChild(bub);
   if(role==='user'){const ic=document.createElement('div');ic.className='msg-user-icon';ic.textContent='You';row.appendChild(ic);}
   msgs.appendChild(row);msgs.scrollTop=msgs.scrollHeight;
 }
-function addTyping(){const av=AVATARS[currentAvatar],msgs=document.getElementById('messages');const row=document.createElement('div');row.className='msg-row';row.id='typing-row';const a=document.createElement('div');a.className='msg-av';if(av?.img)a.innerHTML=`<img src="${av.img}" alt=""/>`;else a.textContent='COO';row.appendChild(a);const b=document.createElement('div');b.className='bubble ai typing';b.innerHTML='<div class="td"></div><div class="td"></div><div class="td"></div>';row.appendChild(b);msgs.appendChild(row);msgs.scrollTop=msgs.scrollHeight;}
-function removeTyping(){const t=document.getElementById('typing-row');if(t)t.remove();}
 
-// SEND
+function addTyping(){
+  const av=AVATARS[currentAvatar];
+  const msgs=document.getElementById('messages');
+  const row=document.createElement('div');row.className='msg-row';row.id='typing-row';
+  const avEl=document.createElement('div');avEl.className='msg-av';
+  if(av?.img)avEl.innerHTML=`<img src="${av.img}" alt=""/>`;else avEl.textContent='COO';
+  row.appendChild(avEl);
+  const b=document.createElement('div');b.className='bubble ai typing';
+  b.innerHTML='<div class="td"></div><div class="td"></div><div class="td"></div>';
+  row.appendChild(b);msgs.appendChild(row);msgs.scrollTop=msgs.scrollHeight;
+}
+function removeTyping(){document.getElementById('typing-row')?.remove();}
+
+// ═══ SEND ═══
 async function sendMsg(){
-  const input=document.getElementById('msg-input'),text=input.value.trim();
-  if(!text&&!uploadedFile)return;
+  const inp=document.getElementById('msg-input');
+  const text=inp.value.trim();
+  if(!text&&!upFile)return;
+
   document.getElementById('atom-landing').style.display='none';
   document.getElementById('chat-area').style.display='flex';
-  if(currentAvatar==='leo'&&dailyMsgsLeo>=20){showUpgrade();return;}
-  if(currentAvatar==='liber'&&dailyMsgsLiber>=20){showUpgrade();return;}
-  const isRT=['coo','eva','tenderai','businessai','justinian','creativeai','dropshipper'].includes(currentAvatar);
+
+  if(currentAvatar==='leo'&&dailyLeo>=20){showUpgrade();return;}
+  if(currentAvatar==='liber'&&dailyLiber>=20){showUpgrade();return;}
+  const isRT=!['leo','liber'].includes(currentAvatar);
   if(isRT&&realtimeUsed>=realtimeLimit){showUpgrade();return;}
-  input.value='';input.style.height='auto';
-  addMsg('user',text+(uploadedFile?'\n📎 '+uploadedFile.name:''));
+
+  inp.value='';inp.style.height='auto';
+  addMsg('user',text+(upFile?`\n📎 ${upFile.name}`:''));
   if(!chatHistory[currentAvatar])chatHistory[currentAvatar]=[];
   chatHistory[currentAvatar].push({role:'user',content:text});
   addTyping();
+
   try{
-    const endpoint=currentAvatar==='coo'?'https://marginova.tech/api/coo':'https://marginova.tech/api/chat';
-    const payload={avatar:currentAvatar,messages:chatHistory[currentAvatar].slice(-10),language:lang,plan:userPlan};
-    if(uploadedFileData){payload.image=uploadedFileData;payload.imageType=uploadedFile.type;payload.imageText=text;}
+    const isCOO=currentAvatar==='coo';
+    const endpoint=isCOO?'https://marginova.tech/api/coo':'https://marginova.tech/api/chat';
+    const payload={avatar:currentAvatar,messages:chatHistory[currentAvatar].slice(-12),language:lang,plan:'free'};
+    if(upFileData){payload.image=upFileData;payload.imageType=upFile.type;payload.imageText=text;}
+
     const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    let data=await res.json();removeTyping();
-    let reply=(data.content&&data.content[0]&&data.content[0].text)||'';
-    if(!reply||reply==='No response generated.'){
-      try{const rr=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,messages:chatHistory[currentAvatar].slice(-4)})});const rd=await rr.json();if(rd.content?.[0]?.text&&rd.content[0].text!=='No response generated.')reply=rd.content[0].text;}catch(e){}
+    let data=await res.json();
+    removeTyping();
+    let reply=(data.content?.[0]?.text)||(data.error?.message)||'No response.';
+
+    if(reply==='No response generated.'||reply==='No response.'){
+      try{
+        const rr=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,messages:chatHistory[currentAvatar].slice(-4)})});
+        const rd=await rr.json();
+        if(rd.content?.[0]?.text&&rd.content[0].text!=='No response generated.')reply=rd.content[0].text;
+      }catch(e){}
     }
-    if(!reply||reply==='No response generated.')reply='⚠️ No response. Please try again.';
+
     addMsg('ai',reply);
     chatHistory[currentAvatar].push({role:'assistant',content:reply});
-    if(isRT)await incRT();
+    if(isRT)await incRealtime();
     if(currentAvatar==='leo')await incDaily('leo');
     if(currentAvatar==='liber')await incDaily('liber');
-  }catch(e){removeTyping();addMsg('ai','⚠️ Unable to connect. Please try again.');}
-  if(uploadedFile){uploadedFile=null;uploadedFileData=null;document.getElementById('drop-zone').classList.remove('has-file');document.getElementById('drop-text').textContent=tx('dt');}
+  }catch(e){removeTyping();addMsg('ai','⚠️ '+e.message);}
+
+  if(upFile){
+    upFile=null;upFileData=null;
+    document.getElementById('drop-zone').classList.remove('has-file');
+    document.getElementById('drop-text').textContent=t('dt');
+  }
 }
 
 function showUpgrade(){document.getElementById('upgrade-modal').classList.add('show');}
