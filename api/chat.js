@@ -132,10 +132,28 @@ function formatTEDResults(results) {
 // ═══════════════════════════════════════════
 // SERPER
 // ═══════════════════════════════════════════
-const TENDER_KEYWORDS = ['тендер','тендери','набавка','tender','tenderi','nabavka','procurement','bid','rfp','ausschreibung','ihale','przetarg','јавна набавка','javna nabavka'];
-const AUCTION_KEYWORDS = ['лицитација','аукција','судска продажба','licitacija','aukcija','auction','licytacja','търг'];
-const LEASING_KEYWORDS = ['лизинг','lizing','leasing','lease'];
-const EVA_KEYWORDS = ['грант','грантови','фонд','eu фонд','ipard','grant','grantovi','fond','grants','funds','subsidy'];
+const TENDER_KEYWORDS = [
+  // Cyrillic
+  'тендер','тендери','набавка','набавки','оглас','конкурс','јавна набавка',
+  'пребарај тендер','најди тендер','активни тендери',
+  // Latin
+  'tender','tenderi','nabavka','nabavki','oglas','konkurs','javna nabavka',
+  'pronajdi tender','aktivni tenderi','najdi tender','prebaraj tender',
+  'procurement','bid','rfp','rfq','ausschreibung','ihale','przetarg',
+  // Sector keywords that imply tender search
+  'fasadni radovi','fasadni raboti','gradezni raboti','gradezni radovi',
+  'izvedba na','izvedba fasada','izgradnja','rekonstrukcija','sanacija',
+  'fasada tender','gradez tender','construction tender',
+];
+const AUCTION_KEYWORDS = [
+  'лицитација','аукција','судска продажба','licitacija','aukcija','auction',
+  'licytacja','търг','судска лицитација','javna licitacija',
+];
+const LEASING_KEYWORDS = ['лизинг','lizing','leasing','lease','лизинг откуп','lizing otkup'];
+const EVA_KEYWORDS = [
+  'грант','грантови','фонд','eu фонд','ipard','ipa','grant','grantovi',
+  'fond','fondovi','grants','funds','subsidy','förderung','hibe','dotacja',
+];
 
 function detectIntent(userText) {
   const lower = userText.toLowerCase();
@@ -143,6 +161,8 @@ function detectIntent(userText) {
   if (LEASING_KEYWORDS.some(k => lower.includes(k))) return 'leasing';
   if (EVA_KEYWORDS.some(k => lower.includes(k))) return 'grants';
   if (TENDER_KEYWORDS.some(k => lower.includes(k))) return 'tender';
+  // Fallback: if user is asking about finding something in construction/services context
+  if (lower.match(/pronajdi|najdi|prebaraj|find|search|potrazi/)) return 'tender';
   return null;
 }
 
