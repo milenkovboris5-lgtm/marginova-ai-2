@@ -237,7 +237,7 @@ function buildSerperQuery(userText, avatar, intent) {
     else countryFilter = 'site:pazar3.mk OR site:halo.rs OR site:njuskalo.hr OR site:linkedin.com';
 
     return `${sector} ${month} ${countryFilter}`;
-  }`
+  }
 
   // Tender — detect countries (support both latin and cyrillic)
   const countryMap = {
