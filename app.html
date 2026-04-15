@@ -1384,15 +1384,23 @@ function msHeroRender(l){
 // SUPABASE
 const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
+
+let _cachedToken = SUPA_KEY;
+
+// Custom fetch — инјектира apikey + токен пред секој Supabase REST повик
+function _supaFetch(url, opts) {
+  opts = opts || {};
+  const headers = new Headers(opts.headers || {});
+  headers.set('apikey', SUPA_KEY);
+  headers.set('Authorization', 'Bearer ' + _cachedToken);
+  opts.headers = headers;
+  return fetch(url, opts);
+}
+
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'marginova_auth' },
-  global: {
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + SUPA_KEY
-    }
-  }
+  global: { fetch: _supaFetch }
 });
 
 let lang='en', soundOn=false, selectedStars=0, current='leo';
@@ -2219,28 +2227,6 @@ async function logout(){
   document.getElementById("blog-page").classList.remove("active");
   closeDrawer();
 }
-
-// ═══ SUPABASE AUTH — global fetch patch ═══
-// Caches the session token and injects it into every Supabase REST call
-let _cachedToken = SUPA_KEY;
-async function _refreshCachedToken() {
-  try {
-    const { data } = await db.auth.getSession();
-    if (data?.session?.access_token) _cachedToken = data.session.access_token;
-  } catch(e) {}
-}
-
-const _origFetch = window.fetch.bind(window);
-window.fetch = function(url, opts) {
-  opts = opts || {};
-  if (typeof url === 'string' && url.includes(SUPA_URL + '/rest/v1/')) {
-    opts.headers = Object.assign({}, opts.headers || {}, {
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + _cachedToken,
-    });
-  }
-  return _origFetch(url, opts);
-};
 
 // Check existing session — restore Supabase session on load
 window.addEventListener('DOMContentLoaded', async function() {
