@@ -208,11 +208,28 @@ function buildSerperQuery(userText, avatar, intent) {
   }
 
   if (intent === 'grants') {
-    let grantType = 'EU грант фонд отворен конкурс';
-    if (lower.match(/ipard|земјоделств|agri/)) grantType = 'IPARD грант земјоделство';
-    else if (lower.match(/стартап|startup|иновац/)) grantType = 'EU грант стартап иновации';
-    else if (lower.match(/нго|ngo|невладин/)) grantType = 'EU грант НВО';
-    return `${grantType} ${month} рок за аплицирање Западен Балкан`;
+    // Detect country
+    let countryTag = 'Makedonija OR "Western Balkans" OR "Zapadni Balkan"';
+    if (lower.match(/македон|makedon/)) countryTag = 'Makedonija OR "North Macedonia" OR "Северна Македонија"';
+    else if (lower.match(/srbij|србиј/)) countryTag = 'Srbija OR Serbia';
+    else if (lower.match(/hrvat|хрват/)) countryTag = 'Hrvatska OR Croatia';
+    else if (lower.match(/bosn|босн/)) countryTag = 'Bosna OR Bosnia';
+
+    // Detect sector
+    let sectorTag = 'grant fond otvoreni poziv 2025 2026';
+    if (lower.match(/it|digital|software|веб|web|едукативн|edukativ/)) sectorTag = 'IT digital web edukacija grant fond 2025 2026';
+    else if (lower.match(/ipard|земјоделств|agri|poljopriv/)) sectorTag = 'IPARD grant zemjodelstvo agri 2025 2026';
+    else if (lower.match(/стартап|startup|иновац|inovac/)) sectorTag = 'startup inovacije grant fond 2025 2026';
+    else if (lower.match(/нго|ngo|невладин|civilno/)) sectorTag = 'NVO civilno drustvo grant 2025 2026';
+    else if (lower.match(/млад|youth|omladina/)) sectorTag = 'mladi youth grant fond 2025 2026';
+    else if (lower.match(/жен|women|rodova/)) sectorTag = 'zene rodova ravnopravnost grant 2025 2026';
+
+    // Budget hint
+    let budgetTag = '';
+    if (lower.match(/до 10000|до 10\.000|up to 10/)) budgetTag = 'mali grantovi mikro';
+    else if (lower.match(/до 50000|до 50\.000/)) budgetTag = 'mali srednji grantovi';
+
+    return `${sectorTag} ${budgetTag} ${countryTag} site:mk.undp.org OR site:westernbalkansfund.org OR site:efb.org OR site:ec.europa.eu OR site:ipard.gov.mk OR site:usaid.gov OR site:fitr.mk OR site:funding.mk`;
   }
 
   if (intent === 'private') {
@@ -372,7 +389,7 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
   const requestBody = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: { maxOutputTokens: 2000, temperature: 0.4 }
+    generationConfig: { maxOutputTokens: 3000, temperature: 0.3 }
   };
 
   if (useGrounding && !isGemma) requestBody.tools = [{ googleSearch: {} }];
@@ -507,9 +524,19 @@ module.exports = async function handler(req, res) {
     // ═══ EVA ═══
     if (useSerper && avatar === 'eva') {
       const intent = detectIntent(userText);
-      if (intent === 'grants' || intent === 'tender') {
+      if (intent === 'grants' || intent === 'tender' || !intent) {
         const query = buildSerperQuery(userText, 'eva', 'grants');
-        const serperResults = await searchSerper(query, serperKey);
+        console.log('[eva] Serper query:', query);
+        let serperResults = await searchSerper(query, serperKey);
+
+        // Fallback — broader search
+        if (!serperResults || serperResults.length === 0) {
+          const month = new Date().toISOString().slice(0, 7);
+          const fallback = `grant fond otvoreni poziv ${month} Makedonija Western Balkans site:mk.undp.org OR site:westernbalkansfund.org OR site:fitr.mk OR site:funding.mk`;
+          console.log('[eva] Fallback query:', fallback);
+          serperResults = await searchSerper(fallback, serperKey);
+        }
+
         if (serperResults && serperResults.length > 0) {
           enrichedSystemPrompt = systemPrompt + formatSerperContext(serperResults, 'grants');
           console.log('[eva] Serper:', serperResults.length, 'results');
