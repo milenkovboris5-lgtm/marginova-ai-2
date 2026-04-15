@@ -2296,7 +2296,7 @@ window.addEventListener('DOMContentLoaded', async function() {
 
   // Listen for auth state changes
   db.auth.onAuthStateChange(function(event, session) {
-    if(event === 'SIGNED_IN' && session) {
+    if((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
       currentUser = session.user;
       _cachedToken = session.access_token || SUPA_KEY;
     } else if(event === 'SIGNED_OUT') {
@@ -2304,6 +2304,16 @@ window.addEventListener('DOMContentLoaded', async function() {
       _cachedToken = SUPA_KEY;
     }
   });
+
+  // Auto-refresh token every 10 minutes
+  setInterval(async function() {
+    try {
+      const { data } = await db.auth.refreshSession();
+      if (data?.session?.access_token) {
+        _cachedToken = data.session.access_token;
+      }
+    } catch(e) { console.warn('Token refresh error:', e); }
+  }, 10 * 60 * 1000);
 });
 
 // LANG
