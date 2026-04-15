@@ -259,12 +259,8 @@ function buildSerperQuery(userText, avatar, intent) {
     else if (lower.match(/земјоделств|agri|poljopriv/)) sectorTag = 'zemjodelstvo ruralni razvoj IPARD';
     else if (lower.match(/туризм|tourism|ugostitel/)) sectorTag = 'turizam ugostitelstvo grant';
 
-    // Budget hint
-    let budgetTag = '';
-    if (lower.match(/до 10|10000|10\.000|10k/)) budgetTag = 'mali grantovi small grants';
-    else if (lower.match(/до 50|50000|50\.000/)) budgetTag = 'grantovi srednji iznos';
-
-    return `${sectorTag} ${budgetTag} ${countryTag} ${countryPortals}`;
+    // Budget is NOT used as filter — show all grants regardless of amount
+    return `${sectorTag} ${countryTag} ${countryPortals}`;
   }
 
   if (intent === 'private') {
