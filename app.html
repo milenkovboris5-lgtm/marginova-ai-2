@@ -884,11 +884,11 @@ html{scroll-behavior:smooth;}
     <div class="pro-locked-title">Го достигнавте <em>дневниот лимит</em></div>
     <div class="pro-locked-desc">Надградете го планот за повеќе пораки и пристап до сите специјалисти.</div>
     <div class="pro-locked-features">
-      <div class="pro-locked-feature"><span>✓</span> Pro — 500 пораки/ден · $12.99/мес</div>
-      <div class="pro-locked-feature"><span>✓</span> Business — Неограничено · до 3 налози · $29.99/мес</div>
-      <div class="pro-locked-feature"><span>✓</span> Ultra — Неограничено · до 5 налози · $49.99/мес</div>
-      <div class="pro-locked-feature"><span>✓</span> Сите 12 AI специјалисти</div>
-      <div class="pro-locked-feature"><span>✓</span> Анализа на слики 📷</div>
+      <div class="pro-locked-feature"><span>✓</span> Starter — 500 пораки/месечно · $9.99/мес</div>
+      <div class="pro-locked-feature"><span>✓</span> Pro — 2000 пораки/месечно · $29.99/мес</div>
+      <div class="pro-locked-feature"><span>✓</span> Business — Неограничено · 5 налози · $149.99/мес</div>
+      <div class="pro-locked-feature"><span>✓</span> Сите AI специјалисти + COO AI</div>
+      <div class="pro-locked-feature"><span>✓</span> Анализа на слики & PDF 📷</div>
     </div>
     <button class="pro-locked-btn" onclick="closeProLocked()">🚀 Надгради план</button>
     <button class="pro-locked-back" onclick="closeProLocked()">← Продолжи утре (Free)</button>
@@ -969,13 +969,7 @@ html{scroll-behavior:smooth;}
     <!-- USER INFO -->
     <div style="background:rgba(201,168,76,0.05);border:1px solid var(--border);border-radius:12px;padding:0.85rem;margin-bottom:0.85rem;">
       <div style="font-size:0.68rem;color:var(--muted);margin-bottom:0.6rem;" id="drawer-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="aedbddcbdceecbc3cfc7c280cdc1c3">[email&#160;protected]</a></div>
-      <div style="display:flex;justify-content:space-between;font-size:0.65rem;margin-bottom:4px;">
-        <span style="color:var(--gold);" id="xp-badge">🌱 Level 1 · Beginner</span>
-        <span style="color:var(--muted);" id="xp-text">0 XP</span>
-      </div>
-      <div style="height:4px;background:rgba(255,255,255,0.06);border-radius:50px;overflow:hidden;margin-bottom:0.55rem;">
-        <div id="xp-fill" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:50px;width:0%;transition:width 0.6s;"></div>
-      </div>
+
       <div style="font-size:0.65rem;color:var(--text2);">💬 <b style="color:var(--gold);" id="token-display">50</b> пораки останати</div>
       <div style="font-size:0.65rem;color:var(--text2);margin-top:3px;" id="bonus-display">⚡ <b style="color:var(--gold);">5</b> бонус пораки</div>
     </div>
@@ -987,15 +981,11 @@ html{scroll-behavior:smooth;}
     <button onclick="window.location.href='index.html#pricing';closeDrawer();" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
       <span>💰</span><span id="drawer-pricing">Планови & Цени</span>
     </button>
-    <button onclick="showShareModal();closeDrawer();" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
-      <span>🔗</span><span id="drawer-invite">Покани & Освои XP</span>
-    </button>
+
     <button onclick="openSavedAnswers();closeDrawer();" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
       <span>📌</span><span id="drawer-saved">Зачувани одговори</span>
     </button>
-    <button onclick="toggleSound()" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);background:transparent;border:none;width:100%;font-family:'Jost',sans-serif;text-align:left;">
-      <span id="sound-btn">🔇</span>Sound
-    </button>
+
     <div style="height:1px;background:var(--border);margin:0.6rem 0;"></div>
     <a href="/cdn-cgi/l/email-protection#3e5d51504a5f5d4a7e535f4c59575051485f105f57" style="display:flex;align-items:center;gap:9px;padding:0.6rem 0.4rem;border-radius:8px;cursor:pointer;font-size:0.76rem;color:var(--text2);text-decoration:none;width:100%;font-family:'Jost',sans-serif;">
       <span>📧</span><span id="drawer-contact">Контакт & Поддршка</span>
@@ -3374,10 +3364,10 @@ const XP_REWARDS={
 
 // PLAN SYSTEM - dnevni poraki
 const PLANS = {
-  free:    {name:'Free',    daily:50,   price:0,      accounts:1},
-  pro:     {name:'Pro',     daily:1500, price:19.99,  accounts:1},
-  premium: {name:'Premium', daily:5000, price:49.99,  accounts:1},
-  ultra:   {name:'Ultra',   daily:-1,   price:149.99, accounts:5}, // -1 = neograniceno
+  free:    {name:'Free',    daily:0,    price:0,      accounts:1},
+  starter: {name:'Starter', daily:500,  price:9.99,   accounts:1},
+  pro:     {name:'Pro',     daily:2000, price:29.99,  accounts:1},
+  business:{name:'Business',daily:-1,   price:149.99, accounts:5}, // -1 = neograniceno
 };
 
 // FREE avatari - site drugi se dostapni no so plan limit
@@ -4158,10 +4148,10 @@ function emailPlan(){
     <ul class="up-features">
       <li>Активни EU грантови и фондови со рокови</li>
       <li>Тендери и апликации чекор по чекор</li>
-      <li>Напредни правни и бизнис совети</li>
-      <li>500 пораки / ден (Pro) или Неограничено (Business/Ultra)</li>
+      <li>COO AI — финална анализа со оцена 1-10</li>
+      <li>Starter $9.99 · Pro $29.99 · Business $149.99</li>
     </ul>
-    <button class="up-btn-primary" onclick="window.location.href='index.html#pricing'">⚡ Отклучи Pro — $12.99/мес</button>
+    <button class="up-btn-primary" onclick="window.location.href='index.html#pricing'">⚡ Избери план →</button>
     <button class="up-btn-secondary" onclick="closeUpgradePopup()">Продолжи со бесплатно (ограничено)</button>
     <div class="up-social">Откажи кога сакаш · Без скриени такси</div>
   </div>
@@ -4197,7 +4187,8 @@ function closeUpgradePopup(){
     <div style="font-size:0.82rem;color:var(--text2);line-height:1.6;max-width:280px;">Вашите 5 бесплатни пораки со AI специјалистите се искористени. Надградете го планот за да продолжите.</div>
     <div style="background:rgba(201,168,76,0.05);border:1px solid var(--border);border-radius:12px;padding:1rem;width:100%;display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:8px;"><span style="color:#2ddc7a;">✓</span> Leo & LIBER — бесплатно секој ден (20 пораки)</div>
-      <div style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:8px;"><span style="color:var(--gold);">✓</span> Pro — COO AI, Eva, Tender AI и сите специјалисти</div>
+      <div style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:8px;"><span style="color:var(--gold);">✓</span> Starter $9.99 — 500 пораки/месечно · сите специјалисти</div>
+      <div style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:8px;"><span style="color:var(--gold);">✓</span> Pro $29.99 — 2000 пораки/месечно · COO AI + приоритет</div>
     </div>
     <button onclick="window.location.href='index.html#pricing'" style="width:100%;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));border:none;color:#0a0a12;padding:0.75rem;border-radius:50px;font-size:0.88rem;cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;box-shadow:0 4px 20px rgba(201,168,76,0.3);">🚀 Надгради план</button>
     <button onclick="closeBonusExhausted();selectAvatar('leo');" style="background:none;border:1px solid var(--border);color:var(--muted);padding:0.5rem 1.5rem;border-radius:50px;font-size:0.75rem;cursor:pointer;font-family:'Jost',sans-serif;">← Продолжи со Leo & LIBER (бесплатно)</button>
