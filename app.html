@@ -2882,14 +2882,59 @@ async function startChat(){
   setTimeout(()=>document.getElementById('msg-input').focus(),100);
 }
 
+
+// ═══ MARKDOWN PARSER ═══
+function parseMarkdown(text){
+  if(!text) return '';
+  let h = text;
+  // Escape
+  h = h.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Tables
+  h = h.replace(/(\|[^\n]+\|\n?)+/g, function(tbl){
+    const rows = tbl.trim().split('\n').filter(r=>r.trim());
+    let o = '<table style="border-collapse:collapse;width:100%;margin:0.5rem 0;font-size:0.78rem;">';
+    let isFirst = true;
+    rows.forEach(function(row){
+      if(/^\|[-| :]+\|$/.test(row.trim())) return;
+      const cells = row.split('|').slice(1,-1);
+      const tag = isFirst ? 'th' : 'td';
+      const st = isFirst
+        ? 'style="padding:4px 8px;border:1px solid rgba(201,168,76,0.3);background:rgba(201,168,76,0.1);color:var(--gold);font-weight:600;text-align:left;"'
+        : 'style="padding:4px 8px;border:1px solid rgba(255,255,255,0.08);text-align:left;"';
+      o += '<tr>' + cells.map(function(c){return '<'+tag+' '+st+'>'+c.trim()+'</'+tag+'>';}).join('') + '</tr>';
+      isFirst = false;
+    });
+    o += '</table>';
+    return o;
+  });
+  // Headers
+  h = h.replace(/^### (.+)$/gm,'<div style="font-size:0.82rem;font-weight:600;color:var(--gold);margin:0.5rem 0 0.2rem;">$1</div>');
+  h = h.replace(/^## (.+)$/gm,'<div style="font-size:0.9rem;font-weight:700;color:var(--gold);margin:0.7rem 0 0.2rem;border-bottom:1px solid rgba(201,168,76,0.2);padding-bottom:2px;">$1</div>');
+  h = h.replace(/^# (.+)$/gm,'<div style="font-size:1rem;font-weight:700;color:var(--gold2);margin:0.7rem 0 0.2rem;">$1</div>');
+  // HR
+  h = h.replace(/^---+$/gm,'<hr style="border:none;border-top:1px solid rgba(201,168,76,0.12);margin:0.4rem 0;">');
+  // Bold
+  h = h.replace(/\*\*([^*]+)\*\*/g,'<span class="ai-highlight">$1</span>');
+  // Italic
+  h = h.replace(/\*([^*]+)\*/g,'<em style="color:var(--text2);">$1</em>');
+  // Bullets
+  h = h.replace(/^[*-] (.+)$/gm,'<div style="display:flex;gap:5px;margin:1px 0;"><span style="color:var(--gold);flex-shrink:0;">•</span><span>$1</span></div>');
+  // Numbered
+  h = h.replace(/^\d+\. (.+)$/gm,'<div style="display:flex;gap:5px;margin:1px 0;"><span style="color:var(--gold);flex-shrink:0;">›</span><span>$1</span></div>');
+  // Links
+  h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,'<a href="$2" target="_blank" style="color:var(--gold);text-decoration:underline;">$1</a>');
+  // Newlines
+  h = h.replace(/\n/g,'<br>');
+  return h;
+}
+
 function addMsg(role,text){
   const av=AVATARS[current];const msgs=document.getElementById('messages');
   const row=document.createElement('div');row.className='msg-row'+(role==='user'?' user':'');
   if(role==='ai'){const w=document.createElement('div');w.className='msg-av-s';setImg(w,av.img,av.name);row.appendChild(w);}
   const b=document.createElement('div');b.className='bubble '+role;
   const span=document.createElement('span');
-  const formatted=text.replace(/\*\*([^*]+)\*\*/g,'<span class="ai-highlight">$1</span>').replace(/\n/g,'<br>');
-  span.innerHTML=formatted;
+  span.innerHTML=parseMarkdown(text);
   b.appendChild(span);
   if(role==='ai'){
     const sb=document.createElement('button');sb.className='speak-btn';sb.textContent='🔊';sb.onclick=()=>speak(text);b.appendChild(sb);
@@ -3068,7 +3113,8 @@ async function sendMsg(){
       system:sys,
       messages:messagesForAPI,
       avatar:current,
-      plan:userPlan
+      plan:userPlan,
+      lang:lang
     };
 
     if(savedImage){
