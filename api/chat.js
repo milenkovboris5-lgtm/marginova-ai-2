@@ -865,6 +865,8 @@ module.exports = async function handler(req, res) {
     const lastUserMsg = messages.filter(m => m.role === 'user').pop();
     const userText = (lastUserMsg && lastUserMsg.content) || '';
     const isMK = /[а-шА-Ш]/.test(userText);
+    // Lang од frontend (поверлив) — fallback на auto-detect
+    const frontendLang = body.lang || null;
 
     // Premium check
     if (userPlan === 'free' && isPremiumTrigger(userText, avatar)) {
