@@ -1006,7 +1006,7 @@ html{scroll-behavior:smooth;}
   </div>
 </div>
 
-<nav id="main-nav" style="display:none;flex-direction:column;padding:0;">
+<nav id="main-nav" style="display:none;flex-direction:column;padding:0;flex-shrink:0;">
   <!-- Row 1: Logo + 24/7 + Menu -->
   <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.85rem;width:100%;">
     <div class="logo">
@@ -1283,8 +1283,8 @@ html{scroll-behavior:smooth;}
     </div>
   </div>
 
-  <div class="chat-area" id="chat-area-wrap" style="position:relative;">
-    <div class="avatar-stage">
+  <div class="chat-area" id="chat-area-wrap" style="position:relative;display:flex;flex-direction:column;flex:1;min-height:0;">
+    <div class="avatar-stage" style="flex-shrink:0;">
       <button onclick="showAvatarGrid()" style="width:30px;height:30px;border-radius:50%;border:2px solid #2ddc7a;background:rgba(45,220,122,0.12);cursor:pointer;color:#2ddc7a;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px;animation:pulse-green 2s infinite;" title="Back to specialists">←</button>
       <div class="stage-media" id="stage-media"><img src="logo-main.png" alt="Marginova"/></div>
       <div style="flex:1;">
@@ -2339,8 +2339,8 @@ function updateEmailPlanBtn(){
 async function showApp(){
   document.getElementById('auth-screen').style.display='none';
   window._userPlan='ultra';
-  var mn=document.getElementById('main-nav');mn.style.display='flex';
-  document.getElementById('chat-page').style.display='flex';
+  var mn=document.getElementById('main-nav');mn.style.display='flex';mn.style.flexDirection='column';
+  var cp=document.getElementById('chat-page');cp.style.display='flex';cp.style.flexDirection='column';
   document.getElementById('avatar-grid-page').style.display='block';
   document.getElementById('chat-area-wrap').style.display='none';
   const savedLang=localStorage.getItem('mlang')||'mk';
