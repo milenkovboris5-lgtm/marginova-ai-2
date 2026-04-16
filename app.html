@@ -977,6 +977,7 @@ html{scroll-behavior:smooth;}
         <div id="xp-fill" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:50px;width:0%;transition:width 0.6s;"></div>
       </div>
       <div style="font-size:0.65rem;color:var(--text2);">💬 <b style="color:var(--gold);" id="token-display">50</b> пораки останати</div>
+      <div style="font-size:0.65rem;color:var(--text2);margin-top:3px;" id="bonus-display">⚡ <b style="color:var(--gold);">5</b> бонус пораки</div>
     </div>
     <!-- UPGRADE BTN -->
     <button onclick="window.location.href='index.html#pricing';closeDrawer();" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:0.65rem;border-radius:50px;cursor:pointer;font-size:0.76rem;color:#0a0a12;background:linear-gradient(135deg,rgba(201,168,76,0.95),rgba(201,168,76,0.7));border:none;width:100%;font-family:'Jost',sans-serif;font-weight:700;margin-bottom:0.6rem;box-shadow:0 4px 20px rgba(201,168,76,0.3);">
@@ -2670,17 +2671,44 @@ function setImg(el,src,alt){el.innerHTML=`<img src="${src}" alt="${alt}" style="
 
 // FREE avatars - only these 2 + marginova
 // Site avatari se dostapni - limitot e na PORAKI ne na avatari
-const FREE_AVATARS = ['leo', 'liber', 'dropshipper', 'eva', 'tenderai', 'creativeai', 'businessai', 'justinian', 'cooai'];
+const FREE_AVATARS = ['leo', 'liber']; // Leo & LIBER се секогаш бесплатни
+const BONUS_AVATARS = ['dropshipper', 'eva', 'tenderai', 'creativeai', 'businessai', 'justinian', 'cooai']; // 5 бонус пораки при регистрација
 
 function showProLocked(){
   document.getElementById('pro-locked').style.display='flex';
+}
+function showBonusExhausted(){
+  // Прикажи порака дека бонус е искористен
+  const overlay = document.getElementById('bonus-exhausted-overlay');
+  if(overlay) overlay.style.display='flex';
+  else showProLocked(); // fallback
+}
+function closeBonusExhausted(){
+  const overlay = document.getElementById('bonus-exhausted-overlay');
+  if(overlay) overlay.style.display='none';
 }
 function closeProLocked(){
   document.getElementById('pro-locked').style.display='none';
 }
 
 function selectAvatar(id){
-  if(!FREE_AVATARS.includes(id)){showProLocked();return;}
+  // Leo & LIBER — секогаш слободни (до 20/ден)
+  if(FREE_AVATARS.includes(id)){
+    // OK — продолжи
+  } else if(BONUS_AVATARS.includes(id)){
+    // Реален аватар — провери бонус или план
+    if(window._bonusMsgsLeft > 0){
+      // Има бонус пораки — дозволи
+    } else if(window._userPlan && window._userPlan !== 'free'){
+      // Платен план — дозволи
+    } else {
+      showBonusExhausted();
+      return;
+    }
+  } else {
+    showProLocked();
+    return;
+  }
   current=id;
   const grid=document.getElementById("avatar-grid-page");
   const chatWrap=document.getElementById("chat-area-wrap");
@@ -3401,7 +3429,8 @@ async function loadProfile(){
       await supa('profiles').upsert({
         user_id:currentUser.id,xp:0,level:1,streak:0,
         last_login:today,created_at:new Date().toISOString(),tokens:50,tokens_total:50,
-        plan:'free',daily_msgs:0,last_msg_date:today
+        plan:'free',daily_msgs:0,last_msg_date:today,
+        bonus_used:false,bonus_msgs_left:5,leo_liber_msgs_today:0,leo_liber_date:null
       });
       profileLoaded=true;
       updateXPBar(0);
@@ -3411,6 +3440,11 @@ async function loadProfile(){
       updateXPBar(data.xp||0);
       streakCount=data.streak||0;
       lastLoginDate=data.last_login;
+      // Бонус податоци
+      window._bonusMsgsLeft = data.bonus_msgs_left ?? 5;
+      window._bonusUsed = data.bonus_used ?? false;
+      window._userPlan = data.plan || 'free';
+      updateBonusDisplay(window._bonusMsgsLeft);
       await checkStreak(data);
     }
   }catch(e){console.warn('Profile load error:',e);updateXPBar(0);}
@@ -3541,6 +3575,18 @@ async function quickStart(text){
 }
 
 // ═══ TOKEN SYSTEM ═══
+function updateBonusDisplay(left){
+  // Ажурирај бонус индикатор во drawer
+  const el = document.getElementById('bonus-display');
+  if(!el) return;
+  if(window._bonusUsed || left <= 0){
+    el.innerHTML = '🔒 Бонус искористен';
+    el.style.color = 'var(--muted)';
+  } else {
+    el.innerHTML = `⚡ <b style="color:var(--gold);">${left}</b> бонус пораки`;
+  }
+}
+
 function updateTokenDisplay(tokens){
   userTokens = tokens;
   const el = document.getElementById('token-display');
@@ -3577,8 +3623,68 @@ async function loadTokens(){
 
 async function deductToken(){
   if(!currentUser) return true;
-  // TEMP: bypass za testiranje - ke se aktivira po dodavanje na plan koloni vo Supabase
-  return true;
+  try{
+    const today = new Date().toISOString().split('T')[0];
+    const {data} = await supa('profiles')
+      .select('plan,last_msg_date,daily_msgs,bonus_used,bonus_msgs_left,leo_liber_msgs_today,leo_liber_date')
+      .eq('user_id', currentUser.id).single();
+
+    const plan = data?.plan || 'free';
+    const isLeoLiber = (current === 'leo' || current === 'liber');
+    const isBonusAvatar = BONUS_AVATARS.includes(current);
+
+    // ═══ LEO & LIBER — 20 пораки/ден ═══
+    if(isLeoLiber){
+      const lastDate = data?.leo_liber_date || '';
+      const usedToday = lastDate === today ? (data?.leo_liber_msgs_today || 0) : 0;
+      if(usedToday >= 20){
+        showTokenWarning('⚠️ Го достигнавте дневниот лимит за Leo & LIBER (20 пораки). Обидете се утре!');
+        return false;
+      }
+      await supa('profiles').update({
+        leo_liber_msgs_today: usedToday + 1,
+        leo_liber_date: today
+      }).eq('user_id', currentUser.id);
+      updateTokenDisplay(20 - (usedToday + 1));
+      return true;
+    }
+
+    // ═══ БОНУС АВАТАРИ — 5 пораки еднократно ═══
+    if(isBonusAvatar){
+      // Платен план — неограничено
+      if(plan !== 'free') return true;
+
+      const bonusLeft = data?.bonus_msgs_left ?? 5;
+      const bonusUsed = data?.bonus_used ?? false;
+
+      if(bonusUsed || bonusLeft <= 0){
+        showBonusExhausted();
+        return false;
+      }
+
+      const newLeft = bonusLeft - 1;
+      const nowUsed = newLeft <= 0;
+      await supa('profiles').update({
+        bonus_msgs_left: newLeft,
+        bonus_used: nowUsed
+      }).eq('user_id', currentUser.id);
+
+      window._bonusMsgsLeft = newLeft;
+      updateBonusDisplay(newLeft);
+
+      if(newLeft === 0){
+        setTimeout(()=>showBonusExhausted(), 500);
+      } else {
+        showXPToast(`⚡ ${newLeft} бонус пораки останати`);
+      }
+      return true;
+    }
+
+    return true;
+  }catch(e){
+    console.warn('deductToken error:', e);
+    return true;
+  }
   try{
     const today = new Date().toISOString().split('T')[0];
     const {data} = await supa('profiles').select('tokens,tokens_total,plan,last_msg_date,daily_msgs').eq('user_id', currentUser.id).single();
@@ -4082,5 +4188,20 @@ function closeUpgradePopup(){
   document.getElementById('upgrade-overlay').classList.remove('show');
 }
 </script>
+
+<!-- BONUS EXHAUSTED OVERLAY -->
+<div id="bonus-exhausted-overlay" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(9,9,16,0.92);backdrop-filter:blur(12px);align-items:center;justify-content:center;">
+  <div style="background:linear-gradient(135deg,rgba(19,19,31,0.98),rgba(14,14,26,0.98));border:1px solid rgba(201,168,76,0.4);border-radius:20px;padding:2.5rem;width:100%;max-width:380px;text-align:center;display:flex;flex-direction:column;gap:1rem;align-items:center;box-shadow:0 0 60px rgba(201,168,76,0.15);">
+    <div style="font-size:2.5rem;">⚡</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--text);">Го искористивте <em style="color:var(--gold);font-style:italic;">бонусот</em></div>
+    <div style="font-size:0.82rem;color:var(--text2);line-height:1.6;max-width:280px;">Вашите 5 бесплатни пораки со AI специјалистите се искористени. Надградете го планот за да продолжите.</div>
+    <div style="background:rgba(201,168,76,0.05);border:1px solid var(--border);border-radius:12px;padding:1rem;width:100%;display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:8px;"><span style="color:#2ddc7a;">✓</span> Leo & LIBER — бесплатно секој ден (20 пораки)</div>
+      <div style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:8px;"><span style="color:var(--gold);">✓</span> Pro — COO AI, Eva, Tender AI и сите специјалисти</div>
+    </div>
+    <button onclick="window.location.href='index.html#pricing'" style="width:100%;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));border:none;color:#0a0a12;padding:0.75rem;border-radius:50px;font-size:0.88rem;cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;box-shadow:0 4px 20px rgba(201,168,76,0.3);">🚀 Надгради план</button>
+    <button onclick="closeBonusExhausted();selectAvatar('leo');" style="background:none;border:1px solid var(--border);color:var(--muted);padding:0.5rem 1.5rem;border-radius:50px;font-size:0.75rem;cursor:pointer;font-family:'Jost',sans-serif;">← Продолжи со Leo & LIBER (бесплатно)</button>
+  </div>
+</div>
 </body>
 </html>
