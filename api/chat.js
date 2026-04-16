@@ -1,4 +1,24 @@
-// ═══════════════════════════════════════════
+// ═══ WHITELIST НА ДОЗВОЛЕНИ АВАТАРИ ═══
+const ALLOWED_AVATARS = new Set([
+  'leo', 'liber', 'businessai', 'creativeai',
+  'eva', 'justinian', 'tenderai', 'dropshipper', 'cooai'
+]);
+
+module.exports = async function handler(req, res) {
+  // ... постоечки CORS и method check ...
+
+  const body   = req.body;
+  const avatar = body.avatar || 'default';
+
+  // НОВО — валидирај avatar
+  if (!ALLOWED_AVATARS.has(avatar)) {
+    return res.status(400).json({
+      error: { message: 'Invalid avatar.' }
+    });
+  }
+
+  // ... остатокот продолжува нормално ...
+};// ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
 // Верзија: Hybrid v8 — Gemini + Grounding + Serper + TED API + COO AI
 // ═══════════════════════════════════════════
