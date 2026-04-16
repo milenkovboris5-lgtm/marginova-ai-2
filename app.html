@@ -3434,9 +3434,12 @@ function updateXPBar(xp){
   const lv=getLevelInfo(xp);
   const range=lv.max-lv.min;
   const pct=Math.min(100,((xp-lv.min)/range)*100);
-  document.getElementById('xp-fill').style.width=pct+'%';
-  document.getElementById('xp-text').textContent=xp+' XP';
-  document.getElementById('xp-badge').textContent=lv.icon+' Level '+lv.idx+' · '+lv.name;
+  const xpFill=document.getElementById('xp-fill');
+  const xpText=document.getElementById('xp-text');
+  const xpBadge=document.getElementById('xp-badge');
+  if(xpFill) xpFill.style.width=pct+'%';
+  if(xpText) xpText.textContent=xp+' XP';
+  if(xpBadge) xpBadge.textContent=lv.icon+' Level '+lv.idx+' · '+lv.name;
 }
 
 function showXPToast(msg){
@@ -3975,6 +3978,7 @@ function showAvatarGrid(){
 }
 
 async function addXP(amount,reason){
+  return; // XP disabled
   if(!currentUser)return;
   try{
     const newXP=userXP+amount;
@@ -4024,9 +4028,8 @@ async function saveMessage(role,text){
     await supa('conversations').insert({
       user_id:currentUser.id,
       avatar:current,
-      role,
-      message:text,
-      created_at:new Date().toISOString()
+      role:role,
+      message:text
     });
     if(!memoryCache[current])memoryCache[current]=[];
     memoryCache[current].push({role:role==='assistant'?'assistant':'user',content:text});
