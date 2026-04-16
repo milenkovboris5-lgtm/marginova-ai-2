@@ -408,7 +408,7 @@ nav::after{
   box-shadow:0 0 10px var(--goldglow);
 }
 .bubble{
-  max-width:66%;padding:0.6rem 0.9rem;border-radius:18px;
+  max-width:88%;padding:0.6rem 0.9rem;border-radius:18px;
   font-size:0.83rem;line-height:1.6;word-break:break-word;
 }
 .bubble.ai{
@@ -2892,7 +2892,7 @@ function parseMarkdown(text){
   // Tables
   h = h.replace(/(\|[^\n]+\|\n?)+/g, function(tbl){
     const rows = tbl.trim().split('\n').filter(r=>r.trim());
-    let o = '<table style="border-collapse:collapse;width:100%;margin:0.5rem 0;font-size:0.78rem;">';
+    let o = '<table style="border-collapse:collapse;width:100%;margin:0.5rem 0;font-size:0.72rem;table-layout:auto;word-break:normal;">';
     let isFirst = true;
     rows.forEach(function(row){
       if(/^\|[-| :]+\|$/.test(row.trim())) return;
@@ -2905,7 +2905,7 @@ function parseMarkdown(text){
       isFirst = false;
     });
     o += '</table>';
-    return o;
+    return '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' + o + '</div>';
   });
   // Headers
   h = h.replace(/^### (.+)$/gm,'<div style="font-size:0.82rem;font-weight:600;color:var(--gold);margin:0.5rem 0 0.2rem;">$1</div>');
@@ -4027,13 +4027,14 @@ async function loadMemory(avatarId){
 async function saveMessage(role,text){
   if(!currentUser)return;
   try{
-    await supa('conversations').insert({
+    const {error} = await supa('conversations').insert({
       user_id:currentUser.id,
       avatar:current,
       role:role,
       message:text,
       created_at:new Date().toISOString()
     });
+    if(error && error.code === '23505') return; // ignore duplicate
     if(!memoryCache[current])memoryCache[current]=[];
     memoryCache[current].push({role:role==='assistant'?'assistant':'user',content:text});
     if(memoryCache[current].length>20)memoryCache[current]=memoryCache[current].slice(-20);
