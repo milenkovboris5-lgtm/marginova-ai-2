@@ -1284,7 +1284,7 @@ html{scroll-behavior:smooth;}
   </div>
 
   <div class="chat-area" id="chat-area-wrap" style="position:relative;display:flex;flex-direction:column;flex:1;min-height:0;">
-    <div class="avatar-stage" style="flex-shrink:0;">
+    <div class="avatar-stage" id="avatar-stage" style="flex-shrink:0;display:none;">
       <button onclick="showAvatarGrid()" style="width:30px;height:30px;border-radius:50%;border:2px solid #2ddc7a;background:rgba(45,220,122,0.12);cursor:pointer;color:#2ddc7a;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px;animation:pulse-green 2s infinite;" title="Back to specialists">←</button>
       <div class="stage-media" id="stage-media"><img src="logo-main.png" alt="Marginova"/></div>
       <div style="flex:1;">
@@ -2672,6 +2672,8 @@ function selectAvatar(id){
   current=id;
   const grid=document.getElementById("avatar-grid-page");
   const chatWrap=document.getElementById("chat-area-wrap");
+  const stage=document.getElementById("avatar-stage");
+  if(stage) stage.style.display='flex';
   if(grid) grid.style.display="none";
   if(chatWrap) chatWrap.style.display="flex";
   closeDrawer();
@@ -3798,6 +3800,8 @@ function goToChat(){
 function showAvatarGrid(){
   document.getElementById('avatar-grid-page').style.display='block';
   document.getElementById('chat-area-wrap').style.display='none';
+  const stage=document.getElementById('avatar-stage');
+  if(stage) stage.style.display='none';
   if(agSelCard){agSelCard.classList.remove('selected');agSelCard=null;}
   document.getElementById('ag-chat-bar').classList.remove('show');
 }
