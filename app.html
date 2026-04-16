@@ -1059,9 +1059,9 @@ html{scroll-behavior:smooth;}
 
 
 
-<div class="main" id="chat-page" style="display:none;flex-direction:column;">
+<div class="main" id="chat-page" style="display:none;flex-direction:column;flex:1;min-height:0;">
   <!-- AVATAR GRID -->
-  <div id="avatar-grid-page" style="overflow-y:auto;flex:1;background:var(--bg);">
+  <div id="avatar-grid-page" style="overflow-y:auto;flex:1;background:var(--bg);padding-top:0.5rem;">
     <style>
     .ag-section{padding:0 0.85rem 0.25rem;position:relative;z-index:1;}
     .ag-section-header{display:flex;align-items:center;gap:8px;padding:0.9rem 0 0.55rem;}
@@ -1131,13 +1131,13 @@ html{scroll-behavior:smooth;}
     .ag-chat-role{font-size:0.58rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .ag-chat-btn{background:linear-gradient(135deg,rgba(201,168,76,0.92),rgba(201,168,76,0.65));border:none;color:#0a0a12;padding:0.46rem 1rem;border-radius:50px;font-size:0.72rem;cursor:pointer;font-family:'Jost',sans-serif;font-weight:600;letter-spacing:0.04em;white-space:nowrap;flex-shrink:0;}
     .ag-chat-btn:active{transform:scale(0.96);}
-    .ag-bottom-pad{height:5rem;}
+    .ag-bottom-pad{height:2rem;}
     </style>
 
 
     <!-- COO.AI — FINAL DECISION LAYER -->
     <div id="coo-hero" style="
-      margin:0.85rem 0.85rem 0;
+      margin:0 0.85rem 0;
       padding:1.6rem 1.4rem 1.4rem;
       background:linear-gradient(135deg,rgba(9,9,16,0.98),rgba(14,14,26,0.96));
       border:1px solid rgba(201,168,76,0.5);
@@ -1290,17 +1290,17 @@ html{scroll-behavior:smooth;}
       <div style="flex:1;">
         <div class="stage-name" id="stage-name">Marginova</div>
         <div class="stage-status"><span class="av-dot"></span><span id="status-text">Online · Available</span></div>
-        <div class="stage-mood" id="stage-mood">"Your space for inner clarity..."</div>
-        <div class="stage-traits" id="stage-traits"><span class="trait h">intelligent</span><span class="trait h">trustworthy</span><span class="trait">always available</span></div>
+        <div class="stage-mood" id="stage-mood" style="display:none;"></div>
+        <div class="stage-traits" id="stage-traits" style="display:none;"></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
         <button onclick="saveConversation()" title="Save last 10 messages" style="padding:0.3rem 0.7rem;border-radius:50px;border:1px solid var(--border2);background:rgba(201,168,76,0.08);color:var(--gold);font-size:0.65rem;cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='rgba(201,168,76,0.2)'" onmouseout="this.style.background='rgba(201,168,76,0.08)'">💾 Save Chat</button>
         <button onclick="emailPlan()" id="email-plan-btn" title="Email daily plan" style="display:none;padding:0.3rem 0.7rem;border-radius:50px;border:1px solid var(--border2);background:rgba(201,168,76,0.08);color:var(--gold);font-size:0.65rem;cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='rgba(201,168,76,0.2)'" onmouseout="this.style.background='rgba(201,168,76,0.08)'">📧 Email Plan</button>
       </div>
     </div>
-    <div id="welcome-screen" class="welcome-screen">
-      <div class="welcome-name" id="welcome-name">Welcome to <em>Marginova.AI</em></div>
-      <div class="welcome-desc" id="welcome-desc">Your personal AI assistant for inner clarity and balance.</div>
+    <div id="welcome-screen" class="welcome-screen" style="gap:1rem;">
+      <div id="welcome-name" style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;text-align:center;color:var(--text);">Welcome to <em style="color:var(--gold);font-style:italic;">Marginova.AI</em></div>
+      <div id="welcome-desc" style="font-size:0.82rem;color:var(--text2);text-align:center;max-width:320px;line-height:1.7;">Your personal AI assistant.</div>
       <button class="welcome-start" onclick="startChat()" id="start-btn">Start conversation →</button>
     </div>
     <div id="messages" class="messages" style="display:none;"></div>
@@ -2677,13 +2677,17 @@ function selectAvatar(id){
   closeDrawer();
   const av=AVATARS[id];
   document.getElementById('stage-name').textContent=av.name;
-  document.getElementById('stage-mood').textContent=av.mood;
-  document.getElementById('stage-traits').innerHTML=av.traits.map(([t,h])=>`<span class="trait${h?' h':''}">${t}</span>`).join('');
-  setImg(document.getElementById('stage-media'),av.img,av.name);
-  document.getElementById('welcome-name').innerHTML=`Meet <em>${av.name}</em>`;
-  document.getElementById('welcome-desc').textContent=av.desc;
-  //welcome-traits removed
-  setImg(document.getElementById('welcome-media'),av.img,av.name);
+  // mood/traits are hidden — not shown in UI
+  const stageMedia=document.getElementById('stage-media');
+  if(stageMedia){
+    if(av.img) setImg(stageMedia,av.img,av.name);
+    else stageMedia.innerHTML='<span style="font-size:1.6rem;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">⚡</span>';
+  }
+  const wn=document.getElementById('welcome-name');
+  if(wn) wn.innerHTML=`<em>${av.name}</em>`;
+  const wd=document.getElementById('welcome-desc');
+  if(wd) wd.textContent=av.desc;
+  // welcome-media removed — safe
   document.getElementById('welcome-screen').style.display='flex';
   document.getElementById('messages').style.display='none';
   document.getElementById('input-area').style.display='none';
@@ -3831,7 +3835,7 @@ async function loadMemory(avatarId){
       .eq('user_id',currentUser.id)
       .eq('avatar',avatarId)
       .order('created_at',{ascending:false})
-      .limit(20);
+      .limit(10);
     if(error||!data||data.length===0)return[];
     const msgs=data.reverse().map(r=>({
       role:r.role==='assistant'?'assistant':'user',
