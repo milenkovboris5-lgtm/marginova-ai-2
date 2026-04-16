@@ -877,7 +877,9 @@ module.exports = async function handler(req, res) {
     // ═══ COO AI — MULTI-AGENT ═══
     if (avatar === 'cooai') {
       console.log('[cooai] Activating multi-agent mode | lang:', frontendLang || 'auto');
-      const cooReport = await runCOOAI(userText, messages, serperKey, apiKey, frontendLang);
+      // COO AI добива само тековната порака — без претходна историја
+      const cooMessages = [{ role: 'user', content: userText }];
+      const cooReport = await runCOOAI(userText, cooMessages, serperKey, apiKey, frontendLang);
       return res.status(200).json({
         content: [{ type: 'text', text: cooReport }],
         model_used: 'cooai-multi-agent',
