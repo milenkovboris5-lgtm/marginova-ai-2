@@ -996,7 +996,7 @@ html{scroll-behavior:smooth;}
     <div class="nav-right">
       
       <style>@keyframes apk-pulse{0%,100%{box-shadow:0 0 8px rgba(45,220,122,0.4),0 0 0 0 rgba(45,220,122,0.3);}50%{box-shadow:0 0 16px rgba(45,220,122,0.7),0 0 0 6px rgba(45,220,122,0);}}</style>
-      <a href="https://play.google.com/store/apps/details?id=tech.marginova.app" target="_blank" rel="noopener" style="font-size:0.58rem;font-weight:500;display:flex;align-items:center;gap:4px;border:1.5px solid rgba(45,220,122,0.5);background:rgba(45,220,122,0.08);color:#2ddc7a;padding:0.3rem 0.75rem;border-radius:50px;text-decoration:none;white-space:nowrap;font-family:'Jost',sans-serif;animation:apk-pulse 2s ease-in-out infinite;" id="nav-apk-btn">🤖 Android App</a>
+      <a href="#" style="font-size:0.58rem;font-weight:500;display:flex;align-items:center;gap:4px;border:1.5px solid rgba(45,220,122,0.5);background:rgba(45,220,122,0.08);color:#2ddc7a;padding:0.3rem 0.75rem;border-radius:50px;text-decoration:none;white-space:nowrap;font-family:'Jost',sans-serif;animation:apk-pulse 2s ease-in-out infinite;" id="nav-apk-btn">🤖 Android App</a>
       <style>@keyframes apk-pulse{0%,100%{box-shadow:0 0 8px rgba(45,220,122,0.3);}50%{box-shadow:0 0 16px rgba(45,220,122,0.6),0 0 0 5px rgba(45,220,122,0);}}</style>
       <a href="#" onclick="document.getElementById('auth-screen').style.display='flex';switchAuth('register');return false;" style="font-size:0.6rem;font-weight:600;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:0.3rem 0.7rem;border-radius:50px;text-decoration:none;white-space:nowrap;font-family:'Jost',sans-serif;" id="nav-free-btn">Почни бесплатно</a>
       <button onclick="openDrawer()" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text2);font-size:1rem;display:flex;align-items:center;justify-content:center;">☰</button>
@@ -1321,64 +1321,6 @@ html{scroll-behavior:smooth;}
 </div>
 
 <script>
-// MSH removed
-var MSH_REMOVED = true;
-if(false){var MSH = {
-  mk:{title:"Десетте свитоци на мудроста",sub:"Зборовите кои го менуваат животот",sc:[
-    {l:"Свиток I",m:"Ке ги формирам <em style='color:#E8C97A;font-style:normal;'>добрите навики</em> и ке бидам нивен роб."},
-    {l:"Свиток II",m:"Ке го поздравам овој ден со <em style='color:#E8C97A;font-style:normal;'>љубов</em> во моето срце."},
-    {l:"Свиток III",m:"Ке истраам <em style='color:#E8C97A;font-style:normal;'>додека не успеам.</em>"},
-    {l:"Свиток IV",m:"Јас сум <em style='color:#E8C97A;font-style:normal;'>најголемото чудо</em> на природата."},
-    {l:"Свиток V",m:"Ке живеам <em style='color:#E8C97A;font-style:normal;'>kako da e moj posleden den.</em>"},
-    {l:"Свиток VI",m:"Ке ги контролирам <em style='color:#E8C97A;font-style:normal;'>моите емоции.</em>"},
-    {l:"Свиток VII",m:"Ке се <em style='color:#E8C97A;font-style:normal;'>смеам на светот.</em>"},
-    {l:"Свиток VIII",m:"Ке го умножам мојот <em style='color:#E8C97A;font-style:normal;'>талент стократно.</em>"},
-    {l:"Свиток IX",m:"Ке дејствувам <em style='color:#E8C97A;font-style:normal;'>сега.</em>"},
-    {l:"Свиток X",m:"Ке се <em style='color:#E8C97A;font-style:normal;'>молам за водство.</em>"}]},
-  sr:{title:"Deset svitaka mudrosti",sub:"Reci koje menjaju zivot",sc:[
-    {l:"Svitak I",m:"Formivaci <em style='color:#E8C97A;font-style:normal;'>dobre navike</em> i bici njihov rob."},
-    {l:"Svitak II",m:"Pozdravicu ovaj dan sa <em style='color:#E8C97A;font-style:normal;'>ljubavlju</em> u srcu."},
-    {l:"Svitak III",m:"Istrajaci <em style='color:#E8C97A;font-style:normal;'>dok ne uspem.</em>"},
-    {l:"Svitak IV",m:"Ja sam <em style='color:#E8C97A;font-style:normal;'>najvece cudo</em> prirode."},
-    {l:"Svitak V",m:"Ziveci kao da je <em style='color:#E8C97A;font-style:normal;'>ovo moj poslednji dan.</em>"},
-    {l:"Svitak VI",m:"Kontrolisacu <em style='color:#E8C97A;font-style:normal;'>svoje emocije.</em>"},
-    {l:"Svitak VII",m:"Smejaci se <em style='color:#E8C97A;font-style:normal;'>svetu.</em>"},
-    {l:"Svitak VIII",m:"Umnoziciu <em style='color:#E8C97A;font-style:normal;'>talenat stokratno.</em>"},
-    {l:"Svitak IX",m:"Delovaci <em style='color:#E8C97A;font-style:normal;'>sada.</em>"},
-    {l:"Svitak X",m:"Molici se za <em style='color:#E8C97A;font-style:normal;'>vodstvo.</em>"}]},
-  en:{title:"The Ten Scrolls of Wisdom",sub:"Words that change your life",sc:[
-    {l:"Scroll I",m:"I will form <em style='color:#E8C97A;font-style:normal;'>good habits</em> and become their slave."},
-    {l:"Scroll II",m:"I will greet this day with <em style='color:#E8C97A;font-style:normal;'>love</em> in my heart."},
-    {l:"Scroll III",m:"I will persist <em style='color:#E8C97A;font-style:normal;'>until I succeed.</em>"},
-    {l:"Scroll IV",m:"I am <em style='color:#E8C97A;font-style:normal;'>nature&#39;s greatest miracle.</em>"},
-    {l:"Scroll V",m:"I will live <em style='color:#E8C97A;font-style:normal;'>this day as if it is my last.</em>"},
-    {l:"Scroll VI",m:"I will be master of <em style='color:#E8C97A;font-style:normal;'>my emotions.</em>"},
-    {l:"Scroll VII",m:"I will <em style='color:#E8C97A;font-style:normal;'>laugh at the world.</em>"},
-    {l:"Scroll VIII",m:"I will multiply my value <em style='color:#E8C97A;font-style:normal;'>a hundredfold.</em>"},
-    {l:"Scroll IX",m:"I will act <em style='color:#E8C97A;font-style:normal;'>now.</em>"},
-    {l:"Scroll X",m:"I will pray for <em style='color:#E8C97A;font-style:normal;'>guidance.</em>"}]}
-}}
-// msHeroRender removed
-function msHeroRender(l){
-  // Avatar role labels per language
-  const roles = {
-    mk:{ leo:'Есеи & Пишување ✍️',liber:'Енциклопедија 📚',businessai:'Стратегија & Финансии 💼',creativeai:'Маркетинг & Бренд 🎨',eva:'EU Фондови 🇪🇺',justinian:'Правен Советник ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Патување & Понуди ✈️',tenderai:'Тендери & Лицитации 📋' },
-    sr:{ leo:'Eseji & Pisanje ✍️',liber:'Enciklopedija 📚',businessai:'Strategija & Finansije 💼',creativeai:'Marketing & Brend 🎨',eva:'EU Fondovi 🇪🇺',justinian:'Pravni Savetnik ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Putovanje & Ponude ✈️',tenderai:'Tenderi & Licitacije 📋' },
-    hr:{ leo:'Eseji & Pisanje ✍️',liber:'Enciklopedija 📚',businessai:'Strategija & Financije 💼',creativeai:'Marketing & Brand 🎨',eva:'EU Fondovi 🇪🇺',justinian:'Pravni Savjetnik ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Putovanje & Ponude ✈️',tenderai:'Tenderi & Licitacije 📋' },
-    bs:{ leo:'Eseji & Pisanje ✍️',liber:'Enciklopedija 📚',businessai:'Strategija & Finansije 💼',creativeai:'Marketing & Brend 🎨',eva:'EU Fondovi 🇪🇺',justinian:'Pravni Savjetnik ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Putovanje & Ponude ✈️',tenderai:'Tenderi & Licitacije 📋' },
-    en:{ leo:'Essays & Writing ✍️',liber:'Encyclopedia 📚',businessai:'Strategy & Finance 💼',creativeai:'Marketing & Brand 🎨',eva:'EU Funds 🇪🇺',justinian:'Legal Advisor ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Travel & Deals ✈️',tenderai:'Tenders & Auctions 📋' },
-    de:{ leo:'Essay & Schreiben ✍️',liber:'Enzyklopädie 📚',businessai:'Strategie & Finanzen 💼',creativeai:'Marketing & Branding 🎨',eva:'EU-Fördermittel 🇪🇺',justinian:'Rechtsberater ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Reisen & Angebote ✈️',tenderai:'Ausschreibungen & Auktionen 📋' },
-    bg:{ leo:'Есета & Писане ✍️',liber:'Енциклопедия 📚',businessai:'Стратегия & Финанси 💼',creativeai:'Маркетинг & Бранд 🎨',eva:'ЕС Фондове 🇪🇺',justinian:'Правен Съветник ⚖️',dropshipper:'Дропшипинг 🛒',travelai:'Пътуване & Оферти ✈️',tenderai:'Търгове & Лицитации 📋' },
-    sq:{ leo:'Ese & Shkrim ✍️',liber:'Enciklopedi 📚',businessai:'Strategji & Financa 💼',creativeai:'Marketing & Brand 🎨',eva:'Fondet BE 🇪🇺',justinian:'Këshilltar Ligjor ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Udhëtim & Oferta ✈️',tenderai:'Tenderë & Ankande 📋' },
-    tr:{ leo:'Deneme & Yazma ✍️',liber:'Ansiklopedi 📚',businessai:'Strateji & Finans 💼',creativeai:'Pazarlama & Marka 🎨',eva:'AB Fonları 🇪🇺',justinian:'Hukuk Danışmanı ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Seyahat & Teklifler ✈️',tenderai:'İhaleler & Açık Artırmalar 📋' },
-    pl:{ leo:'Eseje & Pisanie ✍️',liber:'Encyklopedia 📚',businessai:'Strategia & Finanse 💼',creativeai:'Marketing & Marka 🎨',eva:'Fundusze UE 🇪🇺',justinian:'Doradca Prawny ⚖️',dropshipper:'Dropshipping 🛒',travelai:'Podróże & Oferty ✈️',tenderai:'Przetargi & Aukcje 📋' }
-  };
-  const r = roles[l] || roles.en;
-  Object.keys(r).forEach(function(av){
-    const el = document.getElementById('role-'+av);
-    if(el) el.textContent = r[av];
-  });
-}
 
 </script><script>
 // SUPABASE
@@ -2334,7 +2276,7 @@ async function handleAuth(){
 
 function updateEmailPlanBtn(){
   const btn=document.getElementById("email-plan-btn");
-  if(btn)btn.style.display=(current==="businessai"||current==="eva")?"inline-block":"none";
+  if(btn)btn.style.display=(current==="planner"||current==="anastasia")?"inline-block":"none";
 }
 async function showApp(){
   document.getElementById('auth-screen').style.display='none';
@@ -2434,21 +2376,21 @@ function setLang(l){
       upgrade:'Nadgradi plan →',pricing:'Planovi & Cene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
-      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',
+      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
       rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     hr:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
       upgrade:'Nadogradi plan →',pricing:'Planovi & Cijene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',
-      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',
+      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
       rBusinessai:'Strategija & Financije 💼',rCreativeai:'Marketing & Brand 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     bs:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       upgrade:'Nadogradi plan →',pricing:'Planovi & Cijene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
-      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',
+      rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
       rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
     sq:{chat:'Chat',blog:'Blog & Reviews',placeholder:'Shkruaj një mesazh...',
@@ -2522,14 +2464,12 @@ function setLang(l){
       'bg': av.descBG || av.descEN || av.desc,
       'de': av.descDE || av.descEN || av.desc,
       'sq': av.descSQ || av.descEN || av.desc,
-      'tr': av.descTR || av.descEN || av.desc,
-      'pl': av.descPL || av.descEN || av.desc,
     };
     const localDesc = descMap[l] || av.desc;
     const wdEl = document.getElementById('welcome-desc');
     if(wdEl) wdEl.textContent = localDesc;
     // Azuriraj placeholder so nov jazik
-    const placeholders={en:'Type a message...',mk:'Напишете порака...',sr:'Napišite poruku...',hr:'Napišite poruku...',bs:'Napišite poruku...',sq:'Shkruaj një mesazh...',bg:'Напишете съобщение...',de:'Nachricht eingeben...',tr:'Mesaj yazın...',pl:'Napisz wiadomość...'};
+    const placeholders={en:'Type a message...',mk:'Напишете порака...',sr:'Napišite poruku...',hr:'Napišite poruku...',bs:'Napišite poruku...',sq:'Shkruaj një mesazh...',bg:'Напишете съобщение...',de:'Nachricht eingeben...'};
     const inp = document.getElementById('msg-input');
     if(inp) inp.placeholder = placeholders[l] || placeholders.en;
   }
@@ -3015,27 +2955,14 @@ async function sendMsg(){
     const sys = baseSys + langInstruction + brevityInstruction;
     
     const userPlan = (window._userPlan || 'free');
-         // Автоматско бирање модел според аватарот
-      const modelMap = {
-        'eva': 'gemini-2.5-flash',
-        'tenderai': 'gemini-2.5-flash',
-        'businessai': 'gemini-2.5-flash',
-        'justinian': 'gemini-2.5-flash',
-        'creativeai': 'gemini-2.5-flash',
-        'dropshipper': 'gemini-2.5-flash',
-        'leo': 'gemini-2.5-flash',
-        'liber': 'gemini-2.5-flash'
-      };
-      const selectedModel = modelMap[current] || 'gemini-2.0-flash';
-      
-      const payload = {
-        model: selectedModel,
-        max_tokens: 2000,
-        system: sys,
-        messages: messagesForAPI,
-        avatar: current,
-        plan: userPlan
-      };
+    const payload = {
+      model:'claude-sonnet-4-20250514',
+      max_tokens:2000,
+      system:sys,
+      messages:messagesForAPI,
+      avatar:current,
+      plan:userPlan
+    };
 
     if(savedImage){
       payload.image = savedImage;
@@ -3643,7 +3570,6 @@ function closeDrawer(){
 // ═══ LANG BAR FLAGS ═══
 let agSelCard=null;
 function setLangGrid(l){
-  if(typeof msHeroRender==="function") msHeroRender(l);
   document.querySelectorAll('.lang-flag-btn').forEach(b=>{
     b.style.background='transparent';
     b.style.borderColor='rgba(201,168,76,0.18)';
