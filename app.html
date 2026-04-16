@@ -241,7 +241,7 @@ nav::after{
 .xp-toast.show{opacity:1;}
 
 /* ═══ MAIN LAYOUT ═══ */
-.main{display:flex;flex:1;min-height:0;position:relative;z-index:1;}
+.main{display:flex;flex:1;min-height:0;height:100%;position:relative;z-index:1;}
 
 /* ═══ SIDEBAR ═══ */
 .sidebar{
@@ -365,7 +365,7 @@ nav::after{
 /* Welcome screen */
 .welcome-screen{
   flex:1;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:0.9rem;padding:2rem;overflow-y:auto;
+  justify-content:center;gap:1.2rem;padding:1.5rem;overflow-y:auto;min-height:0;
   background:radial-gradient(ellipse at 50% 40%,rgba(201,168,76,0.04) 0%,transparent 60%);
 }
 .welcome-media{
@@ -1059,7 +1059,7 @@ html{scroll-behavior:smooth;}
 
 
 
-<div class="main" id="chat-page" style="display:none;flex-direction:column;flex:1;min-height:0;">
+<div class="main" id="chat-page" style="display:none;flex-direction:column;flex:1;min-height:0;height:100%;">
   <!-- AVATAR GRID -->
   <div id="avatar-grid-page" style="overflow-y:auto;flex:1;background:var(--bg);padding-top:0.5rem;">
     <style>
@@ -1283,7 +1283,7 @@ html{scroll-behavior:smooth;}
     </div>
   </div>
 
-  <div class="chat-area" id="chat-area-wrap" style="position:relative;display:flex;flex-direction:column;flex:1;min-height:0;">
+  <div class="chat-area" id="chat-area-wrap" style="position:relative;display:flex;flex-direction:column;flex:1;min-height:0;height:100%;">
     <div class="avatar-stage" id="avatar-stage" style="flex-shrink:0;display:none;">
       <button onclick="showAvatarGrid()" style="width:30px;height:30px;border-radius:50%;border:2px solid #2ddc7a;background:rgba(45,220,122,0.12);cursor:pointer;color:#2ddc7a;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px;animation:pulse-green 2s infinite;" title="Back to specialists">←</button>
       <div class="stage-media" id="stage-media"><img src="logo-main.png" alt="Marginova"/></div>
@@ -2675,7 +2675,7 @@ function selectAvatar(id){
   const stage=document.getElementById("avatar-stage");
   if(stage) stage.style.display='flex';
   if(grid) grid.style.display="none";
-  if(chatWrap) chatWrap.style.display="flex";
+  if(chatWrap){chatWrap.style.display='flex';chatWrap.style.flexDirection='column';}
   closeDrawer();
   const av=AVATARS[id];
   document.getElementById('stage-name').textContent=av.name;
@@ -3791,7 +3791,7 @@ function goToChat(){
   const id=agSelCard.id.replace('item-','');
   // Hide grid, show chat
   document.getElementById('avatar-grid-page').style.display='none';
-  document.getElementById('chat-area-wrap').style.display='flex';
+  var caw=document.getElementById('chat-area-wrap');caw.style.display='flex';caw.style.flexDirection='column';
   document.getElementById('ag-chat-bar').classList.remove('show');
   selectAvatar(id);
 }
