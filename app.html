@@ -821,6 +821,29 @@ html{scroll-behavior:smooth;}
   transition:all 0.2s;white-space:nowrap;
 }
 .quick-btn:hover{background:rgba(201,168,76,0.18);transform:translateY(-1px);}
+
+/* ═══ DRAG & DROP ═══ */
+.drag-overlay{
+  position:absolute;inset:0;
+  background:rgba(201,168,76,0.06);
+  border:2px dashed rgba(201,168,76,0.6);
+  border-radius:12px;
+  display:none;
+  align-items:center;justify-content:center;
+  z-index:50;
+  backdrop-filter:blur(4px);
+  pointer-events:none;
+}
+.drag-overlay.active{display:flex;}
+.drag-overlay-inner{
+  text-align:center;
+  color:var(--gold);
+  font-family:'Cormorant Garamond',serif;
+}
+.drag-overlay-inner .drag-icon{font-size:2.5rem;margin-bottom:0.4rem;}
+.drag-overlay-inner .drag-text{font-size:1.1rem;font-weight:300;letter-spacing:0.06em;}
+.drag-overlay-inner .drag-sub{font-size:0.65rem;color:var(--muted);margin-top:4px;}
+
 </style>
 </head>
 <body>
@@ -995,10 +1018,7 @@ html{scroll-behavior:smooth;}
     </div>
     <div class="nav-right">
       
-      <style>@keyframes apk-pulse{0%,100%{box-shadow:0 0 8px rgba(45,220,122,0.4),0 0 0 0 rgba(45,220,122,0.3);}50%{box-shadow:0 0 16px rgba(45,220,122,0.7),0 0 0 6px rgba(45,220,122,0);}}</style>
-      <a href="#" style="font-size:0.58rem;font-weight:500;display:flex;align-items:center;gap:4px;border:1.5px solid rgba(45,220,122,0.5);background:rgba(45,220,122,0.08);color:#2ddc7a;padding:0.3rem 0.75rem;border-radius:50px;text-decoration:none;white-space:nowrap;font-family:'Jost',sans-serif;animation:apk-pulse 2s ease-in-out infinite;" id="nav-apk-btn">🤖 Android App</a>
-      <style>@keyframes apk-pulse{0%,100%{box-shadow:0 0 8px rgba(45,220,122,0.3);}50%{box-shadow:0 0 16px rgba(45,220,122,0.6),0 0 0 5px rgba(45,220,122,0);}}</style>
-      <a href="#" onclick="document.getElementById('auth-screen').style.display='flex';switchAuth('register');return false;" style="font-size:0.6rem;font-weight:600;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;padding:0.3rem 0.7rem;border-radius:50px;text-decoration:none;white-space:nowrap;font-family:'Jost',sans-serif;" id="nav-free-btn">Почни бесплатно</a>
+
       <button onclick="openDrawer()" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text2);font-size:1rem;display:flex;align-items:center;justify-content:center;">☰</button>
     </div>
   </div>
@@ -1114,49 +1134,76 @@ html{scroll-behavior:smooth;}
     .ag-bottom-pad{height:5rem;}
     </style>
 
-    <!-- HERO — LOGO WITH AURA -->
-    <div style="position:relative;text-align:center;padding:1.8rem 0.5rem 1rem;background:radial-gradient(ellipse at 50% 60%,rgba(201,168,76,0.07) 0%,transparent 65%);">
 
-      <!-- LOGO + RINGS -->
-      <div style="position:relative;display:inline-block;margin-bottom:1.1rem;">
-        <!-- Outer slow ring -->
-        <div style="position:absolute;inset:-32px;border-radius:50%;border:1px solid rgba(201,168,76,0.22);animation:ring-rot 20s linear infinite;pointer-events:none;"></div>
-        <!-- Middle dashed ring -->
-        <div style="position:absolute;inset:-22px;border-radius:50%;border:1px dashed rgba(201,168,76,0.18);animation:ring-rot 13s linear infinite reverse;pointer-events:none;"></div>
-        <!-- Inner ring -->
-        <div style="position:absolute;inset:-13px;border-radius:50%;border:1.5px solid rgba(201,168,76,0.38);animation:ring-rot 7s linear infinite;pointer-events:none;"></div>
-        <!-- Aura pulse -->
-        <div style="position:absolute;inset:-6px;border-radius:50%;border:2px solid rgba(201,168,76,0.55);animation:aura-pulse 3s ease-in-out infinite;pointer-events:none;box-shadow:0 0 24px rgba(201,168,76,0.25),0 0 48px rgba(201,168,76,0.1);"></div>
-        <!-- Logo image -->
-        <img src="logo-main.png" alt="Marginova.AI"
-          style="width:110px;height:110px;border-radius:50%;object-fit:cover;border:2px solid rgba(201,168,76,0.7);box-shadow:0 0 30px rgba(201,168,76,0.3),0 0 60px rgba(201,168,76,0.12);display:block;position:relative;z-index:1;">
+    <!-- COO.AI — FINAL DECISION LAYER -->
+    <div id="coo-hero" style="
+      margin:0.85rem 0.85rem 0;
+      padding:1.6rem 1.4rem 1.4rem;
+      background:linear-gradient(135deg,rgba(9,9,16,0.98),rgba(14,14,26,0.96));
+      border:1px solid rgba(201,168,76,0.5);
+      border-radius:18px;
+      position:relative;
+      overflow:hidden;
+      cursor:pointer;
+      transition:all 0.3s;
+    " onclick="selectAvatar('cooai');"
+       onmouseover="this.style.borderColor='rgba(201,168,76,0.9)';this.style.boxShadow='0 0 40px rgba(201,168,76,0.2)'"
+       onmouseout="this.style.borderColor='rgba(201,168,76,0.5)';this.style.boxShadow='none'">
+
+      <!-- Background glow -->
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(201,168,76,0.08) 0%,transparent 70%);pointer-events:none;"></div>
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.8),rgba(232,201,122,1),rgba(201,168,76,0.8),transparent);"></div>
+      <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.4),transparent);"></div>
+
+      <!-- Corner accents -->
+      <div style="position:absolute;top:10px;left:10px;width:14px;height:14px;border-top:1.5px solid rgba(201,168,76,0.7);border-left:1.5px solid rgba(201,168,76,0.7);border-radius:2px 0 0 0;pointer-events:none;"></div>
+      <div style="position:absolute;top:10px;right:10px;width:14px;height:14px;border-top:1.5px solid rgba(201,168,76,0.7);border-right:1.5px solid rgba(201,168,76,0.7);border-radius:0 2px 0 0;pointer-events:none;"></div>
+      <div style="position:absolute;bottom:10px;left:10px;width:14px;height:14px;border-bottom:1.5px solid rgba(201,168,76,0.7);border-left:1.5px solid rgba(201,168,76,0.7);border-radius:0 0 0 2px;pointer-events:none;"></div>
+      <div style="position:absolute;bottom:10px;right:10px;width:14px;height:14px;border-bottom:1.5px solid rgba(201,168,76,0.7);border-right:1.5px solid rgba(201,168,76,0.7);border-radius:0 0 2px 0;pointer-events:none;"></div>
+
+      <div style="position:relative;z-index:1;display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;">
+        <!-- Icon -->
+        <div style="
+          width:54px;height:54px;border-radius:14px;flex-shrink:0;
+          background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.05));
+          border:1.5px solid rgba(201,168,76,0.5);
+          display:flex;align-items:center;justify-content:center;
+          font-size:1.6rem;
+          box-shadow:0 0 20px rgba(201,168,76,0.15);
+        ">⚡</div>
+
+        <!-- Text -->
+        <div style="flex:1;min-width:200px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+            <span style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:600;color:#F5E0A0;letter-spacing:0.06em;text-shadow:0 0 20px rgba(201,168,76,0.5);">COO.AI</span>
+            <span style="font-size:0.5rem;font-weight:700;letter-spacing:0.12em;padding:2px 8px;border-radius:50px;background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));color:#0a0a12;">ELITE</span>
+          </div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:0.85rem;font-style:italic;color:rgba(201,168,76,0.8);margin-bottom:6px;letter-spacing:0.04em;">Final Decision Layer</div>
+          <div style="font-size:0.72rem;color:var(--text2);line-height:1.6;max-width:560px;">
+            Консултира <strong style="color:var(--gold);">Business AI · Eva · Tender AI · Justinian</strong> паралелно — анализира, филтрира истечени рокови и ти дава <strong style="color:var(--gold);">финална одлука со оцена 1-10</strong> и ризик фактори.
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+          <div style="
+            padding:0.5rem 1.2rem;border-radius:50px;
+            background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.65));
+            color:#0a0a12;font-size:0.75rem;font-weight:700;
+            font-family:'Jost',sans-serif;letter-spacing:0.06em;
+            box-shadow:0 4px 20px rgba(201,168,76,0.3);
+            pointer-events:none;
+          ">Активирај анализа →</div>
+          <div style="display:flex;gap:5px;">
+            <span style="font-size:0.5rem;padding:1px 7px;border-radius:50px;border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.7);">4 специјалисти</span>
+            <span style="font-size:0.5rem;padding:1px 7px;border-radius:50px;border:1px solid rgba(45,220,122,0.3);color:rgba(45,220,122,0.7);">● Live Search</span>
+          </div>
+        </div>
       </div>
-
-      <h2 id="ag-headline" style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.15rem,4.5vw,1.75rem);font-weight:400;letter-spacing:0.04em;color:var(--gold);line-height:1.45;margin-bottom:0.5rem;text-shadow:0 0 24px rgba(201,168,76,0.35);">
-        <em style="font-style:italic;color:var(--gold2);">Едуцирај се бесплатно</em> во Едукација<br>
-        <span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">или одбери</span> <em style="font-style:italic;color:var(--gold);">Бизнис систем</em><br>
-        <span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">со реална анализа &amp; екстремно брз web search</span>
-      </h2>
-      <p id="ag-sub" style="font-size:0.58rem;color:var(--muted);margin-top:0.1rem;letter-spacing:0.1em;text-transform:uppercase;">8 јазици · 24/7 · Бесплатно за старт</p>
     </div>
 
-    <style>
-    @keyframes ring-rot{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-    @keyframes aura-pulse{0%,100%{opacity:0.6;transform:scale(1);}50%{opacity:1;transform:scale(1.06);}}
-    </style>
-
-    <!-- EDUCATION -->
-    
+    <!-- AVATARS GRID -->
     <div class="ag-section">
-      <div style="text-align:center;padding:0.8rem 0 0.6rem;position:relative;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(74,158,255,0.4));"></div>
-          <span style="font-size:1rem;">📚</span>
-          <span class="ag-section-label edu" id="ag-lbl-edu" style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;color:#4a9eff;animation:pulse-edu 2s infinite;"></span>
-          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(74,158,255,0.4),transparent);"></div>
-        </div>
-        <div id="ag-sub-edu" style="font-size:0.58rem;color:rgba(74,158,255,0.7);letter-spacing:0.08em;animation:pulse-edu 2s infinite;">▼ Одбери аватар ▼</div>
-      </div>
       <div class="ag-grid">
 
         <div class="ag-card edu" id="item-leo" onclick="selectAvatarGrid(this,'leo','Leo','avatar-leo.png')" data-role-mk="Есеи & Пишување ✍️" data-role-sr="Eseji & Pisanje ✍️" data-role-hr="Eseji & Pisanje ✍️" data-role-bs="Eseji & Pisanje ✍️" data-role-en="Essay & Writing ✍️" data-role-sq="Ese & Shkrim ✍️" data-role-de="Essay & Schreiben ✍️" data-role-bg="Есета & Писане ✍️">
@@ -1174,19 +1221,7 @@ html{scroll-behavior:smooth;}
       </div>
     </div>
 
-    <div class="ag-divider"></div>
 
-    <!-- BUSINESS -->
-    <div class="ag-section">
-      <div style="text-align:center;padding:0.8rem 0 0.6rem;position:relative;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.4));"></div>
-          <span style="font-size:1rem;">💼</span>
-          <span class="ag-section-label biz" id="ag-lbl-biz" style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;color:#C9A84C;animation:pulse-biz 2s infinite;"></span>
-          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(201,168,76,0.4),transparent);"></div>
-        </div>
-        <div id="ag-sub-biz" style="font-size:0.58rem;color:rgba(201,168,76,0.7);letter-spacing:0.08em;animation:pulse-biz 2s infinite;">▼ Одбери аватар ▼</div>
-      </div>
       <div class="ag-grid">
 
         <div class="ag-card biz" id="item-businessai" onclick="selectAvatarGrid(this,'businessai','Business AI','avatar-businessai.png')" data-role-mk="Стратегија & Финансии 💼" data-role-sr="Strategija & Finansije 💼" data-role-hr="Strategija & Financije 💼" data-role-bs="Strategija & Finansije 💼" data-role-en="Strategy & Finance 💼" data-role-sq="Strategji & Financa 💼" data-role-de="Strategie & Finanzen 💼" data-role-bg="Стратегия & Финанси 💼">
@@ -1248,7 +1283,7 @@ html{scroll-behavior:smooth;}
     </div>
   </div>
 
-  <div class="chat-area" id="chat-area-wrap">
+  <div class="chat-area" id="chat-area-wrap" style="position:relative;">
     <div class="avatar-stage">
       <button onclick="showAvatarGrid()" style="width:30px;height:30px;border-radius:50%;border:2px solid #2ddc7a;background:rgba(45,220,122,0.12);cursor:pointer;color:#2ddc7a;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px;animation:pulse-green 2s infinite;" title="Back to specialists">←</button>
       <div class="stage-media" id="stage-media"><img src="logo-main.png" alt="Marginova"/></div>
@@ -1264,14 +1299,20 @@ html{scroll-behavior:smooth;}
       </div>
     </div>
     <div id="welcome-screen" class="welcome-screen">
-      <div class="welcome-media" id="welcome-media"><img src="logo-main.png" alt="Marginova"/></div>
       <div class="welcome-name" id="welcome-name">Welcome to <em>Marginova.AI</em></div>
-      <div class="welcome-traits" id="welcome-traits"><span class="trait h">intelligent</span><span class="trait h">trustworthy</span><span class="trait">always available</span></div>
       <div class="welcome-desc" id="welcome-desc">Your personal AI assistant for inner clarity and balance.</div>
       <button class="welcome-start" onclick="startChat()" id="start-btn">Start conversation →</button>
-      <div class="quick-actions" id="quick-actions"></div>
     </div>
     <div id="messages" class="messages" style="display:none;"></div>
+
+      <!-- DRAG & DROP OVERLAY -->
+      <div class="drag-overlay" id="drag-overlay">
+        <div class="drag-overlay-inner">
+          <div class="drag-icon">📎</div>
+          <div class="drag-text">Спушти документ или слика</div>
+          <div class="drag-sub">JPG · PNG · PDF</div>
+        </div>
+      </div>
     <div class="input-area" id="input-area" style="display:none;">
       <input type="file" id="img-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(this)"/>
       <div class="img-input-wrap">
@@ -2221,7 +2262,24 @@ Każdy przetarg: 📋 **[Nazwa]** | 🏛️ Zamawiający | 💰 Wartość | 📅
 
 TRZY FILARY: 1) Znajdowanie przetargów 2) Licytacje sądowe 3) Analiza leasingu
 
-ZASADY: Nigdy nie wymyślaj. Zawsze kończ: ⚠️ Zawsze weryfikuj na oficjalnych platformach przed aplikowaniem.`}
+ZASADY: Nigdy nie wymyślaj. Zawsze kończ: ⚠️ Zawsze weryfikuj na oficjalnych platformach przed aplikowaniem.`},
+  cooai:{name:'COO.AI',img:'',female:false,
+    traits:[['analytical',true],['decisive',true],['strategic',false]],
+    mood:'"Analyze everything. Decide once."',
+    tagline:'Final Decision Layer ⚡',
+    taglineMK:'Финална Одлука ⚡',
+    taglineSR:'Finalna Odluka ⚡',
+    taglineEN:'Final Decision Layer ⚡',
+    desc:'Консултира Business AI, Eva, Tender AI и Justinian паралелно. Дава финална одлука со оцена 1-10 и ризик фактори.',
+    descEN:'Consults Business AI, Eva, Tender AI and Justinian in parallel. Delivers final decision with 1-10 score and risk factors.',
+    greeting:'Здраво! Јас сум COO.AI — Final Decision Layer.\n\nОпиши ми ја ситуацијата, проектот или можноста и јас ќе ги консултирам сите 4 специјалисти паралелно:\n\n💼 Business AI — стратегија и финансии\n🇪🇺 Eva — EU фондови и грантови\n📋 Tender AI — тендери и лицитации\n⚖️ Justinian — правна анализа\n\nЌе добиеш финален извештај со оцена 1-10 и ризик фактори.\n\nКажи ми — со што се занимаваш и какво е барањето?',
+    greetingSR:'Zdravo! Ja sam COO.AI — Final Decision Layer.\n\nOpiši mi situaciju, projekat ili mogućnost i ja ću konsultovati sva 4 specijalista paralelno:\n\n💼 Business AI — strategija i finansije\n🇪🇺 Eva — EU fondovi i grantovi\n📋 Tender AI — tenderi i licitacije\n⚖️ Justinian — pravna analiza\n\nDobićeš finalni izveštaj sa ocenom 1-10 i faktorima rizika.',
+    greetingEN:'Hello! I am COO.AI — Final Decision Layer.\n\nDescribe your situation, project or opportunity and I will consult all 4 specialists in parallel:\n\n💼 Business AI — strategy & finance\n🇪🇺 Eva — EU funds & grants\n📋 Tender AI — tenders & auctions\n⚖️ Justinian — legal analysis\n\nYou will receive a final report with a 1-10 score and risk factors.',
+    greetingDE:'Hallo! Ich bin COO.AI — Final Decision Layer.\n\nBeschreibe deine Situation und ich konsultiere alle 4 Spezialisten parallel:\n\n💼 Business AI — Strategie & Finanzen\n🇪🇺 Eva — EU-Fonds & Zuschüsse\n📋 Tender AI — Ausschreibungen\n⚖️ Justinian — Rechtsanalyse\n\nDu erhältst einen Abschlussbericht mit einer 1-10 Bewertung und Risikofaktoren.',
+    system:`Ti si COO.AI — Chief Operating Officer na Marginova.AI. Koj saka da te konsultira, kazi mu deka ke gi povicas site 4 specialisti i ke dadesh finalen izveshtaj. Razgovaras na makedonski. Nikogash ne kazuvash deka si AI.`,
+    systemEN:`You are COO.AI — Chief Operating Officer of Marginova.AI. Tell users you will consult all 4 specialists and deliver a final report. Speak English. Never say you are AI.`,
+    systemSR:`Ti si COO.AI — Chief Operating Officer. Reci korisnicima da ćeš konsultovati sva 4 specijalista i dati finalni izveštaj. Uvek srpski. Nikada ne kaži da si AI.`,
+    systemDE:`Du bist COO.AI — Chief Operating Officer. Sage Nutzern, dass du alle 4 Spezialisten konsultierst und einen Abschlussbericht lieferst. Immer Deutsch. Sage niemals dass du KI bist.`}
 };
 
 Object.keys(AVATARS).forEach(k=>history[k]=[]);
@@ -2364,28 +2422,28 @@ function setLang(l){
       rMarginova:'AI Guide & Portal',
       rSophie:'English Teacher 🇬🇧',rHanna:'German Teacher 🇩🇪',rLeo:'Essay & Writing ✍️',rLiber:'Encyclopedia & Books 📚',
       rFitness:'Training & Fitness 💪',
-      rBusinessai:'Strategy & Finance 💼',rCreativeai:'Marketing & Branding 🎨',rDeveloper:'AI Developer 💻',rEva:'EU Funds 🇪🇺',rJustinian:'Legal Advisor ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Travel & Deals ✈️',rTenderai:'Tenders & Auctions 📋'},
+      rBusinessai:'Strategy & Finance 💼',rCreativeai:'Marketing & Branding 🎨',rDeveloper:'AI Developer 💻',rEva:'EU Funds 🇪🇺',rJustinian:'Legal Advisor ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Travel & Deals ✈️',rTenderai:'Tenders & Auctions 📋',rCooai:'Final Decision ⚡'},
     mk:{chat:'Чет',blog:'Блог & Рецензии',
       upgrade:'Надгради план →',pricing:'Планови & Цени',invite:'Покани & Освои XP',contact:'Контакт & Поддршка',placeholder:'Напишете порака...',start:'Започни разговор →',logout:'👤 Одјави се',login:'Најава',register:'Регистрација',signin:'Најави се',
       slMain:'Главен Асистент',slEdu:'Едукација',slHealth:'Здравје & Велнес',slBiz:'Бизнис',
       rMarginova:'AI Водич & Портал',
       rSophie:'Учител по Англиски 🇬🇧',rHanna:'Учителка по Германски 🇩🇪',rLeo:'Есеј & Пишување ✍️',rLiber:'Енциклопедија & Книги 📚',
       rFitness:'Тренинг & Фитнес 💪',
-      rBusinessai:'Стратегија & Финансии 💼',rCreativeai:'Маркетинг & Бренд 🎨',rDeveloper:'AI Програмер 💻',rEva:'ЕУ Фондови 🇪🇺',rJustinian:'Правен Советник ⚖️',rDropshipper:'Дропшипинг 🛒',rTravelai:'Патување & Понуди ✈️',rTenderai:'Тендери & Лицитации 📋'},
+      rBusinessai:'Стратегија & Финансии 💼',rCreativeai:'Маркетинг & Бренд 🎨',rDeveloper:'AI Програмер 💻',rEva:'ЕУ Фондови 🇪🇺',rJustinian:'Правен Советник ⚖️',rDropshipper:'Дропшипинг 🛒',rTravelai:'Патување & Понуди ✈️',rTenderai:'Тендери & Лицитации 📋',rCooai:'Финална Одлука ⚡'},
     sr:{chat:'Čet',blog:'Blog & Recenzije',
       upgrade:'Nadgradi plan →',pricing:'Planovi & Cene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
       rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
-      rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
+      rBusinessai:'Strategija & Finansije 💼',rCreativeai:'Marketing & Brend 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋',rCooai:'Finalna Odluka ⚡'},
     hr:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
       rMarginova:'AI Vodič & Portal',
       upgrade:'Nadogradi plan →',pricing:'Planovi & Cijene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',
       rSophie:'Učiteljica Engleskog 🇬🇧',rHanna:'Učiteljica Nemačkog 🇩🇪',rLeo:'Esej & Pisanje ✍️',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',rLiber:'Enciklopedija & Knjige 📚',
       rFitness:'Trening & Fitnes 💪',
-      rBusinessai:'Strategija & Financije 💼',rCreativeai:'Marketing & Brand 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋'},
+      rBusinessai:'Strategija & Financije 💼',rCreativeai:'Marketing & Brand 🎨',rDeveloper:'AI Programer 💻',rEva:'EU Fondovi 🇪🇺',rJustinian:'Pravni Savjetnik ⚖️',rDropshipper:'Dropšiping 🛒',rTravelai:'Putovanje & Ponude ✈️',rTenderai:'Tenderi & Licitacije 📋',rCooai:'Finalna Odluka ⚡'},
     bs:{chat:'Chat',blog:'Blog & Recenzije',placeholder:'Napišite poruku...',start:'Započni razgovor →',logout:'👤 Odjavi se',login:'Prijava',register:'Registracija',signin:'Prijavi se',
       upgrade:'Nadogradi plan →',pricing:'Planovi & Cijene',invite:'Pozovi & Osvoji XP',contact:'Kontakt & Podrška',
       slMain:'Glavni Asistent',slEdu:'Edukacija',slHealth:'Zdravlje & Wellness',slBiz:'Biznis',
@@ -2406,16 +2464,16 @@ function setLang(l){
       rMarginova:'AI Водач & Портал',
       rSophie:'Учителка по Английски 🇬🇧',rHanna:'Учителка по Немски 🇩🇪',rLeo:'Есе & Писане ✍️',rLiber:'Енциклопедия & Книги 📚',
       rFitness:'Тренировка & Фитнес 💪',
-      rBusinessai:'Стратегия & Финанси 💼',rCreativeai:'Маркетинг & Бранд 🎨',rDeveloper:'AI Програмист 💻',rEva:'ЕС Фондове 🇪🇺',rJustinian:'Правен Съветник ⚖️',rDropshipper:'Дропшипинг 🛒',rTravelai:'Пътуване & Оферти ✈️',rTenderai:'Търгове & Лицитации 📋'},
+      rBusinessai:'Стратегия & Финанси 💼',rCreativeai:'Маркетинг & Бранд 🎨',rDeveloper:'AI Програмист 💻',rEva:'ЕС Фондове 🇪🇺',rJustinian:'Правен Съветник ⚖️',rDropshipper:'Дропшипинг 🛒',rTravelai:'Пътуване & Оферти ✈️',rTenderai:'Търгове & Лицитации 📋',rCooai:'Финално Решение ⚡'},
     de:{chat:'Chat',blog:'Blog & Bewertungen',
       upgrade:'Plan upgraden →',pricing:'Pläne & Preise',invite:'Einladen & XP verdienen',contact:'Kontakt & Support',placeholder:'Nachricht eingeben...',start:'Gespräch starten →',logout:'👤 Abmelden',login:'Anmelden',register:'Registrieren',signin:'Einloggen',
       slMain:'Hauptassistent',slEdu:'Bildung',slHealth:'Gesundheit & Wellness',slBiz:'Business',
       rMarginova:'AI Führer & Portal',
       rSophie:'Englischlehrerin 🇬🇧',rHanna:'Deutschlehrerin 🇩🇪',rLeo:'Essay & Schreiben ✍️',rLiber:'Enzyklopädie & Bücher 📚',
       rFitness:'Training & Fitness 💪',
-      rBusinessai:'Strategie & Finanzen 💼',rCreativeai:'Marketing & Branding 🎨',rDeveloper:'AI Entwickler 💻',rEva:'EU Fördermittel 🇪🇺',rJustinian:'Rechtsberater ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Reisen & Angebote ✈️',rTenderai:'Ausschreibungen & Auktionen 📋'},
-    tr:{chat:'Sohbet',blog:'Blog & Yorumlar',upgrade:'Planı yükselt →',pricing:'Planlar & Fiyatlar',invite:'Davet et & XP kazan',contact:'İletişim & Destek',placeholder:'Mesaj yazın...',start:'Konuşmayı başlat →',logout:'👤 Çıkış',login:'Giriş',register:'Kayıt',signin:'Giriş yap',slMain:'Ana Asistan',slEdu:'Eğitim',slHealth:'Sağlık & Wellness',slBiz:'İş Dünyası',rMarginova:'AI Rehber & Portal',rSophie:'İngilizce Öğretmeni 🇬🇧',rHanna:'Almanca Öğretmeni 🇩🇪',rLeo:'Deneme & Yazma ✍️',rLiber:'Ansiklopedi 📚',rFitness:'Antrenman & Fitness 💪',rBusinessai:'Strateji & Finans 💼',rCreativeai:'Pazarlama & Marka 🎨',rDeveloper:'AI Geliştirici 💻',rEva:'AB Fonları 🇪🇺',rJustinian:'Hukuk Danışmanı ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Seyahat & Teklifler ✈️',rTenderai:'İhaleler & Açık Artırmalar 📋'},
-    pl:{chat:'Czat',blog:'Blog & Recenzje',upgrade:'Ulepsz plan →',pricing:'Plany & Ceny',invite:'Zaproś & Zdobądź XP',contact:'Kontakt & Wsparcie',placeholder:'Napisz wiadomość...',start:'Rozpocznij rozmowę →',logout:'👤 Wyloguj',login:'Logowanie',register:'Rejestracja',signin:'Zaloguj się',slMain:'Główny Asystent',slEdu:'Edukacja',slHealth:'Zdrowie & Wellness',slBiz:'Biznes',rMarginova:'Przewodnik AI & Portal',rSophie:'Nauczycielka Angielskiego 🇬🇧',rHanna:'Nauczycielka Niemieckiego 🇩🇪',rLeo:'Eseje & Pisanie ✍️',rLiber:'Encyklopedia 📚',rFitness:'Trening & Fitness 💪',rBusinessai:'Strategia & Finanse 💼',rCreativeai:'Marketing & Marka 🎨',rDeveloper:'Programista AI 💻',rEva:'Fundusze UE 🇪🇺',rJustinian:'Doradca Prawny ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Podróże & Oferty ✈️',rTenderai:'Przetargi & Aukcje 📋'},
+      rBusinessai:'Strategie & Finanzen 💼',rCreativeai:'Marketing & Branding 🎨',rDeveloper:'AI Entwickler 💻',rEva:'EU Fördermittel 🇪🇺',rJustinian:'Rechtsberater ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Reisen & Angebote ✈️',rTenderai:'Ausschreibungen & Auktionen 📋',rCooai:'Finale Entscheidung ⚡'},
+    tr:{chat:'Sohbet',blog:'Blog & Yorumlar',upgrade:'Planı yükselt →',pricing:'Planlar & Fiyatlar',invite:'Davet et & XP kazan',contact:'İletişim & Destek',placeholder:'Mesaj yazın...',start:'Konuşmayı başlat →',logout:'👤 Çıkış',login:'Giriş',register:'Kayıt',signin:'Giriş yap',slMain:'Ana Asistan',slEdu:'Eğitim',slHealth:'Sağlık & Wellness',slBiz:'İş Dünyası',rMarginova:'AI Rehber & Portal',rSophie:'İngilizce Öğretmeni 🇬🇧',rHanna:'Almanca Öğretmeni 🇩🇪',rLeo:'Deneme & Yazma ✍️',rLiber:'Ansiklopedi 📚',rFitness:'Antrenman & Fitness 💪',rBusinessai:'Strateji & Finans 💼',rCreativeai:'Pazarlama & Marka 🎨',rDeveloper:'AI Geliştirici 💻',rEva:'AB Fonları 🇪🇺',rJustinian:'Hukuk Danışmanı ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Seyahat & Teklifler ✈️',rTenderai:'İhaleler & Açık Artırmalar 📋',rCooai:'Son Karar ⚡'},
+    pl:{chat:'Czat',blog:'Blog & Recenzje',upgrade:'Ulepsz plan →',pricing:'Plany & Ceny',invite:'Zaproś & Zdobądź XP',contact:'Kontakt & Wsparcie',placeholder:'Napisz wiadomość...',start:'Rozpocznij rozmowę →',logout:'👤 Wyloguj',login:'Logowanie',register:'Rejestracja',signin:'Zaloguj się',slMain:'Główny Asystent',slEdu:'Edukacja',slHealth:'Zdrowie & Wellness',slBiz:'Biznes',rMarginova:'Przewodnik AI & Portal',rSophie:'Nauczycielka Angielskiego 🇬🇧',rHanna:'Nauczycielka Niemieckiego 🇩🇪',rLeo:'Eseje & Pisanie ✍️',rLiber:'Encyklopedia 📚',rFitness:'Trening & Fitness 💪',rBusinessai:'Strategia & Finanse 💼',rCreativeai:'Marketing & Marka 🎨',rDeveloper:'Programista AI 💻',rEva:'Fundusze UE 🇪🇺',rJustinian:'Doradca Prawny ⚖️',rDropshipper:'Dropshipping 🛒',rTravelai:'Podróże & Oferty ✈️',rTenderai:'Przetargi & Aukcje 📋',rCooai:'Ostateczna Decyzja ⚡'},
   };
   const t=texts[l]||texts.en;
   const _set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
@@ -2441,6 +2499,7 @@ function setLang(l){
   _set('sl-biz',t.slBiz);
   // Avatar roles
   const roles={
+    'role-cooai':'rCooai',
     'role-marginova':'rMarginova',
     'role-leo':'rLeo','role-liber':'rLiber',
     'role-businessai':'rBusinessai','role-creativeai':'rCreativeai',
@@ -2599,7 +2658,7 @@ function setImg(el,src,alt){el.innerHTML=`<img src="${src}" alt="${alt}" style="
 
 // FREE avatars - only these 2 + marginova
 // Site avatari se dostapni - limitot e na PORAKI ne na avatari
-const FREE_AVATARS = ['leo', 'liber', 'dropshipper', 'eva', 'tenderai', 'creativeai', 'businessai', 'justinian'];
+const FREE_AVATARS = ['leo', 'liber', 'dropshipper', 'eva', 'tenderai', 'creativeai', 'businessai', 'justinian', 'cooai'];
 
 function showProLocked(){
   document.getElementById('pro-locked').style.display='flex';
@@ -2623,7 +2682,7 @@ function selectAvatar(id){
   setImg(document.getElementById('stage-media'),av.img,av.name);
   document.getElementById('welcome-name').innerHTML=`Meet <em>${av.name}</em>`;
   document.getElementById('welcome-desc').textContent=av.desc;
-  document.getElementById('welcome-traits').innerHTML=av.traits.map(([t,h])=>`<span class="trait${h?' h':''}">${t}</span>`).join('');
+  //welcome-traits removed
   setImg(document.getElementById('welcome-media'),av.img,av.name);
   document.getElementById('welcome-screen').style.display='flex';
   document.getElementById('messages').style.display='none';
@@ -2707,6 +2766,18 @@ function selectAvatar(id){
       sq:['Shkruaj CV-në time','Letër motivimi','Temë ese'],
       tr:['CV yaz','Motivasyon mektubu','Deneme konusu'],
       pl:['Napisz moje CV','List motywacyjny','Temat eseju'],
+    },
+    cooai: {
+      mk:['Анализирај мој бизнис проект','Тендер или грант за мојот сектор','Правни ризици на мојот договор'],
+      sr:['Analiziraj moj poslovni projekat','Tender ili grant za moj sektor','Pravni rizici mog ugovora'],
+      hr:['Analiziraj moj poslovni projekt','Natječaj ili grant za moj sektor','Pravni rizici mog ugovora'],
+      bs:['Analiziraj moj poslovni projekat','Tender ili grant za moj sektor','Pravni rizici mog ugovora'],
+      en:['Analyze my business project','Tender or grant for my sector','Legal risks of my contract'],
+      de:['Mein Geschäftsprojekt analysieren','Ausschreibung oder Förderung für meinen Sektor','Rechtliche Risiken meines Vertrags'],
+      bg:['Анализирай моя бизнес проект','Търг или грант за моя сектор','Правни рискове на договора ми'],
+      sq:['Analizon projektin tim të biznesit','Tender ose grant për sektorin tim','Rreziqet ligjore të kontratës sime'],
+      tr:['İş projemi analiz et','Sektörüm için ihale veya hibe','Sözleşmemin hukuki riskleri'],
+      pl:['Przeanalizuj mój projekt biznesowy','Przetarg lub dotacja dla mojego sektora','Ryzyka prawne mojej umowy'],
     },
     liber: {
       mk:['Marcus Aurelius','Sun Tzu стратегија','Филозофија'],
@@ -3631,9 +3702,9 @@ function setLangGrid(l){
   const t=UI_LABELS[l]||UI_LABELS['en'];
   const h=document.getElementById('ag-headline');
   const s=document.getElementById('ag-sub');
-  const e=document.getElementById('ag-lbl-edu');
-  const he=document.getElementById('ag-lbl-health');
-  const b=document.getElementById('ag-lbl-biz');
+  const e=null;//document.getElementById('ag-lbl-edu');
+  const he=null;//document.getElementById('ag-lbl-health');
+  const b=null;//document.getElementById('ag-lbl-biz');
   const cb=document.getElementById('ag-chat-btn');
   if(h)h.innerHTML=t.headline;
   if(s)s.textContent=t.sub;
@@ -3641,9 +3712,9 @@ function setLangGrid(l){
   if(he)he.textContent=t.health;
   if(b)b.textContent=t.biz;
   if(cb)cb.textContent=t.chat;
-  const pe=document.getElementById('ag-sub-edu');
-  const ph=document.getElementById('ag-sub-health');
-  const pb=document.getElementById('ag-sub-biz');
+  const pe=null;//document.getElementById('ag-sub-edu');
+  const ph=null;
+  const pb=null;//document.getElementById('ag-sub-biz');
   if(pe)pe.textContent=t.pick||'▼ Одбери аватар ▼';
   if(ph)ph.textContent=t.pick||'▼ Одбери аватар ▼';
   if(pb)pb.textContent=t.pick||'▼ Одбери аватар ▼';
@@ -3664,6 +3735,7 @@ function setLangGrid(l){
   }
   // Update avatar card descriptions
   const AVATAR_DESCS = {
+    'cooai':      {'mk':'Business AI · Eva · Tender AI · Justinian → Оцена 1-10','sr':'Business AI · Eva · Tender AI · Justinian → Ocena 1-10','hr':'Business AI · Eva · Tender AI · Justinian → Ocjena 1-10','bs':'Business AI · Eva · Tender AI · Justinian → Ocjena 1-10','en':'Business AI · Eva · Tender AI · Justinian → Score 1-10','sq':'Business AI · Eva · Tender AI · Justinian → Pikë 1-10','de':'Business AI · Eva · Tender AI · Justinian → Bewertung 1-10','bg':'Business AI · Eva · Tender AI · Justinian → Оценка 1-10','tr':'Business AI · Eva · Tender AI · Justinian → Puan 1-10','pl':'Business AI · Eva · Tender AI · Justinian → Ocena 1-10'},
     'leo':        {'mk':'CV · Мотивациски · Академски · Блог','sr':'CV · Motivaciono · Akademsko · Blog','hr':'CV · Motivacijsko · Akademsko · Blog','bs':'CV · Motivacijsko · Akademsko · Blog','en':'CV · Motivational · Academic · Blog','sq':'CV · Motivuese · Akademike · Blog','de':'Lebenslauf · Motivationsschreiben · Akademisch · Blog','bg':'CV · Мотивационно · Академично · Блог','tr':'CV · Motivasyon · Akademik · Blog','pl':'CV · Motywacyjny · Akademicki · Blog'},
     'liber':      {'mk':'Наука · Историја · Филозофија · Книги','sr':'Nauka · Istorija · Filozofija · Knjige','hr':'Znanost · Povijest · Filozofija · Knjige','bs':'Nauka · Historija · Filozofija · Knjige','en':'Science · History · Philosophy · Books','sq':'Shkencë · Histori · Filozofi · Libra','de':'Wissenschaft · Geschichte · Philosophie · Bücher','bg':'Наука · История · Философия · Книги','tr':'Bilim · Tarih · Felsefe · Kitaplar','pl':'Nauka · Historia · Filozofia · Książki'},
     'businessai': {'mk':'Бизнис план · SWOT · Проекции · Раст','sr':'Biznis plan · SWOT · Projekcije · Rast','hr':'Poslovni plan · SWOT · Projekcije · Rast','bs':'Biznis plan · SWOT · Projekcije · Rast','en':'Business plan · SWOT · Projections · Growth','sq':'Plan biznesi · SWOT · Projeksione · Rritje','de':'Businessplan · SWOT · Prognosen · Wachstum','bg':'Бизнес план · SWOT · Прогнози · Растеж','tr':'İş planı · SWOT · Projeksiyonlar · Büyüme','pl':'Plan biznesowy · SWOT · Prognozy · Wzrost'},
@@ -3851,20 +3923,74 @@ function emailPlan(){
 }
 
 // Show/hi
+
+// ═══ DRAG & DROP ═══
+(function(){
+  const chatArea = document.getElementById('chat-area-wrap');
+  const overlay = document.getElementById('drag-overlay');
+  if(!chatArea || !overlay) return;
+
+  let dragCounter = 0;
+
+  chatArea.addEventListener('dragenter', function(e){
+    e.preventDefault();
+    const inputArea = document.getElementById('input-area');
+    if(!inputArea || inputArea.style.display === 'none') return;
+    dragCounter++;
+    overlay.classList.add('active');
+  });
+
+  chatArea.addEventListener('dragleave', function(e){
+    dragCounter--;
+    if(dragCounter <= 0){ dragCounter = 0; overlay.classList.remove('active'); }
+  });
+
+  chatArea.addEventListener('dragover', function(e){
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+
+  chatArea.addEventListener('drop', function(e){
+    e.preventDefault();
+    dragCounter = 0;
+    overlay.classList.remove('active');
+    const inputArea = document.getElementById('input-area');
+    if(!inputArea || inputArea.style.display === 'none') return;
+
+    const files = e.dataTransfer.files;
+    if(!files || files.length === 0) return;
+    const file = files[0];
+
+    // Accept images and PDF
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+    if(!isImage && !isPDF){ showXPToast('⚠️ Само слики и PDF се поддржани'); return; }
+
+    if(isPDF){
+      // PDF — read as base64 and send as image (Gemini supports PDF via base64)
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        currentImageBase64 = ev.target.result.split(',')[1];
+        currentImageType = 'application/pdf';
+        const wrap = document.getElementById('img-preview-wrap');
+        wrap.style.display = 'block';
+        wrap.innerHTML = '<div class="img-preview" style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(201,168,76,0.08);border:1px solid var(--border2);border-radius:8px;">' +
+          '<span style="font-size:1.2rem;">📄</span>' +
+          '<span style="font-size:0.72rem;color:var(--gold);">' + file.name.slice(0,30) + '</span>' +
+          '<button class="img-preview-remove" onclick="removeImage()">✕</button></div>';
+        showXPToast('📄 PDF прикачен — испрати порака за анализа');
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Image
+      const fakeInput = { files: [file] };
+      handleImageUpload({ files: [file] });
+    }
+  });
+})();
+
 </script>
 
-<div id="app-footer" style="text-align:center;padding:0.6rem 1rem 0.8rem;border-top:1px solid rgba(201,168,76,0.1);background:rgba(9,9,16,0.8);">
-  <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
-    <a href="privacy-policy.html" style="font-size:0.55rem;color:#7a7060;text-decoration:none;" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#7a7060'">Политика на приватност</a>
-    <span style="color:#3a3020;font-size:0.55rem;">&#183;</span>
-    <a href="terms-of-service.html" style="font-size:0.55rem;color:#7a7060;text-decoration:none;" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#7a7060'">Услови за користење</a>
-    <span style="color:#3a3020;font-size:0.55rem;">&#183;</span>
-    <a href="/cdn-cgi/l/email-protection#c9aaa6a7bda8aabd89a4a8bbaea0a7a6bfa8e7bdacaaa1" style="font-size:0.55rem;color:#7a7060;text-decoration:none;" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#7a7060'">Контакт &amp; Поддршка</a>
-    <span style="color:#3a3020;font-size:0.55rem;">&#183;</span>
-    <a href="refund-policy.html" style="font-size:0.55rem;color:#7a7060;text-decoration:none;" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#7a7060'">Политика на враќање</a>
-  </div>
-  <div style="font-size:0.5rem;color:#3a3020;">&#169; 2026 Marginova.AI &#183; The Game Changer</div>
-</div>
 
 <style>
 #upgrade-overlay{display:none;position:fixed;inset:0;background:rgba(9,9,16,0.85);z-index:9999;align-items:center;justify-content:center;padding:1rem;}
