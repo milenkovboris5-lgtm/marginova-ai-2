@@ -1168,9 +1168,9 @@ html{scroll-behavior:smooth;}
               <span style="font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;color:#F5E0A0;letter-spacing:0.08em;">COO.AI</span>
               <span style="font-size:0.48rem;font-weight:700;letter-spacing:0.1em;padding:1px 7px;border-radius:50px;background:linear-gradient(135deg,rgba(201,168,76,0.85),rgba(201,168,76,0.55));color:#0a0a12;">ELITE</span>
             </div>
-            <div style="font-size:0.65rem;color:rgba(201,168,76,0.7);font-family:'Cormorant Garamond',serif;font-style:italic;margin-bottom:3px;">Final Decision Layer</div>
+            <div id="coo-tagline" style="font-size:0.65rem;color:rgba(201,168,76,0.7);font-family:'Cormorant Garamond',serif;font-style:italic;margin-bottom:3px;">Final Decision Layer</div>
             <div style="font-size:0.62rem;color:var(--text2);line-height:1.5;">
-              Консултира <span style="color:rgba(201,168,76,0.85);">Business AI · Eva · Tender AI · Justinian</span> паралелно → финална оцена <span style="color:rgba(201,168,76,0.85);">1-10</span> + ризик фактори
+              <span id="coo-desc-pre">Консултира </span><span style="color:rgba(201,168,76,0.85);">Business AI · Eva · Tender AI · Justinian</span><span id="coo-desc-post"> паралелно → финална оцена </span><span style="color:rgba(201,168,76,0.85);">1-10</span><span id="coo-desc-end"> + ризик фактори</span>
             </div>
           </div>
 
@@ -1246,7 +1246,7 @@ html{scroll-behavior:smooth;}
         <!-- Divider -->
         <div style="display:flex;align-items:center;gap:8px;margin:0.3rem 0;">
           <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.2));"></div>
-          <span style="font-size:0.52rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,168,76,0.45);">Едукација</span>
+          <span id="coo-edu-divider" style="font-size:0.52rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,168,76,0.45);">Едукација</span>
           <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(201,168,76,0.2),transparent);"></div>
         </div>
 
@@ -3676,43 +3676,43 @@ function setLangGrid(l){
   }
   // Update grid roles
   const UI_LABELS={
-    mk:{edu:'Едукација',health:'Здравје & Wellness',biz:'Бизнис',
+    mk:{edu:'Едукација',health:'Здравје & Wellness',biz:'Бизнис',cooTagline:'Final Decision Layer',cooDescPre:'Консултира ',cooDescPost:' паралелно → финална оцена ',cooDescEnd:' + ризик фактори',cooEdu:'Едукација',
       headline:'<em style="font-style:italic;color:var(--gold2);">Едуцирај се бесплатно</em> во Едукација<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">или одбери</span> <em style="font-style:italic;color:var(--gold);">Бизнис систем</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">со реална анализа &amp; екстремно брз web search</span>',
       sub:'8 јазици · 24/7 · Бесплатно за старт',
       chat:'Чет →',pick:'▼ Одбери аватар ▼',evaText:'Ги наоѓам сите грантови, фондови и EU програми',tenderText:'Те информирам секој ден за нови тендери и лицитации'},
-    sr:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',
+    sr:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',cooTagline:'Final Decision Layer',cooDescPre:'Konsultuje ',cooDescPost:' paralelno → finalna ocena ',cooDescEnd:' + faktori rizika',cooEdu:'Edukacija',
       headline:'<em style="font-style:italic;color:var(--gold2);">Edukuj se besplatno</em> u Edukaciji<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">ili odaberi</span> <em style="font-style:italic;color:var(--gold);">Biznis sistem</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">sa realnom analizom &amp; izuzetno brzim web pretraživanjem</span>',
       sub:'8 jezika · 24/7 · Besplatno za start',
       chat:'Čet →',pick:'▼ Odaberi avatar ▼'},
-    hr:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',
+    hr:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',cooTagline:'Final Decision Layer',cooDescPre:'Konzultira ',cooDescPost:' paralelno → završna ocjena ',cooDescEnd:' + čimbenici rizika',cooEdu:'Edukacija',
       headline:'<em style="font-style:italic;color:var(--gold2);">Edukuj se besplatno</em> u Edukaciji<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">ili odaberi</span> <em style="font-style:italic;color:var(--gold);">Biznis sustav</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">s realnom analizom &amp; iznimno brzim web pretraživanjem</span>',
       sub:'8 jezika · 24/7 · Besplatno za start',
       chat:'Chat →',pick:'▼ Odaberi avatar ▼'},
-    bs:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',
+    bs:{edu:'Edukacija',health:'Zdravlje & Wellness',biz:'Biznis',cooTagline:'Final Decision Layer',cooDescPre:'Konsultuje ',cooDescPost:' paralelno → finalna ocjena ',cooDescEnd:' + faktori rizika',cooEdu:'Edukacija',
       headline:'<em style="font-style:italic;color:var(--gold2);">Edukuj se besplatno</em> u Edukaciji<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">ili odaberi</span> <em style="font-style:italic;color:var(--gold);">Biznis sistem</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">s realnom analizom &amp; izuzetno brzim web pretraživanjem</span>',
       sub:'8 jezika · 24/7 · Besplatno za start',
       chat:'Chat →',pick:'▼ Odaberi avatar ▼'},
-    en:{edu:'Education',health:'Health & Wellness',biz:'Business',
+    en:{edu:'Education',health:'Health & Wellness',biz:'Business',cooTagline:'Final Decision Layer',cooDescPre:'Consults ',cooDescPost:' in parallel → final score ',cooDescEnd:' + risk factors',cooEdu:'Education',
       headline:'<em style="font-style:italic;color:var(--gold2);">Learn for free</em> in Education<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">or choose a</span> <em style="font-style:italic;color:var(--gold);">Business system</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">with real analysis &amp; extremely fast web search</span>',
       sub:'8 languages · 24/7 · Free to start',
       chat:'Chat →',pick:'▼ Choose avatar ▼',evaText:'I find all grants, funds and EU programs',tenderText:'Daily updates on new tenders and auctions'},
-    sq:{edu:'Edukim',health:'Shëndet & Wellness',biz:'Biznes',
+    sq:{edu:'Edukim',health:'Shëndet & Wellness',biz:'Biznes',cooTagline:'Shtresa e Vendimit Final',cooDescPre:'Konsulton ',cooDescPost:' paralelisht → vlerësim final ',cooDescEnd:' + faktorë rreziku',cooEdu:'Edukim',
       headline:'<em style="font-style:italic;color:var(--gold2);">Mëso falas</em> në Edukim<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">ose zgjidhni</span> <em style="font-style:italic;color:var(--gold);">Sistem Biznesi</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">me analizë reale &amp; kërkim web jashtëzakonisht të shpejtë</span>',
       sub:'8 gjuhë · 24/7 · Falas për fillim',
       chat:'Chat →',pick:'▼ Zgjidhni avatar ▼'},
-    de:{edu:'Bildung',health:'Gesundheit & Wellness',biz:'Business',
+    de:{edu:'Bildung',health:'Gesundheit & Wellness',biz:'Business',cooTagline:'Final Decision Layer',cooDescPre:'Konsultiert ',cooDescPost:' parallel → Endnote ',cooDescEnd:' + Risikofaktoren',cooEdu:'Bildung',
       headline:'<em style="font-style:italic;color:var(--gold2);">Lerne kostenlos</em> im Bildungsbereich<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">oder wähle ein</span> <em style="font-style:italic;color:var(--gold);">Business-System</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">mit echter Analyse &amp; extrem schneller Websuche</span>',
       sub:'8 Sprachen · 24/7 · Kostenlos starten',
       chat:'Chat →',pick:'▼ Avatar wählen ▼'},
-    bg:{edu:'Образование',health:'Здраве & Wellness',biz:'Бизнес',
+    bg:{edu:'Образование',health:'Здраве & Wellness',biz:'Бизнес',cooTagline:'Финален Слой на Решение',cooDescPre:'Консултира ',cooDescPost:' паралелно → финална оценка ',cooDescEnd:' + рискови фактори',cooEdu:'Образование',
       headline:'<em style="font-style:italic;color:var(--gold2);">Учи безплатно</em> в Образование<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">или избери</span> <em style="font-style:italic;color:var(--gold);">Бизнес система</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">с реален анализ &amp; изключително бърз уеб търсач</span>',
       sub:'8 езика · 24/7 · Безплатно за старт',
       chat:'Чат →',pick:'▼ Избери аватар ▼'},
-    tr:{edu:'Eğitim',health:'Sağlık & Wellness',biz:'İş Dünyası',
+    tr:{edu:'Eğitim',health:'Sağlık & Wellness',biz:'İş Dünyası',cooTagline:'Nihai Karar Katmanı',cooDescPre:'Danışır ',cooDescPost:' paralel → nihai puan ',cooDescEnd:' + risk faktörleri',cooEdu:'Eğitim',
       headline:'<em style="font-style:italic;color:var(--gold2);">Ücretsiz öğren</em> Eğitim alanında<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">veya seçin</span> <em style="font-style:italic;color:var(--gold);">İş Sistemi</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">gerçek analiz &amp; son derece hızlı web arama ile</span>',
       sub:'10 dil · 24/7 · Başlangıç ücretsiz',
       chat:'Sohbet →',pick:'▼ Avatar seçin ▼',evaText:'Tüm hibeleri, fonları ve AB programlarını buluyorum',tenderText:'Her gün yeni ihaleler ve açık artırmalar hakkında bilgi veriyorum'},
-    pl:{edu:'Edukacja',health:'Zdrowie & Wellness',biz:'Biznes',
+    pl:{edu:'Edukacja',health:'Zdrowie & Wellness',biz:'Biznes',cooTagline:'Warstwa Ostatecznej Decyzji',cooDescPre:'Konsultuje ',cooDescPost:' równolegle → końcowa ocena ',cooDescEnd:' + czynniki ryzyka',cooEdu:'Edukacja',
       headline:'<em style="font-style:italic;color:var(--gold2);">Ucz się za darmo</em> w Edukacji<br><span style="font-size:0.88em;color:var(--text2);font-weight:300;letter-spacing:0.06em;">lub wybierz</span> <em style="font-style:italic;color:var(--gold);">System Biznesowy</em><br><span style="font-size:0.72em;font-weight:300;color:rgba(201,168,76,0.7);letter-spacing:0.08em;">z prawdziwą analizą &amp; błyskawicznym wyszukiwaniem</span>',
       sub:'10 języków · 24/7 · Bezpłatny start',
       chat:'Czat →',pick:'▼ Wybierz avatar ▼',evaText:'Znajduję wszystkie granty, fundusze i programy UE',tenderText:'Każdego dnia informuję o nowych przetargach i aukcjach'}
@@ -3726,10 +3726,24 @@ function setLangGrid(l){
   const cb=document.getElementById('ag-chat-btn');
   if(h)h.innerHTML=t.headline;
   if(s)s.textContent=t.sub;
+  // COO AI labels
+  const cooTag=document.getElementById('coo-tagline');
+  if(cooTag&&t.cooTagline)cooTag.textContent=t.cooTagline;
+  const cooEduDiv=document.getElementById('coo-edu-divider');
+  if(cooEduDiv&&t.cooEdu)cooEduDiv.textContent=t.cooEdu;
+  const cooDescPre=document.getElementById('coo-desc-pre');
+  if(cooDescPre&&t.cooDescPre)cooDescPre.textContent=t.cooDescPre;
+  const cooDescPost=document.getElementById('coo-desc-post');
+  if(cooDescPost&&t.cooDescPost)cooDescPost.textContent=t.cooDescPost;
+  const cooDescEnd=document.getElementById('coo-desc-end');
+  if(cooDescEnd&&t.cooDescEnd)cooDescEnd.textContent=t.cooDescEnd;
   if(e)e.textContent=t.edu;
   if(he)he.textContent=t.health;
   if(b)b.textContent=t.biz;
   if(cb)cb.textContent=t.chat;
+  // Update welcome screen start button
+  const startBtn=document.getElementById('start-btn');
+  if(startBtn&&t.start)startBtn.textContent=t.start;
   const pe=null;//document.getElementById('ag-sub-edu');
   const ph=null;
   const pb=null;//document.getElementById('ag-sub-biz');
