@@ -679,8 +679,9 @@ const COO_LABELS = {
 // ═══════════════════════════════════════════
 // COO AI — SYSTEM PROMPTS ЗА СЕКОЈ СПЕЦИЈАЛИСТ (со јазична инструкција)
 // ═══════════════════════════════════════════
-function getCOOSpecialistPrompts(langCode) {
+function getCOOSpecialistPrompts(langCode, todayStr) {
   const L = COO_LABELS[langCode] || COO_LABELS.en;
+  const todayDate = todayStr || new Date().toLocaleDateString('en-GB');
   return {
     businessai: `You are Business AI — top business strategist. Analyze the situation from a business perspective.
 Provide: SWOT elements, financial risks, market opportunities, competitive analysis, action recommendations.
@@ -688,13 +689,15 @@ Be concrete and brief — maximum 200 words. Focus on the most important factors
 ${L.langInstruction}`,
 
     eva: `You are Eva — EU funds and grants expert. Analyze available financing opportunities.
+TODAY'S DATE IS: ${todayDate}. Only mention grants with deadlines AFTER today. Filter out expired ones.
 Provide: relevant grants and funds, deadlines, amounts, eligibility criteria, risks of non-compliance.
 If no active calls found, clearly state that. Be concrete — maximum 200 words.
 ${L.langInstruction}`,
 
     tenderai: `You are Tender AI — public procurement expert. Analyze tender opportunities.
+TODAY'S DATE IS: ${todayDate}. CRITICAL: Show ONLY tenders with deadlines STRICTLY AFTER today. Any tender with deadline before ${todayDate} must be excluded.
 Provide: active tenders in the sector, deadlines, estimated values, competitiveness, risks.
-FILTER expired deadlines — show ONLY active ones. Be concrete — maximum 200 words.
+Be concrete — maximum 200 words.
 ${L.langInstruction}`,
 
     justinian: `You are Justinian — top legal advisor. Analyze the legal situation.
@@ -716,7 +719,7 @@ async function runCOOAI(userText, messages, serperKey, apiKey, forceLang) {
 
   // ═══ Чекор 1: Паралелни повици до 4 специјалисти ═══
   const specialistMessages = [{ role: 'user', content: userText }];
-  const SPECIALIST_PROMPTS = getCOOSpecialistPrompts(langCode);
+  const SPECIALIST_PROMPTS = getCOOSpecialistPrompts(langCode, today);
 
   const specialistCalls = Object.entries(SPECIALIST_PROMPTS).map(async ([name, prompt]) => {
     try {
@@ -847,7 +850,10 @@ module.exports = async function handler(req, res) {
     const body = req.body;
     const avatar = body.avatar || 'default';
     const hasImage = !!body.image;
-    const systemPrompt = body.system || '';
+    const today = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric'});
+    const todayISO = new Date().toISOString().split('T')[0];
+    const todayInject = `\n\nCRITICAL DATE CONTEXT: Today is ${today} (${todayISO}). You MUST only reference events, deadlines, and opportunities that are AFTER this date. Anything before this date is expired and must be excluded or marked as expired.`;
+    const systemPrompt = (body.system || '') + todayInject;
     const userPlan = body.plan || 'free';
 
     const avatarConfig = getAvatarConfig(avatar);
