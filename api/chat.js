@@ -1,30 +1,24 @@
-// ═══ WHITELIST НА ДОЗВОЛЕНИ АВАТАРИ ═══
-const ALLOWED_AVATARS = new Set([
-  'leo', 'liber', 'businessai', 'creativeai',
-  'eva', 'justinian', 'tenderai', 'dropshipper', 'cooai'
-]);
-
-module.exports = async function handler(req, res) {
-  // ... постоечки CORS и method check ...
-
-  const body   = req.body;
-  const avatar = body.avatar || 'default';
-
-  // НОВО — валидирај avatar
-  if (!ALLOWED_AVATARS.has(avatar)) {
-    return res.status(400).json({
-      error: { message: 'Invalid avatar.' }
-    });
-  }
-
-  // ... остатокот продолжува нормално ...
-};// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
 // Верзија: Hybrid v8 — Gemini + Grounding + Serper + TED API + COO AI
 // ═══════════════════════════════════════════
 
 const rateLimitStore = {};
 const DAILY_LIMIT = 150;
+
+// ═══ WHITELIST НА ДОЗВОЛЕНИ АВАТАРИ ═══
+const ALLOWED_AVATARS = new Set([
+  'leo', 'liber', 'businessai', 'creativeai',
+  'eva', 'justinian', 'tenderai', 'dropshipper', 'cooai'
+]);
+
+// ═══ FETCH WITH TIMEOUT ═══
+function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
 
 function getRateLimitKey(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
@@ -50,9 +44,6 @@ function checkRateLimit(req) {
   return { allowed: rateLimitStore[key].count <= DAILY_LIMIT, remaining: Math.max(0, DAILY_LIMIT - rateLimitStore[key].count) };
 }
 
-// ═══════════════════════════════════════════
-// МОДЕЛ ROUTING
-// ═══════════════════════════════════════════
 const AVATAR_MODEL_MAP = {
   eva:         { model: 'gemini-2.5-flash', grounding: true,  serper: true  },
   tenderai:    { model: 'gemini-2.5-flash', grounding: true,  serper: true  },
@@ -70,9 +61,6 @@ function getAvatarConfig(avatar) {
   return AVATAR_MODEL_MAP[avatar] || AVATAR_MODEL_MAP.default;
 }
 
-// ═══════════════════════════════════════════
-// TED API — EU ТЕНДЕРИ
-// ═══════════════════════════════════════════
 const TED_COUNTRY_MAP = {
   'македонија': 'MK', 'македон': 'MK', 'north macedonia': 'MK', 'mk': 'MK',
   'србија': 'RS', 'srbija': 'RS', 'serbia': 'RS',
@@ -113,9 +101,10 @@ async function searchTED(userText) {
     queryParts.push(`publicationDate>=${fromDate.toISOString().split('T')[0]}`);
     queryParts.push('query=*');
     const tedUrl = `https://ted.europa.eu/api/v3.0/notices/search?fields=publicationNumber,title,buyers,publicationDate,deadline,estimatedValue,cpvs&pageSize=5&page=1&scope=ACTIVE&${queryParts.join('&')}`;
-    const response = await fetch(tedUrl, {
+    // ═══ ПОПРАВКА: fetchWithTimeout наместо fetch (8s timeout) ═══
+    const response = await fetchWithTimeout(tedUrl, {
       headers: { 'Accept': 'application/json', 'User-Agent': 'Marginova-AI/1.0' }
-    });
+    }, 8000);
     if (!response.ok) return null;
     const data = await response.json();
     if (!data.notices || data.notices.length === 0) return null;
@@ -150,9 +139,6 @@ function formatTEDResults(results) {
   return ctx;
 }
 
-// ═══════════════════════════════════════════
-// SERPER
-// ═══════════════════════════════════════════
 const TENDER_KEYWORDS = [
   'тендер','тендери','набавка','набавки','јавна набавка','конкурс','оглас',
   'пребарај тендер','најди тендер','активни тендери',
@@ -341,11 +327,12 @@ function buildSerperQuery(userText, avatar, intent) {
 
 async function searchSerper(query, serperKey) {
   try {
-    const response = await fetch('https://google.serper.dev/search', {
+    // ═══ ПОПРАВКА: fetchWithTimeout наместо fetch (8s timeout) ═══
+    const response = await fetchWithTimeout('https://google.serper.dev/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-KEY': serperKey },
       body: JSON.stringify({ q: query, num: 10, gl: 'mk', hl: 'mk' }),
-    });
+    }, 8000);
     if (!response.ok) return null;
     const data = await response.json();
     const results = [];
@@ -391,7 +378,6 @@ function formatNoResults(intent, lang) {
     `═══════════════════════════════════════\n`;
 }
 
-// ═══ PREMIUM TRIGGERS ═══
 const PREMIUM_TRIGGERS = [
   'најди грант','најди тендер','направи договор','правен совет','аплицирај',
   'nađi grant','nađi tender','napravi ugovor','pravni savet',
@@ -417,7 +403,6 @@ async function generatePreview(systemPrompt, messages, apiKey, isMK) {
   return preview + locked;
 }
 
-// ═══ GEMINI API ═══
 async function callGemini(model, useGrounding, systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
   const isGemma = model.startsWith('gemma');
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
@@ -443,11 +428,12 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
 
   if (useGrounding && !isGemma) requestBody.tools = [{ googleSearch: {} }];
 
-  const response = await fetch(url, {
+  // ═══ ПОПРАВКА: fetchWithTimeout наместо fetch (15s timeout за Gemini) ═══
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(requestBody)
-  });
+  }, 15000);
 
   if (!response.ok) {
     const errText = await response.text();
@@ -477,17 +463,13 @@ async function callGemini(model, useGrounding, systemPrompt, messages, hasImage,
   return text;
 }
 
-// ═══════════════════════════════════════════
-// COO AI — ДЕТЕКЦИЈА НА ЈАЗИК
-// ═══════════════════════════════════════════
 function detectLang(text) {
   const lower = text.toLowerCase();
   if (/[а-шА-Ш]/.test(text)) {
-    // Cyrillic — разликувај МК / SR / BG
     if (/ќ|ѓ|ѕ|љ|њ| џ/i.test(text)) return 'mk';
     if (/ћ|ђ|џ/i.test(text)) return 'sr';
     if (/ъ|ю|я/i.test(text)) return 'bg';
-    return 'mk'; // default cyrillic
+    return 'mk';
   }
   if (lower.match(/\b(und|oder|ist|haben|werden|können|ich|sie|wir)\b/)) return 'de';
   if (lower.match(/\b(dhe|është|janë|për|nga|me|të|një)\b/)) return 'sq';
@@ -500,236 +482,33 @@ function detectLang(text) {
   return 'en';
 }
 
-// ═══════════════════════════════════════════
-// COO AI — ЛОКАЛИЗИРАНИ ТЕКСТОВИ
-// ═══════════════════════════════════════════
 const COO_LABELS = {
-  mk: {
-    title: '🎯 ИЗВРШНА АНАЛИЗА — COO AI',
-    request: 'Барање',
-    date: 'Датум',
-    scoreTitle: '📊 ОЦЕНА НА МОЖНОСТА',
-    totalScore: 'Вкупна оцена',
-    aspects: ['Бизнис потенцијал', 'EU/Финансирање', 'Тендер можности', 'Правна подготвеност'],
-    aspect: 'Аспект', score: 'Оцена', comment: 'Коментар',
-    oppsTitle: '✅ ТОП МОЖНОСТИ (само активни)',
-    riskTitle: '⚠️ РИЗИК ФАКТОРИ',
-    risk: 'Ризик', level: 'Ниво', rec: 'Препорака',
-    high: '🔴 Висок', medium: '🟡 Среден', low: '🟢 Низок',
-    stepsTitle: '🚀 СЛЕДНИ ЧЕКОРИ (приоритетни)',
-    urgent: 'Итно (оваа недела)',
-    short: 'Краткорочно (овој месец)',
-    long: 'Долгорочно',
-    langInstruction: 'Одговори САМО на македонски јазик.',
-    errorMsg: 'не одговори',
-  },
-  sr: {
-    title: '🎯 IZVRŠNA ANALIZA — COO AI',
-    request: 'Zahtev',
-    date: 'Datum',
-    scoreTitle: '📊 OCENA MOGUĆNOSTI',
-    totalScore: 'Ukupna ocena',
-    aspects: ['Poslovni potencijal', 'EU/Finansiranje', 'Tender mogućnosti', 'Pravna spremnost'],
-    aspect: 'Aspekt', score: 'Ocena', comment: 'Komentar',
-    oppsTitle: '✅ TOP MOGUĆNOSTI (samo aktivne)',
-    riskTitle: '⚠️ FAKTORI RIZIKA',
-    risk: 'Rizik', level: 'Nivo', rec: 'Preporuka',
-    high: '🔴 Visok', medium: '🟡 Srednji', low: '🟢 Nizak',
-    stepsTitle: '🚀 SLEDEĆI KORACI (prioritetni)',
-    urgent: 'Hitno (ove nedelje)',
-    short: 'Kratkoročno (ovog meseca)',
-    long: 'Dugoročno',
-    langInstruction: 'Odgovori SAMO na srpskom jeziku.',
-    errorMsg: 'nije odgovorio',
-  },
-  hr: {
-    title: '🎯 IZVRŠNA ANALIZA — COO AI',
-    request: 'Zahtjev',
-    date: 'Datum',
-    scoreTitle: '📊 OCJENA MOGUĆNOSTI',
-    totalScore: 'Ukupna ocjena',
-    aspects: ['Poslovni potencijal', 'EU/Financiranje', 'Natječajne mogućnosti', 'Pravna spremnost'],
-    aspect: 'Aspekt', score: 'Ocjena', comment: 'Komentar',
-    oppsTitle: '✅ TOP MOGUĆNOSTI (samo aktivne)',
-    riskTitle: '⚠️ ČIMBENICI RIZIKA',
-    risk: 'Rizik', level: 'Razina', rec: 'Preporuka',
-    high: '🔴 Visok', medium: '🟡 Srednji', low: '🟢 Nizak',
-    stepsTitle: '🚀 SLJEDEĆI KORACI (prioritetni)',
-    urgent: 'Hitno (ovog tjedna)',
-    short: 'Kratkoročno (ovog mjeseca)',
-    long: 'Dugoročno',
-    langInstruction: 'Odgovori SAMO na hrvatskom jeziku.',
-    errorMsg: 'nije odgovorio',
-  },
-  bs: {
-    title: '🎯 IZVRŠNA ANALIZA — COO AI',
-    request: 'Zahtjev',
-    date: 'Datum',
-    scoreTitle: '📊 OCJENA MOGUĆNOSTI',
-    totalScore: 'Ukupna ocjena',
-    aspects: ['Poslovni potencijal', 'EU/Finansiranje', 'Tender mogućnosti', 'Pravna spremnost'],
-    aspect: 'Aspekt', score: 'Ocjena', comment: 'Komentar',
-    oppsTitle: '✅ TOP MOGUĆNOSTI (samo aktivne)',
-    riskTitle: '⚠️ FAKTORI RIZIKA',
-    risk: 'Rizik', level: 'Nivo', rec: 'Preporuka',
-    high: '🔴 Visok', medium: '🟡 Srednji', low: '🟢 Nizak',
-    stepsTitle: '🚀 SLJEDEĆI KORACI (prioritetni)',
-    urgent: 'Hitno (ove sedmice)',
-    short: 'Kratkoročno (ovog mjeseca)',
-    long: 'Dugoročno',
-    langInstruction: 'Odgovori SAMO na bosanskom jeziku.',
-    errorMsg: 'nije odgovorio',
-  },
-  en: {
-    title: '🎯 EXECUTIVE ANALYSIS — COO AI',
-    request: 'Request',
-    date: 'Date',
-    scoreTitle: '📊 OPPORTUNITY SCORE',
-    totalScore: 'Total Score',
-    aspects: ['Business potential', 'EU/Funding', 'Tender opportunities', 'Legal readiness'],
-    aspect: 'Aspect', score: 'Score', comment: 'Comment',
-    oppsTitle: '✅ TOP OPPORTUNITIES (active only)',
-    riskTitle: '⚠️ RISK FACTORS',
-    risk: 'Risk', level: 'Level', rec: 'Recommendation',
-    high: '🔴 High', medium: '🟡 Medium', low: '🟢 Low',
-    stepsTitle: '🚀 NEXT STEPS (priority)',
-    urgent: 'Urgent (this week)',
-    short: 'Short-term (this month)',
-    long: 'Long-term',
-    langInstruction: 'Respond ONLY in English.',
-    errorMsg: 'did not respond',
-  },
-  de: {
-    title: '🎯 EXEKUTIVANALYSE — COO AI',
-    request: 'Anfrage',
-    date: 'Datum',
-    scoreTitle: '📊 BEWERTUNG DER MÖGLICHKEIT',
-    totalScore: 'Gesamtbewertung',
-    aspects: ['Geschäftspotenzial', 'EU/Finanzierung', 'Ausschreibungsmöglichkeiten', 'Rechtliche Bereitschaft'],
-    aspect: 'Aspekt', score: 'Bewertung', comment: 'Kommentar',
-    oppsTitle: '✅ TOP MÖGLICHKEITEN (nur aktive)',
-    riskTitle: '⚠️ RISIKOFAKTOREN',
-    risk: 'Risiko', level: 'Stufe', rec: 'Empfehlung',
-    high: '🔴 Hoch', medium: '🟡 Mittel', low: '🟢 Niedrig',
-    stepsTitle: '🚀 NÄCHSTE SCHRITTE (prioritär)',
-    urgent: 'Dringend (diese Woche)',
-    short: 'Kurzfristig (diesen Monat)',
-    long: 'Langfristig',
-    langInstruction: 'Antworte NUR auf Deutsch.',
-    errorMsg: 'hat nicht geantwortet',
-  },
-  sq: {
-    title: '🎯 ANALIZA EKZEKUTIVE — COO AI',
-    request: 'Kërkesa',
-    date: 'Data',
-    scoreTitle: '📊 VLERËSIMI I MUNDËSISË',
-    totalScore: 'Vlerësimi total',
-    aspects: ['Potenciali i biznesit', 'BE/Financimi', 'Mundësitë e tenderit', 'Gatishmëria ligjore'],
-    aspect: 'Aspekti', score: 'Vlerësimi', comment: 'Koment',
-    oppsTitle: '✅ MUNDËSITË KRYESORE (vetëm aktive)',
-    riskTitle: '⚠️ FAKTORËT E RREZIKUT',
-    risk: 'Rrezik', level: 'Niveli', rec: 'Rekomandim',
-    high: '🔴 I lartë', medium: '🟡 Mesatar', low: '🟢 I ulët',
-    stepsTitle: '🚀 HAPAT E ARDHSHËM (prioritare)',
-    urgent: 'Urgjente (këtë javë)',
-    short: 'Afatshkurtër (këtë muaj)',
-    long: 'Afatgjatë',
-    langInstruction: 'Përgjigju VETËM në gjuhën shqipe.',
-    errorMsg: 'nuk u përgjigj',
-  },
-  bg: {
-    title: '🎯 ИЗПЪЛНИТЕЛЕН АНАЛИЗ — COO AI',
-    request: 'Запитване',
-    date: 'Дата',
-    scoreTitle: '📊 ОЦЕНКА НА ВЪЗМОЖНОСТТА',
-    totalScore: 'Обща оценка',
-    aspects: ['Бизнес потенциал', 'ЕС/Финансиране', 'Тръжни възможности', 'Правна готовност'],
-    aspect: 'Аспект', score: 'Оценка', comment: 'Коментар',
-    oppsTitle: '✅ ТОП ВЪЗМОЖНОСТИ (само активни)',
-    riskTitle: '⚠️ РИСКОВИ ФАКТОРИ',
-    risk: 'Риск', level: 'Ниво', rec: 'Препоръка',
-    high: '🔴 Висок', medium: '🟡 Среден', low: '🟢 Нисък',
-    stepsTitle: '🚀 СЛЕДВАЩИ СТЪПКИ (приоритетни)',
-    urgent: 'Спешно (тази седмица)',
-    short: 'Краткосрочно (този месец)',
-    long: 'Дългосрочно',
-    langInstruction: 'Отговаряй САМО на български език.',
-    errorMsg: 'не отговори',
-  },
-  tr: {
-    title: '🎯 YÖNETİCİ ANALİZİ — COO AI',
-    request: 'Talep',
-    date: 'Tarih',
-    scoreTitle: '📊 FIRSAT DEĞERLENDİRMESİ',
-    totalScore: 'Toplam puan',
-    aspects: ['İş potansiyeli', 'AB/Finansman', 'İhale fırsatları', 'Hukuki hazırlık'],
-    aspect: 'Konu', score: 'Puan', comment: 'Yorum',
-    oppsTitle: '✅ EN İYİ FIRSATLAR (yalnızca aktif)',
-    riskTitle: '⚠️ RİSK FAKTÖRLERİ',
-    risk: 'Risk', level: 'Seviye', rec: 'Öneri',
-    high: '🔴 Yüksek', medium: '🟡 Orta', low: '🟢 Düşük',
-    stepsTitle: '🚀 SONRAKİ ADIMLAR (öncelikli)',
-    urgent: 'Acil (bu hafta)',
-    short: 'Kısa vadeli (bu ay)',
-    long: 'Uzun vadeli',
-    langInstruction: 'YALNIZCA Türkçe yanıt ver.',
-    errorMsg: 'yanıt vermedi',
-  },
-  pl: {
-    title: '🎯 ANALIZA WYKONAWCZA — COO AI',
-    request: 'Zapytanie',
-    date: 'Data',
-    scoreTitle: '📊 OCENA MOŻLIWOŚCI',
-    totalScore: 'Ocena ogólna',
-    aspects: ['Potencjał biznesowy', 'UE/Finansowanie', 'Możliwości przetargowe', 'Gotowość prawna'],
-    aspect: 'Aspekt', score: 'Ocena', comment: 'Komentarz',
-    oppsTitle: '✅ NAJLEPSZE MOŻLIWOŚCI (tylko aktywne)',
-    riskTitle: '⚠️ CZYNNIKI RYZYKA',
-    risk: 'Ryzyko', level: 'Poziom', rec: 'Zalecenie',
-    high: '🔴 Wysokie', medium: '🟡 Średnie', low: '🟢 Niskie',
-    stepsTitle: '🚀 KOLEJNE KROKI (priorytetowe)',
-    urgent: 'Pilne (w tym tygodniu)',
-    short: 'Krótkoterminowo (w tym miesiącu)',
-    long: 'Długoterminowo',
-    langInstruction: 'Odpowiadaj TYLKO po polsku.',
-    errorMsg: 'nie odpowiedział',
-  },
+  mk: { title: '🎯 ИЗВРШНА АНАЛИЗА — COO AI', request: 'Барање', date: 'Датум', scoreTitle: '📊 ОЦЕНА НА МОЖНОСТА', totalScore: 'Вкупна оцена', aspects: ['Бизнис потенцијал', 'EU/Финансирање', 'Тендер можности', 'Правна подготвеност'], aspect: 'Аспект', score: 'Оцена', comment: 'Коментар', oppsTitle: '✅ ТОП МОЖНОСТИ (само активни)', riskTitle: '⚠️ РИЗИК ФАКТОРИ', risk: 'Ризик', level: 'Ниво', rec: 'Препорака', high: '🔴 Висок', medium: '🟡 Среден', low: '🟢 Низок', stepsTitle: '🚀 СЛЕДНИ ЧЕКОРИ (приоритетни)', urgent: 'Итно (оваа недела)', short: 'Краткорочно (овој месец)', long: 'Долгорочно', langInstruction: 'Одговори САМО на македонски јазик.', errorMsg: 'не одговори' },
+  sr: { title: '🎯 IZVRŠNA ANALIZA — COO AI', request: 'Zahtev', date: 'Datum', scoreTitle: '📊 OCENA MOGUĆNOSTI', totalScore: 'Ukupna ocena', aspects: ['Poslovni potencijal', 'EU/Finansiranje', 'Tender mogućnosti', 'Pravna spremnost'], aspect: 'Aspekt', score: 'Ocena', comment: 'Komentar', oppsTitle: '✅ TOP MOGUĆNOSTI (samo aktivne)', riskTitle: '⚠️ FAKTORI RIZIKA', risk: 'Rizik', level: 'Nivo', rec: 'Preporuka', high: '🔴 Visok', medium: '🟡 Srednji', low: '🟢 Nizak', stepsTitle: '🚀 SLEDEĆI KORACI (prioritetni)', urgent: 'Hitno (ove nedelje)', short: 'Kratkoročno (ovog meseca)', long: 'Dugoročno', langInstruction: 'Odgovori SAMO na srpskom jeziku.', errorMsg: 'nije odgovorio' },
+  hr: { title: '🎯 IZVRŠNA ANALIZA — COO AI', request: 'Zahtjev', date: 'Datum', scoreTitle: '📊 OCJENA MOGUĆNOSTI', totalScore: 'Ukupna ocjena', aspects: ['Poslovni potencijal', 'EU/Financiranje', 'Natječajne mogućnosti', 'Pravna spremnost'], aspect: 'Aspekt', score: 'Ocjena', comment: 'Komentar', oppsTitle: '✅ TOP MOGUĆNOSTI (samo aktivne)', riskTitle: '⚠️ ČIMBENICI RIZIKA', risk: 'Rizik', level: 'Razina', rec: 'Preporuka', high: '🔴 Visok', medium: '🟡 Srednji', low: '🟢 Nizak', stepsTitle: '🚀 SLJEDEĆI KORACI (prioritetni)', urgent: 'Hitno (ovog tjedna)', short: 'Kratkoročno (ovog mjeseca)', long: 'Dugoročno', langInstruction: 'Odgovori SAMO na hrvatskom jeziku.', errorMsg: 'nije odgovorio' },
+  bs: { title: '🎯 IZVRŠNA ANALIZA — COO AI', request: 'Zahtjev', date: 'Datum', scoreTitle: '📊 OCJENA MOGUĆNOSTI', totalScore: 'Ukupna ocjena', aspects: ['Poslovni potencijal', 'EU/Finansiranje', 'Tender mogućnosti', 'Pravna spremnost'], aspect: 'Aspekt', score: 'Ocjena', comment: 'Komentar', oppsTitle: '✅ TOP MOGUĆNOSTI (samo aktivne)', riskTitle: '⚠️ FAKTORI RIZIKA', risk: 'Rizik', level: 'Nivo', rec: 'Preporuka', high: '🔴 Visok', medium: '🟡 Srednji', low: '🟢 Nizak', stepsTitle: '🚀 SLJEDEĆI KORACI (prioritetni)', urgent: 'Hitno (ove sedmice)', short: 'Kratkoročno (ovog mjeseca)', long: 'Dugoročno', langInstruction: 'Odgovori SAMO na bosanskom jeziku.', errorMsg: 'nije odgovorio' },
+  en: { title: '🎯 EXECUTIVE ANALYSIS — COO AI', request: 'Request', date: 'Date', scoreTitle: '📊 OPPORTUNITY SCORE', totalScore: 'Total Score', aspects: ['Business potential', 'EU/Funding', 'Tender opportunities', 'Legal readiness'], aspect: 'Aspect', score: 'Score', comment: 'Comment', oppsTitle: '✅ TOP OPPORTUNITIES (active only)', riskTitle: '⚠️ RISK FACTORS', risk: 'Risk', level: 'Level', rec: 'Recommendation', high: '🔴 High', medium: '🟡 Medium', low: '🟢 Low', stepsTitle: '🚀 NEXT STEPS (priority)', urgent: 'Urgent (this week)', short: 'Short-term (this month)', long: 'Long-term', langInstruction: 'Respond ONLY in English.', errorMsg: 'did not respond' },
+  de: { title: '🎯 EXEKUTIVANALYSE — COO AI', request: 'Anfrage', date: 'Datum', scoreTitle: '📊 BEWERTUNG DER MÖGLICHKEIT', totalScore: 'Gesamtbewertung', aspects: ['Geschäftspotenzial', 'EU/Finanzierung', 'Ausschreibungsmöglichkeiten', 'Rechtliche Bereitschaft'], aspect: 'Aspekt', score: 'Bewertung', comment: 'Kommentar', oppsTitle: '✅ TOP MÖGLICHKEITEN (nur aktive)', riskTitle: '⚠️ RISIKOFAKTOREN', risk: 'Risiko', level: 'Stufe', rec: 'Empfehlung', high: '🔴 Hoch', medium: '🟡 Mittel', low: '🟢 Niedrig', stepsTitle: '🚀 NÄCHSTE SCHRITTE (prioritär)', urgent: 'Dringend (diese Woche)', short: 'Kurzfristig (diesen Monat)', long: 'Langfristig', langInstruction: 'Antworte NUR auf Deutsch.', errorMsg: 'hat nicht geantwortet' },
+  sq: { title: '🎯 ANALIZA EKZEKUTIVE — COO AI', request: 'Kërkesa', date: 'Data', scoreTitle: '📊 VLERËSIMI I MUNDËSISË', totalScore: 'Vlerësimi total', aspects: ['Potenciali i biznesit', 'BE/Financimi', 'Mundësitë e tenderit', 'Gatishmëria ligjore'], aspect: 'Aspekti', score: 'Vlerësimi', comment: 'Koment', oppsTitle: '✅ MUNDËSITË KRYESORE (vetëm aktive)', riskTitle: '⚠️ FAKTORËT E RREZIKUT', risk: 'Rrezik', level: 'Niveli', rec: 'Rekomandim', high: '🔴 I lartë', medium: '🟡 Mesatar', low: '🟢 I ulët', stepsTitle: '🚀 HAPAT E ARDHSHËM (prioritare)', urgent: 'Urgjente (këtë javë)', short: 'Afatshkurtër (këtë muaj)', long: 'Afatgjatë', langInstruction: 'Përgjigju VETËM në gjuhën shqipe.', errorMsg: 'nuk u përgjigj' },
+  bg: { title: '🎯 ИЗПЪЛНИТЕЛЕН АНАЛИЗ — COO AI', request: 'Запитване', date: 'Дата', scoreTitle: '📊 ОЦЕНКА НА ВЪЗМОЖНОСТТА', totalScore: 'Обща оценка', aspects: ['Бизнес потенциал', 'ЕС/Финансиране', 'Тръжни възможности', 'Правна готовност'], aspect: 'Аспект', score: 'Оценка', comment: 'Коментар', oppsTitle: '✅ ТОП ВЪЗМОЖНОСТИ (само активни)', riskTitle: '⚠️ РИСКОВИ ФАКТОРИ', risk: 'Риск', level: 'Ниво', rec: 'Препоръка', high: '🔴 Висок', medium: '🟡 Среден', low: '🟢 Нисък', stepsTitle: '🚀 СЛЕДВАЩИ СТЪПКИ (приоритетни)', urgent: 'Спешно (тази седмица)', short: 'Краткосрочно (този месец)', long: 'Дългосрочно', langInstruction: 'Отговаряй САМО на български език.', errorMsg: 'не отговори' },
+  tr: { title: '🎯 YÖNETİCİ ANALİZİ — COO AI', request: 'Talep', date: 'Tarih', scoreTitle: '📊 FIRSAT DEĞERLENDİRMESİ', totalScore: 'Toplam puan', aspects: ['İş potansiyeli', 'AB/Finansman', 'İhale fırsatları', 'Hukuki hazırlık'], aspect: 'Konu', score: 'Puan', comment: 'Yorum', oppsTitle: '✅ EN İYİ FIRSATLAR (yalnızca aktif)', riskTitle: '⚠️ RİSK FAKTÖRLERİ', risk: 'Risk', level: 'Seviye', rec: 'Öneri', high: '🔴 Yüksek', medium: '🟡 Orta', low: '🟢 Düşük', stepsTitle: '🚀 SONRAKİ ADIMLAR (öncelikli)', urgent: 'Acil (bu hafta)', short: 'Kısa vadeli (bu ay)', long: 'Uzun vadeli', langInstruction: 'YALNIZCA Türkçe yanıt ver.', errorMsg: 'yanıt vermedi' },
+  pl: { title: '🎯 ANALIZA WYKONAWCZA — COO AI', request: 'Zapytanie', date: 'Data', scoreTitle: '📊 OCENA MOŻLIWOŚCI', totalScore: 'Ocena ogólna', aspects: ['Potencjał biznesowy', 'UE/Finansowanie', 'Możliwości przetargowe', 'Gotowość prawna'], aspect: 'Aspekt', score: 'Ocena', comment: 'Komentarz', oppsTitle: '✅ NAJLEPSZE MOŻLIWOŚCI (tylko aktywne)', riskTitle: '⚠️ CZYNNIKI RYZYKA', risk: 'Ryzyko', level: 'Poziom', rec: 'Zalecenie', high: '🔴 Wysokie', medium: '🟡 Średnie', low: '🟢 Niskie', stepsTitle: '🚀 KOLEJNE KROKI (priorytetowe)', urgent: 'Pilne (w tym tygodniu)', short: 'Krótkoterminowo (w tym miesiącu)', long: 'Długoterminowo', langInstruction: 'Odpowiadaj TYLKO po polsku.', errorMsg: 'nie odpowiedział' },
 };
 
-// ═══════════════════════════════════════════
-// COO AI — SYSTEM PROMPTS ЗА СЕКОЈ СПЕЦИЈАЛИСТ (со јазична инструкција)
-// ═══════════════════════════════════════════
 function getCOOSpecialistPrompts(langCode, todayStr) {
   const L = COO_LABELS[langCode] || COO_LABELS.en;
   const todayDate = todayStr || new Date().toLocaleDateString('en-GB');
   return {
-    businessai: `You are Business AI — top business strategist. Analyze the situation from a business perspective.
-Provide: SWOT elements, financial risks, market opportunities, competitive analysis, action recommendations.
-Be concrete and brief — maximum 200 words. Focus on the most important factors.
-${L.langInstruction}`,
-
-    eva: `You are Eva — EU funds and grants expert. Analyze available financing opportunities.
-TODAY'S DATE IS: ${todayDate}. Only mention grants with deadlines AFTER today. Filter out expired ones.
-Provide: relevant grants and funds, deadlines, amounts, eligibility criteria, risks of non-compliance.
-If no active calls found, clearly state that. Be concrete — maximum 200 words.
-${L.langInstruction}`,
-
-    tenderai: `You are Tender AI — public procurement expert. Analyze tender opportunities.
-TODAY'S DATE IS: ${todayDate}. CRITICAL: Show ONLY tenders with deadlines STRICTLY AFTER today. Any tender with deadline before ${todayDate} must be excluded.
-Provide: active tenders in the sector, deadlines, estimated values, competitiveness, risks.
-Be concrete — maximum 200 words.
-${L.langInstruction}`,
-
-    justinian: `You are Justinian — top legal advisor. Analyze the legal situation.
-Provide: legal risks, required permits/licenses, contractual obligations, GDPR/compliance, recommendations.
-Be concrete and practical — maximum 200 words. Avoid unnecessary legal jargon.
-${L.langInstruction}`,
+    businessai: `You are Business AI — top business strategist. Analyze the situation from a business perspective.\nProvide: SWOT elements, financial risks, market opportunities, competitive analysis, action recommendations.\nBe concrete and brief — maximum 200 words. Focus on the most important factors.\n${L.langInstruction}`,
+    eva: `You are Eva — EU funds and grants expert. Analyze available financing opportunities.\nTODAY'S DATE IS: ${todayDate}. Only mention grants with deadlines AFTER today. Filter out expired ones.\nProvide: relevant grants and funds, deadlines, amounts, eligibility criteria, risks of non-compliance.\nIf no active calls found, clearly state that. Be concrete — maximum 200 words.\n${L.langInstruction}`,
+    tenderai: `You are Tender AI — public procurement expert. Analyze tender opportunities.\nTODAY'S DATE IS: ${todayDate}. CRITICAL: Show ONLY tenders with deadlines STRICTLY AFTER today. Any tender with deadline before ${todayDate} must be excluded.\nProvide: active tenders in the sector, deadlines, estimated values, competitiveness, risks.\nBe concrete — maximum 200 words.\n${L.langInstruction}`,
+    justinian: `You are Justinian — top legal advisor. Analyze the legal situation.\nProvide: legal risks, required permits/licenses, contractual obligations, GDPR/compliance, recommendations.\nBe concrete and practical — maximum 200 words. Avoid unnecessary legal jargon.\n${L.langInstruction}`,
   };
 }
 
-// ═══════════════════════════════════════════
-// COO AI — ГЛАВНА ФУНКЦИЈА
-// ═══════════════════════════════════════════
+// ═══ COO AI TIMEOUT CONSTANTS ═══
+const SPECIALIST_TIMEOUT_MS = 12000;
+
 async function runCOOAI(userText, messages, serperKey, apiKey, forceLang) {
   const langCode = forceLang || detectLang(userText);
   const L = COO_LABELS[langCode] || COO_LABELS.en;
@@ -737,47 +516,58 @@ async function runCOOAI(userText, messages, serperKey, apiKey, forceLang) {
 
   console.log('[cooai] Starting multi-agent analysis | lang:', langCode, '| text:', userText.slice(0, 80));
 
-  // ═══ Чекор 1: Паралелни повици до 4 специјалисти ═══
   const specialistMessages = [{ role: 'user', content: userText }];
   const SPECIALIST_PROMPTS = getCOOSpecialistPrompts(langCode, today);
 
+  // ═══ ПОПРАВКА: Promise.race за timeout + Promise.allSettled за fallback ═══
   const specialistCalls = Object.entries(SPECIALIST_PROMPTS).map(async ([name, prompt]) => {
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), SPECIALIST_TIMEOUT_MS)
+    );
+
     try {
       let enrichedPrompt = prompt;
 
       if (name === 'tenderai' && serperKey) {
         const intent = detectIntent(userText) || 'tender';
         const query = buildSerperQuery(userText, 'tenderai', intent);
-        const results = await searchSerper(query, serperKey);
-        if (results && results.length > 0) enrichedPrompt += formatSerperContext(results, intent);
+        const results = await searchSerper(query, serperKey).catch(() => null);
+        if (results?.length > 0) enrichedPrompt += formatSerperContext(results, intent);
       }
 
       if (name === 'eva' && serperKey) {
         const query = buildSerperQuery(userText, 'eva', 'grants');
-        const results = await searchSerper(query, serperKey);
-        if (results && results.length > 0) enrichedPrompt += formatSerperContext(results, 'grants');
+        const results = await searchSerper(query, serperKey).catch(() => null);
+        if (results?.length > 0) enrichedPrompt += formatSerperContext(results, 'grants');
       }
 
-      const response = await callGemini(
-        'gemini-2.5-flash',
-        name === 'businessai' || name === 'justinian',
-        enrichedPrompt,
-        specialistMessages,
-        false, null, null, null,
-        apiKey
-      );
+      const response = await Promise.race([
+        callGemini('gemini-2.5-flash', name === 'businessai' || name === 'justinian', enrichedPrompt, specialistMessages, false, null, null, null, apiKey),
+        timeoutPromise
+      ]);
 
       console.log(`[cooai] ${name} done (${langCode}): ${response.length} chars`);
       return { name, response };
     } catch (e) {
-      console.warn(`[cooai] ${name} failed:`, e.message);
-      return { name, response: `⚠️ ${name} ${L.errorMsg}.` };
+      const isTimeout = e.message === 'timeout';
+      console.warn(`[cooai] ${name} ${isTimeout ? 'TIMEOUT' : 'failed'}:`, e.message);
+      return {
+        name,
+        response: isTimeout
+          ? `⚠️ ${name} не одговори во рок (timeout). Анализата за овој аспект не е достапна.`
+          : `⚠️ ${name} ${L.errorMsg}: ${e.message}`
+      };
     }
   });
 
-  const results = await Promise.all(specialistCalls);
+  // ═══ ПОПРАВКА: allSettled наместо all ═══
+  const settled = await Promise.allSettled(specialistCalls);
+  const results = settled.map(s =>
+    s.status === 'fulfilled'
+      ? s.value
+      : { name: 'unknown', response: '⚠️ Специјалистот не одговори.' }
+  );
 
-  // ═══ Чекор 2: Синтеза — COO финален извештај ═══
   const specialistSummary = results.map(r =>
     `═══ ${r.name.toUpperCase()} ═══\n${r.response}`
   ).join('\n\n');
@@ -836,24 +626,26 @@ ${specialistSummary}
 
 CRITICAL: ${L.langInstruction} Be concrete and actionable. Do NOT invent links or deadlines.`;
 
-  const finalReport = await callGemini(
-    'gemini-2.5-flash',
-    false,
-    cooSynthesisPrompt,
-    [{ role: 'user', content: 'Generate the final COO report now.' }],
-    false, null, null, null,
-    apiKey
-  );
+  const finalReport = await callGemini('gemini-2.5-flash', false, cooSynthesisPrompt, [{ role: 'user', content: 'Generate the final COO report now.' }], false, null, null, null, apiKey);
 
   console.log('[cooai] Final report generated (', langCode, '):', finalReport.length, 'chars');
   return finalReport;
 }
 
 // ═══════════════════════════════════════════
-// ГЛАВЕН HANDLER
+// ГЛАВЕН HANDLER — со сите поправки
 // ═══════════════════════════════════════════
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // ═══ ПОПРАВКА 1: CORS WHITELIST наместо * ═══
+  const ALLOWED_ORIGINS = [
+    'https://marginova.tech',
+    'https://www.marginova.tech',
+    'http://localhost:3000',
+  ];
+  const origin = req.headers.origin || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : 'https://marginova.tech';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -869,6 +661,12 @@ module.exports = async function handler(req, res) {
   try {
     const body = req.body;
     const avatar = body.avatar || 'default';
+
+    // ═══ ПОПРАВКА 2: AVATAR ВАЛИДАЦИЈА ═══
+    if (!ALLOWED_AVATARS.has(avatar)) {
+      return res.status(400).json({ error: { message: 'Invalid avatar.' } });
+    }
+
     const hasImage = !!body.image;
     const today = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric'});
     const todayISO = new Date().toISOString().split('T')[0];
@@ -891,36 +689,26 @@ module.exports = async function handler(req, res) {
     const lastUserMsg = messages.filter(m => m.role === 'user').pop();
     const userText = (lastUserMsg && lastUserMsg.content) || '';
     const isMK = /[а-шА-Ш]/.test(userText);
-    // Lang од frontend (поверлив) — fallback на auto-detect
     const frontendLang = body.lang || null;
 
-    // Premium check
     if (userPlan === 'free' && isPremiumTrigger(userText, avatar)) {
       const previewText = await generatePreview(systemPrompt, messages, apiKey, isMK);
       return res.status(200).json({ content: [{ type: 'text', text: previewText }], premium_required: true, remaining_messages: limit.remaining });
     }
 
-    // ═══ COO AI — MULTI-AGENT ═══
     if (avatar === 'cooai') {
       console.log('[cooai] Activating multi-agent mode | lang:', frontendLang || 'auto');
-      // COO AI добива само тековната порака — без претходна историја
       const cooMessages = [{ role: 'user', content: userText }];
       const cooReport = await runCOOAI(userText, cooMessages, serperKey, apiKey, frontendLang);
-      return res.status(200).json({
-        content: [{ type: 'text', text: cooReport }],
-        model_used: 'cooai-multi-agent',
-        remaining_messages: limit.remaining
-      });
+      return res.status(200).json({ content: [{ type: 'text', text: cooReport }], model_used: 'cooai-multi-agent', remaining_messages: limit.remaining });
     }
 
     let enrichedSystemPrompt = systemPrompt;
 
-    // ═══ TENDER AI ═══
     if (useSerper && avatar === 'tenderai') {
       const intent = detectIntent(userText);
       if (intent) {
         let found = false;
-
         if (intent === 'tender') {
           const tedResults = await searchTED(userText);
           if (tedResults && tedResults.length > 0) {
@@ -929,55 +717,40 @@ module.exports = async function handler(req, res) {
             console.log('[tenderai] TED:', tedResults.length, 'results');
           }
         }
-
         if (!found) {
           const query = buildSerperQuery(userText, avatar, intent);
           console.log('[tenderai] Serper query:', query);
           let serperResults = await searchSerper(query, serperKey);
-
           if (!serperResults || serperResults.length === 0) {
             const month = new Date().toISOString().slice(0, 7);
             const fallbackQuery = `tender javna nabavka fasada gradez ${month} Macedonia Srbija site:e-nabavki.gov.mk OR site:portal.ujn.gov.rs OR site:ted.europa.eu`;
-            console.log('[tenderai] Fallback query:', fallbackQuery);
             serperResults = await searchSerper(fallbackQuery, serperKey);
           }
-
           if (serperResults && serperResults.length > 0) {
             enrichedSystemPrompt = systemPrompt + formatSerperContext(serperResults, intent);
             found = true;
-            console.log('[tenderai] Serper:', serperResults.length, 'results');
           }
         }
-
         if (!found) {
           enrichedSystemPrompt = systemPrompt + formatNoResults(intent, isMK ? 'mk' : 'en');
-          console.log('[tenderai] No results found for intent:', intent);
         }
       }
     }
 
-    // ═══ EVA ═══
     if (useSerper && avatar === 'eva') {
       const intent = detectIntent(userText);
       const evaIntent = intent || 'grants';
-      if (true) {
-        const query = buildSerperQuery(userText, 'eva', evaIntent === 'grants' || !intent ? 'grants' : evaIntent);
-        console.log('[eva] Serper query:', query);
-        let serperResults = await searchSerper(query, serperKey);
-
-        if (!serperResults || serperResults.length === 0) {
-          const month = new Date().toISOString().slice(0, 7);
-          const fallback = `grant fond otvoreni poziv ${month} Makedonija Western Balkans site:mk.undp.org OR site:westernbalkansfund.org OR site:fitr.mk OR site:funding.mk`;
-          console.log('[eva] Fallback query:', fallback);
-          serperResults = await searchSerper(fallback, serperKey);
-        }
-
-        if (serperResults && serperResults.length > 0) {
-          enrichedSystemPrompt = systemPrompt + formatSerperContext(serperResults, 'grants');
-          console.log('[eva] Serper:', serperResults.length, 'results');
-        } else {
-          enrichedSystemPrompt = systemPrompt + formatNoResults('grants', isMK ? 'mk' : 'en');
-        }
+      const query = buildSerperQuery(userText, 'eva', evaIntent === 'grants' || !intent ? 'grants' : evaIntent);
+      let serperResults = await searchSerper(query, serperKey);
+      if (!serperResults || serperResults.length === 0) {
+        const month = new Date().toISOString().slice(0, 7);
+        const fallback = `grant fond otvoreni poziv ${month} Makedonija Western Balkans site:mk.undp.org OR site:westernbalkansfund.org OR site:fitr.mk OR site:funding.mk`;
+        serperResults = await searchSerper(fallback, serperKey);
+      }
+      if (serperResults && serperResults.length > 0) {
+        enrichedSystemPrompt = systemPrompt + formatSerperContext(serperResults, 'grants');
+      } else {
+        enrichedSystemPrompt = systemPrompt + formatNoResults('grants', isMK ? 'mk' : 'en');
       }
     }
 
@@ -985,11 +758,7 @@ module.exports = async function handler(req, res) {
 
     const text = await callGemini(model, useGrounding, enrichedSystemPrompt, messages, hasImage, body.image, body.imageType, body.imageText, apiKey);
 
-    return res.status(200).json({
-      content: [{ type: 'text', text }],
-      model_used: model,
-      remaining_messages: limit.remaining
-    });
+    return res.status(200).json({ content: [{ type: 'text', text }], model_used: model, remaining_messages: limit.remaining });
 
   } catch (err) {
     console.error('Handler error:', err);
