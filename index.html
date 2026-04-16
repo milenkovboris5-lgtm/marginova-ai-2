@@ -838,8 +838,140 @@ const T={
   }
 };
 
-// Fallback for other languages — use EN
-['hr','bs','de','bg','sq','tr','pl'].forEach(c=>{T[c]=T.en;});
+T.hr=Object.assign({},T.sr,{
+  live:'Živo · 24/7 · 10 Jezika',eyebrow:'AI PLATFORMA ZA BALKANSKI BIZNIS',
+  h1a:'Vaš AI',h1b:'Sustav za Odluke',
+  heroSub:'Opišite poslovni izazov. <em>COO AI</em> konzultira 4 stručnjaka paralelno i daje završnu ocjenu s čimbenicima rizika — na vašem jeziku.',
+  ctaMain:'Počni besplatno →',ctaSec:'Upoznaj stručnjake',heroNote:'Bez kreditne kartice · Leo & LIBER besplatno zauvijek · 5 bonus poruka sa svim stručnjacima',
+  pb1:'Pronađi EU grant za 2 min',pb1s:'€50.000+ · Pretraga uživo · Dostupno sada',pb2:'Svaki dan novi tender',pb2s:'Pravi portali · Pravi rokovi · 24/7',
+  s1:'Stručnjaci',s2:'Jezici',s3:'Dostupno',s4:'Za start',
+  specTag:'Vaš AI tim',specH:'Jedno pitanje. <em>Osam stručnjaka.</em>',specP:'Svaki AI je treniran za točno jednu domenu. Bez generalizma — duboka, precizna pomoć dostupna odmah.',
+  cooTagline:'Završni Sloj za Odluke',cooDesc:'Konzultira <strong>Business AI · Eva · Tender AI · Justinian</strong> paralelno → završna ocjena <strong>1-10</strong> + čimbenici rizika',
+  eduDiv:'Edukacija — Besplatan dnevni pristup',
+  inspireText:'Nema više <em>"ne znam kome da se obratim."</em><br>Nema više <em>skupih konzultanata</em> za svako pitanje.<br>Nema više <em>izgubljenog vremena</em> u pretraživanju.<br><br><strong>Marginova je tu. Vaš tim je spreman.</strong>',
+  is1:'Stručnjaci',is2:'Jezici',is3:'Mogućnosti',is4:'Za početak',
+  revTag:'Pravi rezultati',revH:'Što kažu <em>naši korisnici.</em>',
+  priceTag:'Planovi & Cijene',priceH:'Počni besplatno. <em>Rasti kad si spreman.</em>',priceP:'Bez skrivenih naknada. Otkaži kad želiš.',
+  p1n:'Besplatno',p1per:'zauvijek',p1m:'💬 Leo & LIBER · 20 poruka / dan',p1f1:'Leo & LIBER — besplatno svaki dan',p1f2:'10 jezika',p1f3:'5 bonus poruka sa svim stručnjacima',p1f4:'Memorija razgovora',p1btn:'Počni besplatno',
+  p2n:'Starter',p2per:'.99 / mjesec',p2m:'💬 500 poruka / mjesečno',p2f1:'Svih 8 stručnjaka',p2f2:'Eva — EU Grantovi & Fondovi 🇪🇺',p2f3:'Tender AI — Pretraga uživo 📋',p2f4:'COO AI — Završni sloj za odluke ⚡',p2f5:'Analiza slika & PDF',p2btn:'Počni Starter →',
+  p3n:'Pro',p3per:'.99 / mjesec',p3m:'💬 2.000 poruka / mjesečno',p3f1:'Sve iz Starter',p3f2:'2.000 poruka / mjesečno',p3f3:'Prioritetni odgovori ⚡',p3f4:'Napredna PDF analiza 📊',p3f5:'Prioritetna podrška 24/7',p3btn:'Počni Pro →',
+  p4n:'Business',p4per:'.99 / mjesec',p4m:'💬 Neograničeno · 5 računa',p4f1:'Sve iz Pro',p4f2:'Neograničene poruke',p4f3:'Do 5 računa (tim)',p4f4:'Posvećeni account manager',p4f5:'Za tvrtke, NGO & agencije',p4btn:'Počni Business →',
+  ctaH:'Spreman upoznati <em>vaš AI tim?</em>',ctaP:'Pridružite se tvrtkama diljem Balkana koje su otkrile pametniji način rasta.',ctaBtn2:'Počni besplatno — Bez kartice →',
+  footerTag:'The Game Changer · Edukacija · Biznis · 10 Jezika',fp:'Politika privatnosti',ft:'Uvjeti korištenja',fr:'Politika povrata',fc:'Kontakt',fcopy:'© 2026 Marginova.AI · The Game Changer',navCta:'Počni besplatno →'
+});
+T.bs=Object.assign({},T.sr,{
+  live:'Živo · 24/7 · 10 Jezika',h1b:'Sistem za Odluke',
+  heroSub:'Opišite poslovni izazov. <em>COO AI</em> konsultuje 4 specijalista paralelno i daje završnu ocjenu s faktorima rizika — na vašem jeziku.',
+  ctaMain:'Počni besplatno →',heroNote:'Bez kreditne kartice · Leo & LIBER besplatno zauvijek · 5 bonus poruka sa svim specijalistima',
+  p1per:'zauvijek',p2per:'.99 / mjesec',p3per:'.99 / mjesec',p4per:'.99 / mjesec',
+  p4m:'💬 Neograničeno · 5 naloga',p4f3:'Do 5 naloga (tim)',p4f5:'Za kompanije, NVO & agencije',
+  navCta:'Počni besplatno →'
+});
+T.de=Object.assign({},T.en,{
+  live:'Live · 24/7 · 10 Sprachen',eyebrow:'KI-PLATTFORM FÜR BALKAN-UNTERNEHMEN',
+  h1a:'Ihre KI',h1b:'Entscheidungs-Engine',
+  heroSub:'Beschreiben Sie Ihre Geschäftsherausforderung. <em>COO AI</em> konsultiert 4 Spezialisten parallel und liefert eine Endnote mit Risikofaktoren — in Ihrer Sprache.',
+  ctaMain:'Kostenlos starten →',ctaSec:'Spezialisten kennenlernen',heroNote:'Keine Kreditkarte · Leo & LIBER kostenlos für immer · 5 Bonus-Nachrichten mit allen Spezialisten',
+  pb1:'EU-Förderung in 2 Min finden',pb1s:'€50.000+ · Live-Suche · Jetzt verfügbar',pb2:'Jeden Tag neue Ausschreibung',pb2s:'Echte Portale · Echte Fristen · 24/7',
+  s1:'Spezialisten',s2:'Sprachen',s3:'Verfügbar',s4:'Zum Start',
+  specTag:'Ihr KI-Team',specH:'Eine Frage. <em>Acht Spezialisten.</em>',specP:'Jede KI ist für genau eine Domäne trainiert. Kein Generalismus — tiefe, präzise Hilfe sofort verfügbar.',
+  cooTagline:'Finale Entscheidungsebene',cooDesc:'Konsultiert <strong>Business AI · Eva · Tender AI · Justinian</strong> parallel → Endnote <strong>1-10</strong> + Risikofaktoren',
+  eduDiv:'Bildung — Kostenloser täglicher Zugang',
+  inspireText:'Nicht mehr <em>"Ich weiß nicht, wen ich fragen soll."</em><br>Nicht mehr <em>teure Berater</em> für jede Frage.<br>Nicht mehr <em>verlorene Zeit</em> beim Suchen.<br><br><strong>Marginova ist hier. Ihr Team ist bereit.</strong>',
+  is1:'Spezialisten',is2:'Sprachen',is3:'Möglichkeiten',is4:'Zum Start',
+  revTag:'Echte Ergebnisse',revH:'Was unsere <em>Nutzer sagen.</em>',
+  priceTag:'Pläne & Preise',priceH:'Kostenlos starten. <em>Wachsen wenn bereit.</em>',priceP:'Keine versteckten Gebühren. Jederzeit kündigen.',
+  p1n:'Kostenlos',p1per:'für immer',p1m:'💬 Leo & LIBER · 20 Nachrichten / Tag',p1f1:'Leo & LIBER — täglich kostenlos',p1f2:'10 Sprachen',p1f3:'5 Bonus-Nachrichten mit allen Spezialisten',p1f4:'Gesprächsgedächtnis',p1btn:'Kostenlos starten',
+  p2n:'Starter',p2per:'.99 / Monat',p2m:'💬 500 Nachrichten / Monat',p2f1:'Alle 8 Spezialisten',p2f2:'Eva — EU-Fördermittel & Fonds 🇪🇺',p2f3:'Tender AI — Live-Suche 📋',p2f4:'COO AI — Finale Entscheidungsebene ⚡',p2f5:'Bild- & PDF-Analyse',p2btn:'Starter starten →',
+  p3n:'Pro',p3per:'.99 / Monat',p3m:'💬 2.000 Nachrichten / Monat',p3f1:'Alles aus Starter',p3f2:'2.000 Nachrichten / Monat',p3f3:'Priorisierte Antworten ⚡',p3f4:'Erweiterte PDF-Analyse 📊',p3f5:'Prioritätssupport 24/7',p3btn:'Pro starten →',
+  p4n:'Business',p4per:'.99 / Monat',p4m:'💬 Unbegrenzt · 5 Konten',p4f1:'Alles aus Pro',p4f2:'Unbegrenzte Nachrichten',p4f3:'Bis zu 5 Konten (Team)',p4f4:'Dedizierter Account Manager',p4f5:'Für Unternehmen, NGOs & Agenturen',p4btn:'Business starten →',
+  ctaH:'Bereit, <em>Ihr KI-Team</em> kennenzulernen?',ctaP:'Schließen Sie sich Unternehmen im Balkan an, die den smarteren Weg entdeckt haben.',ctaBtn2:'Kostenlos starten — Keine Karte →',
+  footerTag:'The Game Changer · Bildung · Business · 10 Sprachen',fp:'Datenschutzrichtlinie',ft:'Nutzungsbedingungen',fr:'Rückgaberichtlinie',fc:'Kontakt',fcopy:'© 2026 Marginova.AI · The Game Changer',navCta:'Kostenlos starten →'
+});
+T.bg=Object.assign({},T.en,{
+  live:'На живо · 24/7 · 10 Езика',eyebrow:'AI ПЛАТФОРМА ЗА БАЛКАНСКИ БИЗНЕС',
+  h1a:'Вашият AI',h1b:'Двигател за Решения',
+  heroSub:'Опишете бизнес предизвика си. <em>COO AI</em> консултира 4 специалисти паралелно и дава крайна оценка с рискови фактори — на вашия език.',
+  ctaMain:'Започни безплатно →',ctaSec:'Запознай специалистите',heroNote:'Без кредитна карта · Leo & LIBER безплатно завинаги · 5 бонус съобщения с всички специалисти',
+  pb1:'Намери EU грант за 2 мин',pb1s:'€50.000+ · Търсене на живо · Достъпно сега',pb2:'Всеки ден нов търг',pb2s:'Реални портали · Реални срокове · 24/7',
+  s1:'Специалисти',s2:'Езици',s3:'Достъпно',s4:'За старт',
+  specTag:'Вашият AI екип',specH:'Един въпрос. <em>Осем специалисти.</em>',specP:'Всеки AI е обучен за точно една область. Без генерализъм — дълбока, прецизна помощ веднага.',
+  cooTagline:'Финален Слой за Решения',cooDesc:'Консултира <strong>Business AI · Eva · Tender AI · Justinian</strong> паралелно → крайна оценка <strong>1-10</strong> + рискови фактори',
+  eduDiv:'Образование — Безплатен дневен достъп',
+  inspireText:'Вече няма <em>"не знам към кого да се обърна."</em><br>Вече няма <em>скъпи консултанти</em> за всеки въпрос.<br>Вече няма <em>загубено време</em> в търсене.<br><br><strong>Marginova е тук. Екипът ви е готов.</strong>',
+  is1:'Специалисти',is2:'Езици',is3:'Възможности',is4:'За начало',
+  revTag:'Реални резултати',revH:'Какво казват <em>нашите потребители.</em>',
+  priceTag:'Планове & Цени',priceH:'Започни безплатно. <em>Расти когато си готов.</em>',priceP:'Без скрити такси. Откажи кога искаш.',
+  p1n:'Безплатно',p1per:'завинаги',p1m:'💬 Leo & LIBER · 20 съобщения / ден',p1f1:'Leo & LIBER — безплатно всеки ден',p1f2:'10 езика',p1f3:'5 бонус съобщения с всички специалисти',p1f4:'Памет на разговорите',p1btn:'Започни безплатно',
+  p2n:'Starter',p2per:'.99 / месец',p2m:'💬 500 съобщения / месечно',p2f1:'Всички 8 специалисти',p2f2:'Eva — EU Грантове & Фондове 🇪🇺',p2f3:'Tender AI — Търсене на живо 📋',p2f4:'COO AI — Финален слой за решения ⚡',p2f5:'Анализ на изображения & PDF',p2btn:'Започни Starter →',
+  p3n:'Pro',p3per:'.99 / месец',p3m:'💬 2.000 съобщения / месечно',p3f1:'Всичко от Starter',p3f2:'2.000 съобщения / месечно',p3f3:'Приоритетни отговори ⚡',p3f4:'Разширен PDF анализ 📊',p3f5:'Приоритетна поддръжка 24/7',p3btn:'Започни Pro →',
+  p4n:'Business',p4per:'.99 / месец',p4m:'💬 Неограничено · 5 акаунта',p4f1:'Всичко от Pro',p4f2:'Неограничени съобщения',p4f3:'До 5 акаунта (екип)',p4f4:'Dedicated account manager',p4f5:'За компании, НПО & агенции',p4btn:'Започни Business →',
+  ctaH:'Готови да запознаете <em>вашия AI екип?</em>',ctaP:'Присъединете се към фирмите в Балканите, открили по-умния начин за растеж.',ctaBtn2:'Започни безплатно — Без карта →',
+  footerTag:'The Game Changer · Образование · Бизнес · 10 Езика',fp:'Политика за поверителност',ft:'Условия за ползване',fr:'Политика за връщане',fc:'Контакт',fcopy:'© 2026 Marginova.AI · The Game Changer',navCta:'Започни безплатно →'
+});
+T.sq=Object.assign({},T.en,{
+  live:'Live · 24/7 · 10 Gjuhë',eyebrow:'PLATFORMË AI PËR BIZNESIN BALLKANIK',
+  h1a:'AI juaj',h1b:'Motori i Vendimeve',
+  heroSub:'Përshkruani sfidën tuaj të biznesit. <em>COO AI</em> konsulton 4 specialistë paralelisht dhe jep vlerësim final me faktorë rreziku — në gjuhën tuaj.',
+  ctaMain:'Fillo falas →',ctaSec:'Takoni specialistët',heroNote:'Pa kartë krediti · Leo & LIBER falas përgjithmonë · 5 mesazhe bonus me të gjithë specialistët',
+  pb1:'Gjej grant BE në 2 min',pb1s:'€50.000+ · Kërkim live · Disponueshëm tani',pb2:'Tender i ri çdo ditë',pb2s:'Portale reale · Afate reale · 24/7',
+  s1:'Specialistë',s2:'Gjuhë',s3:'I disponueshëm',s4:'Për fillim',
+  specTag:'Ekipi juaj AI',specH:'Një pyetje. <em>Tetë specialistë.</em>',specP:'Çdo AI është trajnuar për saktësisht një fushë. Pa gjeneralizëm — ndihmë e thellë dhe e saktë menjëherë.',
+  cooTagline:'Shtresa Finale e Vendimeve',cooDesc:'Konsulton <strong>Business AI · Eva · Tender AI · Justinian</strong> paralelisht → vlerësim final <strong>1-10</strong> + faktorë rreziku',
+  eduDiv:'Edukim — Qasje e Lirë Ditore',
+  inspireText:'Nuk ka më <em>"nuk di kë të pyes."</em><br>Nuk ka më <em>konsulentë të shtrenjtë</em> për çdo pyetje.<br>Nuk ka më <em>kohë të humbur</em> në kërkim.<br><br><strong>Marginova është këtu. Ekipi juaj është gati.</strong>',
+  is1:'Specialistë',is2:'Gjuhë',is3:'Mundësi',is4:'Për fillim',
+  revTag:'Rezultate reale',revH:'Çfarë thonë <em>përdoruesit tanë.</em>',
+  priceTag:'Planet & Çmimet',priceH:'Fillo falas. <em>Rrit kur je gati.</em>',priceP:'Pa tarifa të fshehura. Anulo kur të duash.',
+  p1n:'Falas',p1per:'përgjithmonë',p1m:'💬 Leo & LIBER · 20 mesazhe / ditë',p1f1:'Leo & LIBER — falas çdo ditë',p1f2:'10 gjuhë',p1f3:'5 mesazhe bonus me të gjithë specialistët',p1f4:'Memoria e bisedave',p1btn:'Fillo falas',
+  p2n:'Starter',p2per:'.99 / muaj',p2m:'💬 500 mesazhe / muajisht',p2f1:'Të 8 specialistët',p2f2:'Eva — Grante & Fonde BE 🇪🇺',p2f3:'Tender AI — Kërkim live 📋',p2f4:'COO AI — Shtresa finale e vendimeve ⚡',p2f5:'Analizë imazhesh & PDF',p2btn:'Fillo Starter →',
+  p3n:'Pro',p3per:'.99 / muaj',p3m:'💬 2.000 mesazhe / muajisht',p3f1:'Gjithçka nga Starter',p3f2:'2.000 mesazhe / muajisht',p3f3:'Përgjigje prioritare ⚡',p3f4:'Analizë e avancuar PDF 📊',p3f5:'Mbështetje prioritare 24/7',p3btn:'Fillo Pro →',
+  p4n:'Business',p4per:'.99 / muaj',p4m:'💬 Pa limit · 5 llogari',p4f1:'Gjithçka nga Pro',p4f2:'Mesazhe të pakufizuara',p4f3:'Deri në 5 llogari (ekip)',p4f4:'Account manager i dedikuar',p4f5:'Për kompani, OJQ & agjenci',p4btn:'Fillo Business →',
+  ctaH:'Gati të takoni <em>ekipin tuaj AI?</em>',ctaP:'Bashkohuni me bizneset në Ballkan që kanë zbuluar mënyrën më të zgjuar për rritje.',ctaBtn2:'Fillo falas — Pa kartë →',
+  footerTag:'The Game Changer · Edukim · Biznes · 10 Gjuhë',fp:'Politika e privatësisë',ft:'Kushtet e shërbimit',fr:'Politika e kthimit',fc:'Kontakt',fcopy:'© 2026 Marginova.AI · The Game Changer',navCta:'Fillo falas →'
+});
+T.tr=Object.assign({},T.en,{
+  live:'Canlı · 24/7 · 10 Dil',eyebrow:'BALKAN İŞ DÜNYASI İÇİN AI PLATFORMU',
+  h1a:'Yapay Zeka',h1b:'Karar Motorunuz',
+  heroSub:'İş zorluğunuzu anlatın. <em>COO AI</em> 4 uzmanı paralel olarak danışır ve risk faktörleriyle birlikte final puanı sunar — kendi dilinizde.',
+  ctaMain:'Ücretsiz başla →',ctaSec:'Uzmanlarla tanış',heroNote:'Kredi kartı yok · Leo & LIBER sonsuza kadar ücretsiz · Tüm uzmanlarla 5 bonus mesaj',
+  pb1:'2 dakikada AB hibesi bul',pb1s:'€50.000+ · Canlı arama · Şimdi mevcut',pb2:'Her gün yeni ihale',pb2s:'Gerçek portallar · Gerçek son tarihler · 24/7',
+  s1:'Uzmanlar',s2:'Dil',s3:'Mevcut',s4:'Başlangıç için',
+  specTag:'AI Ekibiniz',specH:'Bir soru. <em>Sekiz uzman.</em>',specP:'Her AI tam olarak bir alan için eğitilmiştir. Genelcilik yok — derin, hassas yardım hemen mevcut.',
+  cooTagline:'Nihai Karar Katmanı',cooDesc:'<strong>Business AI · Eva · Tender AI · Justinian</strong> paralel olarak danishir → final puani <strong>1-10</strong> + risk faktorleri',
+  eduDiv:'Eğitim — Günlük Ücretsiz Erişim',
+  inspireText:'Artık <em>"kime soracağımı bilmiyorum"</em> yok.<br>Artık her soru için <em>pahalı danışmanlar</em> yok.<br>Artık portallarda <em>kayıp zaman</em> yok.<br><br><strong>Marginova burada. Ekibiniz hazır.</strong>',
+  is1:'Uzmanlar',is2:'Dil',is3:'Fırsatlar',is4:'Başlamak için',
+  revTag:'Gerçek sonuçlar',revH:'<em>Kullanıcılarımız</em> ne diyor.',
+  priceTag:'Planlar & Fiyatlar',priceH:'Ücretsiz başlayın. <em>Hazır olduğunuzda büyüyün.</em>',priceP:'Gizli ücret yok. İstediğinizde iptal edin.',
+  p1n:'Ücretsiz',p1per:'sonsuza kadar',p1m:'💬 Leo & LIBER · 20 mesaj / gün',p1f1:'Leo & LIBER — her gün ücretsiz',p1f2:'10 dil',p1f3:'Tüm uzmanlarla 5 bonus mesaj',p1f4:'Konuşma hafızası',p1btn:'Ücretsiz başla',
+  p2n:'Starter',p2per:'.99 / ay',p2m:'💬 500 mesaj / aylık',p2f1:'Tüm 8 uzman',p2f2:'Eva — AB Fonları & Hibeler 🇪🇺',p2f3:'Tender AI — Canlı arama 📋',p2f4:'COO AI — Nihai karar katmanı ⚡',p2f5:'Görüntü & PDF analizi',p2btn:'Starter başla →',
+  p3n:'Pro',p3per:'.99 / ay',p3m:'💬 2.000 mesaj / aylık',p3f1:'Starter-daki her şey',p3f2:'2.000 mesaj / aylık',p3f3:'Öncelikli yanıtlar ⚡',p3f4:'Gelişmiş PDF analizi 📊',p3f5:'Öncelikli destek 24/7',p3btn:'Pro ya başla →',
+  p4n:'Business',p4per:'.99 / ay',p4m:'💬 Sınırsız · 5 hesap',p4f1:'Pro-daki her şey',p4f2:'Sınırsız mesaj',p4f3:'5 hesaba kadar (ekip)',p4f4:'Özel hesap yöneticisi',p4f5:'Şirketler, STK & ajanslar için',p4btn:'Business a başla →',
+  ctaH:'<em>AI ekibinizle</em> tanismaya hazir misiniz?',ctaP:'Balkanlardaki daha akilli buyume yolunu kesfeden isletmelere katilin.',ctaBtn2:'Ücretsiz başla — Kart yok →',
+  footerTag:'The Game Changer · Eğitim · İş Dünyası · 10 Dil',fp:'Gizlilik Politikası',ft:'Kullanım Şartları',fr:'İade Politikası',fc:'İletişim',fcopy:'© 2026 Marginova.AI · The Game Changer',navCta:'Ücretsiz başla →'
+});
+T.pl=Object.assign({},T.en,{
+  live:'Na żywo · 24/7 · 10 Języków',eyebrow:'PLATFORMA AI DLA BIZNESU NA BAŁKANACH',
+  h1a:'Wasza AI',h1b:'Maszyna Decyzyjna',
+  heroSub:'Opisz swoje wyzwanie biznesowe. <em>COO AI</em> konsultuje 4 specjalistów równolegle i dostarcza końcową ocenę z czynnikami ryzyka — w Twoim języku.',
+  ctaMain:'Zacznij za darmo →',ctaSec:'Poznaj specjalistów',heroNote:'Bez karty kredytowej · Leo & LIBER za darmo na zawsze · 5 wiadomości bonusowych ze wszystkimi specjalistami',
+  pb1:'Znajdź grant UE w 2 min',pb1s:'€50.000+ · Wyszukiwanie na żywo · Dostępne teraz',pb2:'Nowy przetarg każdego dnia',pb2s:'Prawdziwe portale · Prawdziwe terminy · 24/7',
+  s1:'Specjaliści',s2:'Języki',s3:'Dostępny',s4:'Na start',
+  specTag:'Twój zespół AI',specH:'Jedno pytanie. <em>Ośmiu specjalistów.</em>',specP:'Każda AI jest szkolona dla dokładnie jednej dziedziny. Bez generalizmu — głęboka, precyzyjna pomoc dostępna natychmiast.',
+  cooTagline:'Końcowa Warstwa Decyzyjna',cooDesc:'Konsultuje <strong>Business AI · Eva · Tender AI · Justinian</strong> równolegle → końcowa ocena <strong>1-10</strong> + czynniki ryzyka',
+  eduDiv:'Edukacja — Bezpłatny Dzienny Dostęp',
+  inspireText:'Już nie <em>"nie wiem kogo zapytać."</em><br>Już nie <em>drodzy konsultanci</em> przy każdym pytaniu.<br>Już nie <em>stracony czas</em> w wyszukiwaniu.<br><br><strong>Marginova jest tutaj. Twój zespół jest gotowy.</strong>',
+  is1:'Specjaliści',is2:'Języki',is3:'Możliwości',is4:'Na start',
+  revTag:'Prawdziwe wyniki',revH:'Co mówią <em>nasi użytkownicy.</em>',
+  priceTag:'Plany & Ceny',priceH:'Zacznij za darmo. <em>Rozwijaj się gdy gotowy.</em>',priceP:'Bez ukrytych opłat. Anuluj kiedy chcesz.',
+  p1n:'Bezpłatny',p1per:'na zawsze',p1m:'💬 Leo & LIBER · 20 wiadomości / dzień',p1f1:'Leo & LIBER — za darmo każdego dnia',p1f2:'10 języków',p1f3:'5 wiadomości bonusowych ze wszystkimi specjalistami',p1f4:'Pamięć rozmów',p1btn:'Zacznij za darmo',
+  p2n:'Starter',p2per:'.99 / miesiąc',p2m:'💬 500 wiadomości / miesięcznie',p2f1:'Wszyscy 8 specjalistów',p2f2:'Eva — Fundusze UE & Granty 🇪🇺',p2f3:'Tender AI — Wyszukiwanie na żywo 📋',p2f4:'COO AI — Końcowa warstwa decyzyjna ⚡',p2f5:'Analiza obrazów & PDF',p2btn:'Zacznij Starter →',
+  p3n:'Pro',p3per:'.99 / miesiąc',p3m:'💬 2.000 wiadomości / miesięcznie',p3f1:'Wszystko ze Starter paketu',p3f2:'2.000 wiadomości / miesięcznie',p3f3:'Priorytetowe odpowiedzi ⚡',p3f4:'Zaawansowana analiza PDF 📊',p3f5:'Priorytetowe wsparcie 24/7',p3btn:'Zacznij Pro →',
+  p4n:'Business',p4per:'.99 / miesiąc',p4m:'💬 Nieograniczone · 5 kont',p4f1:'Wszystko z Pro',p4f2:'Nieograniczone wiadomości',p4f3:'Do 5 kont (zespół)',p4f4:'Dedykowany menedżer konta',p4f5:'Dla firm, NGO & agencji',p4btn:'Zacznij Business →',
+  ctaH:'Gotowy poznać <em>swój zespół AI?</em>',ctaP:'Dołącz do firm z Bałkanów, które odkryły mądrzejszy sposób na wzrost.',ctaBtn2:'Zacznij za darmo — Bez karty →',
+  footerTag:'The Game Changer · Edukacja · Biznes · 10 Języków',fp:'Polityka prywatności',ft:'Warunki korzystania',fr:'Polityka zwrotów',fc:'Kontakt',fcopy:'© 2026 Marginova.AI · The Game Changer',navCta:'Zacznij za darmo →'
+});
 
 let lang=localStorage.getItem('mlang')||'en';
 
