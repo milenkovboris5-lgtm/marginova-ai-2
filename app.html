@@ -3467,7 +3467,7 @@ async function loadProfile(){
       const today=new Date().toISOString().split('T')[0];
       await supa('profiles').upsert({
         user_id:currentUser.id,xp:0,level:1,streak:0,
-        last_login:today,created_at:new Date().toISOString(),tokens:50,tokens_total:50,
+        last_login:today,tokens:50,tokens_total:50,
         plan:'free',daily_msgs:0,last_msg_date:today,
         bonus_used:false,bonus_msgs_left:5,leo_liber_msgs_today:0,leo_liber_date:null
       });
@@ -3804,6 +3804,7 @@ function closeDrawer(){
 // ═══ LANG BAR FLAGS ═══
 let agSelCard=null;
 function setLangGrid(l){
+  lang=l; localStorage.setItem('mlang',l);
   document.querySelectorAll('.lang-flag-btn').forEach(b=>{
     b.style.background='transparent';
     b.style.borderColor='rgba(201,168,76,0.18)';
@@ -4029,7 +4030,8 @@ async function saveMessage(role,text){
       user_id:currentUser.id,
       avatar:current,
       role:role,
-      message:text
+      message:text,
+      created_at:new Date().toISOString()
     });
     if(!memoryCache[current])memoryCache[current]=[];
     memoryCache[current].push({role:role==='assistant'?'assistant':'user',content:text});
