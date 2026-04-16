@@ -4005,6 +4005,7 @@ const memoryCache={};
 
 async function loadMemory(avatarId){
   if(!currentUser)return[];
+  if(avatarId==='cooai')return[]; // COO AI нема memory — свежа анализа секој пат
   if(memoryCache[avatarId])return memoryCache[avatarId];
   try{
     const {data,error}=await supa('conversations')
