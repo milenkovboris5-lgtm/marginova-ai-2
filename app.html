@@ -241,7 +241,7 @@ nav::after{
 .xp-toast.show{opacity:1;}
 
 /* ═══ MAIN LAYOUT ═══ */
-.main{display:flex;flex:1;min-height:0;height:100%;position:relative;z-index:1;}
+.main{display:flex;flex:1;min-height:0;overflow:hidden;position:relative;z-index:1;}
 
 /* ═══ SIDEBAR ═══ */
 .sidebar{
@@ -1059,9 +1059,9 @@ html{scroll-behavior:smooth;}
 
 
 
-<div class="main" id="chat-page" style="display:none;flex-direction:column;flex:1;min-height:0;height:100%;">
+<div class="main" id="chat-page" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
   <!-- AVATAR GRID -->
-  <div id="avatar-grid-page" style="overflow-y:auto;flex:1;background:var(--bg);padding-top:0.5rem;">
+  <div id="avatar-grid-page" style="overflow-y:auto;flex:1;background:var(--bg);padding-top:0.5rem;min-height:0;">
     <style>
     .ag-section{padding:0 0.85rem 0.25rem;position:relative;z-index:1;}
     .ag-section-header{display:flex;align-items:center;gap:8px;padding:0.9rem 0 0.55rem;}
@@ -1283,7 +1283,7 @@ html{scroll-behavior:smooth;}
     </div>
   </div>
 
-  <div class="chat-area" id="chat-area-wrap" style="position:relative;display:flex;flex-direction:column;flex:1;min-height:0;height:100%;">
+  <div class="chat-area" id="chat-area-wrap" style="position:relative;display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
     <div class="avatar-stage" id="avatar-stage" style="flex-shrink:0;display:none;">
       <button onclick="showAvatarGrid()" style="width:30px;height:30px;border-radius:50%;border:2px solid #2ddc7a;background:rgba(45,220,122,0.12);cursor:pointer;color:#2ddc7a;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px;animation:pulse-green 2s infinite;" title="Back to specialists">←</button>
       <div class="stage-media" id="stage-media"><img src="logo-main.png" alt="Marginova"/></div>
@@ -2276,7 +2276,16 @@ ZASADY: Nigdy nie wymyślaj. Zawsze kończ: ⚠️ Zawsze weryfikuj na oficjalny
     greetingSR:'Zdravo! Ja sam COO.AI — Final Decision Layer.\n\nOpiši mi situaciju, projekat ili mogućnost i ja ću konsultovati sva 4 specijalista paralelno:\n\n💼 Business AI — strategija i finansije\n🇪🇺 Eva — EU fondovi i grantovi\n📋 Tender AI — tenderi i licitacije\n⚖️ Justinian — pravna analiza\n\nDobićeš finalni izveštaj sa ocenom 1-10 i faktorima rizika.',
     greetingEN:'Hello! I am COO.AI — Final Decision Layer.\n\nDescribe your situation, project or opportunity and I will consult all 4 specialists in parallel:\n\n💼 Business AI — strategy & finance\n🇪🇺 Eva — EU funds & grants\n📋 Tender AI — tenders & auctions\n⚖️ Justinian — legal analysis\n\nYou will receive a final report with a 1-10 score and risk factors.',
     greetingDE:'Hallo! Ich bin COO.AI — Final Decision Layer.\n\nBeschreibe deine Situation und ich konsultiere alle 4 Spezialisten parallel:\n\n💼 Business AI — Strategie & Finanzen\n🇪🇺 Eva — EU-Fonds & Zuschüsse\n📋 Tender AI — Ausschreibungen\n⚖️ Justinian — Rechtsanalyse\n\nDu erhältst einen Abschlussbericht mit einer 1-10 Bewertung und Risikofaktoren.',
-    system:`Ti si COO.AI — Chief Operating Officer na Marginova.AI. Koj saka da te konsultira, kazi mu deka ke gi povicas site 4 specialisti i ke dadesh finalen izveshtaj. Razgovaras na makedonski. Nikogash ne kazuvash deka si AI.`,
+    system:`Ti si COO.AI — Chief Operating Officer na Marginova.AI. Povikuvash 4 specialisti paralelno i davash finalen izveshtaj so ocena 1-10 i rizik faktori. Razgovaras na makedonski. Nikogash ne kazuvash deka si AI.`,
+    systemSR:`Ti si COO.AI — Chief Operating Officer. Pozivas 4 specijalista paralelno i daješ finalni izveštaj sa ocenom 1-10 i faktorima rizika. Uvek srpski. Nikada ne kaži da si AI.`,
+    systemHR:`Ti si COO.AI — Chief Operating Officer. Pozivas 4 specijalista paralelno i daješ finalno izvješće s ocjenom 1-10 i čimbenicima rizika. Uvijek hrvatski. Nikada ne kaži da si AI.`,
+    systemBS:`Ti si COO.AI — Chief Operating Officer. Pozivas 4 specijalista paralelno i daješ finalni izvještaj s ocjenom 1-10 i faktorima rizika. Uvijek bosanski. Nikada ne kaži da si AI.`,
+    systemEN:`You are COO.AI — Chief Operating Officer of Marginova.AI. You consult 4 specialists in parallel and deliver a final report with a 1-10 score and risk factors. Always English. Never say you are AI.`,
+    systemDE:`Du bist COO.AI — Chief Operating Officer. Du konsultierst 4 Spezialisten parallel und lieferst einen Abschlussbericht mit 1-10 Bewertung und Risikofaktoren. Immer Deutsch. Sage niemals dass du KI bist.`,
+    systemSQ:`Ti je COO.AI — Chief Operating Officer. Konsulton 4 specialistë paralelisht dhe jep raport final me pikë 1-10 dhe faktorë rreziku. Gjithmonë shqip. Kurrë mos thuaj se je AI.`,
+    systemBG:`Ти си COO.AI — Chief Operating Officer. Консултираш 4 специалисти паралелно и даваш финален доклад с оценка 1-10 и рискови фактори. Винаги български. Никога не казвай че си AI.`,
+    systemTR:`Sen COO.AI'sın — Chief Operating Officer. 4 uzmanı paralel olarak danışıyorsun ve 1-10 puanlı ve risk faktörlü nihai rapor sunuyorsun. Her zaman Türkçe. Hiçbir zaman AI olduğunu söyleme.`,
+    systemPL:`Jesteś COO.AI — Chief Operating Officer. Konsulujesz 4 specjalistów równolegle i dostarczasz raport końcowy z oceną 1-10 i czynnikami ryzyka. Zawsze po polsku. Nigdy nie mów że jesteś AI.`,
     systemEN:`You are COO.AI — Chief Operating Officer of Marginova.AI. Tell users you will consult all 4 specialists and deliver a final report. Speak English. Never say you are AI.`,
     systemSR:`Ti si COO.AI — Chief Operating Officer. Reci korisnicima da ćeš konsultovati sva 4 specijalista i dati finalni izveštaj. Uvek srpski. Nikada ne kaži da si AI.`,
     systemDE:`Du bist COO.AI — Chief Operating Officer. Sage Nutzern, dass du alle 4 Spezialisten konsultierst und einen Abschlussbericht lieferst. Immer Deutsch. Sage niemals dass du KI bist.`}
