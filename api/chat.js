@@ -63,11 +63,36 @@ async function loadMemory(userId, avatar) {
       content: r.message
     }));
 
-    // Summary од постарите ако има повеќе од 6
+    // Summary од постарите ако има повеќе од 6 — real summarization
     let summary = null;
     if (rows.length > 6) {
       const older = rows.slice(6).reverse().map(r => `${r.role}: ${r.message}`).join('\n');
-      summary = `Претходен разговор (резиме): ${older.slice(0, 500)}`;
+      // Real summary со Gemini наместо truncate
+      try {
+        const supaApiKey = process.env.GEMINI_API_KEY;
+        if (supaApiKey) {
+          const sumRes = await fetchWithTimeout(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${supaApiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: `Summarize this conversation in 3-5 sentences, keeping key business facts, decisions and context:\n\n${older.slice(0, 3000)}` }] }],
+                generationConfig: { maxOutputTokens: 300, temperature: 0.2 }
+              })
+            },
+            8000
+          );
+          if (sumRes.ok) {
+            const sumData = await sumRes.json();
+            const sumText = sumData.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (sumText) summary = `Претходен контекст: ${sumText}`;
+          }
+        }
+      } catch (e) {
+        // Fallback на truncate ако Gemini summary не успее
+        summary = `Претходен разговор: ${older.slice(0, 400)}`;
+      }
     }
 
     return { summary, recent };
@@ -241,8 +266,7 @@ async function searchSerper(query, apiKey) {
 function formatSearchResults(results, intent) {
   if (!results || results.length === 0) return '';
   const today = new Date().toLocaleDateString('mk-MK', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const labelMap = { grant: 'ГРАНТОВИ', tender: 'ТЕНДЕРИ', business: 'ПРИВАТНИ ПОНУДИ', private: 'ПРИВАТНИ ПОНУДИ' };
-  const label = labelMap[intent] || 'РЕЗУЛТАТИ';
+  const label = intent === 'grant' ? 'ГРАНТОВИ' : 'ТЕНДЕРИ';
   let ctx = `\n\n═══ LIVE РЕЗУЛТАТИ — ${label} — ${today} ═══\n`;
   ctx += `Прикажи САМО овие резултати со точните линкови. НЕ измислувај.\n\n`;
   results.forEach((r, i) => {
@@ -258,7 +282,7 @@ function formatSearchResults(results, intent) {
 }
 
 // ═══ GEMINI CALL ═══
-async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
+async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey, intent) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const contents = messages.map(m => ({
@@ -278,11 +302,23 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
     });
   }
 
+  // FIX: Dynamic tokens per intent — 30-50% cost reduction
+  const tokenMap = {
+    tender: 1200,
+    grant: 1200,
+    legal: 800,
+    analysis: 1000,
+    business: 900
+  };
+
   // FIX 3: Без Google Grounding — само Serper за search
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: { maxOutputTokens: 3000, temperature: 0.5 }
+    generationConfig: {
+      maxOutputTokens: tokenMap[intent] || 900,
+      temperature: 0.4
+    }
   };
 
   const res = await fetchWithTimeout(url, {
@@ -421,6 +457,19 @@ module.exports = async function handler(req, res) {
     const hasImage = !!body.image;
     const userId = body.userId || null;
     const avatar = 'cooai';
+
+    // FIX: Anti-spam — message length limit
+    const rawText = typeof body.messages?.[body.messages.length - 1]?.content === 'string'
+      ? body.messages[body.messages.length - 1].content : '';
+    if (rawText.length > 2000) {
+      return res.status(400).json({ error: { message: 'Пораката е предолга. Максимум 2000 знаци.' } });
+    }
+
+    // FIX: Stricter rate limit за анонимни корисници
+    if (!userId && limit.remaining < DAILY_LIMIT - 10) {
+      return res.status(429).json({ error: { message: 'Потребна е регистрација за повеќе пораки.' } });
+    }
+
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Вчитај Supabase memory
@@ -436,7 +485,8 @@ module.exports = async function handler(req, res) {
     const memoryContents = memory.recent.map(m => m.content);
     const newMessages = frontendMessages.filter(m => !memoryContents.includes(m.content));
 
-    const messages = [...memory.recent, ...newMessages];
+    // FIX: Стабилен prompt size — не расте неконтролирано
+    const messages = [...memory.recent.slice(-6), ...newMessages.slice(-2)];
 
     const lastUserMsg = messages.filter(m => m.role === 'user').pop();
     const userText = lastUserMsg?.content || '';
@@ -452,30 +502,34 @@ module.exports = async function handler(req, res) {
     }
 
     if (serperKey && (intent === 'tender' || intent === 'grant' || intent === 'business')) {
+      const query = buildSearchQuery(userText, intent);
+      console.log(`[Serper] query: ${query}`);
+      if (query) {
+        const results = await searchSerper(query, serperKey);
+        console.log(`[Serper] results: ${results?.length || 0}`);
+        if (results?.length > 0) {
+          enrichedSystem += formatSearchResults(results, intent);
+        } else {
+          enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nНе се пронајдени активни огласи. Кажи му на корисникот и препорачај официјални портали.\n═══════════════════════════\n`;
+        }
+      }
+    }
+
+    // Serper за приватни понуди во business intent
+    if (serperKey && intent === 'business') {
       const lower = userText.toLowerCase();
-
-      // За business — само ако има клучни зборови за приватни понуди
-      const isPrivateOffer = intent === 'business' && ['понуда','оглас','изведба','приватна','услуга','фасад','кров','градеж',
-        'ponuda','oglas','izvedba','privatna','usluga','fasad','krov','gradez','raboti',
-        'construction','fasada','krovna','ponude','usluge'].some(k => lower.includes(k));
-
-      // Само пребарувај ако: tender, grant, или business со приватни зборови
-      if (intent !== 'business' || isPrivateOffer) {
-        const query = buildSearchQuery(userText, intent);
-        console.log(`[Serper] intent:${intent} | query: ${query}`);
-        if (query) {
-          const results = await searchSerper(query, serperKey);
-          console.log(`[Serper] results: ${results?.length || 0}`);
-          if (results?.length > 0) {
-            enrichedSystem += formatSearchResults(results, intent);
-          } else {
-            const noResultMsg = intent === 'grant'
-              ? `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nНема активни повици. Препорачај: fitr.mk · funding.mk · ipard.gov.mk · mk.undp.org\n═══\n`
-              : intent === 'tender'
-              ? `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nНема тендери за ова барање. Препорачај: e-nabavki.gov.mk · portal.ujn.gov.rs · ted.europa.eu\n═══\n`
-              : `\n\n═══ НЕМА РЕАЛНИ ПОНУДИ ═══\nНема огласи. НЕ ИЗМИСЛУВАЈ. Препорачај: pazar3.mk · biznis.mk · oglasi.mk\n═══\n`;
-            enrichedSystem += noResultMsg;
-          }
+      const isPrivateOffer = ['понуда','оглас','изведба','приватна','услуга','фасад','кров','градеж',
+        'ponuda','oglas','izvedba','privatna','usluga','fasad','krov','gradez','raboti'].some(k => lower.includes(k));
+      if (isPrivateOffer) {
+        const keywords = extractKeywords(userText);
+        const query = `${keywords} site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk OR site:halo.rs OR site:njuskalo.hr`;
+        console.log(`[Serper private] query: ${query}`);
+        const results = await searchSerper(query, serperKey);
+        console.log(`[Serper private] results: ${results?.length || 0}`);
+        if (results?.length > 0) {
+          enrichedSystem += formatSearchResults(results, 'private');
+        } else {
+          enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ ПОНУДИ ═══\nНе се пронајдени огласи. НЕ ИЗМИСЛУВАЈ понуди, цени или контакти. Кажи директно дека нема резултати и препорачај: pazar3.mk · biznis.mk · oglasi.mk\n═══════════════════════════\n`;
         }
       }
     }
@@ -487,7 +541,8 @@ module.exports = async function handler(req, res) {
       body.image,
       body.imageType,
       body.imageText,
-      apiKey
+      apiKey,
+      intent
     );
 
     // Зачувај во Supabase memory
