@@ -175,7 +175,7 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: { maxOutputTokens: 2000, temperature: 0.3 },
+    generationConfig: { maxOutputTokens: 3000, temperature: 0.7 },
     tools: [{ googleSearch: {} }]
   };
 
@@ -183,7 +183,7 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
-  }, 15000);
+  }, 25000);
 
   if (!res.ok) {
     const err = await res.text();
@@ -308,7 +308,7 @@ module.exports = async function handler(req, res) {
     const hasImage = !!body.image;
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    const messages = (body.messages || []).slice(-20).map(m => ({
+    const messages = (body.messages || []).slice(-10).map(m => ({
       role: m.role,
       content: typeof m.content === 'string' ? m.content : String(m.content || '')
     }));
