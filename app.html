@@ -205,20 +205,6 @@ nav::after{
   font-size:0.78rem;color:var(--text2);
   text-align:center;max-width:300px;line-height:1.8;
 }
-.welcome-modes{
-  display:grid;grid-template-columns:1fr 1fr;gap:8px;
-  width:100%;max-width:360px;
-}
-.mode-card{
-  background:rgba(12,12,24,0.8);
-  border:1px solid var(--border);border-radius:12px;
-  padding:0.75rem;cursor:pointer;transition:all 0.2s;
-  display:flex;align-items:center;gap:8px;
-}
-.mode-card:hover{border-color:var(--border2);background:rgba(201,168,76,0.05);}
-.mode-icon{font-size:1.1rem;flex-shrink:0;}
-.mode-text{font-size:0.68rem;color:var(--text2);line-height:1.4;}
-.mode-text b{color:var(--text);display:block;font-size:0.72rem;margin-bottom:1px;}
 .welcome-start{
   background:linear-gradient(135deg,rgba(201,168,76,0.88),rgba(201,168,76,0.6));
   border:none;color:#07070f;padding:0.65rem 2.5rem;border-radius:50px;
@@ -947,8 +933,7 @@ async function sendMsg() {
       chatHistory.push({ role: 'assistant', content: reply });
       addMsg('ai', reply, intent);
       updateIntentBadge(intent);
-      saveMessage('user', text);
-      saveMessage('assistant', reply);
+      // Memory се зачувува на backend (saveMemory) — не зачувувај двапати
     }
   } catch (e) {
     removeTyping();
