@@ -63,36 +63,11 @@ async function loadMemory(userId, avatar) {
       content: r.message
     }));
 
-    // Summary од постарите ако има повеќе од 6 — real summarization
+    // Summary од постарите ако има повеќе од 6
     let summary = null;
     if (rows.length > 6) {
       const older = rows.slice(6).reverse().map(r => `${r.role}: ${r.message}`).join('\n');
-      // Real summary со Gemini наместо truncate
-      try {
-        const supaApiKey = process.env.GEMINI_API_KEY;
-        if (supaApiKey) {
-          const sumRes = await fetchWithTimeout(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${supaApiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{ role: 'user', parts: [{ text: `Summarize this conversation in 3-5 sentences, keeping key business facts, decisions and context:\n\n${older.slice(0, 3000)}` }] }],
-                generationConfig: { maxOutputTokens: 300, temperature: 0.2 }
-              })
-            },
-            8000
-          );
-          if (sumRes.ok) {
-            const sumData = await sumRes.json();
-            const sumText = sumData.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (sumText) summary = `Претходен контекст: ${sumText}`;
-          }
-        }
-      } catch (e) {
-        // Fallback на truncate ако Gemini summary не успее
-        summary = `Претходен разговор: ${older.slice(0, 400)}`;
-      }
+      summary = `Претходен разговор (резиме): ${older.slice(0, 500)}`;
     }
 
     return { summary, recent };
@@ -161,14 +136,46 @@ const INTENT_PATTERNS = {
   ]
 };
 
+// ═══ HYBRID INTENT CLASSIFIER ═══
+// Прво keyword matching (0ms, бесплатно)
+// Ако score = 0 → LLM fallback (само кога е нејасно)
+
 function classifyIntent(text) {
   const lower = text.toLowerCase();
   const scores = {};
   for (const [intent, keywords] of Object.entries(INTENT_PATTERNS)) {
     scores[intent] = keywords.filter(k => lower.includes(k)).length;
   }
-  const top = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
-  return top[1] > 0 ? top[0] : 'business';
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const top = sorted[0];
+  const second = sorted[1];
+
+  // Јасен winner — врати веднаш
+  if (top[1] >= 2) return { intent: top[0], confident: true };
+  if (top[1] === 1 && second[1] === 0) return { intent: top[0], confident: true };
+
+  // Нема match или tie — потребен LLM
+  return { intent: 'business', confident: false };
+}
+
+async function classifyWithLLM(text, apiKey) {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const res = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `Classify this business query into ONE word: tender, grant, legal, analysis, or business.\nQuery: "${text}"\nReturn ONLY one word.` }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 10 }
+      })
+    }, 6000);
+    const data = await res.json();
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase() || 'business';
+    const valid = ['tender', 'grant', 'legal', 'analysis', 'business'];
+    return valid.includes(raw) ? raw : 'business';
+  } catch (e) {
+    return 'business';
+  }
 }
 
 // ═══ SERPER SEARCH ═══
@@ -282,7 +289,7 @@ function formatSearchResults(results, intent) {
 }
 
 // ═══ GEMINI CALL ═══
-async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey, intent) {
+async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const contents = messages.map(m => ({
@@ -302,23 +309,11 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
     });
   }
 
-  // FIX: Dynamic tokens per intent — 30-50% cost reduction
-  const tokenMap = {
-    tender: 1200,
-    grant: 1200,
-    legal: 800,
-    analysis: 1000,
-    business: 900
-  };
-
   // FIX 3: Без Google Grounding — само Serper за search
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: {
-      maxOutputTokens: tokenMap[intent] || 900,
-      temperature: 0.4
-    }
+    generationConfig: { maxOutputTokens: 3000, temperature: 0.5 }
   };
 
   const res = await fetchWithTimeout(url, {
@@ -457,19 +452,6 @@ module.exports = async function handler(req, res) {
     const hasImage = !!body.image;
     const userId = body.userId || null;
     const avatar = 'cooai';
-
-    // FIX: Anti-spam — message length limit
-    const rawText = typeof body.messages?.[body.messages.length - 1]?.content === 'string'
-      ? body.messages[body.messages.length - 1].content : '';
-    if (rawText.length > 2000) {
-      return res.status(400).json({ error: { message: 'Пораката е предолга. Максимум 2000 знаци.' } });
-    }
-
-    // FIX: Stricter rate limit за анонимни корисници
-    if (!userId && limit.remaining < DAILY_LIMIT - 10) {
-      return res.status(429).json({ error: { message: 'Потребна е регистрација за повеќе пораки.' } });
-    }
-
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Вчитај Supabase memory
@@ -485,15 +467,19 @@ module.exports = async function handler(req, res) {
     const memoryContents = memory.recent.map(m => m.content);
     const newMessages = frontendMessages.filter(m => !memoryContents.includes(m.content));
 
-    // FIX: Стабилен prompt size — не расте неконтролирано
-    const messages = [...memory.recent.slice(-6), ...newMessages.slice(-2)];
+    const messages = [...memory.recent, ...newMessages];
 
     const lastUserMsg = messages.filter(m => m.role === 'user').pop();
     const userText = lastUserMsg?.content || '';
     const lang = body.lang || detectLang(userText);
-    const intent = classifyIntent(userText);
 
-    console.log(`[COO] lang:${lang} | intent:${intent} | memory:${memory.recent.length} msgs | text:${userText.slice(0, 60)}`);
+    // Hybrid intent: keyword прво, LLM само ако е нејасно
+    const keywordResult = classifyIntent(userText);
+    const intent = keywordResult.confident
+      ? keywordResult.intent
+      : await classifyWithLLM(userText, apiKey);
+
+    console.log(`[COO] lang:${lang} | intent:${intent} | confident:${keywordResult.confident} | memory:${memory.recent.length} msgs | text:${userText.slice(0, 60)}`);
 
     // Додај summary во system prompt ако постои
     let enrichedSystem = buildSystemPrompt(intent, lang, today);
@@ -541,8 +527,7 @@ module.exports = async function handler(req, res) {
       body.image,
       body.imageType,
       body.imageText,
-      apiKey,
-      intent
+      apiKey
     );
 
     // Зачувај во Supabase memory
