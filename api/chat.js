@@ -452,6 +452,8 @@ function buildSystemPrompt(intent, lang, todayStr) {
 
 JAZIK: SAMO ${langName}. Apsolutno. Denes e ${todayStr}.
 
+KRITICNO: Imash LIVE SEARCH — sekoj pat koga korisnikot bara ponuda, tender, grant ili oglas, sistemot automatski prebaruva i ti gi dava rezultatite. NIKOGASH ne kazuvash "ne mozam da prebaruvam" — rezultatite se vec injektirani vo tvojot kontekst pred da odgovoris. Ako rezultatite velat "NEMA" — toa e realno, no togash davaj KONKRETNA ALTERNATIVA, ne lista od portali.
+
 ═══ KAK RAZMISLUVAS ═══
 
 Pred da odgovoris, razbiraj tri raboti:
@@ -588,10 +590,12 @@ module.exports = async function handler(req, res) {
 
     // Дали бара приватни понуди
     const wantsPrivate = ['приватна','приватни','понуда','понуди','privatna','privatni','ponuda','ponudi',
-      'oglas','oglasi','оглас','изведба','izvedba','fasad','фасад','krov','кров','gradez','градеж'].some(k => lower.includes(k));
+      'oglas','oglasi','оглас','изведба','izvedba','fasad','фасад','krov','кров','gradez','градеж',
+      'raboti','работи','услуга','usluga','поdizvrsitel','podizvrsitel'].some(k => lower.includes(k));
 
     // Дали бара државни/јавни тендери
-    const wantsTender = intent === 'tender' || ['тендер','tender','јавна набавка','javna nabavka','државна','drzavna'].some(k => lower.includes(k));
+    const wantsTender = intent === 'tender' || ['тендер','tender','јавна набавка','javna nabavka',
+      'државна','drzavna','državna','javna','јавна','nabavka','набавка','ponuda','понуда'].some(k => lower.includes(k));
 
     // Дали бара грантови
     const wantsGrant = intent === 'grant';
