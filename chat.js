@@ -104,11 +104,14 @@ function buildSearchQuery(text, intent) {
     for (const [key, val] of Object.entries(countryMap)) {
       if (lower.includes(key)) { site = val; break; }
     }
-    return `tender javna nabavka ${month} ${site}`;
+    // after: враќа огласи објавени во последните 90 дена — рокот го проверува COO
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    return `tender javna nabavka after:${ninetyDaysAgo} ${site}`;
   }
 
   if (intent === 'grant') {
-    return `grant fond otvoreni poziv ${month} site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu OR site:ipard.gov.mk`;
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    return `grant fond otvoreni poziv after:${ninetyDaysAgo} site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu OR site:ipard.gov.mk`;
   }
 
   return null;
@@ -268,7 +271,11 @@ Avtomatski go klasificiras prasanjeto i aktiviras soodveten nacin na razmisluvan
 
 JAZIK: Sekogash odgovori SAMO na ${langName}. Ova e apsolutno zadolzitelno.
 
-DENES E: ${todayStr}. Iskljuci se sto e pred ovoj datum.
+DENES E: ${todayStr}.
+DATUM PRAVILO: Oglasite mozat da bidat objaveni porano — toa e vo red.
+Sto e VAZNO: rokot za prijavuvanje (deadline) mora da bide POSLE ${todayStr}.
+Ako rokot e pred denes → oznaci go kako ISTECEN i ne go preporacuvaj.
+Ako rokot ne e poznat → prikazi go oglasite i napisi "proveri rok direktno na portalot".
 
 ${modeInstructions[intent] || modeInstructions.business}
 
