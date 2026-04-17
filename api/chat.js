@@ -212,6 +212,9 @@ function buildSearchQuery(text, intent) {
     return `${keywords} ${site}`;
   }
 
+  return null;
+}
+
 async function searchSerper(query, apiKey) {
   if (!query || !apiKey) return null;
   try {
