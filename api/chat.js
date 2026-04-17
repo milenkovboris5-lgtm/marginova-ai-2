@@ -281,7 +281,7 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: { maxOutputTokens: 2000, temperature: 0.5 }
+    generationConfig: { maxOutputTokens: 3000, temperature: 0.5 }
   };
 
   const res = await fetchWithTimeout(url, {
