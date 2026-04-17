@@ -241,7 +241,8 @@ async function searchSerper(query, apiKey) {
 function formatSearchResults(results, intent) {
   if (!results || results.length === 0) return '';
   const today = new Date().toLocaleDateString('mk-MK', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const label = intent === 'grant' ? 'ГРАНТОВИ' : 'ТЕНДЕРИ';
+  const labelMap = { grant: 'ГРАНТОВИ', tender: 'ТЕНДЕРИ', business: 'ПРИВАТНИ ПОНУДИ', private: 'ПРИВАТНИ ПОНУДИ' };
+  const label = labelMap[intent] || 'РЕЗУЛТАТИ';
   let ctx = `\n\n═══ LIVE РЕЗУЛТАТИ — ${label} — ${today} ═══\n`;
   ctx += `Прикажи САМО овие резултати со точните линкови. НЕ измислувај.\n\n`;
   results.forEach((r, i) => {
@@ -451,34 +452,30 @@ module.exports = async function handler(req, res) {
     }
 
     if (serperKey && (intent === 'tender' || intent === 'grant' || intent === 'business')) {
-      const query = buildSearchQuery(userText, intent);
-      console.log(`[Serper] query: ${query}`);
-      if (query) {
-        const results = await searchSerper(query, serperKey);
-        console.log(`[Serper] results: ${results?.length || 0}`);
-        if (results?.length > 0) {
-          enrichedSystem += formatSearchResults(results, intent);
-        } else {
-          enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nНе се пронајдени активни огласи. Кажи му на корисникот и препорачај официјални портали.\n═══════════════════════════\n`;
-        }
-      }
-    }
-
-    // Serper за приватни понуди во business intent
-    if (serperKey && intent === 'business') {
       const lower = userText.toLowerCase();
-      const isPrivateOffer = ['понуда','оглас','изведба','приватна','услуга','фасад','кров','градеж',
-        'ponuda','oglas','izvedba','privatna','usluga','fasad','krov','gradez','raboti'].some(k => lower.includes(k));
-      if (isPrivateOffer) {
-        const keywords = extractKeywords(userText);
-        const query = `${keywords} site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk OR site:halo.rs OR site:njuskalo.hr`;
-        console.log(`[Serper private] query: ${query}`);
-        const results = await searchSerper(query, serperKey);
-        console.log(`[Serper private] results: ${results?.length || 0}`);
-        if (results?.length > 0) {
-          enrichedSystem += formatSearchResults(results, 'private');
-        } else {
-          enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ ПОНУДИ ═══\nНе се пронајдени огласи. НЕ ИЗМИСЛУВАЈ понуди, цени или контакти. Кажи директно дека нема резултати и препорачај: pazar3.mk · biznis.mk · oglasi.mk\n═══════════════════════════\n`;
+
+      // За business — само ако има клучни зборови за приватни понуди
+      const isPrivateOffer = intent === 'business' && ['понуда','оглас','изведба','приватна','услуга','фасад','кров','градеж',
+        'ponuda','oglas','izvedba','privatna','usluga','fasad','krov','gradez','raboti',
+        'construction','fasada','krovna','ponude','usluge'].some(k => lower.includes(k));
+
+      // Само пребарувај ако: tender, grant, или business со приватни зборови
+      if (intent !== 'business' || isPrivateOffer) {
+        const query = buildSearchQuery(userText, intent);
+        console.log(`[Serper] intent:${intent} | query: ${query}`);
+        if (query) {
+          const results = await searchSerper(query, serperKey);
+          console.log(`[Serper] results: ${results?.length || 0}`);
+          if (results?.length > 0) {
+            enrichedSystem += formatSearchResults(results, intent);
+          } else {
+            const noResultMsg = intent === 'grant'
+              ? `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nНема активни повици. Препорачај: fitr.mk · funding.mk · ipard.gov.mk · mk.undp.org\n═══\n`
+              : intent === 'tender'
+              ? `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nНема тендери за ова барање. Препорачај: e-nabavki.gov.mk · portal.ujn.gov.rs · ted.europa.eu\n═══\n`
+              : `\n\n═══ НЕМА РЕАЛНИ ПОНУДИ ═══\nНема огласи. НЕ ИЗМИСЛУВАЈ. Препорачај: pazar3.mk · biznis.mk · oglasi.mk\n═══\n`;
+            enrichedSystem += noResultMsg;
+          }
         }
       }
     }
