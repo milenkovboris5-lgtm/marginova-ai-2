@@ -119,9 +119,10 @@ const INTENT_PATTERNS = {
     'horizon','erasmus','undp','usaid','wbif','fitr'
   ],
   legal: [
-    'договор','право','gdpr','закон','трудово','даноци',
-    'ugovor','pravo','zakon','radno','porezi','contract',
-    'legal','recht','gesetz','hukuk','prawo'
+    'договор','право','gdpr','закон','трудово','даноци','правни','регулатив',
+    'ugovor','pravo','zakon','radno','porezi','pravni','regulativ','aplikacija pravna',
+    'contract','legal','recht','gesetz','hukuk','prawo',
+    'licenca','dozvola','registracija','osnivanje','statut'
   ],
   analysis: [
     'анализа','споредба','swot','извештај','проекција',
