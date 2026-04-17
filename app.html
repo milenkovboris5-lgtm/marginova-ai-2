@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Marginova.AI — Business COO</title>
 <meta name="description" content="Business COO — AI советник за бизнис стратегија, тендери, грантови и правни прашања.">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#C9A84C">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="/logo-main.png">
+<meta name="mobile-web-app-capable" content="yes">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -313,12 +310,21 @@ nav::after{
 #msg-input{
   flex:1;background:rgba(255,255,255,0.03);
   border:1px solid var(--border);border-radius:14px;
-  padding:0.58rem 0.9rem;color:var(--text);font-size:0.82rem;
+  padding:0.75rem 0.9rem;color:var(--text);font-size:0.84rem;
   font-family:'DM Sans',sans-serif;resize:none;outline:none;
-  line-height:1.5;min-height:38px;max-height:110px;transition:all 0.2s;
+  line-height:1.6;min-height:60px;max-height:160px;transition:all 0.2s;
+  width:100%;
 }
 #msg-input:focus{border-color:var(--border2);box-shadow:0 0 0 3px var(--glow2);}
 #msg-input::placeholder{color:var(--muted);}
+.attach-btn{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;transition:all 0.2s;
+}
+.attach-btn:hover{border-color:var(--border2);background:rgba(201,168,76,0.08);}
 .send-btn{
   width:38px;height:38px;border-radius:50%;flex-shrink:0;
   background:linear-gradient(135deg,rgba(201,168,76,0.9),rgba(201,168,76,0.6));
@@ -567,25 +573,7 @@ nav::after{
       <div class="welcome-icon">⚡</div>
       <div class="welcome-title">Business <em>COO</em></div>
       <div class="welcome-desc" id="welcome-desc">
-        Твојот AI советник за бизнис стратегија, тендери, грантови и правни прашања. Еден мозок, пет режими.
-      </div>
-      <div class="welcome-modes">
-        <div class="mode-card" onclick="quickStart('Помогни ми со бизнис план')">
-          <div class="mode-icon">💼</div>
-          <div class="mode-text"><b>Бизнис</b>Стратегија, SWOT, финансии</div>
-        </div>
-        <div class="mode-card" onclick="quickStart('Пребарај активни тендери')">
-          <div class="mode-icon">📋</div>
-          <div class="mode-text"><b>Тендери</b>Набавки, B2B, лицитации</div>
-        </div>
-        <div class="mode-card" onclick="quickStart('Најди EU грантови за мојот бизнис')">
-          <div class="mode-icon">🇪🇺</div>
-          <div class="mode-text"><b>Грантови</b>EU фондови, IPARD, UNDP</div>
-        </div>
-        <div class="mode-card" onclick="quickStart('Анализирај правните ризици на мојот договор')">
-          <div class="mode-icon">⚖️</div>
-          <div class="mode-text"><b>Правно</b>Договори, GDPR, ризици</div>
-        </div>
+        Твојот AI советник за бизнис стратегија, тендери, грантови и правни прашања.
       </div>
       <button class="welcome-start" onclick="startChat()">Започни разговор →</button>
     </div>
@@ -593,14 +581,30 @@ nav::after{
     <!-- MESSAGES -->
     <div class="messages" id="messages" style="display:none;"></div>
 
+    <!-- DRAG OVERLAY -->
+    <div id="drag-overlay" style="display:none;position:absolute;inset:0;background:rgba(201,168,76,0.06);border:2px dashed rgba(201,168,76,0.5);border-radius:12px;z-index:50;align-items:center;justify-content:center;pointer-events:none;">
+      <div style="text-align:center;color:var(--gold);">
+        <div style="font-size:2rem;margin-bottom:0.4rem;">📎</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;">Спушти документ или слика</div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">JPG · PNG · PDF</div>
+      </div>
+    </div>
+
     <!-- INPUT -->
     <div class="input-area" id="input-area" style="display:none;">
-      <textarea id="msg-input" placeholder="Постави прашање..." rows="1"></textarea>
-      <button class="send-btn" id="send-btn" onclick="sendMsg()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-      </button>
+      <input type="file" id="file-input" accept="image/*,.pdf" style="display:none;" onchange="handleFileUpload(this)"/>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+        <div id="file-preview" style="display:none;padding:4px 0;"></div>
+        <textarea id="msg-input" placeholder="Постави прашање..." rows="2"></textarea>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Прикачи документ или слика">📎</button>
+        <button class="send-btn" id="send-btn" onclick="sendMsg()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
   </div>
@@ -904,12 +908,13 @@ function removeTyping() { const t = document.getElementById('typing'); if (t) t.
 async function sendMsg() {
   const inp = document.getElementById('msg-input');
   const text = inp.value.trim();
-  if (!text) return;
+  if (!text && !currentFile) return;
   inp.value = ''; inp.style.height = 'auto';
   document.getElementById('send-btn').disabled = true;
 
-  addMsg('user', text);
-  chatHistory.push({ role: 'user', content: text });
+  if (text) addMsg('user', text);
+  if (currentFile) addMsg('user', currentFile.name ? `📎 ${currentFile.name}` : '📎 Документ');
+  chatHistory.push({ role: 'user', content: text || '[Документ/слика]' });
 
   const ok = await deductToken();
   if (!ok) { document.getElementById('send-btn').disabled = false; return; }
@@ -922,10 +927,14 @@ async function sendMsg() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: chatHistory.slice(-20),
-        lang: lang
+        messages: chatHistory.slice(-10),
+        lang: lang,
+        image: currentFile?.data || null,
+        imageType: currentFile?.type || null,
+        imageText: text || 'Анализирај го овој документ или слика.'
       })
     });
+    removeFile();
     const data = await res.json();
     removeTyping();
 
@@ -1046,7 +1055,66 @@ window.addEventListener('DOMContentLoaded', async function () {
   });
 });
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+// ═══ FILE UPLOAD ═══
+let currentFile = null;
+
+function handleFileUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    currentFile = { data: e.target.result.split(',')[1], type: file.type, name: file.name };
+    const preview = document.getElementById('file-preview');
+    preview.style.display = 'block';
+    const isImg = file.type.startsWith('image/');
+    preview.innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(201,168,76,0.08);border:1px solid var(--border2);border-radius:8px;font-size:0.72rem;">
+      ${isImg ? `<img src="${e.target.result}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">` : '<span>📄</span>'}
+      <span style="color:var(--gold);">${file.name.slice(0,30)}</span>
+      <button onclick="removeFile()" style="background:none;border:none;cursor:pointer;color:var(--muted);margin-left:auto;">✕</button>
+    </div>`;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function removeFile() {
+  currentFile = null;
+  const preview = document.getElementById('file-preview');
+  preview.style.display = 'none';
+  preview.innerHTML = '';
+}
+
+// ═══ DRAG & DROP ═══
+(function() {
+  const chatArea = document.querySelector('.chat-area');
+  const overlay = document.getElementById('drag-overlay');
+  if (!chatArea || !overlay) return;
+  let counter = 0;
+  chatArea.addEventListener('dragenter', e => {
+    e.preventDefault();
+    if (document.getElementById('input-area').style.display === 'none') return;
+    counter++;
+    overlay.style.display = 'flex';
+  });
+  chatArea.addEventListener('dragleave', () => {
+    counter--;
+    if (counter <= 0) { counter = 0; overlay.style.display = 'none'; }
+  });
+  chatArea.addEventListener('dragover', e => e.preventDefault());
+  chatArea.addEventListener('drop', e => {
+    e.preventDefault();
+    counter = 0;
+    overlay.style.display = 'none';
+    if (document.getElementById('input-area').style.display === 'none') return;
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      showToast('⚠️ Само слики и PDF се поддржани');
+      return;
+    }
+    handleFileUpload({ files: [file] });
+  });
+})();
 </script>
 </body>
 </html>
