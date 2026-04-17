@@ -197,8 +197,20 @@ function buildSearchQuery(text, intent) {
     return `${keywords} grant fond finansiranje ${grantSite}`;
   }
 
-  return null;
-}
+  if (intent === 'business') {
+    // Приватни понуди — pazar3, oglasi, halo
+    let site = 'site:pazar3.mk OR site:oglasi.mk OR site:halo.rs OR site:njuskalo.hr';
+    for (const [key, val] of Object.entries({
+      'македон': 'site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk',
+      'makedon': 'site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk',
+      'srbij': 'site:halo.rs OR site:oglasi.rs',
+      'србиј': 'site:halo.rs OR site:oglasi.rs',
+      'hrvat': 'site:njuskalo.hr OR site:oglasnik.hr',
+    })) {
+      if (lower.includes(key)) { site = val; break; }
+    }
+    return `${keywords} ${site}`;
+  }
 
 async function searchSerper(query, apiKey) {
   if (!query || !apiKey) return null;
@@ -354,7 +366,8 @@ Ako search ne nashol aktivni povici → kazi: "Nema aktivni povici momentalno. S
 — Sekoj cekor: KOJ + STO + DO KOGA + KOLKU CHINI
 — Top 3 rizici i top 3 moznosti
 — Zavrsuvaj so: Prviot cekor utrede: [konkretna akcija]
-— Za privatni ponudi prebaraj: pazar3.mk, biznis.mk, oglasi.mk, halo.rs, njuskalo.hr, linkedin.com`
+— Za privatni ponudi: prикажи SAMO realni rezultati od search so tocni linkovi
+— NIKOGASH ne izmisluvaj firmi, ceni, linkovi — ako nemas realni rezultati kazi toa direktno`
   };
 
   return `Ti si Business COO — specialist koj DEJSTVUVA, ne analizira i ne se opravduva.
@@ -434,7 +447,7 @@ module.exports = async function handler(req, res) {
       enrichedSystem += `\n\n${memory.summary}`;
     }
 
-    if (serperKey && (intent === 'tender' || intent === 'grant')) {
+    if (serperKey && (intent === 'tender' || intent === 'grant' || intent === 'business')) {
       const query = buildSearchQuery(userText, intent);
       console.log(`[Serper] query: ${query}`);
       if (query) {
@@ -444,6 +457,25 @@ module.exports = async function handler(req, res) {
           enrichedSystem += formatSearchResults(results, intent);
         } else {
           enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nНе се пронајдени активни огласи. Кажи му на корисникот и препорачај официјални портали.\n═══════════════════════════\n`;
+        }
+      }
+    }
+
+    // Serper за приватни понуди во business intent
+    if (serperKey && intent === 'business') {
+      const lower = userText.toLowerCase();
+      const isPrivateOffer = ['понуда','оглас','изведба','приватна','услуга','фасад','кров','градеж',
+        'ponuda','oglas','izvedba','privatna','usluga','fasad','krov','gradez','raboti'].some(k => lower.includes(k));
+      if (isPrivateOffer) {
+        const keywords = extractKeywords(userText);
+        const query = `${keywords} site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk OR site:halo.rs OR site:njuskalo.hr`;
+        console.log(`[Serper private] query: ${query}`);
+        const results = await searchSerper(query, serperKey);
+        console.log(`[Serper private] results: ${results?.length || 0}`);
+        if (results?.length > 0) {
+          enrichedSystem += formatSearchResults(results, 'private');
+        } else {
+          enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ ПОНУДИ ═══\nНе се пронајдени огласи. НЕ ИЗМИСЛУВАЈ понуди, цени или контакти. Кажи директно дека нема резултати и препорачај: pazar3.mk · biznis.mk · oglasi.mk\n═══════════════════════════\n`;
         }
       }
     }
