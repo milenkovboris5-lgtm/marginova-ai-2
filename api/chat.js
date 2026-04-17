@@ -45,29 +45,131 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
 const SUPA_URL = process.env.SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-async function loadMemory(userId, avatar) {
+// Supabase REST helper
+async function supabaseRequest(path, options = {}) {
+  return fetchWithTimeout(
+    `${SUPA_URL}/rest/v1/${path}`,
+    {
+      ...options,
+      headers: {
+        apikey: SUPA_KEY,
+        Authorization: `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+        ...(options.headers || {})
+      }
+    },
+    5000
+  );
+}
+
+// ═══ USER QUOTA (Supabase) ═══
+const PLAN_LIMITS = { free: 20, starter: 500, pro: 2000, business: -1 };
+
+async function checkUserQuota(userId) {
+  if (!SUPA_URL || !SUPA_KEY || !userId) return { allowed: true, remaining: 999 };
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const res = await supabaseRequest(
+      `profiles?user_id=eq.${userId}&select=plan,daily_msgs,last_msg_date`,
+      { headers: { Prefer: '' } }
+    );
+    if (!res.ok) return { allowed: true, remaining: 999 };
+    const rows = await res.json();
+    const profile = rows?.[0];
+    if (!profile) return { allowed: true, remaining: 20 };
+
+    const plan = profile.plan || 'free';
+    const limit = PLAN_LIMITS[plan] ?? 20;
+    if (limit === -1) return { allowed: true, remaining: -1 }; // unlimited
+
+    const used = profile.last_msg_date === today ? (profile.daily_msgs || 0) : 0;
+    const remaining = Math.max(0, limit - used);
+
+    return { allowed: remaining > 0, remaining, plan, used };
+  } catch (e) {
+    console.warn('Quota check error:', e.message);
+    return { allowed: true, remaining: 999 };
+  }
+}
+
+async function incrementUserQuota(userId) {
+  if (!SUPA_URL || !SUPA_KEY || !userId) return;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    // Прво земи тековна состојба
+    const res = await supabaseRequest(
+      `profiles?user_id=eq.${userId}&select=daily_msgs,last_msg_date`,
+      { headers: { Prefer: '' } }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    const profile = rows?.[0];
+    const currentUsed = profile?.last_msg_date === today ? (profile?.daily_msgs || 0) : 0;
+
+    await supabaseRequest(
+      `profiles?user_id=eq.${userId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ daily_msgs: currentUsed + 1, last_msg_date: today })
+      }
+    );
+  } catch (e) {
+    console.warn('Quota increment error:', e.message);
+  }
+}
+
+// ═══ GEMINI SUMMARIZATION ═══
+async function generateSummary(messages, apiKey) {
+  try {
+    const text = messages.map(m => `${m.role}: ${m.message}`).join('\n');
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const res = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `Summarize this business conversation in 3-5 sentences. Keep: key decisions, business context, specific numbers/deadlines mentioned, what was agreed.\n\n${text.slice(0, 3000)}` }] }],
+        generationConfig: { maxOutputTokens: 250, temperature: 0.2 }
+      })
+    }, 8000);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch (e) {
+    console.warn('Summary error:', e.message);
+    return null;
+  }
+}
+
+// ═══ MEMORY ═══
+async function loadMemory(userId, avatar, apiKey) {
   if (!SUPA_URL || !SUPA_KEY || !userId) return { summary: null, recent: [] };
   try {
-    const res = await fetchWithTimeout(
-      `${SUPA_URL}/rest/v1/conversations?user_id=eq.${userId}&avatar=eq.${avatar}&order=created_at.desc&limit=20`,
-      { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } },
-      5000
+    const res = await supabaseRequest(
+      `conversations?user_id=eq.${userId}&avatar=eq.${avatar}&order=created_at.desc&limit=30`,
+      { headers: { Prefer: '' } }
     );
     if (!res.ok) return { summary: null, recent: [] };
     const rows = await res.json();
     if (!rows || rows.length === 0) return { summary: null, recent: [] };
 
-    // Last 3 messages за context
+    // Последни 6 пораки за директен context
     const recent = rows.slice(0, 6).reverse().map(r => ({
       role: r.role === 'assistant' ? 'assistant' : 'user',
       content: r.message
     }));
 
-    // Summary од постарите ако има повеќе од 6
+    // Постари пораки → Real Gemini summary
     let summary = null;
     if (rows.length > 6) {
-      const older = rows.slice(6).reverse().map(r => `${r.role}: ${r.message}`).join('\n');
-      summary = `Претходен разговор (резиме): ${older.slice(0, 500)}`;
+      const older = rows.slice(6).reverse();
+      const sumText = await generateSummary(older, apiKey);
+      if (sumText) {
+        summary = `Претходен контекст (резиме): ${sumText}`;
+      } else {
+        // Fallback на truncate ако Gemini не одговори
+        summary = `Претходен разговор: ${older.map(r => `${r.role}: ${r.message}`).join(' ').slice(0, 400)}`;
+      }
     }
 
     return { summary, recent };
@@ -80,26 +182,16 @@ async function loadMemory(userId, avatar) {
 async function saveMemory(userId, avatar, role, message) {
   if (!SUPA_URL || !SUPA_KEY || !userId) return;
   try {
-    await fetchWithTimeout(
-      `${SUPA_URL}/rest/v1/conversations`,
-      {
-        method: 'POST',
-        headers: {
-          apikey: SUPA_KEY,
-          Authorization: `Bearer ${SUPA_KEY}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          avatar,
-          role,
-          message: message.slice(0, 2000), // max 2000 chars per message
-          created_at: new Date().toISOString()
-        })
-      },
-      5000
-    );
+    await supabaseRequest('conversations', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: userId,
+        avatar,
+        role,
+        message: message.slice(0, 2000),
+        created_at: new Date().toISOString()
+      })
+    });
   } catch (e) {
     console.warn('Memory save error:', e.message);
   }
@@ -452,10 +544,32 @@ module.exports = async function handler(req, res) {
     const hasImage = !!body.image;
     const userId = body.userId || null;
     const avatar = 'cooai';
+
+    // Anti-spam
+    const rawText = body.messages?.[body.messages.length - 1]?.content || '';
+    if (rawText.length > 2000) {
+      return res.status(400).json({ error: { message: 'Пораката е предолга. Максимум 2000 знаци.' } });
+    }
+    if (!userId && limit.remaining < DAILY_LIMIT - 10) {
+      return res.status(429).json({ error: { message: 'Потребна е регистрација за повеќе пораки.' } });
+    }
+
+    // ═══ USER QUOTA CHECK (Supabase) ═══
+    if (userId) {
+      const quota = await checkUserQuota(userId);
+      if (!quota.allowed) {
+        return res.status(429).json({
+          error: { message: 'Го достигнавте дневниот лимит. Надградете го планот за повеќе пораки.' },
+          quota_exceeded: true
+        });
+      }
+      console.log(`[Quota] plan:${quota.plan} | remaining:${quota.remaining}`);
+    }
+
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    // Вчитај Supabase memory
-    const memory = await loadMemory(userId, avatar);
+    // Memory со real Gemini summarization
+    const memory = await loadMemory(userId, avatar, apiKey);
 
     // Комбинирај: memory.recent + нови пораки од frontend
     const frontendMessages = (body.messages || []).slice(-4).map(m => ({
@@ -530,10 +644,13 @@ module.exports = async function handler(req, res) {
       apiKey
     );
 
-    // Зачувај во Supabase memory
+    // Зачувај memory + зголеми quota
     if (userId) {
-      await saveMemory(userId, avatar, 'user', userText);
-      await saveMemory(userId, avatar, 'assistant', text);
+      await Promise.all([
+        saveMemory(userId, avatar, 'user', userText),
+        saveMemory(userId, avatar, 'assistant', text),
+        incrementUserQuota(userId)
+      ]);
     }
 
     return res.status(200).json({
