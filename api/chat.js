@@ -1,43 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
 // Business COO — Gemini Flash 2.5 + Serper
-// VERZIJA 3.0 — POPRAVENA (retry, JWT, transaction, bugfixes)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const { createClient } = require('@supabase/supabase-js');
-const pLimit = require('p-limit'); // npm install p-limit
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// KONSTANTI I GLOBALNI PROMENLIVI
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 
 const DAILY_LIMIT = 200;
 const rateLimitStore = {};
-const CONCURRENT_LIMIT = 5; // max 5 paralelni zahtevi po instanca
-const limit = pLimit(CONCURRENT_LIMIT);
 
-const PLAN_LIMITS = { free: 20, starter: 500, pro: 2000, business: -1 };
-
-// Cleanup interval za rate limit (sekoj saat)
-setInterval(() => {
-  const now = Date.now();
-  for (const k in rateLimitStore) {
-    if (rateLimitStore[k].resetAt < now) delete rateLimitStore[k];
-  }
-}, 60 * 60 * 1000);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// HELPER FUNKCIJI
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { ...options, signal: controller.signal })
-    .finally(() => clearTimeout(timer));
-}
-
-// ═══ RATE LIMIT (IP based) ═══
+// ═══ RATE LIMIT ═══
 function getRateLimitKey(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
     || req.headers['x-real-ip']
@@ -49,17 +18,14 @@ function getRateLimitKey(req) {
 function checkRateLimit(req) {
   const key = getRateLimitKey(req);
   const now = Date.now();
-  
   for (const k in rateLimitStore) {
     if (rateLimitStore[k].resetAt < now) delete rateLimitStore[k];
   }
-  
   if (!rateLimitStore[key]) {
     const end = new Date();
     end.setHours(23, 59, 59, 999);
     rateLimitStore[key] = { count: 0, resetAt: end.getTime() };
   }
-  
   rateLimitStore[key].count += 1;
   return {
     allowed: rateLimitStore[key].count <= DAILY_LIMIT,
@@ -67,61 +33,46 @@ function checkRateLimit(req) {
   };
 }
 
-// ═══ SUPABASE KLIENT ═══
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
-
-// ═══ SUPABASE REQUEST SO RETRY (FIX 1) ═══
-async function supabaseRequest(path, options = {}, retries = 2) {
-  const url = `${process.env.SUPABASE_URL}/rest/v1/${path}`;
-  const headers = {
-    apikey: process.env.SUPABASE_SERVICE_KEY,
-    Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
-    'Content-Type': 'application/json',
-    ...(options.headers || {})
-  };
-
-  for (let i = 0; i <= retries; i++) {
-    try {
-      const res = await fetchWithTimeout(
-        url,
-        { ...options, headers },
-        i === retries ? 5000 : 4000
-      );
-      
-      if (res.ok || i === retries) return res;
-      await new Promise(r => setTimeout(r, 500 * (i + 1))); // eksponencijalan backoff
-    } catch (e) {
-      if (i === retries) throw e;
-      await new Promise(r => setTimeout(r, 500 * (i + 1)));
-    }
-  }
+// ═══ FETCH WITH TIMEOUT ═══
+function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
 }
 
-// ═══ JWT VERIFIKACIJA (FIX 4) ═══
-async function verifyUser(userId, authToken) {
-  if (!userId || !authToken) return false;
-  try {
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(authToken);
-    if (error || !user) return false;
-    return user.id === userId;
-  } catch (e) {
-    console.warn('JWT verification error:', e.message);
-    return false;
-  }
+// ═══ SUPABASE MEMORY ═══
+const SUPA_URL = process.env.SUPABASE_URL;
+const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+// Supabase REST helper
+async function supabaseRequest(path, options = {}) {
+  return fetchWithTimeout(
+    `${SUPA_URL}/rest/v1/${path}`,
+    {
+      ...options,
+      headers: {
+        apikey: SUPA_KEY,
+        Authorization: `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+        ...(options.headers || {})
+      }
+    },
+    5000
+  );
 }
 
-// ═══ USER QUOTA (SO RPC TRANSACTION — FIX 3) ═══
+// ═══ USER QUOTA (Supabase) ═══
+const PLAN_LIMITS = { free: 20, starter: 500, pro: 2000, business: -1 };
+
 async function checkUserQuota(userId) {
-  if (!userId) return { allowed: true, remaining: 999 };
+  if (!SUPA_URL || !SUPA_KEY || !userId) return { allowed: true, remaining: 999 };
   try {
     const today = new Date().toISOString().split('T')[0];
     const res = await supabaseRequest(
       `profiles?user_id=eq.${userId}&select=plan,daily_msgs,last_msg_date`,
-      { headers: { Prefer: 'return=representation' } }
+      { headers: { Prefer: '' } }
     );
     if (!res.ok) return { allowed: true, remaining: 999 };
     const rows = await res.json();
@@ -130,7 +81,7 @@ async function checkUserQuota(userId) {
 
     const plan = profile.plan || 'free';
     const limit = PLAN_LIMITS[plan] ?? 20;
-    if (limit === -1) return { allowed: true, remaining: -1 };
+    if (limit === -1) return { allowed: true, remaining: -1 }; // unlimited
 
     const used = profile.last_msg_date === today ? (profile.daily_msgs || 0) : 0;
     const remaining = Math.max(0, limit - used);
@@ -143,48 +94,33 @@ async function checkUserQuota(userId) {
 }
 
 async function incrementUserQuota(userId) {
-  if (!userId) return;
+  if (!SUPA_URL || !SUPA_KEY || !userId) return;
   try {
-    // Koristi RPC funkcija za atomic increment (treba da ja kreirate vo Supabase)
-    // CREATE OR REPLACE FUNCTION increment_user_quota(user_id_param UUID)
-    // RETURNS void AS $$
-    // DECLARE today TEXT := to_char(NOW(), 'YYYY-MM-DD');
-    // BEGIN
-    //   UPDATE profiles 
-    //   SET daily_msgs = daily_msgs + 1, last_msg_date = today 
-    //   WHERE user_id = user_id_param AND last_msg_date = today;
-    //   IF NOT FOUND THEN
-    //     UPDATE profiles 
-    //     SET daily_msgs = 1, last_msg_date = today 
-    //     WHERE user_id = user_id_param;
-    //   END IF;
-    // END;
-    // $$ LANGUAGE plpgsql;
-    
-    await supabaseRequest('rpc/increment_user_quota', {
-      method: 'POST',
-      body: JSON.stringify({ user_id_param: userId })
-    });
-  } catch (e) {
-    console.warn('Quota increment error:', e.message);
-    // Fallback: direkten update (neatomic, no podobro od nisto)
     const today = new Date().toISOString().split('T')[0];
+    // Прво земи тековна состојба
+    const res = await supabaseRequest(
+      `profiles?user_id=eq.${userId}&select=daily_msgs,last_msg_date`,
+      { headers: { Prefer: '' } }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    const profile = rows?.[0];
+    const currentUsed = profile?.last_msg_date === today ? (profile?.daily_msgs || 0) : 0;
+
     await supabaseRequest(
       `profiles?user_id=eq.${userId}`,
       {
         method: 'PATCH',
-        body: JSON.stringify({ 
-          daily_msgs: supabaseAdmin.rpc('increment', { row_id: userId, amount: 1 }),
-          last_msg_date: today 
-        })
+        body: JSON.stringify({ daily_msgs: currentUsed + 1, last_msg_date: today })
       }
     );
+  } catch (e) {
+    console.warn('Quota increment error:', e.message);
   }
 }
 
-// ═══ GEMINI SUMMARIZATION (POPRAVENA) ═══
+// ═══ GEMINI SUMMARIZATION ═══
 async function generateSummary(messages, apiKey) {
-  if (!messages || messages.length === 0) return null;
   try {
     const text = messages.map(m => `${m.role}: ${m.message}`).join('\n');
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -205,37 +141,34 @@ async function generateSummary(messages, apiKey) {
   }
 }
 
-// ═══ MEMORY (POPRAVENA — FIX 1b) ═══
+// ═══ MEMORY ═══
 async function loadMemory(userId, avatar, apiKey) {
-  if (!userId) return { summary: null, recent: [] };
+  if (!SUPA_URL || !SUPA_KEY || !userId) return { summary: null, recent: [] };
   try {
     const res = await supabaseRequest(
-      `conversations?user_id=eq.${userId}&avatar=eq.${avatar}&order=created_at.desc&limit=20`,
-      { headers: { Prefer: 'return=representation' } }
+      `conversations?user_id=eq.${userId}&avatar=eq.${avatar}&order=created_at.desc&limit=30`,
+      { headers: { Prefer: '' } }
     );
     if (!res.ok) return { summary: null, recent: [] };
     const rows = await res.json();
     if (!rows || rows.length === 0) return { summary: null, recent: [] };
 
-    // Posledni 6 poraki za direkten context (najnovite, pravilen redosled)
+    // Последни 6 пораки за директен context
     const recent = rows.slice(0, 6).reverse().map(r => ({
       role: r.role === 'assistant' ? 'assistant' : 'user',
       content: r.message
     }));
 
-    // PoStari poraki → Real Gemini summary (POPRAVENO)
+    // Постари пораки → Real Gemini summary
     let summary = null;
     if (rows.length > 6) {
-      const olderMessages = rows.slice(6).reverse().map(r => ({
-        role: r.role,
-        message: r.message
-      }));
-      const sumText = await generateSummary(olderMessages, apiKey);
+      const older = rows.slice(6).reverse();
+      const sumText = await generateSummary(older, apiKey);
       if (sumText) {
         summary = `Претходен контекст (резиме): ${sumText}`;
       } else {
-        // Fallback na truncate
-        summary = `Претходен разговор: ${olderMessages.map(r => `${r.role}: ${r.message}`).join(' ').slice(0, 400)}`;
+        // Fallback на truncate ако Gemini не одговори
+        summary = `Претходен разговор: ${older.map(r => `${r.role}: ${r.message}`).join(' ').slice(0, 400)}`;
       }
     }
 
@@ -247,7 +180,7 @@ async function loadMemory(userId, avatar, apiKey) {
 }
 
 async function saveMemory(userId, avatar, role, message) {
-  if (!userId) return;
+  if (!SUPA_URL || !SUPA_KEY || !userId) return;
   try {
     await supabaseRequest('conversations', {
       method: 'POST',
@@ -264,54 +197,56 @@ async function saveMemory(userId, avatar, role, message) {
   }
 }
 
-// ═══ HYBRID INTENT CLASSIFIER (POPRAVEN — FIX 9) ═══
+
 const INTENT_PATTERNS = {
   tender: [
     'тендер','набавка','оглас','конкурс','јавна набавка',
-    'tender','nabavka','oglas','javna nabavka','procurement'
+    'tender','nabavka','oglas','javna nabavka','procurement',
+    'ausschreibung','ihale','przetarg','appalto'
   ],
   grant: [
-    'грант','фонд','ipard','ipa','eu фонд','финансирање',
-    'grant','grantovi','fond','fondovi','eu grant'
+    'грант','фонд','ipard','ipa','eu фонд','финансирање','финансиска поддршка',
+    'grant','grantovi','fond','fondovi','finansiranje','finansiska','subsidy','podrska',
+    'förderung','hibe','dotacja','subvencija','eu grant','eu fond',
+    'horizon','erasmus','undp','usaid','wbif','fitr'
   ],
   legal: [
-    'договор','право','gdpr','закон','трудово','даноци','правни',
-    'ugovor','pravo','zakon','radno','porezi','pravni','contract','legal'
+    'договор','право','gdpr','закон','трудово','даноци','правни','регулатив',
+    'ugovor','pravo','zakon','radno','porezi','pravni','regulativ','aplikacija pravna',
+    'contract','legal','recht','gesetz','hukuk','prawo',
+    'licenca','dozvola','registracija','osnivanje','statut'
   ],
   analysis: [
     'анализа','споредба','swot','извештај','проекција',
-    'analiza','swot','izvestaj','projekcija','analysis'
+    'analiza','swot','izvestaj','projekcija','analysis',
+    'analyse','analiz','analiza'
   ],
   business: [
     'бизнис','стратегија','план','раст','партнерство','маркетинг',
-    'biznis','strategija','plan','rast','partnerstvo','marketing'
+    'biznis','strategija','plan','rast','partnerstvo','marketing',
+    'business','strategie','strategi','iş','biznes'
   ]
 };
+
+// ═══ HYBRID INTENT CLASSIFIER ═══
+// Прво keyword matching (0ms, бесплатно)
+// Ако score = 0 → LLM fallback (само кога е нејасно)
 
 function classifyIntent(text) {
   const lower = text.toLowerCase();
   const scores = {};
-  
   for (const [intent, keywords] of Object.entries(INTENT_PATTERNS)) {
     scores[intent] = keywords.filter(k => lower.includes(k)).length;
   }
-  
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const top = sorted[0];
   const second = sorted[1];
-  
-  // Proveri dali e negacija ("nemam tender" → ne e tender)
-  const hasNegation = /\b(не|ne|nema|nemaм|bez|without|no)\b/i.test(lower);
-  if (hasNegation && top[0] !== 'business') {
-    // Ako kaze "nemam tender", ne e tender intent
-    return { intent: 'business', confident: false };
-  }
-  
-  // Jasen winner
+
+  // Јасен winner — врати веднаш
   if (top[1] >= 2) return { intent: top[0], confident: true };
   if (top[1] === 1 && second[1] === 0) return { intent: top[0], confident: true };
-  
-  // Nema match ili tie → treba LLM
+
+  // Нема match или tie — потребен LLM
   return { intent: 'business', confident: false };
 }
 
@@ -335,31 +270,28 @@ async function classifyWithLLM(text, apiKey) {
   }
 }
 
-// ═══ SERPER SEARCH (POPRAVEN — FIX 5, 10) ═══
+// ═══ SERPER SEARCH ═══
+
+// FIX 1: Extract keywords od userText za podobri query
 function extractKeywords(text) {
   const stopWords = new Set([
     'и','или','на','во','за','од','со','до','по','при','над','под','меѓу','дека','дали',
     'the','and','or','for','in','of','to','a','an','is','are','was','were','be','been',
-    'i','ili','za','od','sa','da','je','su','se','na','u','o','po'
+    'i','ili','za','od','sa','da','je','su','se','na','u','o','po',
+    'und','oder','für','in','von','zu','die','der','das'
   ]);
-  
-  const words = text.toLowerCase()
+  return text.toLowerCase()
     .replace(/[^\w\s\u0400-\u04FF]/g, ' ')
     .split(/\s+/)
-    .filter(w => w.length > 2 && !stopWords.has(w));
-  
-  // Kirilica posebno
-  const cyrillic = words.filter(w => /[а-яА-Я]/.test(w));
-  const latin = words.filter(w => /[a-z]/.test(w));
-  
-  const result = [...cyrillic, ...latin].slice(0, 6);
-  return result.length > 0 ? result.join(' ') : text.slice(0, 30);
+    .filter(w => w.length > 2 && !stopWords.has(w))
+    .slice(0, 6)
+    .join(' ');
 }
 
 function buildSearchQuery(text, intent) {
   const lower = text.toLowerCase();
   const keywords = extractKeywords(text);
-  
+
   const countryMap = {
     'македон': 'site:e-nabavki.gov.mk',
     'makedon': 'site:e-nabavki.gov.mk',
@@ -373,38 +305,37 @@ function buildSearchQuery(text, intent) {
     'бугар': 'site:app.eop.bg',
     'eu': 'site:ted.europa.eu',
   };
-  
-  let countrySite = '';
-  for (const [key, val] of Object.entries(countryMap)) {
-    if (lower.includes(key)) { countrySite = val; break; }
-  }
-  
+
   if (intent === 'tender') {
-    const baseSite = countrySite || 'site:e-nabavki.gov.mk OR site:portal.ujn.gov.rs OR site:ted.europa.eu';
-    return `${keywords} tender nabavka ${baseSite}`;
-  }
-  
-  if (intent === 'grant') {
-    // Dinamicki query spored klučni zborovi (FIX 5)
-    let grantFocus = '';
-    if (lower.includes('ipard')) grantFocus = 'IPARD rural development';
-    else if (lower.includes('fitr')) grantFocus = 'FITR innovation';
-    else if (lower.includes('horizon')) grantFocus = 'Horizon Europe research';
-    else grantFocus = 'EU grant business';
-    
-    const baseSite = countrySite || 'site:ec.europa.eu OR site:fitr.mk OR site:ipard.gov.mk';
-    return `${keywords} ${grantFocus} ${baseSite}`;
-  }
-  
-  if (intent === 'business') {
-    let site = countrySite || 'site:pazar3.mk OR site:oglasi.mk';
-    // Ako ima specificni klučni zborovi, dodaj gi (FIX 10)
-    if (keywords && keywords.length > 0) {
-      return `${keywords} ${site}`;
+    let site = 'site:e-nabavki.gov.mk OR site:portal.ujn.gov.rs OR site:ted.europa.eu';
+    for (const [key, val] of Object.entries(countryMap)) {
+      if (lower.includes(key)) { site = val; break; }
     }
-    return site;
+    // FIX 1: Користи keywords наместо генеричко "tender javna nabavka"
+    return `${keywords} tender nabavka ${site}`;
   }
-  
+
+  if (intent === 'grant') {
+    // FIX 1: Додај keywords за поконкретни резултати
+    let grantSite = 'site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu OR site:ipard.gov.mk OR site:fitr.mk OR site:funding.mk';
+    return `${keywords} grant fond finansiranje ${grantSite}`;
+  }
+
+  if (intent === 'business') {
+    // Приватни понуди — pazar3, oglasi, halo
+    let site = 'site:pazar3.mk OR site:oglasi.mk OR site:halo.rs OR site:njuskalo.hr';
+    for (const [key, val] of Object.entries({
+      'македон': 'site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk',
+      'makedon': 'site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk',
+      'srbij': 'site:halo.rs OR site:oglasi.rs',
+      'србиј': 'site:halo.rs OR site:oglasi.rs',
+      'hrvat': 'site:njuskalo.hr OR site:oglasnik.hr',
+    })) {
+      if (lower.includes(key)) { site = val; break; }
+    }
+    return `${keywords} ${site}`;
+  }
+
   return null;
 }
 
@@ -414,6 +345,7 @@ async function searchSerper(query, apiKey) {
     const res = await fetchWithTimeout('https://google.serper.dev/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-KEY': apiKey },
+      // FIX 2: Барај само 5, земи само 3
       body: JSON.stringify({ q: query, num: 5, gl: 'mk' }),
     }, 8000);
     if (!res.ok) return null;
@@ -429,23 +361,16 @@ async function searchSerper(query, apiKey) {
   }
 }
 
+// FIX 2: Summary наместо raw — пократок prompt
 function formatSearchResults(results, intent) {
   if (!results || results.length === 0) return '';
   const today = new Date().toLocaleDateString('mk-MK', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const label = intent === 'grant' ? 'ГРАНТОВИ' : (intent === 'business' ? 'ПРИВАТНИ ПОНУДИ' : 'ТЕНДЕРИ');
+  const label = intent === 'grant' ? 'ГРАНТОВИ' : 'ТЕНДЕРИ';
   let ctx = `\n\n═══ LIVE РЕЗУЛТАТИ — ${label} — ${today} ═══\n`;
   ctx += `Прикажи САМО овие резултати со точните линкови. НЕ измислувај.\n\n`;
-  
   results.forEach((r, i) => {
-    // Popraveno: ne seče usred reči (FIX 6)
-    let snippet = r.snippet || '';
-    if (snippet.length > 100) {
-      snippet = snippet.slice(0, 97);
-      const lastSpace = snippet.lastIndexOf(' ');
-      if (lastSpace > 0) snippet = snippet.slice(0, lastSpace);
-      snippet += '...';
-    }
-    
+    // Summary: само наслов + клучен дел од snippet (max 100 chars) + линк
+    const snippet = r.snippet ? r.snippet.slice(0, 100) + (r.snippet.length > 100 ? '...' : '') : '';
     ctx += `${i + 1}. **${r.title}**\n`;
     if (r.date) ctx += `   Датум: ${r.date}\n`;
     if (snippet) ctx += `   ${snippet}\n`;
@@ -455,49 +380,48 @@ function formatSearchResults(results, intent) {
   return ctx;
 }
 
-// ═══ GEMINI CALL (POPRAVEN — FIX 7) ═══
+// ═══ GEMINI CALL ═══
 async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-  
-  let contents = messages.map(m => ({
+
+  const contents = messages.map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: String(m.content || '') }]
   }));
-  
-  // Popraveno: ne modificiraj originalna niza (FIX 7)
+
   if (hasImage && imageData) {
     const text = imageText || 'Analyze this carefully.';
-    const newContents = contents.slice(0, -1);
-    newContents.push({
+    contents.pop();
+    contents.push({
       role: 'user',
       parts: [
         { inline_data: { mime_type: imageType || 'image/jpeg', data: imageData } },
         { text }
       ]
     });
-    contents = newContents;
   }
-  
+
+  // FIX 3: Без Google Grounding — само Serper за search
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: { maxOutputTokens: 2000, temperature: 0.5 }
+    generationConfig: { maxOutputTokens: 3000, temperature: 0.5 }
   };
-  
+
   const res = await fetchWithTimeout(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
-  }, 20000); // smaneto od 25s na 20s
-  
+  }, 25000);
+
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Gemini error ${res.status}: ${err.slice(0, 200)}`);
   }
-  
+
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
-  
+
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
   return text;
 }
@@ -523,58 +447,58 @@ function buildSystemPrompt(intent, lang, todayStr) {
     tr: 'Türkçe', pl: 'polski'
   };
   const langName = langNames[lang] || 'English';
-  
-  return `Ti si Business COO — iskusen sovetnik koj razbira sto korisnikot NAVISTINA bara.
 
-JAZIK: SAMO ${langName}. Denes e ${todayStr}.
+  return `Ti si Business COO — iskusen sovetnik koj razbira sto korisnikot NAVISTINA bara, ne samo sto napisa.
 
-KRITICNO: Imam LIVE SEARCH. Ako ima rezultati vo kontekstot, prikazi gi. Ako nema, daj KONKRETNA ALTERNATIVA.
+JAZIK: SAMO ${langName}. Apsolutno. Denes e ${todayStr}.
+
+KRITICNO: Imash LIVE SEARCH — sekoj pat koga korisnikot bara ponuda, tender, grant ili oglas, sistemot automatski prebaruva i ti gi dava rezultatite. NIKOGASH ne kazuvash "ne mozam da prebaruvam" — rezultatite se vec injektirani vo tvojot kontekst pred da odgovoris. Ako rezultatite velat "NEMA" — toa e realno, no togash davaj KONKRETNA ALTERNATIVA, ne lista od portali.
+
+═══ KAK RAZMISLUVAS ═══
+
+Pred da odgovoris, razbiraj tri raboti:
+1. STO bara (bukvalno)
+2. ZOSTO bara (namera — da najde klient, da aplicira, da reši problem)
+3. KAKVA AKCIJA mu treba (informacija, plan, prebaruvanje, sovет)
+
+Potoa odgovori direktno — bez da go pokazuvas procesot.
 
 ═══ SCENARIJA ═══
 
-PRIVATNI PONUDI / BARANJA ZA RABOTA:
-→ Prikazi gi rezultatite so: 📋 Naslov | 📅 Datum | 📍 Lokacija | 🔗 Link
-→ Ako nema: "Nema aktivni oglasi. Probaj na LinkedIn grupite ili direktno kontaktiraj firmi."
+KOJ SCENARIO: Korisnikot bara ponuda, tender, grant, oglas
+→ AKO ima live rezultati od search: prezentiras gi konkretno so link i cekor za akcija
+→ AKO nema rezultati: ne davaj portali — davaj ALTERNATIVA
+   Primer: "Nema aktivni oglasi. No, firmata X od Skopje bara podizvrsitel — kontaktiraj gi direktno na [kanal]."
+   Ili: "Probaj so drug pristap — LinkedIn grupe za gradeznistvo vo MK imaat sekojdnevni baranja."
 
-TENDERI:
-→ Prikazi gi so: 📋 Naslov | 💰 Vrednost (ako e poznata) | 📅 Rok | 🔗 Link
-→ Ako nema: "Nema aktivni tenderi. Proveri na e-nabavki.gov.mk ili prati direktno baranje do opstini."
+KOJ SCENARIO: Korisnikot nema klienti / ne mu odi biznis
+→ Ne davaj genericen plan — prasaj EDNA konkretna stvar
+   Primer: "Kade dosega si baral klienti — online, preporaki ili direkten kontakt?"
+   Potoa gradis vrz toa.
 
-GRANTOVI:
-→ Prikazi gi so: 🎯 Naslov | 💶 Iznos | 📅 Rok | 🔗 Link
-→ Ako nema: "Nema aktivni povici. Sledi gi fitr.mk i funding.mk."
+KOJ SCENARIO: Korisnikot e frustrian ili povtoruva isto prasanje
+→ Promeni pristap — ne povtoruvaj ist odgovor
+   Primer: Ako vec kazal "nema tenderi" — sega predlozi privatni oglasi, LinkedIn, direkten outreach.
 
-PRAVNI PRASANJA:
-→ Daj konkreten odgovor. Ako ne znaes tocen zakon, kazi i predlozi advokat.
+KOJ SCENARIO: Pravno, finansisko, analiza
+→ Davaj konkretni odgovori — ne opsti soveti
+→ Ako ne znaes tocen zakon/broj — kazi toa i predlozi kade da se proveri
 
-FINANSISKI PRESMETKI:
-→ Daj tabela so brojki, ne samo tekst.
+KOJ SCENARIO: Korisnikot prasуva za tvoite funkcii
+→ Kazi konkretno sto mozesh da napravis ZA NEGO — ne lista na opcii
 
-ANALIZA:
-→ Daj preporaka (DA/NE/CEKAI) + obrazlozenie.
+═══ NACIN NA ODGOVOR ═══
 
-OPSTO PRAVILO:
-— Maksimum 200 zbora
-— Zavrsuvaj so EDNA konkretna akcija
-— Nikogash ne kazuvas deka si AI`;
+— Maksimum 150 zbora — sekoja recenica mora da nosi vrednost
+— Zavrsuvaj so EDNA konkretna akcija — ne lista od 5 chekori
+— Ako imas live rezultati — prикажi gi so format:
+   📋 Naziv | 💰 Vrednost (samo ako e poznata) | 📅 Rok | ✅ Cekor 1, 2, 3 | 🔗 Link
+— NIKOGASH ne izmisluvaj firmi, ceni, linkovi
+— NIKOGASH ne se povtoruvash — ako vec si odgovoril, dodaj novo ili prasaj za detali
+— NIKOGASH ne kazuvash deka si AI`;
 }
 
-// ═══ HEALTH CHECK ENDPOINT ═══
-async function healthCheck() {
-  return {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    version: '3.0',
-    supabase: process.env.SUPABASE_URL ? 'configured' : 'missing',
-    gemini: process.env.GEMINI_API_KEY ? 'configured' : 'missing',
-    serper: process.env.SERPER_API_KEY ? 'configured' : 'missing'
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN HANDLER
-// ═══════════════════════════════════════════════════════════════════════════════
-
+// ═══ MAIN HANDLER ═══
 module.exports = async function handler(req, res) {
   const ALLOWED_ORIGINS = [
     'https://marginova.tech',
@@ -583,54 +507,38 @@ module.exports = async function handler(req, res) {
   ];
   const origin = req.headers.origin || '';
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : 'https://marginova.tech';
-  
+
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
-  
-  // Health check endpoint
-  if (req.method === 'GET' && req.url === '/api/health') {
-    return res.status(200).json(await healthCheck());
-  }
-  
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: { message: 'Method Not Allowed' } });
-  
-  // Rate limit (IP)
+
   const limit = checkRateLimit(req);
-  if (!limit.allowed) {
-    return res.status(429).json({ error: { message: 'Дневниот лимит е достигнат. Обидете се утре.' } });
-  }
-  
+  if (!limit.allowed) return res.status(429).json({ error: { message: 'Дневниот лимит е достигнат. Обидете се утре.' } });
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: { message: 'Missing GEMINI_API_KEY' } });
   const serperKey = process.env.SERPER_API_KEY;
-  
+
   try {
     const body = req.body;
     const hasImage = !!body.image;
     const userId = body.userId || null;
-    const authToken = req.headers.authorization || body.authToken || null;
     const avatar = 'cooai';
-    
+
     // Anti-spam
     const rawText = body.messages?.[body.messages.length - 1]?.content || '';
     if (rawText.length > 2000) {
       return res.status(400).json({ error: { message: 'Пораката е предолга. Максимум 2000 знаци.' } });
     }
-    
-    // JWT verifikacija (FIX 4)
-    if (userId) {
-      const isValid = await verifyUser(userId, authToken);
-      if (!isValid) {
-        return res.status(401).json({ error: { message: 'Неавторизиран пристап. Најавете се повторно.' } });
-      }
-    } else if (limit.remaining < DAILY_LIMIT - 10) {
+    if (!userId && limit.remaining < DAILY_LIMIT - 10) {
       return res.status(429).json({ error: { message: 'Потребна е регистрација за повеќе пораки.' } });
     }
-    
-    // User quota check
+
+    // ═══ USER QUOTA CHECK (Supabase) ═══
     if (userId) {
       const quota = await checkUserQuota(userId);
       if (!quota.allowed) {
@@ -639,96 +547,105 @@ module.exports = async function handler(req, res) {
           quota_exceeded: true
         });
       }
-      console.log(`[Quota] user:${userId.slice(0,8)} | plan:${quota.plan} | remaining:${quota.remaining}`);
+      console.log(`[Quota] plan:${quota.plan} | remaining:${quota.remaining}`);
     }
-    
+
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    
-    // Load memory so retry
+
+    // Memory со real Gemini summarization
     const memory = await loadMemory(userId, avatar, apiKey);
-    
-    // Kombiniraj poraki
+
+    // Комбинирај: memory.recent + нови пораки од frontend
     const frontendMessages = (body.messages || []).slice(-4).map(m => ({
       role: m.role,
       content: typeof m.content === 'string' ? m.content : String(m.content || '')
     }));
-    
+
+    // Спречи дупликати — земи само нови пораки кои ги нема во memory
     const memoryContents = memory.recent.map(m => m.content);
     const newMessages = frontendMessages.filter(m => !memoryContents.includes(m.content));
+
     const messages = [...memory.recent, ...newMessages];
-    
+
     const lastUserMsg = messages.filter(m => m.role === 'user').pop();
     const userText = lastUserMsg?.content || '';
     const lang = body.lang || detectLang(userText);
-    
-    // Hybrid intent (so negacija detekcija)
+
+    // Hybrid intent: keyword прво, LLM само ако е нејасно
     const keywordResult = classifyIntent(userText);
     const intent = keywordResult.confident
       ? keywordResult.intent
       : await classifyWithLLM(userText, apiKey);
-    
-    console.log(`[COO] user:${userId?.slice(0,8) || 'anon'} | lang:${lang} | intent:${intent} | text:${userText.slice(0, 50)}`);
-    
-    // Build system prompt so memory summary
+
+    console.log(`[COO] lang:${lang} | intent:${intent} | confident:${keywordResult.confident} | memory:${memory.recent.length} msgs | text:${userText.slice(0, 60)}`);
+
+    // Додај summary во system prompt ако постои
     let enrichedSystem = buildSystemPrompt(intent, lang, today);
     if (memory.summary) {
       enrichedSystem += `\n\n${memory.summary}`;
     }
-    
-    // Serper search (so konkurentnost limit)
+
+    // ═══ SERPER SEARCH — паметна детекција ═══
     const lower = userText.toLowerCase();
-    const wantsPrivate = ['приватна','понуда','оглас','izvedba','fasad','градеж','usluga'].some(k => lower.includes(k));
-    const wantsTender = intent === 'tender' || ['тендер','tender','јавна','nabavka','набавка'].some(k => lower.includes(k));
+
+    // Дали бара приватни понуди
+    const wantsPrivate = ['приватна','приватни','понуда','понуди','privatna','privatni','ponuda','ponudi',
+      'oglas','oglasi','оглас','изведба','izvedba','fasad','фасад','krov','кров','gradez','градеж',
+      'raboti','работи','услуга','usluga','поdizvrsitel','podizvrsitel'].some(k => lower.includes(k));
+
+    // Дали бара државни/јавни тендери
+    const wantsTender = intent === 'tender' || ['тендер','tender','јавна набавка','javna nabavka',
+      'државна','drzavna','državna','javna','јавна','nabavka','набавка','ponuda','понуда'].some(k => lower.includes(k));
+
+    // Дали бара грантови
     const wantsGrant = intent === 'grant';
-    
-    if (serperKey && (wantsPrivate || wantsTender || wantsGrant)) {
-      const searchTasks = [];
+
+    if (serperKey) {
       const allResults = [];
-      
+
+      // Приватни понуди
       if (wantsPrivate) {
-        searchTasks.push(limit(async () => {
-          const keywords = extractKeywords(userText);
-          const q = `${keywords} site:pazar3.mk OR site:oglasi.mk`;
-          return { type: 'private', results: await searchSerper(q, serperKey) };
-        }));
+        const keywords = extractKeywords(userText);
+        const privateQuery = `${keywords} site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk OR site:halo.rs`;
+        console.log(`[Serper private] ${privateQuery}`);
+        const privateResults = await searchSerper(privateQuery, serperKey);
+        console.log(`[Serper private] results: ${privateResults?.length || 0}`);
+        if (privateResults?.length > 0) allResults.push(...privateResults);
       }
-      
+
+      // Јавни тендери
       if (wantsTender) {
-        searchTasks.push(limit(async () => {
-          const q = buildSearchQuery(userText, 'tender');
-          return { type: 'tender', results: await searchSerper(q, serperKey) };
-        }));
+        const tenderQuery = buildSearchQuery(userText, 'tender');
+        console.log(`[Serper tender] ${tenderQuery}`);
+        const tenderResults = await searchSerper(tenderQuery, serperKey);
+        console.log(`[Serper tender] results: ${tenderResults?.length || 0}`);
+        if (tenderResults?.length > 0) allResults.push(...tenderResults);
       }
-      
+
+      // Грантови
       if (wantsGrant) {
-        searchTasks.push(limit(async () => {
-          const q = buildSearchQuery(userText, 'grant');
-          return { type: 'grant', results: await searchSerper(q, serperKey) };
-        }));
+        const grantQuery = buildSearchQuery(userText, 'grant');
+        console.log(`[Serper grant] ${grantQuery}`);
+        const grantResults = await searchSerper(grantQuery, serperKey);
+        console.log(`[Serper grant] results: ${grantResults?.length || 0}`);
+        if (grantResults?.length > 0) allResults.push(...grantResults);
       }
-      
-      const searchResults = await Promise.all(searchTasks);
-      for (const sr of searchResults) {
-        if (sr.results?.length) allResults.push(...sr.results);
-      }
-      
+
       if (allResults.length > 0) {
+        // Дедупликација по линк
         const seen = new Set();
-        const unique = allResults.filter(r => {
-          if (seen.has(r.link)) return false;
-          seen.add(r.link);
-          return true;
-        }).slice(0, 4);
+        const unique = allResults.filter(r => { if (seen.has(r.link)) return false; seen.add(r.link); return true; }).slice(0, 4);
         enrichedSystem += formatSearchResults(unique, wantsPrivate ? 'business' : intent);
       } else if (wantsPrivate || wantsTender || wantsGrant) {
+        // Нема резултати — дај конкретна алтернатива
         const alternatives = [];
-        if (wantsPrivate) alternatives.push('pazar3.mk · biznis.mk');
-        if (wantsTender) alternatives.push('e-nabavki.gov.mk');
-        if (wantsGrant) alternatives.push('fitr.mk · funding.mk');
-        enrichedSystem += `\n\n═══ НЕМА РЕЗУЛТАТИ ═══\nПровери на: ${alternatives.join(' | ')}\nАко нема ни таму, контактирај директно фирми во твојот регион.\n═══\n`;
+        if (wantsPrivate) alternatives.push('pazar3.mk · biznis.mk · oglasi.mk');
+        if (wantsTender) alternatives.push('e-nabavki.gov.mk · ted.europa.eu');
+        if (wantsGrant) alternatives.push('fitr.mk · funding.mk · ipard.gov.mk');
+        enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nПребарувањето не врати резултати.\nКОА: Провери директно на: ${alternatives.join(' | ')}\nАКО нема ни таму: Контактирај директно архитектонски бироа и градежни компании во твојот регион.\n═══\n`;
       }
     }
-    
+
     const text = await callGemini(
       enrichedSystem,
       messages,
@@ -738,8 +655,8 @@ module.exports = async function handler(req, res) {
       body.imageText,
       apiKey
     );
-    
-    // Save memory i quota (paralelno)
+
+    // Зачувај memory + зголеми quota
     if (userId) {
       await Promise.all([
         saveMemory(userId, avatar, 'user', userText),
@@ -747,15 +664,15 @@ module.exports = async function handler(req, res) {
         incrementUserQuota(userId)
       ]);
     }
-    
+
     return res.status(200).json({
       content: [{ type: 'text', text }],
       intent,
       remaining: limit.remaining
     });
-    
+
   } catch (err) {
-    console.error('Handler error:', err.message, err.stack);
-    return res.status(500).json({ error: { message: 'Внатрешна грешка. Обидете се повторно.' } });
+    console.error('Handler error:', err.message);
+    return res.status(500).json({ error: { message: err.message } });
   }
 };
