@@ -990,13 +990,14 @@ function saveChat() {
 async function saveMessage(role, text) {
   if (!currentUser) return;
   try {
-    await db.from('conversations').insert({
+    const { error } = await db.from('conversations').insert({
       user_id: currentUser.id,
       avatar: 'cooai',
       role,
       message: text,
       created_at: new Date().toISOString()
     });
+    if (error) console.warn('Save error:', error.message);
   } catch (e) { console.warn('Save error:', e); }
 }
 
