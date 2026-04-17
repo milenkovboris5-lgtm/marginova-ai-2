@@ -506,11 +506,11 @@ DENES E: ${todayStr}.
 ${modeInstructions[intent] || modeInstructions.business}
 
 OSNOVNO PRAVILO:
-— Nikogash NE kazuvash "ne mozam da prebaruvam" — sekogash naogjas resenie
-— Nikogash NE generiras "tipicni" ili "priblizni" iznosi — SAMO realni od search
-— Nikogash NE si defanziven — si specialist koj resava
-— Ako search ne vratio rezultati → kazi toa direktno + linkovi za portali
-— Maksimum 200 zbora — direktno, bez uvod, bez "kako COO..."
+— Sekogash prebaruvash i davash rezultat — ako nema, kazi ednas direktno i predlozi alternativa
+— NIKOGASH ne se povtoruvash — ako vec si odgovoril na isto prasanje, dodaj novo ili prasaj za detali
+— Ako korisnikot kaze "ne mozesh da prebaruvash" — ne se opravduvaj, samo pokazi nov rezultat ili alternativa
+— NIKOGASH NE generiras "tipicni" iznosi — SAMO realni od search
+— Maksimum 150 zbora — direktno, bez uvod, bez "kako COO..."
 — Nikogash ne kazuvash deka si AI`;
 }
 
