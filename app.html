@@ -927,8 +927,9 @@ async function sendMsg() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: chatHistory.slice(-10),
+        messages: chatHistory.slice(-4),
         lang: lang,
+        userId: currentUser?.id || null,
         image: currentFile?.data || null,
         imageType: currentFile?.type || null,
         imageText: text || 'Анализирај го овој документ или слика.'
