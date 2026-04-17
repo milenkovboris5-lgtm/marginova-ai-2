@@ -367,7 +367,6 @@ OSNOVNO PRAVILO:
 — Maksimum 300 zbora — direktno, bez uvod
 — Nikogash ne kazuvash deka si AI`;
 }
-}
 
 // ═══ MAIN HANDLER ═══
 module.exports = async function handler(req, res) {
