@@ -601,36 +601,62 @@ module.exports = async function handler(req, res) {
       enrichedSystem += `\n\n${memory.summary}`;
     }
 
-    if (serperKey && (intent === 'tender' || intent === 'grant' || intent === 'business')) {
-      const query = buildSearchQuery(userText, intent);
-      console.log(`[Serper] query: ${query}`);
-      if (query) {
-        const results = await searchSerper(query, serperKey);
-        console.log(`[Serper] results: ${results?.length || 0}`);
-        if (results?.length > 0) {
-          enrichedSystem += formatSearchResults(results, intent);
-        } else {
-          enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nНе се пронајдени активни огласи. Кажи му на корисникот и препорачај официјални портали.\n═══════════════════════════\n`;
-        }
-      }
-    }
+    // ═══ SERPER SEARCH — паметна детекција ═══
+    const lower = userText.toLowerCase();
 
-    // Serper за приватни понуди во business intent
-    if (serperKey && intent === 'business') {
-      const lower = userText.toLowerCase();
-      const isPrivateOffer = ['понуда','оглас','изведба','приватна','услуга','фасад','кров','градеж',
-        'ponuda','oglas','izvedba','privatna','usluga','fasad','krov','gradez','raboti'].some(k => lower.includes(k));
-      if (isPrivateOffer) {
+    // Дали бара приватни понуди
+    const wantsPrivate = ['приватна','приватни','понуда','понуди','privatna','privatni','ponuda','ponudi',
+      'oglas','oglasi','оглас','изведба','izvedba','fasad','фасад','krov','кров','gradez','градеж'].some(k => lower.includes(k));
+
+    // Дали бара државни/јавни тендери
+    const wantsTender = intent === 'tender' || ['тендер','tender','јавна набавка','javna nabavka','државна','drzavna'].some(k => lower.includes(k));
+
+    // Дали бара грантови
+    const wantsGrant = intent === 'grant';
+
+    if (serperKey) {
+      const allResults = [];
+
+      // Приватни понуди
+      if (wantsPrivate) {
         const keywords = extractKeywords(userText);
-        const query = `${keywords} site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk OR site:halo.rs OR site:njuskalo.hr`;
-        console.log(`[Serper private] query: ${query}`);
-        const results = await searchSerper(query, serperKey);
-        console.log(`[Serper private] results: ${results?.length || 0}`);
-        if (results?.length > 0) {
-          enrichedSystem += formatSearchResults(results, 'private');
-        } else {
-          enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ ПОНУДИ ═══\nНе се пронајдени огласи. НЕ ИЗМИСЛУВАЈ понуди, цени или контакти. Кажи директно дека нема резултати и препорачај: pazar3.mk · biznis.mk · oglasi.mk\n═══════════════════════════\n`;
-        }
+        const privateQuery = `${keywords} site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk OR site:halo.rs`;
+        console.log(`[Serper private] ${privateQuery}`);
+        const privateResults = await searchSerper(privateQuery, serperKey);
+        console.log(`[Serper private] results: ${privateResults?.length || 0}`);
+        if (privateResults?.length > 0) allResults.push(...privateResults);
+      }
+
+      // Јавни тендери
+      if (wantsTender) {
+        const tenderQuery = buildSearchQuery(userText, 'tender');
+        console.log(`[Serper tender] ${tenderQuery}`);
+        const tenderResults = await searchSerper(tenderQuery, serperKey);
+        console.log(`[Serper tender] results: ${tenderResults?.length || 0}`);
+        if (tenderResults?.length > 0) allResults.push(...tenderResults);
+      }
+
+      // Грантови
+      if (wantsGrant) {
+        const grantQuery = buildSearchQuery(userText, 'grant');
+        console.log(`[Serper grant] ${grantQuery}`);
+        const grantResults = await searchSerper(grantQuery, serperKey);
+        console.log(`[Serper grant] results: ${grantResults?.length || 0}`);
+        if (grantResults?.length > 0) allResults.push(...grantResults);
+      }
+
+      if (allResults.length > 0) {
+        // Дедупликација по линк
+        const seen = new Set();
+        const unique = allResults.filter(r => { if (seen.has(r.link)) return false; seen.add(r.link); return true; }).slice(0, 4);
+        enrichedSystem += formatSearchResults(unique, wantsPrivate ? 'business' : intent);
+      } else if (wantsPrivate || wantsTender || wantsGrant) {
+        // Нема резултати — дај конкретна алтернатива
+        const alternatives = [];
+        if (wantsPrivate) alternatives.push('pazar3.mk · biznis.mk · oglasi.mk');
+        if (wantsTender) alternatives.push('e-nabavki.gov.mk · ted.europa.eu');
+        if (wantsGrant) alternatives.push('fitr.mk · funding.mk · ipard.gov.mk');
+        enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nПребарувањето не врати резултати.\nКОА: Провери директно на: ${alternatives.join(' | ')}\nАКО нема ни таму: Контактирај директно архитектонски бироа и градежни компании во твојот регион.\n═══\n`;
       }
     }
 
