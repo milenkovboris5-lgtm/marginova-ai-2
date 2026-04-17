@@ -703,7 +703,7 @@ async function loadTokens() {
 }
 
 async function deductToken() {
-  if (!currentUser) return true;
+  if (!currentUser) return true; // Анонимен — дозволи, backend ќе го лимитира
   try {
     const today = new Date().toISOString().split('T')[0];
     const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date').eq('user_id', currentUser.id).single();
