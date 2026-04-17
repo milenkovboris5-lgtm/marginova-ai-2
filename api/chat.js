@@ -81,9 +81,26 @@ function classifyIntent(text) {
 }
 
 // ═══ SERPER SEARCH ═══
+
+// FIX 1: Extract keywords od userText za podobri query
+function extractKeywords(text) {
+  const stopWords = new Set([
+    'и','или','на','во','за','од','со','до','по','при','над','под','меѓу','дека','дали',
+    'the','and','or','for','in','of','to','a','an','is','are','was','were','be','been',
+    'i','ili','za','od','sa','da','je','su','se','na','u','o','po',
+    'und','oder','für','in','von','zu','die','der','das'
+  ]);
+  return text.toLowerCase()
+    .replace(/[^\w\s\u0400-\u04FF]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !stopWords.has(w))
+    .slice(0, 6)
+    .join(' ');
+}
+
 function buildSearchQuery(text, intent) {
   const lower = text.toLowerCase();
-  const month = new Date().toISOString().slice(0, 7);
+  const keywords = extractKeywords(text);
 
   const countryMap = {
     'македон': 'site:e-nabavki.gov.mk',
@@ -104,11 +121,14 @@ function buildSearchQuery(text, intent) {
     for (const [key, val] of Object.entries(countryMap)) {
       if (lower.includes(key)) { site = val; break; }
     }
-    return `tender javna nabavka ${site}`;
+    // FIX 1: Користи keywords наместо генеричко "tender javna nabavka"
+    return `${keywords} tender nabavka ${site}`;
   }
 
   if (intent === 'grant') {
-    return `grant fond program site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu OR site:ipard.gov.mk`;
+    // FIX 1: Додај keywords за поконкретни резултати
+    let grantSite = 'site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu OR site:ipard.gov.mk OR site:fitr.mk OR site:funding.mk';
+    return `${keywords} grant fond finansiranje ${grantSite}`;
   }
 
   return null;
@@ -120,12 +140,13 @@ async function searchSerper(query, apiKey) {
     const res = await fetchWithTimeout('https://google.serper.dev/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-KEY': apiKey },
-      body: JSON.stringify({ q: query, num: 8, gl: 'mk' }),
+      // FIX 2: Барај само 5, земи само 3
+      body: JSON.stringify({ q: query, num: 5, gl: 'mk' }),
     }, 8000);
     if (!res.ok) return null;
     const data = await res.json();
     const results = [];
-    if (data.organic) data.organic.slice(0, 6).forEach(r =>
+    if (data.organic) data.organic.slice(0, 3).forEach(r =>
       results.push({ title: r.title || '', snippet: r.snippet || '', link: r.link || '', date: r.date || '' })
     );
     return results.length > 0 ? results : null;
@@ -135,19 +156,22 @@ async function searchSerper(query, apiKey) {
   }
 }
 
+// FIX 2: Summary наместо raw — пократок prompt
 function formatSearchResults(results, intent) {
   if (!results || results.length === 0) return '';
   const today = new Date().toLocaleDateString('mk-MK', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const label = intent === 'grant' ? 'ГРАНТОВИ/ФОНДОВИ' : 'ТЕНДЕРИ/НАБАВКИ';
-  let ctx = `\n\n═══ РЕАЛНИ РЕЗУЛТАТИ — ${label} — ${today} ═══\n`;
-  ctx += `КРИТИЧНО: Прикажи САМО овие резултати со ТОЧНИТЕ линкови. НЕ измислувај.\n\n`;
+  const label = intent === 'grant' ? 'ГРАНТОВИ' : 'ТЕНДЕРИ';
+  let ctx = `\n\n═══ LIVE РЕЗУЛТАТИ — ${label} — ${today} ═══\n`;
+  ctx += `Прикажи САМО овие резултати со точните линкови. НЕ измислувај.\n\n`;
   results.forEach((r, i) => {
-    ctx += `[${i + 1}] ${r.title}\n`;
-    if (r.date) ctx += `    Датум: ${r.date}\n`;
-    if (r.snippet) ctx += `    ${r.snippet}\n`;
-    ctx += `    Линк: ${r.link}\n\n`;
+    // Summary: само наслов + клучен дел од snippet (max 100 chars) + линк
+    const snippet = r.snippet ? r.snippet.slice(0, 100) + (r.snippet.length > 100 ? '...' : '') : '';
+    ctx += `${i + 1}. **${r.title}**\n`;
+    if (r.date) ctx += `   Датум: ${r.date}\n`;
+    if (snippet) ctx += `   ${snippet}\n`;
+    ctx += `   🔗 ${r.link}\n\n`;
   });
-  ctx += `═══ КРАЈ НА РЕЗУЛТАТИ ═══\n`;
+  ctx += `═══ КРАЈ ═══\n`;
   return ctx;
 }
 
@@ -172,11 +196,11 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
     });
   }
 
+  // FIX 3: Без Google Grounding — само Serper за search
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: { maxOutputTokens: 3000, temperature: 0.7 },
-    tools: [{ googleSearch: {} }]
+    generationConfig: { maxOutputTokens: 2000, temperature: 0.5 }
   };
 
   const res = await fetchWithTimeout(url, {
@@ -194,19 +218,7 @@ async function callGemini(systemPrompt, messages, hasImage, imageData, imageType
   if (data.error) throw new Error(data.error.message);
 
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
-
-  // Append grounding sources if available
-  const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-  const sources = chunks
-    .filter(c => c.web?.uri && !c.web.uri.includes('vertexaisearch'))
-    .slice(0, 3)
-    .map(c => {
-      const host = (() => { try { return new URL(c.web.uri).hostname.replace('www.', ''); } catch { return c.web.uri; } })();
-      const title = c.web.title || host;
-      return `• [${title}](${c.web.uri})`;
-    }).join('\n');
-
-  return sources ? `${text}\n\n🔍 **Извори:**\n${sources}` : text;
+  return text;
 }
 
 // ═══ DETECT LANGUAGE ═══
