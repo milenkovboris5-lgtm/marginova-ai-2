@@ -41,7 +41,71 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
     .finally(() => clearTimeout(timer));
 }
 
-// ═══ INTENT CLASSIFICATION ═══
+// ═══ SUPABASE MEMORY ═══
+const SUPA_URL = process.env.SUPABASE_URL;
+const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+async function loadMemory(userId, avatar) {
+  if (!SUPA_URL || !SUPA_KEY || !userId) return { summary: null, recent: [] };
+  try {
+    const res = await fetchWithTimeout(
+      `${SUPA_URL}/rest/v1/conversations?user_id=eq.${userId}&avatar=eq.${avatar}&order=created_at.desc&limit=20`,
+      { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } },
+      5000
+    );
+    if (!res.ok) return { summary: null, recent: [] };
+    const rows = await res.json();
+    if (!rows || rows.length === 0) return { summary: null, recent: [] };
+
+    // Last 3 messages за context
+    const recent = rows.slice(0, 6).reverse().map(r => ({
+      role: r.role === 'assistant' ? 'assistant' : 'user',
+      content: r.message
+    }));
+
+    // Summary од постарите ако има повеќе од 6
+    let summary = null;
+    if (rows.length > 6) {
+      const older = rows.slice(6).reverse().map(r => `${r.role}: ${r.message}`).join('\n');
+      summary = `Претходен разговор (резиме): ${older.slice(0, 500)}`;
+    }
+
+    return { summary, recent };
+  } catch (e) {
+    console.warn('Memory load error:', e.message);
+    return { summary: null, recent: [] };
+  }
+}
+
+async function saveMemory(userId, avatar, role, message) {
+  if (!SUPA_URL || !SUPA_KEY || !userId) return;
+  try {
+    await fetchWithTimeout(
+      `${SUPA_URL}/rest/v1/conversations`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: SUPA_KEY,
+          Authorization: `Bearer ${SUPA_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          avatar,
+          role,
+          message: message.slice(0, 2000), // max 2000 chars per message
+          created_at: new Date().toISOString()
+        })
+      },
+      5000
+    );
+  } catch (e) {
+    console.warn('Memory save error:', e.message);
+  }
+}
+
+
 const INTENT_PATTERNS = {
   tender: [
     'тендер','набавка','оглас','конкурс','јавна набавка',
@@ -332,22 +396,37 @@ module.exports = async function handler(req, res) {
   try {
     const body = req.body;
     const hasImage = !!body.image;
+    const userId = body.userId || null;
+    const avatar = 'cooai';
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    const messages = (body.messages || []).slice(-10).map(m => ({
+    // Вчитај Supabase memory
+    const memory = await loadMemory(userId, avatar);
+
+    // Комбинирај: memory.recent + нови пораки од frontend
+    const frontendMessages = (body.messages || []).slice(-4).map(m => ({
       role: m.role,
       content: typeof m.content === 'string' ? m.content : String(m.content || '')
     }));
+
+    // Спречи дупликати — земи само нови пораки кои ги нема во memory
+    const memoryContents = memory.recent.map(m => m.content);
+    const newMessages = frontendMessages.filter(m => !memoryContents.includes(m.content));
+
+    const messages = [...memory.recent, ...newMessages];
 
     const lastUserMsg = messages.filter(m => m.role === 'user').pop();
     const userText = lastUserMsg?.content || '';
     const lang = body.lang || detectLang(userText);
     const intent = classifyIntent(userText);
 
-    console.log(`[COO] lang:${lang} | intent:${intent} | text:${userText.slice(0, 60)}`);
+    console.log(`[COO] lang:${lang} | intent:${intent} | memory:${memory.recent.length} msgs | text:${userText.slice(0, 60)}`);
 
-    // Live search за tender и grant
+    // Додај summary во system prompt ако постои
     let enrichedSystem = buildSystemPrompt(intent, lang, today);
+    if (memory.summary) {
+      enrichedSystem += `\n\n${memory.summary}`;
+    }
 
     if (serperKey && (intent === 'tender' || intent === 'grant')) {
       const query = buildSearchQuery(userText, intent);
@@ -370,6 +449,12 @@ module.exports = async function handler(req, res) {
       body.imageText,
       apiKey
     );
+
+    // Зачувај во Supabase memory
+    if (userId) {
+      await saveMemory(userId, avatar, 'user', userText);
+      await saveMemory(userId, avatar, 'assistant', text);
+    }
 
     return res.status(200).json({
       content: [{ type: 'text', text }],
