@@ -744,12 +744,22 @@ module.exports = async function handler(req, res) {
         const unique = allResults.filter(r => { if (seen.has(r.link)) return false; seen.add(r.link); return true; }).slice(0, 4);
         enrichedSystem += formatSearchResults(unique, wantsPrivate ? 'business' : intent);
       } else if (wantsPrivate || wantsTender || wantsGrant) {
-        // Нема резултати — дај конкретна алтернатива
-        const alternatives = [];
-        if (wantsPrivate) alternatives.push('pazar3.mk · biznis.mk · oglasi.mk');
-        if (wantsTender) alternatives.push('e-nabavki.gov.mk · ted.europa.eu');
-        if (wantsGrant) alternatives.push('fitr.mk · funding.mk · ipard.gov.mk');
-        enrichedSystem += `\n\n═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══\nПребарувањето не врати резултати.\nКОА: Провери директно на: ${alternatives.join(' | ')}\nАКО нема ни таму: Контактирај директно архитектонски бироа и градежни компании во твојот регион.\n═══\n`;
+        enrichedSystem += `
+
+═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══
+LIVE SEARCH не врати ниту еден резултат за ова барање.
+
+КРИТИЧНО — ЗАДОЛЖИТЕЛНО:
+- НЕ измислувај линкови, URL-адреси, имиња на програми, износи или рокови
+- НЕ пишувај пример линкови со забелешка дека се примери — тоа е халуцинација
+- НЕ се извинувај за ограничувања на системот
+- НЕ објаснувај зошто нема резултати
+
+НАМЕСТО ТОА — направи ЕДНО:
+1. Предложи конкретна следна акција (директен контакт, специфична организација по ime)
+2. Постави едно прецизно прашање за подобро насочување на корисникот
+3. Објасни кој е вистинскиот канал (не листа — само еден конкретен)
+═══`;
       }
     }
 
