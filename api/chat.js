@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// Business COO — Gemini Flash 2.5 + Serper
+// BRAIN v2 — Serper + TED API + Grounding + Gemini
+// SCAN → ANALYZE → EXECUTE
 // ═══════════════════════════════════════════
 
 const DAILY_LIMIT = 200;
@@ -9,8 +10,7 @@ const rateLimitStore = {};
 // ═══ RATE LIMIT ═══
 function getRateLimitKey(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-    || req.headers['x-real-ip']
-    || 'unknown';
+    || req.headers['x-real-ip'] || 'unknown';
   const today = new Date().toISOString().split('T')[0];
   return ip + '_' + today;
 }
@@ -41,11 +41,10 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
     .finally(() => clearTimeout(timer));
 }
 
-// ═══ SUPABASE MEMORY ═══
+// ═══ SUPABASE ═══
 const SUPA_URL = process.env.SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-// Supabase REST helper
 async function supabaseRequest(path, options = {}) {
   return fetchWithTimeout(
     `${SUPA_URL}/rest/v1/${path}`,
@@ -63,7 +62,7 @@ async function supabaseRequest(path, options = {}) {
   );
 }
 
-// ═══ USER QUOTA (Supabase) ═══
+// ═══ USER QUOTA ═══
 const PLAN_LIMITS = { free: 20, starter: 500, pro: 2000, business: -1 };
 
 async function checkUserQuota(userId) {
@@ -78,17 +77,12 @@ async function checkUserQuota(userId) {
     const rows = await res.json();
     const profile = rows?.[0];
     if (!profile) return { allowed: true, remaining: 20 };
-
     const plan = profile.plan || 'free';
     const limit = PLAN_LIMITS[plan] ?? 20;
-    if (limit === -1) return { allowed: true, remaining: -1 }; // unlimited
-
+    if (limit === -1) return { allowed: true, remaining: -1 };
     const used = profile.last_msg_date === today ? (profile.daily_msgs || 0) : 0;
-    const remaining = Math.max(0, limit - used);
-
-    return { allowed: remaining > 0, remaining, plan, used };
+    return { allowed: Math.max(0, limit - used) > 0, remaining: Math.max(0, limit - used), plan, used };
   } catch (e) {
-    console.warn('Quota check error:', e.message);
     return { allowed: true, remaining: 999 };
   }
 }
@@ -97,7 +91,6 @@ async function incrementUserQuota(userId) {
   if (!SUPA_URL || !SUPA_KEY || !userId) return;
   try {
     const today = new Date().toISOString().split('T')[0];
-    // Прво земи тековна состојба
     const res = await supabaseRequest(
       `profiles?user_id=eq.${userId}&select=daily_msgs,last_msg_date`,
       { headers: { Prefer: '' } }
@@ -106,20 +99,14 @@ async function incrementUserQuota(userId) {
     const rows = await res.json();
     const profile = rows?.[0];
     const currentUsed = profile?.last_msg_date === today ? (profile?.daily_msgs || 0) : 0;
-
-    await supabaseRequest(
-      `profiles?user_id=eq.${userId}`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ daily_msgs: currentUsed + 1, last_msg_date: today })
-      }
-    );
-  } catch (e) {
-    console.warn('Quota increment error:', e.message);
-  }
+    await supabaseRequest(`profiles?user_id=eq.${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ daily_msgs: currentUsed + 1, last_msg_date: today })
+    });
+  } catch (e) {}
 }
 
-// ═══ GEMINI SUMMARIZATION ═══
+// ═══ MEMORY ═══
 async function generateSummary(messages, apiKey) {
   try {
     const text = messages.map(m => `${m.role}: ${m.message}`).join('\n');
@@ -128,20 +115,16 @@ async function generateSummary(messages, apiKey) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: `Summarize this business conversation in 3-5 sentences. Keep: key decisions, business context, specific numbers/deadlines mentioned, what was agreed.\n\n${text.slice(0, 3000)}` }] }],
-        generationConfig: { maxOutputTokens: 250, temperature: 0.2 }
+        contents: [{ role: 'user', parts: [{ text: `Summarize in 3 sentences. Keep: decisions, numbers, deadlines, agreements.\n\n${text.slice(0, 3000)}` }] }],
+        generationConfig: { maxOutputTokens: 200, temperature: 0.1 }
       })
     }, 8000);
     if (!res.ok) return null;
     const data = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-  } catch (e) {
-    console.warn('Summary error:', e.message);
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
-// ═══ MEMORY ═══
 async function loadMemory(userId, avatar, apiKey) {
   if (!SUPA_URL || !SUPA_KEY || !userId) return { summary: null, recent: [] };
   try {
@@ -152,31 +135,20 @@ async function loadMemory(userId, avatar, apiKey) {
     if (!res.ok) return { summary: null, recent: [] };
     const rows = await res.json();
     if (!rows || rows.length === 0) return { summary: null, recent: [] };
-
-    // Последни 6 пораки за директен context
     const recent = rows.slice(0, 6).reverse().map(r => ({
       role: r.role === 'assistant' ? 'assistant' : 'user',
       content: r.message
     }));
-
-    // Постари пораки → Real Gemini summary
     let summary = null;
     if (rows.length > 6) {
       const older = rows.slice(6).reverse();
       const sumText = await generateSummary(older, apiKey);
-      if (sumText) {
-        summary = `Претходен контекст (резиме): ${sumText}`;
-      } else {
-        // Fallback на truncate ако Gemini не одговори
-        summary = `Претходен разговор: ${older.map(r => `${r.role}: ${r.message}`).join(' ').slice(0, 400)}`;
-      }
+      summary = sumText
+        ? `Previous context: ${sumText}`
+        : `Previous: ${older.map(r => `${r.role}: ${r.message}`).join(' ').slice(0, 400)}`;
     }
-
     return { summary, recent };
-  } catch (e) {
-    console.warn('Memory load error:', e.message);
-    return { summary: null, recent: [] };
-  }
+  } catch (e) { return { summary: null, recent: [] }; }
 }
 
 async function saveMemory(userId, avatar, role, message) {
@@ -185,314 +157,12 @@ async function saveMemory(userId, avatar, role, message) {
     await supabaseRequest('conversations', {
       method: 'POST',
       body: JSON.stringify({
-        user_id: userId,
-        avatar,
-        role,
+        user_id: userId, avatar, role,
         message: message.slice(0, 2000),
         created_at: new Date().toISOString()
       })
     });
-  } catch (e) {
-    console.warn('Memory save error:', e.message);
-  }
-}
-
-
-const INTENT_PATTERNS = {
-  tender: [
-    'тендер','набавка','оглас','конкурс','јавна набавка',
-    'tender','nabavka','oglas','javna nabavka','procurement',
-    'ausschreibung','ihale','przetarg','appalto'
-  ],
-  grant: [
-    'грант','фонд','ipard','ipa','eu фонд','финансирање','финансиска поддршка','финансиска помош',
-    'grant','grand','grantovi','fond','fondovi','finansiranje','finansiska','finansiska podrska',
-    'subsidy','podrska','subvencija','eu grant','eu fond','eu fonds',
-    'förderung','hibe','dotacja','horizon','erasmus','undp','usaid','wbif','fitr',
-    'startup','стартап','povikot','повик','аплицира','aplicira','aplikacija',
-    'финансиска','финансис','podrska za','support za','финансир'
-  ],
-  legal: [
-    'договор','право','gdpr','закон','трудово','даноци','правни','регулатив',
-    'ugovor','pravo','zakon','radno','porezi','pravni','regulativ','aplikacija pravna',
-    'contract','legal','recht','gesetz','hukuk','prawo',
-    'licenca','dozvola','registracija','osnivanje','statut'
-  ],
-  analysis: [
-    'анализа','споредба','swot','извештај','проекција',
-    'analiza','swot','izvestaj','projekcija','analysis',
-    'analyse','analiz','analiza'
-  ],
-  business: [
-    'бизнис','стратегија','план','раст','партнерство','маркетинг',
-    'biznis','strategija','plan','rast','partnerstvo','marketing',
-    'business','strategie','strategi','iş','biznes'
-  ]
-};
-
-// ═══ HYBRID INTENT CLASSIFIER ═══
-// Прво keyword matching (0ms, бесплатно)
-// Ако score = 0 → LLM fallback (само кога е нејасно)
-
-function classifyIntent(text) {
-  const lower = text.toLowerCase();
-  const scores = {};
-  for (const [intent, keywords] of Object.entries(INTENT_PATTERNS)) {
-    scores[intent] = keywords.filter(k => lower.includes(k)).length;
-  }
-  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-  const top = sorted[0];
-  const second = sorted[1];
-
-  // Јасен winner — врати веднаш
-  if (top[1] >= 2) return { intent: top[0], confident: true };
-  if (top[1] === 1 && second[1] === 0) return { intent: top[0], confident: true };
-
-  // Нема match или tie — потребен LLM
-  return { intent: 'business', confident: false };
-}
-
-async function classifyWithLLM(text, apiKey) {
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    const res = await fetchWithTimeout(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: `Classify this business query into ONE word: tender, grant, legal, analysis, or business.\nQuery: "${text}"\nReturn ONLY one word.` }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 10 }
-      })
-    }, 6000);
-    const data = await res.json();
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase() || 'business';
-    const valid = ['tender', 'grant', 'legal', 'analysis', 'business'];
-    return valid.includes(raw) ? raw : 'business';
-  } catch (e) {
-    return 'business';
-  }
-}
-
-// ═══ SERPER SEARCH ═══
-
-// FIX 1: Extract keywords od userText za podobri query
-function extractKeywords(text) {
-  const stopWords = new Set([
-    'и','или','на','во','за','од','со','до','по','при','над','под','меѓу','дека','дали',
-    'the','and','or','for','in','of','to','a','an','is','are','was','were','be','been',
-    'i','ili','za','od','sa','da','je','su','se','na','u','o','po',
-    'und','oder','für','in','von','zu','die','der','das'
-  ]);
-  return text.toLowerCase()
-    .replace(/[^\w\s\u0400-\u04FF]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 2 && !stopWords.has(w))
-    .slice(0, 6)
-    .join(' ');
-}
-
-function buildSearchQuery(text, intent) {
-  const lower = text.toLowerCase();
-  const keywords = extractKeywords(text);
-
-  const countryMap = {
-    // Macedonia
-    'македон': 'site:e-nabavki.gov.mk',
-    'makedon': 'site:e-nabavki.gov.mk',
-    // Serbia
-    'srbij': 'site:portal.ujn.gov.rs',
-    'србиј': 'site:portal.ujn.gov.rs',
-    // Croatia
-    'hrvat': 'site:eojn.nn.hr',
-    'хрват': 'site:eojn.nn.hr',
-    // Bosnia
-    'bosn': 'site:ejn.ba',
-    'босн': 'site:ejn.ba',
-    // Bulgaria
-    'bulgar': 'site:app.eop.bg',
-    'бугар': 'site:app.eop.bg',
-    // Romania
-    'roman': 'site:e-licitatie.ro',
-    'романиј': 'site:e-licitatie.ro',
-    // Greece
-    'greec': 'site:promitheus.gov.gr',
-    'grci': 'site:promitheus.gov.gr',
-    'грциј': 'site:promitheus.gov.gr',
-    // Turkey
-    'turk': 'site:ekap.kik.gov.tr',
-    'турциј': 'site:ekap.kik.gov.tr',
-    // Germany
-    'german': 'site:ted.europa.eu',
-    'deutsch': 'site:ted.europa.eu',
-    'германиј': 'site:ted.europa.eu',
-    // France
-    'franc': 'site:ted.europa.eu',
-    'франциј': 'site:ted.europa.eu',
-    // Spain
-    'spain': 'site:contrataciondelestado.es',
-    'spanij': 'site:contrataciondelestado.es',
-    'шпаниј': 'site:contrataciondelestado.es',
-    // EU general
-    'eu': 'site:ted.europa.eu',
-    'европ': 'site:ted.europa.eu',
-    'europ': 'site:ted.europa.eu',
-  };
-
-  if (intent === 'tender') {
-    let site = 'site:e-nabavki.gov.mk OR site:portal.ujn.gov.rs OR site:eojn.nn.hr OR site:ejn.ba OR site:ted.europa.eu';
-    for (const [key, val] of Object.entries(countryMap)) {
-      if (lower.includes(key)) { site = val; break; }
-    }
-    return `${keywords} tender nabavka ${site}`;
-  }
-
-  if (intent === 'grant') {
-    const sectorMap = {
-      'it': 'IT', 'tech': 'technology', 'software': 'software',
-      'gradez': 'construction', 'zemjodelst': 'agriculture', 'agri': 'agriculture',
-      'turiz': 'tourism', 'tourism': 'tourism', 'energi': 'energy',
-      'startup': 'startup', 'mladi': 'youth', 'youth': 'youth',
-      'inovacij': 'innovation', 'innov': 'innovation',
-    };
-    let sector = '';
-    for (const [key, val] of Object.entries(sectorMap)) {
-      if (lower.includes(key)) { sector = val; break; }
-    }
-    let grantSite = 'site:fitr.mk OR site:ipard.gov.mk OR site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu';
-    for (const [key, val] of Object.entries({
-      'german': 'site:foerderdatenbank.de OR site:bmbf.de',
-      'franc': 'site:bpifrance.fr OR site:ec.europa.eu',
-      'eu': 'site:ec.europa.eu OR site:interreg.eu',
-      'европ': 'site:ec.europa.eu OR site:interreg.eu',
-      'srbij': 'site:inovacionifond.rs OR site:apr.gov.rs',
-    })) {
-      if (lower.includes(key)) { grantSite = val; break; }
-    }
-    const grantKeyword = sector || keywords.split(' ').slice(0, 2).join(' ');
-    return `${grantKeyword} grant funding 2025 ${grantSite}`;
-  }
-
-  if (intent === 'business') {
-    let site = 'site:pazar3.mk OR site:oglasi.mk OR site:halo.rs OR site:njuskalo.hr';
-    for (const [key, val] of Object.entries({
-      'македон': 'site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk',
-      'makedon': 'site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk',
-      'srbij': 'site:halo.rs OR site:oglasi.rs',
-      'србиј': 'site:halo.rs OR site:oglasi.rs',
-      'hrvat': 'site:njuskalo.hr OR site:oglasnik.hr',
-      'german': 'site:ebay-kleinanzeigen.de OR site:wlw.de',
-      'германиј': 'site:ebay-kleinanzeigen.de OR site:wlw.de',
-    })) {
-      if (lower.includes(key)) { site = val; break; }
-    }
-    return `${keywords} ${site}`;
-  }
-
-  return null;
-}
-
-async function searchSerper(query, apiKey) {
-  if (!query || !apiKey) return null;
-  try {
-    const res = await fetchWithTimeout('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-KEY': apiKey },
-      // FIX 2: Барај само 5, земи само 3
-      body: JSON.stringify({ q: query, num: 5, gl: 'mk' }),
-    }, 8000);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const results = [];
-    if (data.organic) data.organic.slice(0, 3).forEach(r =>
-      results.push({ title: r.title || '', snippet: r.snippet || '', link: r.link || '', date: r.date || '' })
-    );
-    return results.length > 0 ? results : null;
-  } catch (e) {
-    console.warn('Serper error:', e.message);
-    return null;
-  }
-}
-
-// FIX 2: Summary наместо raw — пократок prompt
-function detectRegionFromLink(link) {
-  if (!link) return '';
-  if (link.includes('e-nabavki.gov.mk') || link.includes('pazar3.mk')) return 'Македонија';
-  if (link.includes('portal.ujn.gov.rs') || link.includes('halo.rs')) return 'Србија';
-  if (link.includes('eojn.nn.hr') || link.includes('njuskalo.hr')) return 'Хрватска';
-  if (link.includes('ejn.ba')) return 'БиХ';
-  if (link.includes('app.eop.bg')) return 'Бугарија';
-  if (link.includes('e-licitatie.ro')) return 'Романија';
-  if (link.includes('promitheus.gov.gr')) return 'Грција';
-  if (link.includes('ekap.kik.gov.tr')) return 'Турција';
-  if (link.includes('ted.europa.eu') || link.includes('ec.europa.eu')) return 'ЕУ';
-  if (link.includes('foerderdatenbank.de') || link.includes('bmbf.de')) return 'Германија';
-  if (link.includes('contrataciondelestado.es')) return 'Шпанија';
-  if (link.includes('bpifrance.fr')) return 'Франција';
-  return '';
-}
-
-function formatSearchResults(results, intent) {
-  if (!results || results.length === 0) return '';
-  const today = new Date().toLocaleDateString('mk-MK', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const label = intent === 'grant' ? 'ГРАНТОВИ' : intent === 'business' ? 'ОГЛАСИ' : 'ТЕНДЕРИ';
-  let ctx = `\n\n═══ LIVE РЕЗУЛТАТИ — ${label} — ${today} ═══\n`;
-  ctx += `Прикажи САМО овие резултати со точните линкови. НЕ измислувај.\n\n`;
-  results.forEach((r, i) => {
-    const snippet = r.snippet ? r.snippet.slice(0, 120) + (r.snippet.length > 120 ? '...' : '') : '';
-    const region = detectRegionFromLink(r.link);
-    ctx += `${i + 1}. **${r.title}**\n`;
-    if (region) ctx += `   🌍 ${region}\n`;
-    if (r.date) ctx += `   📅 ${r.date}\n`;
-    if (snippet) ctx += `   ${snippet}\n`;
-    ctx += `   🔗 ${r.link}\n\n`;
-  });
-  ctx += `═══ КРАЈ ═══\n`;
-  return ctx;
-}
-
-// ═══ GEMINI CALL ═══
-async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-  const contents = messages.map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: String(m.content || '') }]
-  }));
-
-  if (hasImage && imageData) {
-    const text = imageText || 'Analyze this carefully.';
-    contents.pop();
-    contents.push({
-      role: 'user',
-      parts: [
-        { inline_data: { mime_type: imageType || 'image/jpeg', data: imageData } },
-        { text }
-      ]
-    });
-  }
-
-  // FIX 3: Без Google Grounding — само Serper за search
-  const body = {
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hello' }] }],
-    generationConfig: { maxOutputTokens: 800, temperature: 0.75 }
-  };
-
-  const res = await fetchWithTimeout(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  }, 25000);
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini error ${res.status}: ${err.slice(0, 200)}`);
-  }
-
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
-  return text;
+  } catch (e) {}
 }
 
 // ═══ DETECT LANGUAGE ═══
@@ -508,125 +178,376 @@ function detectLang(text) {
   return 'en';
 }
 
-// ═══ BUILD SYSTEM PROMPT ═══
-function buildSystemPrompt(intent, lang, todayStr) {
+// ═══ INTENT DETECTION ═══
+const INTENT_PATTERNS = {
+  tender: ['тендер','набавка','оглас','конкурс','јавна набавка','licitaci',
+    'tender','nabavka','oglas','javna nabavka','procurement','ausschreibung','ihale','przetarg','appalto'],
+  grant: ['грант','фонд','ipard','ipa','финансирање','финансиска','финансир',
+    'grant','grand','grantovi','fond','fondovi','finansiranje','finansiska','subsidy',
+    'förderung','hibe','dotacja','subvencija','horizon','erasmus','undp','usaid','wbif','fitr',
+    'startup','стартап','повик','povikot','аплицира','aplicira'],
+  legal: ['договор','право','gdpr','закон','трудово','даноци','правни',
+    'ugovor','pravo','zakon','radno','porezi','pravni','contract','legal','recht','gesetz',
+    'licenca','dozvola','registracija','osnivanje','statut'],
+  analysis: ['анализа','споредба','swot','извештај','analiza','swot','izvestaj','analysis'],
+  business: ['бизнис','стратегија','план','раст','biznis','strategija','plan','rast','business']
+};
+
+function classifyIntent(text) {
+  const lower = text.toLowerCase();
+  const scores = {};
+  for (const [intent, keywords] of Object.entries(INTENT_PATTERNS)) {
+    scores[intent] = keywords.filter(k => lower.includes(k)).length;
+  }
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const top = sorted[0];
+  const second = sorted[1];
+  if (top[1] >= 2) return { intent: top[0], confident: true };
+  if (top[1] === 1 && second[1] === 0) return { intent: top[0], confident: true };
+  return { intent: 'business', confident: false };
+}
+
+async function classifyWithLLM(text, apiKey) {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const res = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `Classify into ONE word: tender, grant, legal, analysis, business.\nQuery: "${text}"\nReturn ONLY one word.` }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 10 }
+      })
+    }, 5000);
+    const data = await res.json();
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase() || 'business';
+    return ['tender','grant','legal','analysis','business'].includes(raw) ? raw : 'business';
+  } catch (e) { return 'business'; }
+}
+
+// ═══ EXTRACT KEYWORDS ═══
+function extractKeywords(text) {
+  const stopWords = new Set([
+    'и','или','на','во','за','од','со','до','по','при','над','дека','дали','ми','си','ги','го',
+    'the','and','or','for','in','of','to','a','an','is','are','was','were','be','been',
+    'i','ili','za','od','sa','da','je','su','se','na','u','o','po','mozes','imam','treba',
+    'und','oder','für','von','zu','die','der','das','можеш','барам','сакам','имам'
+  ]);
+  return text.toLowerCase()
+    .replace(/[^\w\s\u0400-\u04FF]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !stopWords.has(w))
+    .slice(0, 5)
+    .join(' ');
+}
+
+// ═══ DETECT COUNTRY/REGION ═══
+function detectCountry(text) {
+  const lower = text.toLowerCase();
+  const map = {
+    'македон|makedon': 'mk',
+    'србиј|srbij': 'rs',
+    'хрват|hrvat': 'hr',
+    'босн|bosn': 'ba',
+    'бугар|bulgar': 'bg',
+    'романиј|roman': 'ro',
+    'грциј|greec|grci': 'gr',
+    'турциј|turk': 'tr',
+    'германиј|german|deutsch': 'de',
+    'франциј|franc': 'fr',
+    'шпаниј|spain|spanij': 'es',
+    'европ|europ|\\beu\\b': 'eu',
+  };
+  for (const [pattern, code] of Object.entries(map)) {
+    if (new RegExp(pattern).test(lower)) return code;
+  }
+  return 'mk'; // default
+}
+
+// ═══ BRAIN STEP 1: SCAN — Serper ═══
+async function scanSerper(query, serperKey, country = 'mk') {
+  if (!query || !serperKey) return [];
+  try {
+    const gl = ['mk','rs','hr','ba','bg','ro','gr','tr','de','fr','es'].includes(country) ? country : 'mk';
+    const res = await fetchWithTimeout('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-KEY': serperKey },
+      body: JSON.stringify({ q: query, num: 5, gl }),
+    }, 8000);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.organic || []).slice(0, 3).map(r => ({
+      title: r.title || '',
+      snippet: r.snippet || '',
+      link: r.link || '',
+      date: r.date || ''
+    }));
+  } catch (e) {
+    console.warn('Serper error:', e.message);
+    return [];
+  }
+}
+
+// ═══ BRAIN STEP 1b: SCAN — TED API ═══
+async function scanTED(keywords, country = '') {
+  try {
+    const scope = country && country !== 'mk' ? `&scope=EU` : `&scope=EU`;
+    const url = `https://ted.europa.eu/api/v3.0/notices/search?fields=ND,TI,DT,TD,CY&q=${encodeURIComponent(keywords)}&limit=3${scope}`;
+    const res = await fetchWithTimeout(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    }, 8000);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const notices = data?.notices || data?.results || [];
+    return notices.slice(0, 3).map(n => ({
+      title: n.TI?.text || n.title || 'EU Tender',
+      snippet: n.TD?.text || '',
+      link: `https://ted.europa.eu/udl?uri=TED:NOTICE:${n.ND}:TEXT:EN:HTML`,
+      date: n.DT || '',
+      country: n.CY?.text || 'EU'
+    }));
+  } catch (e) {
+    console.warn('TED error:', e.message);
+    return [];
+  }
+}
+
+// ═══ BUILD SEARCH QUERIES ═══
+function buildQueries(userText, intent, country) {
+  const kw = extractKeywords(userText);
+  const queries = [];
+
+  if (intent === 'tender' || intent === 'business') {
+    const siteMap = {
+      mk: 'site:e-nabavki.gov.mk OR site:pazar3.mk',
+      rs: 'site:portal.ujn.gov.rs OR site:halo.rs',
+      hr: 'site:eojn.nn.hr OR site:njuskalo.hr',
+      ba: 'site:ejn.ba',
+      bg: 'site:app.eop.bg',
+      ro: 'site:e-licitatie.ro',
+      gr: 'site:promitheus.gov.gr',
+      tr: 'site:ekap.kik.gov.tr',
+      de: 'site:ted.europa.eu',
+      fr: 'site:ted.europa.eu OR site:boamp.fr',
+      es: 'site:contrataciondelestado.es',
+      eu: 'site:ted.europa.eu',
+    };
+    const site = siteMap[country] || siteMap.mk;
+    queries.push({ q: `${kw} tender nabavka licitacija ${site}`, type: 'serper', intent });
+  }
+
+  if (intent === 'grant') {
+    const sectorMap = {
+      'it|tech|software|дигитал': 'IT digital',
+      'gradez|construction|градеж': 'construction',
+      'zemjodelst|agri|земјоделст': 'agriculture',
+      'turiz|tourism|туриз': 'tourism',
+      'energi|energy|енерги': 'energy',
+      'startup|стартап': 'startup innovation',
+      'mladi|youth|млади': 'youth',
+    };
+    let sector = 'business';
+    const lower = userText.toLowerCase();
+    for (const [pattern, val] of Object.entries(sectorMap)) {
+      if (new RegExp(pattern).test(lower)) { sector = val; break; }
+    }
+    const grantSiteMap = {
+      mk: 'site:fitr.mk OR site:ipard.gov.mk OR site:mk.undp.org OR site:westernbalkansfund.org',
+      rs: 'site:inovacionifond.rs OR site:apr.gov.rs',
+      de: 'site:foerderdatenbank.de OR site:bmbf.de',
+      fr: 'site:bpifrance.fr',
+      eu: 'site:ec.europa.eu OR site:interreg.eu',
+    };
+    const grantSite = grantSiteMap[country] || grantSiteMap.mk;
+    queries.push({ q: `${sector} grant funding 2025 ${grantSite}`, type: 'serper', intent: 'grant' });
+    // TED за EU грантови
+    if (['eu','de','fr','es','hr','bg','ro'].includes(country)) {
+      queries.push({ q: `${sector} ${kw}`, type: 'ted' });
+    }
+  }
+
+  // Секогаш додај TED за тендери ако е EU регион
+  if (intent === 'tender' && ['eu','de','fr','es','hr','bg','ro','gr'].includes(country)) {
+    queries.push({ q: `${kw}`, type: 'ted' });
+  }
+
+  return queries;
+}
+
+// ═══ BRAIN STEP 2: ANALYZE (Gemini) ═══
+async function analyzeOpportunities(opportunities, userText, lang, apiKey) {
+  if (!opportunities || opportunities.length === 0) return null;
+  try {
+    const langNames = { mk:'македонски', sr:'српски', en:'English', de:'Deutsch', hr:'хрватски', bs:'босански' };
+    const langName = langNames[lang] || 'English';
+    const opText = opportunities.map((o, i) =>
+      `${i+1}. ${o.title}\n   ${o.snippet}\n   Link: ${o.link}\n   Date: ${o.date || 'unknown'}`
+    ).join('\n\n');
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const res = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [{ text: `You are a business analyst. User needs: "${userText}"
+
+Analyze these opportunities and keep ONLY the best 1-2:
+${opText}
+
+For each kept opportunity, calculate in ${langName}:
+- Is it relevant? (yes/no + why in 1 sentence)
+- Estimated value/contract size (€ range based on sector norms)
+- Time to first action (days)
+- Main risk (1 sentence)
+
+Kill irrelevant ones. Be brutal. Output only the winners with numbers.` }]
+        }],
+        generationConfig: { maxOutputTokens: 400, temperature: 0.3 }
+      })
+    }, 10000);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch (e) {
+    console.warn('Analyze error:', e.message);
+    return null;
+  }
+}
+
+// ═══ REGION LABEL ═══
+function detectRegionFromLink(link) {
+  if (!link) return '';
+  if (link.includes('e-nabavki.gov.mk') || link.includes('pazar3.mk') || link.includes('.mk')) return 'Македонија';
+  if (link.includes('portal.ujn.gov.rs') || link.includes('halo.rs') || link.includes('.rs')) return 'Србија';
+  if (link.includes('eojn.nn.hr') || link.includes('.hr')) return 'Хрватска';
+  if (link.includes('ejn.ba') || link.includes('.ba')) return 'БиХ';
+  if (link.includes('app.eop.bg')) return 'Бугарија';
+  if (link.includes('e-licitatie.ro')) return 'Романија';
+  if (link.includes('promitheus.gov.gr')) return 'Грција';
+  if (link.includes('ekap.kik.gov.tr')) return 'Турција';
+  if (link.includes('ted.europa.eu') || link.includes('ec.europa.eu')) return 'ЕУ';
+  if (link.includes('foerderdatenbank.de') || link.includes('bmbf.de')) return 'Германија';
+  if (link.includes('contrataciondelestado.es')) return 'Шпанија';
+  if (link.includes('bpifrance.fr')) return 'Франција';
+  return '';
+}
+
+// ═══ FORMAT RAW RESULTS ═══
+function formatRawResults(results) {
+  if (!results || results.length === 0) return '';
+  const today = new Date().toLocaleDateString('mk-MK', { day:'2-digit', month:'2-digit', year:'numeric' });
+  let ctx = `\n\n═══ LIVE SCAN RESULTS — ${today} ═══\n`;
+  ctx += `Use ONLY these real results. Do NOT invent links or data.\n\n`;
+  results.forEach((r, i) => {
+    const region = r.country || detectRegionFromLink(r.link);
+    ctx += `${i+1}. **${r.title}**\n`;
+    if (region) ctx += `   🌍 ${region}\n`;
+    if (r.date) ctx += `   📅 ${r.date}\n`;
+    if (r.snippet) ctx += `   ${r.snippet.slice(0, 150)}\n`;
+    ctx += `   🔗 ${r.link}\n\n`;
+  });
+  ctx += `═══ END SCAN ═══\n`;
+  return ctx;
+}
+
+// ═══ BUILD FINAL SYSTEM PROMPT ═══
+function buildSystemPrompt(lang, today, scanResults, analysis) {
   const langNames = {
-    mk: 'македонски', sr: 'српски', hr: 'хрватски', bs: 'босански',
-    en: 'English', de: 'Deutsch', sq: 'shqip', bg: 'български',
-    tr: 'Türkçe', pl: 'polski'
+    mk:'македонски', sr:'српски', hr:'хрватски', bs:'босански',
+    en:'English', de:'Deutsch', sq:'shqip', bg:'български', tr:'Türkçe', pl:'polski'
   };
   const langName = langNames[lang] || 'English';
 
-  return `You are the Business COO of Marginova.AI — an elite business intelligence advisor operating across the Balkans, Mediterranean, and Europe.
+  let prompt = `You are MARGINOVA — Autonomous Business Money Engine.
+Mission: find money, validate fast, execute.
 
-## IDENTITY
-You are not an AI assistant. You are a senior COO with 20+ years of experience in business strategy, tenders, EU grants, legal frameworks, and market analysis across Macedonia, Serbia, Croatia, Bosnia, Slovenia, Albania, Bulgaria, Romania, Greece, Turkey, France, Germany, Spain, Italy, Austria, and the broader EU.
+LANGUAGE: Respond EXCLUSIVELY in ${langName}. Absolute. No exceptions.
+Today: ${today}
 
-You think independently. You challenge weak ideas. You protect the user from bad decisions. You always think one step ahead of the user.
+## OUTPUT FORMAT — ALWAYS USE THIS STRUCTURE:
 
-Today is ${todayStr}.
+[OPPORTUNITY] What exactly, where, for whom
+[NUMBERS] Cost €, revenue €, margin %, time to cash
+[ACTION] 3 concrete steps with links/contacts
+[RISK] Main risk in 1 sentence
 
-## LANGUAGE
-Respond EXCLUSIVELY in: ${langName}. This is absolute — never switch languages unless the user explicitly asks. Never mention that you detected the language. Never apologize for language choice.
+## RULES — NON-NEGOTIABLE:
+- Numbers first. Always. (€, %, days)
+- NO theory. NO strategy talk. NO explanations of your limitations.
+- Fastest path to cash, always.
+- If data is missing → say "No live data" in ONE word, then give best alternative action
+- NEVER hallucinate links, companies, prices, program names
+- NEVER apologize. NEVER explain why you can't do something.
+- NEVER say "I understand" or "My goal is" or "As a COO"
+- Ask ONE question max if truly unclear
+- Maximum 200 words total
 
-## LIVE SEARCH SYSTEM — CRITICAL
-You have real-time search results injected into your context before every response via Serper.
-- NEVER say "I cannot search the internet"
-- NEVER say "I don't have access to real-time data"
-- NEVER ask permission to search — results are already in your context
-- If the context contains "LIVE РЕЗУЛТАТИ" — present them using the format below
-- If the context contains "НЕМА РЕАЛНИ РЕЗУЛТАТИ" — give ONE concrete alternative action, never list generic portals
+## LIVE SEARCH SYSTEM:
+Results are pre-loaded below. Present them directly.
+If no results → state "0 live results" + give ONE concrete offline action.`;
 
-When presenting search results, use exactly this format:
-📋 [Title]
-💰 [Value — only if known, skip otherwise]
-📅 [Deadline — only if known]
-🌍 [Country/Region]
-✅ Step 1 → Step 2 → Step 3
-🔗 [Link]
+  if (scanResults && scanResults.length > 0) {
+    prompt += formatRawResults(scanResults);
+  }
 
-## THINKING PROTOCOL
-Before every response, silently run this analysis:
-1. What does this user ACTUALLY need? (beyond what they typed)
-2. What risk or obstacle have they NOT mentioned?
-3. What is the single most valuable insight right now?
-4. What is the ONE action they should take immediately?
+  if (analysis) {
+    prompt += `\n\n═══ ANALYSIS ═══\n${analysis}\n═══ END ANALYSIS ═══\n`;
+    prompt += `\nUse the analysis above to present the BEST opportunity with exact numbers and 3 action steps.`;
+  } else if (scanResults && scanResults.length > 0) {
+    prompt += `\nPresent the best result above with [OPPORTUNITY][NUMBERS][ACTION][RISK] format.`;
+  } else {
+    prompt += `\n\n═══ NO LIVE RESULTS ═══
+ZERO results from all search sources.
+DO NOT invent data. DO NOT list portals.
+Give ONE concrete offline action specific to their sector.
+═══`;
+  }
 
-Never show this analysis. Only show the result.
+  return prompt;
+}
 
-## BUSINESS DNA
-Deep expertise in:
-→ Macedonian Law on Public Procurement (ЗЈН)
-→ EU Directives 2014/24/EU, 2014/25/EU, 2014/23/EU
-→ IPARD III, IPA III, Horizon Europe, INTERREG, ERASMUS+, CEF, WBIF
-→ Western Balkans EU accession frameworks and business culture
-→ Corporate law across MK, RS, HR, BA, BG, RO, GR, TR
-→ Cross-border partnerships, joint ventures, subcontracting
-→ Grant application structures: narrative, budget, indicators, eligibility
-→ Business culture nuances: Balkans, DACH, Southern Europe, CEE
-→ Negotiation dynamics across the region
+// ═══ GEMINI FINAL CALL ═══
+async function callGemini(systemPrompt, messages, hasImage, imageData, imageType, imageText, apiKey) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-## RESPONSE RULES
-- Maximum 180 words per response (exception: legal/financial/contract analysis → 350 words)
-- Every sentence carries value. Zero filler. Zero repetition.
-- Never open two consecutive responses with the same structure
-- Never use: "I can help you with..." / "Great question" / "As an AI" / "I understand your concern" / "Certainly" / "Of course"
-- Never hallucinate: companies, prices, links, names, contacts, phone numbers, law numbers
-- If uncertain about a specific law/regulation → say exactly what you don't know + name the specific institution to verify (not generic advice)
-- End every response with ONE concrete action the user can take immediately
+  const contents = messages.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: String(m.content || '') }]
+  }));
 
-## BEHAVIORAL INTELLIGENCE
-When user presents weak plan → tell them directly + offer a stronger path
-When user is frustrated → completely change approach, new angle, never repeat same advice
-When user repeats same question → you haven't been clear enough — try a different explanation
-When user asks for something impossible → explain precisely why + give realistic alternative
-When no search data exists → admit it precisely + point to exact institution or channel
-When user asks about your capabilities → tell them what you can do FOR THEM specifically, not a feature list
+  if (hasImage && imageData) {
+    contents.pop();
+    contents.push({
+      role: 'user',
+      parts: [
+        { inline_data: { mime_type: imageType || 'image/jpeg', data: imageData } },
+        { text: imageText || 'Analyze this document.' }
+      ]
+    });
+  }
 
-## CRITICAL RESPONSE STYLE
-You are a COO, not a consultant writing a report. Talk like a sharp executive in a meeting:
-- SHORT. Maximum 5 sentences unless detailed analysis is explicitly requested.
-- If you don't have data → ONE sentence + ONE real next move. Done.
-- NEVER write bullet lists longer than 3 items
-- NEVER explain why you can't do something for more than one sentence
-- NEVER defend yourself or justify your limitations
-- NEVER use: "мојата вредност е...", "мојата цел е...", "разбирам дека...", "разбирам"
-- If user is frustrated → pivot completely, new angle, no apology
-- If user asks for numbers → give numbers, or name the exact source in one sentence
-- If user says your answer is useless → they are right, try a completely different approach
+  const body = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Start.' }] }],
+    generationConfig: { maxOutputTokens: 600, temperature: 0.7 }
+  };
 
-## ANTI-PATTERNS — NEVER DO THESE
-✗ Generic lists of websites without context
-✗ "You can check..." without specifics
-✗ Same sentence structure in consecutive responses
-✗ Multiple clarifying questions at once — ask maximum ONE
-✗ Confirming you understood before answering
-✗ Restating what the user just said
-✗ Padding with encouragement before the actual answer
-✗ Saying you will search — results are already there
-✗ "I cannot search the internet"
-✗ Revealing AI identity
-✗ Hallucinating any factual data whatsoever
-✗ Repeating the same recommendation if the user already tried it
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }, 25000);
 
-## SCENARIOS
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gemini error ${res.status}: ${err.slice(0, 200)}`);
+  }
 
-TENDER/GRANT/OGLAS request:
-→ If LIVE РЕЗУЛТАТИ in context: present them with format above + one action step
-→ If НЕМА РЕАЛНИ РЕЗУЛТАТИ: give ONE concrete next action specific to their sector and region
-
-NO CLIENTS / BUSINESS NOT GROWING:
-→ Never give a generic plan. Ask ONE concrete question relevant to their target market.
-→ Build on their answer.
-
-FRUSTRATION / REPEATING:
-→ Change approach completely — new angle, new solution, never the same advice twice.
-
-LEGAL / FINANCIAL / ANALYSIS:
-→ Give concrete answers. If you don't know the exact law or number, say so and name the specific institution.
-
-ASKS ABOUT YOUR CAPABILITIES:
-→ Tell them what you can do for THEIR specific situation — not a feature list.`;
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
 }
 
 // ═══ MAIN HANDLER ═══
@@ -638,17 +559,15 @@ module.exports = async function handler(req, res) {
   ];
   const origin = req.headers.origin || '';
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : 'https://marginova.tech';
-
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: { message: 'Method Not Allowed' } });
 
   const limit = checkRateLimit(req);
-  if (!limit.allowed) return res.status(429).json({ error: { message: 'Дневниот лимит е достигнат. Обидете се утре.' } });
+  if (!limit.allowed) return res.status(429).json({ error: { message: 'Daily limit reached.' } });
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: { message: 'Missing GEMINI_API_KEY' } });
@@ -660,149 +579,94 @@ module.exports = async function handler(req, res) {
     const userId = body.userId || null;
     const avatar = 'cooai';
 
-    // Anti-spam
     const rawText = body.messages?.[body.messages.length - 1]?.content || '';
-    if (rawText.length > 2000) {
-      return res.status(400).json({ error: { message: 'Пораката е предолга. Максимум 2000 знаци.' } });
-    }
-    if (!userId && limit.remaining < DAILY_LIMIT - 10) {
-      return res.status(429).json({ error: { message: 'Потребна е регистрација за повеќе пораки.' } });
-    }
+    if (rawText.length > 2000) return res.status(400).json({ error: { message: 'Message too long. Max 2000 chars.' } });
+    if (!userId && limit.remaining < DAILY_LIMIT - 10) return res.status(429).json({ error: { message: 'Registration required.' } });
 
-    // ═══ USER QUOTA CHECK (Supabase) ═══
     if (userId) {
       const quota = await checkUserQuota(userId);
-      if (!quota.allowed) {
-        return res.status(429).json({
-          error: { message: 'Го достигнавте дневниот лимит. Надградете го планот за повеќе пораки.' },
-          quota_exceeded: true
-        });
-      }
+      if (!quota.allowed) return res.status(429).json({
+        error: { message: 'Daily limit reached. Upgrade plan.' },
+        quota_exceeded: true
+      });
       console.log(`[Quota] plan:${quota.plan} | remaining:${quota.remaining}`);
     }
 
-    const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-    // Memory со real Gemini summarization
+    const today = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric' });
     const memory = await loadMemory(userId, avatar, apiKey);
 
-    // Комбинирај: memory.recent + нови пораки од frontend
     const frontendMessages = (body.messages || []).slice(-4).map(m => ({
       role: m.role,
       content: typeof m.content === 'string' ? m.content : String(m.content || '')
     }));
-
-    // Спречи дупликати — земи само нови пораки кои ги нема во memory
     const memoryContents = memory.recent.map(m => m.content);
     const newMessages = frontendMessages.filter(m => !memoryContents.includes(m.content));
-
     const messages = [...memory.recent, ...newMessages];
 
     const lastUserMsg = messages.filter(m => m.role === 'user').pop();
     const userText = lastUserMsg?.content || '';
     const lang = body.lang || detectLang(userText);
 
-    // Hybrid intent: keyword прво, LLM само ако е нејасно
+    // Intent + Country
     const keywordResult = classifyIntent(userText);
     const intent = keywordResult.confident
       ? keywordResult.intent
       : await classifyWithLLM(userText, apiKey);
+    const country = detectCountry(userText);
 
-    console.log(`[COO] lang:${lang} | intent:${intent} | confident:${keywordResult.confident} | memory:${memory.recent.length} msgs | text:${userText.slice(0, 60)}`);
+    console.log(`[BRAIN] lang:${lang} | intent:${intent} | country:${country} | text:${userText.slice(0, 60)}`);
 
-    // Додај summary во system prompt ако постои
-    let enrichedSystem = buildSystemPrompt(intent, lang, today);
-    if (memory.summary) {
-      enrichedSystem += `\n\n${memory.summary}`;
+    // ═══ BRAIN STEP 1: SCAN ═══
+    const needsScan = ['tender','grant','business'].includes(intent) ||
+      ['tender','grant','nabavka','oglas','licitaci','fond','grant','startup','ponuda'].some(k => userText.toLowerCase().includes(k));
+
+    let allResults = [];
+
+    if (needsScan && serperKey) {
+      const queries = buildQueries(userText, intent, country);
+      console.log(`[BRAIN] Queries: ${JSON.stringify(queries.map(q => q.type + ':' + q.q.slice(0,50)))}`);
+
+      // Паралелно скенирање
+      const scanPromises = queries.map(async q => {
+        if (q.type === 'serper') {
+          const r = await scanSerper(q.q, serperKey, country);
+          console.log(`[Serper] results: ${r.length} | query: ${q.q.slice(0,50)}`);
+          return r;
+        } else if (q.type === 'ted') {
+          const r = await scanTED(q.q, country);
+          console.log(`[TED] results: ${r.length} | query: ${q.q.slice(0,50)}`);
+          return r;
+        }
+        return [];
+      });
+
+      const scanArrays = await Promise.all(scanPromises);
+      const rawResults = scanArrays.flat();
+
+      // Дедупликација
+      const seen = new Set();
+      allResults = rawResults.filter(r => {
+        if (!r.link || seen.has(r.link)) return false;
+        seen.add(r.link);
+        return true;
+      }).slice(0, 5);
+
+      console.log(`[BRAIN] Total unique results: ${allResults.length}`);
     }
 
-    // ═══ SERPER SEARCH — паметна детекција ═══
-    const lower = userText.toLowerCase();
-
-    // Дали бара приватни понуди
-    const wantsPrivate = ['приватна','приватни','понуда','понуди','privatna','privatni','ponuda','ponudi',
-      'oglas','oglasi','оглас','изведба','izvedba','fasad','фасад','krov','кров','gradez','градеж',
-      'raboti','работи','услуга','usluga','поdizvrsitel','podizvrsitel'].some(k => lower.includes(k));
-
-    // Дали бара државни/јавни тендери
-    const wantsTender = intent === 'tender' || ['тендер','tender','јавна набавка','javna nabavka',
-      'државна','drzavna','državna','javna','јавна','nabavka','набавка','ponuda','понуда'].some(k => lower.includes(k));
-
-    // Дали бара грантови — keyword check + intent
-    const wantsGrant = intent === 'grant' || [
-      'grant','grand','грант','fond','фонд','finansiranje','финансирање',
-      'finansiska','финансиска','subvencija','субвенција','fitr','ipard',
-      'startup','стартап','podrska','поддршка','eu fond','eu фонд',
-      'horizon','erasmus','undp','повик','povikot','aplicira','аплицира'
-    ].some(k => lower.includes(k));
-
-    if (serperKey) {
-      const allResults = [];
-
-      // Приватни понуди
-      if (wantsPrivate) {
-        const keywords = extractKeywords(userText);
-        const privateQuery = `${keywords} site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk OR site:halo.rs`;
-        console.log(`[Serper private] ${privateQuery}`);
-        const privateResults = await searchSerper(privateQuery, serperKey);
-        console.log(`[Serper private] results: ${privateResults?.length || 0}`);
-        if (privateResults?.length > 0) allResults.push(...privateResults);
-      }
-
-      // Јавни тендери
-      if (wantsTender) {
-        const tenderQuery = buildSearchQuery(userText, 'tender');
-        console.log(`[Serper tender] ${tenderQuery}`);
-        const tenderResults = await searchSerper(tenderQuery, serperKey);
-        console.log(`[Serper tender] results: ${tenderResults?.length || 0}`);
-        if (tenderResults?.length > 0) allResults.push(...tenderResults);
-      }
-
-      // Грантови
-      if (wantsGrant) {
-        const grantQuery = buildSearchQuery(userText, 'grant');
-        console.log(`[Serper grant] ${grantQuery}`);
-        const grantResults = await searchSerper(grantQuery, serperKey);
-        console.log(`[Serper grant] results: ${grantResults?.length || 0}`);
-        if (grantResults?.length > 0) allResults.push(...grantResults);
-      }
-
-      if (allResults.length > 0) {
-        // Дедупликација по линк
-        const seen = new Set();
-        const unique = allResults.filter(r => { if (seen.has(r.link)) return false; seen.add(r.link); return true; }).slice(0, 4);
-        enrichedSystem += formatSearchResults(unique, wantsPrivate ? 'business' : intent);
-      } else if (wantsPrivate || wantsTender || wantsGrant) {
-        enrichedSystem += `
-
-═══ НЕМА РЕАЛНИ РЕЗУЛТАТИ ═══
-LIVE SEARCH не врати ниту еден резултат за ова барање.
-
-КРИТИЧНО — ЗАДОЛЖИТЕЛНО:
-- НЕ измислувај линкови, URL-адреси, имиња на програми, износи или рокови
-- НЕ пишувај пример линкови со забелешка дека се примери — тоа е халуцинација
-- НЕ се извинувај за ограничувања на системот
-- НЕ објаснувај зошто нема резултати
-
-НАМЕСТО ТОА — направи ЕДНО:
-1. Предложи конкретна следна акција (директен контакт, специфична организација по ime)
-2. Постави едно прецизно прашање за подобро насочување на корисникот
-3. Објасни кој е вистинскиот канал (не листа — само еден конкретен)
-═══`;
-      }
+    // ═══ BRAIN STEP 2: ANALYZE ═══
+    let analysis = null;
+    if (allResults.length > 0) {
+      analysis = await analyzeOpportunities(allResults, userText, lang, apiKey);
+      console.log(`[BRAIN] Analysis: ${analysis ? 'done' : 'failed'}`);
     }
 
-    const text = await callGemini(
-      enrichedSystem,
-      messages,
-      hasImage,
-      body.image,
-      body.imageType,
-      body.imageText,
-      apiKey
-    );
+    // ═══ BRAIN STEP 3: EXECUTE (Gemini final) ═══
+    let systemPrompt = buildSystemPrompt(lang, today, allResults, analysis);
+    if (memory.summary) systemPrompt += `\n\nContext: ${memory.summary}`;
 
-    // Зачувај memory + зголеми quota
+    const text = await callGemini(systemPrompt, messages, hasImage, body.image, body.imageType, body.imageText, apiKey);
+
     if (userId) {
       await Promise.all([
         saveMemory(userId, avatar, 'user', userText),
