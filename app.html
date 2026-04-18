@@ -152,7 +152,7 @@ nav::after{
 }
 .menu-btn:hover{border-color:var(--border2);}
 
-/* ═══ LANG BAR (SAMO ZA UI, NE PRAKA NA BACKEND) ═══ */
+/* ═══ LANG BAR ═══ */
 .lang-bar{
   display:flex;justify-content:center;gap:4px;
   padding:0.3rem 0.5rem 0.4rem;
@@ -258,6 +258,7 @@ nav::after{
 .td:nth-child(2){animation-delay:.2s;}.td:nth-child(3){animation-delay:.4s;}
 @keyframes td{0%,80%,100%{opacity:.2;transform:scale(.8);}40%{opacity:.9;transform:scale(1.1);}}
 
+/* Intent badge на poraka */
 .intent-tag{
   display:inline-block;font-size:0.5rem;padding:1px 6px;border-radius:50px;
   font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
@@ -425,6 +426,11 @@ nav::after{
   font-size:0.74rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;
 }
 .modal-btn-sec:hover{border-color:var(--border2);color:var(--text2);}
+
+@keyframes gold-shimmer{
+  0%,100%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+}
 </style>
 </head>
 <body>
@@ -444,7 +450,11 @@ nav::after{
     <input class="auth-input" type="email" id="auth-email" placeholder="Email address"/>
     <input class="auth-input" type="password" id="auth-password" placeholder="Password"/>
     <div id="gdpr-notice" style="display:none;">
-      <div class="gdpr-note">Со регистрација се согласувате со <a href="terms-of-service.html">Услови за користење</a> и <a href="privacy-policy.html">Политика на приватност</a>.</div>
+      <div class="gdpr-note">
+        Со регистрација се согласувате со
+        <a href="terms-of-service.html">Услови за користење</a> и
+        <a href="privacy-policy.html">Политика на приватност</a>.
+      </div>
     </div>
     <div class="auth-msg" id="auth-msg"></div>
     <button class="auth-btn" onclick="handleAuth()" id="auth-btn">Sign In</button>
@@ -476,11 +486,16 @@ nav::after{
 <!-- DRAWER -->
 <div class="drawer" id="drawer">
   <div class="drawer-head">
-    <div style="font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:300;letter-spacing:0.1em;">MARGIN<b style="color:var(--gold);">OVA</b><span style="color:rgba(168,124,255,0.8);">.AI</span></div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:300;letter-spacing:0.1em;">
+      MARGIN<b style="color:var(--gold);">OVA</b><span style="color:rgba(168,124,255,0.8);">.AI</span>
+    </div>
     <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
   <div class="drawer-body">
-    <div class="drawer-section"><div class="drawer-email" id="drawer-email"></div><div class="drawer-tokens">💬 <b id="token-display">—</b> пораки останати</div></div>
+    <div class="drawer-section">
+      <div class="drawer-email" id="drawer-email"></div>
+      <div class="drawer-tokens">💬 <b id="token-display">—</b> пораки останати</div>
+    </div>
     <button class="drawer-btn upgrade" onclick="openModal('upgrade-modal');closeDrawer();">⚡ Надгради план →</button>
     <button class="drawer-btn" onclick="clearChat();closeDrawer();">🗑️ Исчисти разговор</button>
     <button class="drawer-btn" onclick="saveChat();closeDrawer();">💾 Зачувај разговор</button>
@@ -491,90 +506,120 @@ nav::after{
 
 <!-- NAV -->
 <nav id="main-nav" style="display:none;">
-  <div class="nav-logo"><div class="nav-logo-icon">⚡</div><div class="nav-logo-text">MARGIN<b>OVA</b><span>.AI</span></div></div>
-  <div class="nav-right"><div class="nav-intent" id="nav-intent">COO</div><button class="menu-btn" onclick="openDrawer()">☰</button></div>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">⚡</div>
+    <div class="nav-logo-text">MARGIN<b>OVA</b><span>.AI</span></div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-intent" id="nav-intent">COO</div>
+    <button class="menu-btn" onclick="openDrawer()">☰</button>
+  </div>
 </nav>
 
-<!-- LANG BAR (SAMO ZA UI, NE PRAKA NA BACKEND) -->
+<!-- LANG BAR -->
 <div class="lang-bar" id="lang-bar" style="display:none;">
-  <button class="lang-btn" id="lb-mk" onclick="setUILang('mk')"><img src="https://flagcdn.com/w40/mk.png" alt="MK"/><span>МК</span></button>
-  <button class="lang-btn" id="lb-sr" onclick="setUILang('sr')"><img src="https://flagcdn.com/w40/rs.png" alt="SR"/><span>SR</span></button>
-  <button class="lang-btn" id="lb-hr" onclick="setUILang('hr')"><img src="https://flagcdn.com/w40/hr.png" alt="HR"/><span>HR</span></button>
-  <button class="lang-btn" id="lb-bs" onclick="setUILang('bs')"><img src="https://flagcdn.com/w40/ba.png" alt="BS"/><span>BS</span></button>
-  <button class="lang-btn" id="lb-en" onclick="setUILang('en')"><img src="https://flagcdn.com/w40/gb.png" alt="EN"/><span>EN</span></button>
-  <button class="lang-btn" id="lb-sq" onclick="setUILang('sq')"><img src="https://flagcdn.com/w40/al.png" alt="SQ"/><span>SQ</span></button>
-  <button class="lang-btn" id="lb-de" onclick="setUILang('de')"><img src="https://flagcdn.com/w40/de.png" alt="DE"/><span>DE</span></button>
-  <button class="lang-btn" id="lb-bg" onclick="setUILang('bg')"><img src="https://flagcdn.com/w40/bg.png" alt="BG"/><span>BG</span></button>
-  <button class="lang-btn" id="lb-tr" onclick="setUILang('tr')"><img src="https://flagcdn.com/w40/tr.png" alt="TR"/><span>TR</span></button>
-  <button class="lang-btn" id="lb-pl" onclick="setUILang('pl')"><img src="https://flagcdn.com/w40/pl.png" alt="PL"/><span>PL</span></button>
+  <button class="lang-btn" id="lb-mk" onclick="setLang('mk')">
+    <img src="https://flagcdn.com/w40/mk.png" alt="MK"/><span>МК</span>
+  </button>
+  <button class="lang-btn" id="lb-sr" onclick="setLang('sr')">
+    <img src="https://flagcdn.com/w40/rs.png" alt="SR"/><span>SR</span>
+  </button>
+  <button class="lang-btn" id="lb-hr" onclick="setLang('hr')">
+    <img src="https://flagcdn.com/w40/hr.png" alt="HR"/><span>HR</span>
+  </button>
+  <button class="lang-btn" id="lb-bs" onclick="setLang('bs')">
+    <img src="https://flagcdn.com/w40/ba.png" alt="BS"/><span>BS</span>
+  </button>
+  <button class="lang-btn" id="lb-en" onclick="setLang('en')">
+    <img src="https://flagcdn.com/w40/gb.png" alt="EN"/><span>EN</span>
+  </button>
+  <button class="lang-btn" id="lb-sq" onclick="setLang('sq')">
+    <img src="https://flagcdn.com/w40/al.png" alt="SQ"/><span>SQ</span>
+  </button>
+  <button class="lang-btn" id="lb-de" onclick="setLang('de')">
+    <img src="https://flagcdn.com/w40/de.png" alt="DE"/><span>DE</span>
+  </button>
+  <button class="lang-btn" id="lb-bg" onclick="setLang('bg')">
+    <img src="https://flagcdn.com/w40/bg.png" alt="BG"/><span>BG</span>
+  </button>
+  <button class="lang-btn" id="lb-tr" onclick="setLang('tr')">
+    <img src="https://flagcdn.com/w40/tr.png" alt="TR"/><span>TR</span>
+  </button>
+  <button class="lang-btn" id="lb-pl" onclick="setLang('pl')">
+    <img src="https://flagcdn.com/w40/pl.png" alt="PL"/><span>PL</span>
+  </button>
 </div>
 
 <!-- MAIN -->
 <div class="main" id="main-app" style="display:none;">
   <div class="chat-area">
+
+    <!-- WELCOME -->
     <div class="welcome" id="welcome-screen">
       <div class="welcome-icon">⚡</div>
       <div class="welcome-title">Business <em>COO</em></div>
-      <div class="welcome-desc" id="welcome-desc">Твојот AI советник за бизнис стратегија, тендери, грантови и правни прашања.</div>
+      <div class="welcome-desc" id="welcome-desc">
+        Твојот AI советник за бизнис стратегија, тендери, грантови и правни прашања.
+      </div>
       <button class="welcome-start" onclick="startChat()">Започни разговор →</button>
     </div>
+
+    <!-- MESSAGES -->
     <div class="messages" id="messages" style="display:none;"></div>
-    <div id="drag-overlay" style="display:none;position:absolute;inset:0;background:rgba(201,168,76,0.06);border:2px dashed rgba(201,168,76,0.5);border-radius:12px;z-index:50;align-items:center;justify-content:center;pointer-events:none;"><div style="text-align:center;color:var(--gold);"><div style="font-size:2rem;margin-bottom:0.4rem;">📎</div><div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;">Спушти документ или слика</div><div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">JPG · PNG · PDF</div></div></div>
+
+    <!-- DRAG OVERLAY -->
+    <div id="drag-overlay" style="display:none;position:absolute;inset:0;background:rgba(201,168,76,0.06);border:2px dashed rgba(201,168,76,0.5);border-radius:12px;z-index:50;align-items:center;justify-content:center;pointer-events:none;">
+      <div style="text-align:center;color:var(--gold);">
+        <div style="font-size:2rem;margin-bottom:0.4rem;">📎</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;">Спушти документ или слика</div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">JPG · PNG · PDF</div>
+      </div>
+    </div>
+
+    <!-- INPUT -->
     <div class="input-area" id="input-area" style="display:none;">
       <input type="file" id="file-input" accept="image/*,.pdf" style="display:none;" onchange="handleFileUpload(this)"/>
-      <div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div id="file-preview" style="display:none;padding:4px 0;"></div><textarea id="msg-input" placeholder="Постави прашање..." rows="2"></textarea></div>
-      <div style="display:flex;flex-direction:column;gap:6px;"><button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Прикачи документ или слика">📎</button><button class="send-btn" id="send-btn" onclick="sendMsg()"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+        <div id="file-preview" style="display:none;padding:4px 0;"></div>
+        <textarea id="msg-input" placeholder="Постави прашање..." rows="2"></textarea>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Прикачи документ или слика">📎</button>
+        <button class="send-btn" id="send-btn" onclick="sendMsg()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
     </div>
+
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════
-// MARGINOVA.AI — BUSINESS COO (SAMO UI, BEZ LANG PRAKJANJE)
-// Detektor na jazici e SAMO vo backend (api/chat.js)
-// ═══════════════════════════════════════════════════════════════════
-
 // ═══ CONFIG ═══
 const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
 const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'marginova_auth' } });
+const db = createClient(SUPA_URL, SUPA_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'marginova_auth' }
+});
 
 let currentUser = null;
 let authMode = 'login';
-let uiLang = localStorage.getItem('uiLang') || 'mk';
+let lang = localStorage.getItem('mlang') || 'mk';
 let chatHistory = [];
 let currentIntent = 'business';
-let currentFile = null;
-
-// ═══ UI LANGUAGE (SAMO ZA FRONTEND, NE PRAKA NA BACKEND) ═══
-const UI_TEXTS = {
-  mk: { placeholder: 'Постави прашање...', welcome: 'Твојот AI советник за бизнис стратегија, тендери, грантови и правни прашања.', start: 'Започни разговор →' },
-  sr: { placeholder: 'Postavi pitanje...', welcome: 'Tvoj AI savetnik za poslovnu strategiju, tendere, grantove i pravna pitanja.', start: 'Započni razgovor →' },
-  en: { placeholder: 'Ask a question...', welcome: 'Your AI advisor for business strategy, tenders, grants and legal questions.', start: 'Start conversation →' },
-  de: { placeholder: 'Frage stellen...', welcome: 'Ihr KI-Berater für Unternehmensstrategie, Ausschreibungen, Fördermittel und Rechtsfragen.', start: 'Gespräch starten →' },
-  sq: { placeholder: 'Bëni një pyetje...', welcome: 'Këshilltari juaj AI për strategji biznesi, tenderat, grantet dhe çështjet ligjore.', start: 'Fillo bisedën →' },
-  bg: { placeholder: 'Задайте въпрос...', welcome: 'Вашият AI съветник за бизнес стратегия, търгове, грантове и правни въпроси.', start: 'Започни разговор →' },
-  tr: { placeholder: 'Soru sorun...', welcome: 'İş stratejisi, ihaleler, hibeler ve hukuki sorular için AI danışmanınız.', start: 'Konuşmayı başlat →' },
-  pl: { placeholder: 'Zadaj pytanie...', welcome: 'Twój doradca AI ds. strategii biznesowej, przetargów, dotacji i kwestii prawnych.', start: 'Rozpocznij rozmowę →' }
-};
-
-function setUILang(l) {
-  uiLang = l;
-  localStorage.setItem('uiLang', l);
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('lb-' + l);
-  if (btn) btn.classList.add('active');
-  const inp = document.getElementById('msg-input');
-  if (inp) inp.placeholder = UI_TEXTS[l]?.placeholder || UI_TEXTS.en.placeholder;
-  const desc = document.getElementById('welcome-desc');
-  if (desc) desc.textContent = UI_TEXTS[l]?.welcome || UI_TEXTS.en.welcome;
-  const startBtn = document.querySelector('.welcome-start');
-  if (startBtn) startBtn.textContent = UI_TEXTS[l]?.start || UI_TEXTS.en.start;
-}
 
 // ═══ AUTH ═══
-function switchAuth(mode) { authMode = mode; document.getElementById('tab-login').classList.toggle('active', mode === 'login'); document.getElementById('tab-register').classList.toggle('active', mode === 'register'); document.getElementById('gdpr-notice').style.display = mode === 'register' ? 'block' : 'none'; document.getElementById('auth-btn').textContent = mode === 'login' ? 'Sign In' : 'Register'; document.getElementById('auth-msg').textContent = ''; }
+function switchAuth(mode) {
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+  document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+  document.getElementById('gdpr-notice').style.display = mode === 'register' ? 'block' : 'none';
+  document.getElementById('auth-btn').textContent = mode === 'login' ? 'Sign In' : 'Register';
+  document.getElementById('auth-msg').textContent = '';
+}
 
 async function handleAuth() {
   const email = document.getElementById('auth-email').value.trim();
@@ -584,12 +629,14 @@ async function handleAuth() {
   if (!email || !password) { msg.textContent = 'Внесете email и лозинка.'; msg.className = 'auth-msg error'; return; }
   btn.disabled = true; msg.textContent = '...'; msg.className = 'auth-msg';
   try {
+    let res;
     if (authMode === 'register') {
-      const res = await db.auth.signUp({ email, password });
+      res = await db.auth.signUp({ email, password });
       if (res.error) throw res.error;
-      msg.textContent = '✅ Регистрацијата е успешна! Проверете го email.'; msg.className = 'auth-msg success';
+      msg.textContent = '✅ Регистрацијата е успешна! Проверете го email.';
+      msg.className = 'auth-msg success';
     } else {
-      const res = await db.auth.signInWithPassword({ email, password });
+      res = await db.auth.signInWithPassword({ email, password });
       if (res.error) throw res.error;
       currentUser = res.data.user;
       showApp();
@@ -603,32 +650,247 @@ async function handleAuth() {
   btn.disabled = false;
 }
 
-async function logout() { await db.auth.signOut(); currentUser = null; document.getElementById('auth-screen').style.display = 'flex'; document.getElementById('main-nav').style.display = 'none'; document.getElementById('lang-bar').style.display = 'none'; document.getElementById('main-app').style.display = 'none'; closeDrawer(); }
+async function logout() {
+  await db.auth.signOut();
+  currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('main-nav').style.display = 'none';
+  document.getElementById('lang-bar').style.display = 'none';
+  document.getElementById('main-app').style.display = 'none';
+  closeDrawer();
+}
 
-function showApp() { document.getElementById('auth-screen').style.display = 'none'; document.getElementById('main-nav').style.display = 'flex'; document.getElementById('lang-bar').style.display = 'flex'; document.getElementById('main-app').style.display = 'flex'; setUILang(uiLang); if (currentUser) { document.getElementById('drawer-email').textContent = currentUser.email; loadTokens(); ensureProfile(); } }
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-nav').style.display = 'flex';
+  document.getElementById('lang-bar').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'flex';
+  setLang(lang);
+  if (currentUser) {
+    document.getElementById('drawer-email').textContent = currentUser.email;
+    loadTokens();
+    ensureProfile();
+  }
+}
 
-async function ensureProfile() { if (!currentUser) return; try { const { data } = await db.from('profiles').select('user_id').eq('user_id', currentUser.id).single(); if (!data) await db.from('profiles').insert({ user_id: currentUser.id, plan: 'free', daily_msgs: 0, last_msg_date: new Date().toISOString().split('T')[0] }); } catch (e) { console.warn('Profile error:', e); } }
+async function ensureProfile() {
+  if (!currentUser) return;
+  try {
+    const { data } = await db.from('profiles').select('user_id').eq('user_id', currentUser.id).single();
+    if (!data) {
+      await db.from('profiles').insert({
+        user_id: currentUser.id,
+        plan: 'free',
+        daily_msgs: 0,
+        last_msg_date: new Date().toISOString().split('T')[0]
+      });
+    }
+  } catch (e) { console.warn('Profile error:', e); }
+}
 
-async function loadTokens() { if (!currentUser) return; try { const today = new Date().toISOString().split('T')[0]; const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date').eq('user_id', currentUser.id).single(); const plan = data?.plan || 'free'; const limits = { free: 20, starter: 500, pro: 2000, business: -1 }; const limit = limits[plan] ?? 20; if (limit === -1) { document.getElementById('token-display').textContent = '∞'; return; } const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0; document.getElementById('token-display').textContent = Math.max(0, limit - used); } catch (e) { console.warn('Token load error:', e); } }
+async function loadTokens() {
+  if (!currentUser) return;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date').eq('user_id', currentUser.id).single();
+    const plan = data?.plan || 'free';
+    const limits = { free: 20, starter: 500, pro: 2000, business: -1 };
+    const limit = limits[plan] ?? 20;
+    if (limit === -1) { document.getElementById('token-display').textContent = '∞'; return; }
+    const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
+    document.getElementById('token-display').textContent = Math.max(0, limit - used);
+  } catch (e) { console.warn('Token load error:', e); }
+}
 
-async function deductToken() { if (!currentUser) return true; try { const today = new Date().toISOString().split('T')[0]; const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date').eq('user_id', currentUser.id).single(); const plan = data?.plan || 'free'; const limits = { free: 20, starter: 500, pro: 2000, business: -1 }; const limit = limits[plan] ?? 20; if (limit === -1) return true; const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0; if (used >= limit) { openModal('upgrade-modal'); return false; } await db.from('profiles').upsert({ user_id: currentUser.id, daily_msgs: used + 1, last_msg_date: today }); const el = document.getElementById('token-display'); if (el) el.textContent = Math.max(0, limit - used - 1); return true; } catch (e) { return true; } }
+async function deductToken() {
+  if (!currentUser) return true;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date').eq('user_id', currentUser.id).single();
+    const plan = data?.plan || 'free';
+    const limits = { free: 20, starter: 500, pro: 2000, business: -1 };
+    const limit = limits[plan] ?? 20;
+    if (limit === -1) return true;
+    const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
+    if (used >= limit) {
+      openModal('upgrade-modal');
+      return false;
+    }
+    await db.from('profiles').upsert({
+      user_id: currentUser.id,
+      daily_msgs: used + 1,
+      last_msg_date: today
+    });
+    const el = document.getElementById('token-display');
+    if (el) el.textContent = Math.max(0, limit - used - 1);
+    return true;
+  } catch (e) { return true; }
+}
+
+// ═══ LANG ═══
+const PLACEHOLDERS = {
+  mk: 'Постави прашање...', sr: 'Postavi pitanje...', hr: 'Postavi pitanje...',
+  bs: 'Postavi pitanje...', en: 'Ask a question...', sq: 'Bëni një pyetje...',
+  de: 'Frage stellen...', bg: 'Задайте въпрос...', tr: 'Soru sorun...', pl: 'Zadaj pytanie...'
+};
+const WELCOME_DESCS = {
+  mk: 'Твојот AI советник за бизнис стратегија, тендери, грантови и правни прашања.',
+  sr: 'Tvoj AI savetnik za poslovnu strategiju, tendere, grantove i pravna pitanja.',
+  hr: 'Tvoj AI savjetnik za poslovnu strategiju, natječaje, grantove i pravna pitanja.',
+  bs: 'Tvoj AI savjetnik za poslovnu strategiju, tendere, grantove i pravna pitanja.',
+  en: 'Your AI advisor for business strategy, tenders, grants and legal questions.',
+  sq: 'Këshilltari juaj AI për strategji biznesi, tenderat, grantet dhe çështjet ligjore.',
+  de: 'Ihr KI-Berater für Unternehmensstrategie, Ausschreibungen, Fördermittel und Rechtsfragen.',
+  bg: 'Вашият AI съветник за бизнес стратегия, търгове, грантове и правни въпроси.',
+  tr: 'İş stratejisi, ihaleler, hibeler ve hukuki sorular için AI danışmanınız.',
+  pl: 'Twój doradca AI ds. strategii biznesowej, przetargów, dotacji i kwestii prawnych.'
+};
+const START_BTNS = {
+  mk: 'Започни разговор →', sr: 'Započni razgovor →', hr: 'Započni razgovor →',
+  bs: 'Započni razgovor →', en: 'Start conversation →', sq: 'Fillo bisedën →',
+  de: 'Gespräch starten →', bg: 'Започни разговор →', tr: 'Konuşmayı başlat →', pl: 'Rozpocznij rozmowę →'
+};
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('mlang', l);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('lb-' + l);
+  if (btn) btn.classList.add('active');
+  const inp = document.getElementById('msg-input');
+  if (inp) inp.placeholder = PLACEHOLDERS[l] || PLACEHOLDERS.en;
+  const desc = document.getElementById('welcome-desc');
+  if (desc) desc.textContent = WELCOME_DESCS[l] || WELCOME_DESCS.en;
+  const startBtn = document.querySelector('.welcome-start');
+  if (startBtn) startBtn.textContent = START_BTNS[l] || START_BTNS.en;
+}
 
 // ═══ INTENT BADGE ═══
-const INTENT_LABELS = { tender: { mk:'Тендер', en:'Tender', de:'Ausschreibung', tr:'İhale', sq:'Tender' }, grant: { mk:'Грант', en:'Grant', de:'Förderung', tr:'Hibe', sq:'Grant' }, legal: { mk:'Правно', en:'Legal', de:'Rechtlich', tr:'Hukuki', sq:'Ligjor' }, analysis:{ mk:'Анализа', en:'Analysis', de:'Analyse', tr:'Analiz', sq:'Analizë' }, business:{ mk:'Бизнис', en:'Business', de:'Business', tr:'İş', sq:'Biznes' } };
-function updateIntentBadge(intent) { currentIntent = intent; const el = document.getElementById('nav-intent'); if (!el) return; const labels = INTENT_LABELS[intent] || INTENT_LABELS.business; el.textContent = labels[uiLang] || labels.en || intent; el.className = 'nav-intent active'; setTimeout(() => el.classList.remove('active'), 3000); }
+const INTENT_LABELS = {
+  tender: { mk:'Тендер', sr:'Tender', en:'Tender', de:'Ausschreibung', tr:'İhale', pl:'Przetarg', sq:'Tender', bg:'Търг', hr:'Natječaj', bs:'Tender' },
+  grant:  { mk:'Грант', sr:'Grant', en:'Grant', de:'Förderung', tr:'Hibe', pl:'Dotacja', sq:'Grant', bg:'Грант', hr:'Grant', bs:'Grant' },
+  legal:  { mk:'Правно', sr:'Pravno', en:'Legal', de:'Rechtlich', tr:'Hukuki', pl:'Prawne', sq:'Ligjor', bg:'Правно', hr:'Pravno', bs:'Pravno' },
+  analysis:{ mk:'Анализа', sr:'Analiza', en:'Analysis', de:'Analyse', tr:'Analiz', pl:'Analiza', sq:'Analizë', bg:'Анализ', hr:'Analiza', bs:'Analiza' },
+  business:{ mk:'Бизнис', sr:'Biznis', en:'Business', de:'Business', tr:'İş', pl:'Biznes', sq:'Biznes', bg:'Бизнес', hr:'Biznis', bs:'Biznis' },
+};
+
+function updateIntentBadge(intent) {
+  currentIntent = intent;
+  const el = document.getElementById('nav-intent');
+  if (!el) return;
+  const labels = INTENT_LABELS[intent] || INTENT_LABELS.business;
+  el.textContent = labels[lang] || labels.en;
+  el.className = 'nav-intent active';
+  setTimeout(() => el.classList.remove('active'), 3000);
+}
 
 // ═══ MARKDOWN ═══
-function parseMarkdown(text) { if (!text) return ''; let h = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); h = h.replace(/^### (.+)$/gm,'<div style="font-size:0.8rem;font-weight:600;color:var(--gold);margin:0.5rem 0 0.2rem;">$1</div>'); h = h.replace(/^## (.+)$/gm,'<div style="font-size:0.88rem;font-weight:600;color:var(--gold);margin:0.6rem 0 0.2rem;border-bottom:1px solid rgba(201,168,76,0.15);padding-bottom:2px;">$1</div>'); h = h.replace(/^# (.+)$/gm,'<div style="font-size:0.95rem;font-weight:700;color:var(--gold2);margin:0.6rem 0 0.2rem;">$1</div>'); h = h.replace(/^---+$/gm,'<hr style="border:none;border-top:1px solid rgba(201,168,76,0.1);margin:0.4rem 0;">'); h = h.replace(/\*\*([^*]+)\*\*/g,'<span class="ai-bold">$1</span>'); h = h.replace(/\*([^*]+)\*/g,'<em style="color:var(--text2);">$1</em>'); h = h.replace(/^[*-] (.+)$/gm,'<div style="display:flex;gap:5px;margin:2px 0;"><span style="color:var(--gold);flex-shrink:0;">•</span><span>$1</span></div>'); h = h.replace(/^\d+\. (.+)$/gm,'<div style="display:flex;gap:5px;margin:2px 0;"><span style="color:var(--gold);flex-shrink:0;">›</span><span>$1</span></div>'); h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,'<a href="$2" target="_blank" style="color:var(--gold);text-decoration:underline;">$1</a>'); h = h.replace(/\n/g,'<br>'); return h; }
+function parseMarkdown(text) {
+  if (!text) return '';
+  let h = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  h = h.replace(/^### (.+)$/gm,'<div style="font-size:0.8rem;font-weight:600;color:var(--gold);margin:0.5rem 0 0.2rem;">$1</div>');
+  h = h.replace(/^## (.+)$/gm,'<div style="font-size:0.88rem;font-weight:600;color:var(--gold);margin:0.6rem 0 0.2rem;border-bottom:1px solid rgba(201,168,76,0.15);padding-bottom:2px;">$1</div>');
+  h = h.replace(/^# (.+)$/gm,'<div style="font-size:0.95rem;font-weight:700;color:var(--gold2);margin:0.6rem 0 0.2rem;">$1</div>');
+  h = h.replace(/^---+$/gm,'<hr style="border:none;border-top:1px solid rgba(201,168,76,0.1);margin:0.4rem 0;">');
+  h = h.replace(/\*\*([^*]+)\*\*/g,'<span class="ai-bold">$1</span>');
+  h = h.replace(/\*([^*]+)\*/g,'<em style="color:var(--text2);">$1</em>');
+  h = h.replace(/^[*-] (.+)$/gm,'<div style="display:flex;gap:5px;margin:2px 0;"><span style="color:var(--gold);flex-shrink:0;">•</span><span>$1</span></div>');
+  h = h.replace(/^\d+\. (.+)$/gm,'<div style="display:flex;gap:5px;margin:2px 0;"><span style="color:var(--gold);flex-shrink:0;">›</span><span>$1</span></div>');
+  h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,'<a href="$2" target="_blank" style="color:var(--gold);text-decoration:underline;">$1</a>');
+  h = h.replace(/\n/g,'<br>');
+  return h;
+}
 
 // ═══ CHAT ═══
-function startChat() { document.getElementById('welcome-screen').style.display = 'none'; document.getElementById('messages').style.display = 'flex'; document.getElementById('input-area').style.display = 'flex'; const greetings = { mk: 'Здраво! Јас сум Business COO — твојот AI советник.\n\nМожам да ти помогнам со **бизнис стратегија**, **тендери**, **EU грантови**, **правни прашања** и **анализи**.\n\nКажи ми — со што почнуваме?', en: 'Hello! I am Business COO — your AI advisor.\n\nI can help you with **business strategy**, **tenders**, **EU grants**, **legal questions** and **analysis**.\n\nTell me — where do we start?', de: 'Hallo! Ich bin Business COO — Ihr KI-Berater.\n\nIch helfe mit **Unternehmensstrategie**, **Ausschreibungen**, **EU-Fördermitteln**, **Rechtsfragen** und **Analysen**.\n\nWomit beginnen wir?', sq: 'Përshëndetje! Unë jam Business COO — këshilltari juaj AI.\n\nMund të ndihmoj me **strategji biznesi**, **tenderat**, **grantet BE**, **çështjet ligjore** dhe **analiza**.\n\nNga ku fillojmë?' }; addMsg('ai', greetings[uiLang] || greetings.en); setTimeout(() => document.getElementById('msg-input').focus(), 100); }
+function startChat() {
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('messages').style.display = 'flex';
+  document.getElementById('input-area').style.display = 'flex';
+  const greetings = {
+    mk: 'Здраво! Јас сум Business COO — твојот AI советник.\n\nМожам да ти помогнам со **бизнис стратегија**, **тендери**, **EU грантови**, **правни прашања** и **анализи**.\n\nКажи ми — со што почнуваме?',
+    sr: 'Zdravo! Ja sam Business COO — tvoj AI savetnik.\n\nMogu da ti pomognem sa **poslovnom strategijom**, **tenderima**, **EU grantovima**, **pravnim pitanjima** i **analizama**.\n\nKaži mi — sa čim počinjemo?',
+    hr: 'Zdravo! Ja sam Business COO — tvoj AI savjetnik.\n\nMogu ti pomoći s **poslovnom strategijom**, **natječajima**, **EU grantovima**, **pravnim pitanjima** i **analizama**.\n\nReci mi — s čim počinjemo?',
+    bs: 'Zdravo! Ja sam Business COO — tvoj AI savjetnik.\n\nMogu ti pomoći s **poslovnom strategijom**, **tenderima**, **EU grantovima**, **pravnim pitanjima** i **analizama**.\n\nReci mi — s čim počinjemo?',
+    en: 'Hello! I am Business COO — your AI advisor.\n\nI can help you with **business strategy**, **tenders**, **EU grants**, **legal questions** and **analysis**.\n\nTell me — where do we start?',
+    de: 'Hallo! Ich bin Business COO — Ihr KI-Berater.\n\nIch helfe mit **Unternehmensstrategie**, **Ausschreibungen**, **EU-Fördermitteln**, **Rechtsfragen** und **Analysen**.\n\nWomit beginnen wir?',
+    sq: 'Përshëndetje! Unë jam Business COO — këshilltari juaj AI.\n\nMund të ndihmoj me **strategji biznesi**, **tenderat**, **grantet BE**, **çështjet ligjore** dhe **analiza**.\n\nNga ku fillojmë?',
+    bg: 'Здравейте! Аз съм Business COO — вашият AI съветник.\n\nМога да помогна с **бизнес стратегия**, **търгове**, **EU грантове**, **правни въпроси** и **анализи**.\n\nОткъде започваме?',
+    tr: 'Merhaba! Ben Business COO — AI danışmanınız.\n\n**İş stratejisi**, **ihaleler**, **AB hibeleri**, **hukuki sorular** ve **analizler** konularında yardımcı olabilirim.\n\nNereden başlıyoruz?',
+    pl: 'Cześć! Jestem Business COO — Twoim doradcą AI.\n\nPomogę z **strategią biznesową**, **przetargami**, **dotacjami UE**, **kwestiami prawnymi** i **analizami**.\n\nOd czego zaczynamy?'
+  };
+  addMsg('ai', greetings[lang] || greetings.en);
+  setTimeout(() => document.getElementById('msg-input').focus(), 100);
+}
 
-function addMsg(role, text, intent) { const msgs = document.getElementById('messages'); const row = document.createElement('div'); row.className = 'msg-row' + (role === 'user' ? ' user' : ''); if (role === 'ai') { const av = document.createElement('div'); av.className = 'msg-av'; av.textContent = '⚡'; row.appendChild(av); } const b = document.createElement('div'); b.className = 'bubble ' + role; if (role === 'ai' && intent && intent !== 'business') { const tag = document.createElement('div'); const labels = INTENT_LABELS[intent] || INTENT_LABELS.business; tag.innerHTML = `<span class="intent-tag ${intent}">${labels[uiLang] || labels.en || intent}</span><br>`; b.appendChild(tag); } const span = document.createElement('span'); span.innerHTML = parseMarkdown(text); b.appendChild(span); if (role === 'ai') { const actions = document.createElement('div'); actions.className = 'msg-actions'; const copyBtn = document.createElement('button'); copyBtn.className = 'msg-btn'; copyBtn.textContent = 'Copy'; copyBtn.onclick = () => { const plain = text.replace(/\*\*([^*]+)\*\*/g, '$1'); navigator.clipboard.writeText(plain).then(() => { copyBtn.textContent = '✓'; copyBtn.classList.add('copied'); setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000); }); }; actions.appendChild(copyBtn); b.appendChild(actions); } row.appendChild(b); if (role === 'user') { const av = document.createElement('div'); av.className = 'msg-user-av'; av.textContent = 'You'; row.appendChild(av); } msgs.appendChild(row); msgs.scrollTop = msgs.scrollHeight; }
+function addMsg(role, text, intent) {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row' + (role === 'user' ? ' user' : '');
 
-function addTyping() { const msgs = document.getElementById('messages'); const row = document.createElement('div'); row.className = 'msg-row'; row.id = 'typing'; const av = document.createElement('div'); av.className = 'msg-av'; av.textContent = '⚡'; row.appendChild(av); const b = document.createElement('div'); b.className = 'bubble ai typing'; b.innerHTML = '<div class="td"></div><div class="td"></div><div class="td"></div>'; row.appendChild(b); msgs.appendChild(row); msgs.scrollTop = msgs.scrollHeight; }
+  if (role === 'ai') {
+    const av = document.createElement('div');
+    av.className = 'msg-av'; av.textContent = '⚡';
+    row.appendChild(av);
+  }
+
+  const b = document.createElement('div');
+  b.className = 'bubble ' + role;
+
+  if (role === 'ai' && intent && intent !== 'business') {
+    const tag = document.createElement('div');
+    const label = INTENT_LABELS[intent]?.[lang] || intent;
+    tag.innerHTML = `<span class="intent-tag ${intent}">${label}</span><br>`;
+    b.appendChild(tag);
+  }
+
+  const span = document.createElement('span');
+  span.innerHTML = parseMarkdown(text);
+  b.appendChild(span);
+
+  if (role === 'ai') {
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'msg-btn'; copyBtn.textContent = 'Copy';
+    copyBtn.onclick = () => {
+      const plain = text.replace(/\*\*([^*]+)\*\*/g, '$1');
+      navigator.clipboard.writeText(plain).then(() => {
+        copyBtn.textContent = '✓'; copyBtn.classList.add('copied');
+        setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000);
+      });
+    };
+    actions.appendChild(copyBtn);
+    b.appendChild(actions);
+  }
+
+  row.appendChild(b);
+
+  if (role === 'user') {
+    const av = document.createElement('div');
+    av.className = 'msg-user-av'; av.textContent = 'You';
+    row.appendChild(av);
+  }
+
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row'; row.id = 'typing';
+  const av = document.createElement('div');
+  av.className = 'msg-av'; av.textContent = '⚡';
+  row.appendChild(av);
+  const b = document.createElement('div');
+  b.className = 'bubble ai typing';
+  b.innerHTML = '<div class="td"></div><div class="td"></div><div class="td"></div>';
+  row.appendChild(b);
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
 function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
 
-// ═══ SEND MESSAGE (BEZ LANG — BACKEND SAM DETEKTIRA) ═══
 async function sendMsg() {
   const inp = document.getElementById('msg-input');
   const text = inp.value.trim();
@@ -647,40 +909,35 @@ async function sendMsg() {
   addTyping();
 
   try {
-    const { data: sessionData } = await db.auth.getSession();
-    const token = sessionData.session?.access_token;
-
-    // ⚠️ VAŽNO: NE PRAKJAME "lang" — BACKEND SAM DETEKTIRA!
     const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: chatHistory.slice(-4),
+        lang: lang,
         userId: currentUser?.id || null,
-        authToken: token,
         image: currentFile?.data || null,
         imageType: currentFile?.type || null,
         imageText: text || 'Анализирај го овој документ или слика.'
       })
     });
-
     removeFile();
     const data = await res.json();
     removeTyping();
 
-    if (!res.ok) {
-      addMsg('ai', `⚠️ Грешка ${res.status}: ${data.error?.message || 'Обиди се повторно.'}`);
+    if (data.error) {
+      addMsg('ai', '⚠️ ' + (data.error.message || 'Грешка. Обиди се повторно.'));
     } else {
       const reply = data.content?.[0]?.text || 'Нема одговор.';
       const intent = data.intent || 'business';
       chatHistory.push({ role: 'assistant', content: reply });
       addMsg('ai', reply, intent);
       updateIntentBadge(intent);
+      // Memory се зачувува на backend (saveMemory) — не зачувувај двапати
     }
   } catch (e) {
     removeTyping();
-    addMsg('ai', '⚠️ Нема врска со серверот. Обиди се повторно.');
-    console.error('Fetch error:', e);
+    addMsg('ai', '⚠️ Нема врска. Обиди се повторно.');
   }
 
   document.getElementById('send-btn').classList.remove('loading');
@@ -688,29 +945,162 @@ async function sendMsg() {
   inp.focus();
 }
 
-function clearChat() { chatHistory = []; const msgs = document.getElementById('messages'); msgs.innerHTML = ''; document.getElementById('messages').style.display = 'none'; document.getElementById('input-area').style.display = 'none'; document.getElementById('welcome-screen').style.display = 'flex'; showToast('🗑️ Разговорот е исчистен'); }
-function saveChat() { const msgs = document.getElementById('messages'); const bubbles = msgs.querySelectorAll('.bubble'); if (!bubbles.length) { showToast('💬 Нема разговор за зачувување'); return; } let text = `Marginova.AI — Business COO — ${new Date().toLocaleDateString()}\n${'='.repeat(50)}\n\n`; bubbles.forEach(b => { const role = b.classList.contains('user') ? 'Вие' : 'COO'; const msg = b.querySelector('span')?.textContent || ''; if (msg) text += `${role}: ${msg}\n\n`; }); const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `coo-chat-${Date.now()}.txt`; a.click(); URL.revokeObjectURL(url); showToast('💾 Разговорот е зачуван'); }
+async function quickStart(text) {
+  startChat();
+  setTimeout(() => {
+    document.getElementById('msg-input').value = text;
+    sendMsg();
+  }, 200);
+}
 
-function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+function clearChat() {
+  chatHistory = [];
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  document.getElementById('messages').style.display = 'none';
+  document.getElementById('input-area').style.display = 'none';
+  document.getElementById('welcome-screen').style.display = 'flex';
+  showToast('🗑️ Разговорот е исчистен');
+}
+
+function saveChat() {
+  const msgs = document.getElementById('messages');
+  const bubbles = msgs.querySelectorAll('.bubble');
+  if (!bubbles.length) { showToast('💬 Нема разговор за зачувување'); return; }
+  let text = `Marginova.AI — Business COO — ${new Date().toLocaleDateString()}\n${'='.repeat(50)}\n\n`;
+  bubbles.forEach(b => {
+    const role = b.classList.contains('user') ? 'Вие' : 'COO';
+    const msg = b.querySelector('span')?.textContent || '';
+    if (msg) text += `${role}: ${msg}\n\n`;
+  });
+  const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `coo-chat-${Date.now()}.txt`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 Разговорот е зачуван');
+}
+
+// ═══ SUPABASE MEMORY ═══
+async function saveMessage(role, text) {
+  if (!currentUser) return;
+  try {
+    const { error } = await db.from('conversations').insert({
+      user_id: currentUser.id,
+      avatar: 'cooai',
+      role,
+      message: text,
+      created_at: new Date().toISOString()
+    });
+    if (error) console.warn('Save error:', error.message);
+  } catch (e) { console.warn('Save error:', e); }
+}
+
+// ═══ UI HELPERS ═══
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
 function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-function openDrawer() { document.getElementById('drawer').classList.add('open'); document.getElementById('drawer-overlay').classList.add('open'); }
-function closeDrawer() { document.getElementById('drawer').classList.remove('open'); document.getElementById('drawer-overlay').classList.remove('open'); }
+function openDrawer() {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+}
 
 // ═══ INPUT RESIZE ═══
-document.getElementById('msg-input').addEventListener('input', function () { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 110) + 'px'; });
-document.getElementById('msg-input').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } });
-document.getElementById('auth-password').addEventListener('keydown', function (e) { if (e.key === 'Enter') handleAuth(); });
+document.getElementById('msg-input').addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 110) + 'px';
+});
+document.getElementById('msg-input').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+});
+document.getElementById('auth-password').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') handleAuth();
+});
 
 // ═══ SESSION CHECK ═══
-window.addEventListener('DOMContentLoaded', async function () { try { const { data } = await db.auth.getSession(); if (data?.session?.user) { currentUser = data.session.user; showApp(); } } catch (e) { console.warn('Session error:', e); } db.auth.onAuthStateChange((event, session) => { if (session) currentUser = session.user; else currentUser = null; }); });
+window.addEventListener('DOMContentLoaded', async function () {
+  try {
+    const { data } = await db.auth.getSession();
+    if (data?.session?.user) {
+      currentUser = data.session.user;
+      showApp();
+    }
+  } catch (e) { console.warn('Session error:', e); }
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (session) currentUser = session.user;
+    else currentUser = null;
+  });
+});
 
 // ═══ FILE UPLOAD ═══
-function handleFileUpload(input) { const file = input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { currentFile = { data: e.target.result.split(',')[1], type: file.type, name: file.name }; const preview = document.getElementById('file-preview'); preview.style.display = 'block'; const isImg = file.type.startsWith('image/'); preview.innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(201,168,76,0.08);border:1px solid var(--border2);border-radius:8px;font-size:0.72rem;">${isImg ? `<img src="${e.target.result}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">` : '<span>📄</span>'}<span style="color:var(--gold);">${file.name.slice(0,30)}</span><button onclick="removeFile()" style="background:none;border:none;cursor:pointer;color:var(--muted);margin-left:auto;">✕</button></div>`; }; reader.readAsDataURL(file); input.value = ''; }
-function removeFile() { currentFile = null; const preview = document.getElementById('file-preview'); preview.style.display = 'none'; preview.innerHTML = ''; }
+let currentFile = null;
+
+function handleFileUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    currentFile = { data: e.target.result.split(',')[1], type: file.type, name: file.name };
+    const preview = document.getElementById('file-preview');
+    preview.style.display = 'block';
+    const isImg = file.type.startsWith('image/');
+    preview.innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(201,168,76,0.08);border:1px solid var(--border2);border-radius:8px;font-size:0.72rem;">
+      ${isImg ? `<img src="${e.target.result}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">` : '<span>📄</span>'}
+      <span style="color:var(--gold);">${file.name.slice(0,30)}</span>
+      <button onclick="removeFile()" style="background:none;border:none;cursor:pointer;color:var(--muted);margin-left:auto;">✕</button>
+    </div>`;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function removeFile() {
+  currentFile = null;
+  const preview = document.getElementById('file-preview');
+  preview.style.display = 'none';
+  preview.innerHTML = '';
+}
 
 // ═══ DRAG & DROP ═══
-(function() { const chatArea = document.querySelector('.chat-area'); const overlay = document.getElementById('drag-overlay'); if (!chatArea || !overlay) return; let counter = 0; chatArea.addEventListener('dragenter', e => { e.preventDefault(); if (document.getElementById('input-area').style.display === 'none') return; counter++; overlay.style.display = 'flex'; }); chatArea.addEventListener('dragleave', () => { counter--; if (counter <= 0) { counter = 0; overlay.style.display = 'none'; } }); chatArea.addEventListener('dragover', e => e.preventDefault()); chatArea.addEventListener('drop', e => { e.preventDefault(); counter = 0; overlay.style.display = 'none'; if (document.getElementById('input-area').style.display === 'none') return; const file = e.dataTransfer.files[0]; if (!file) return; if (!file.type.startsWith('image/') && file.type !== 'application/pdf') { showToast('⚠️ Само слики и PDF се поддржани'); return; } handleFileUpload({ files: [file] }); }); })();
+(function() {
+  const chatArea = document.querySelector('.chat-area');
+  const overlay = document.getElementById('drag-overlay');
+  if (!chatArea || !overlay) return;
+  let counter = 0;
+  chatArea.addEventListener('dragenter', e => {
+    e.preventDefault();
+    if (document.getElementById('input-area').style.display === 'none') return;
+    counter++;
+    overlay.style.display = 'flex';
+  });
+  chatArea.addEventListener('dragleave', () => {
+    counter--;
+    if (counter <= 0) { counter = 0; overlay.style.display = 'none'; }
+  });
+  chatArea.addEventListener('dragover', e => e.preventDefault());
+  chatArea.addEventListener('drop', e => {
+    e.preventDefault();
+    counter = 0;
+    overlay.style.display = 'none';
+    if (document.getElementById('input-area').style.display === 'none') return;
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      showToast('⚠️ Само слики и PDF се поддржани');
+      return;
+    }
+    handleFileUpload({ files: [file] });
+  });
+})();
 </script>
 </body>
 </html>
