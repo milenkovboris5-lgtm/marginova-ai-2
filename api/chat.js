@@ -1,7 +1,7 @@
 // ═══ MARGINOVA.AI — api/chat.js ═══
-const { checkIP, checkUser, increment } = require('./api/quota');
-const { load, save } = require('./api/memory');
-const { run } = require('./api/brain');
+const { checkIP, checkUser, increment } = require('./quota');
+const { load, save } = require('./memory');
+const { run } = require('./brain');
 
 const SUPA_URL = process.env.SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
