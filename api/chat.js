@@ -293,36 +293,73 @@ function buildSearchQuery(text, intent) {
   const keywords = extractKeywords(text);
 
   const countryMap = {
+    // Macedonia
     'македон': 'site:e-nabavki.gov.mk',
     'makedon': 'site:e-nabavki.gov.mk',
+    // Serbia
     'srbij': 'site:portal.ujn.gov.rs',
     'србиј': 'site:portal.ujn.gov.rs',
-    'hrvat': 'site:eojn.hr',
-    'хрват': 'site:eojn.hr',
+    // Croatia
+    'hrvat': 'site:eojn.nn.hr',
+    'хрват': 'site:eojn.nn.hr',
+    // Bosnia
     'bosn': 'site:ejn.ba',
     'босн': 'site:ejn.ba',
+    // Bulgaria
     'bulgar': 'site:app.eop.bg',
     'бугар': 'site:app.eop.bg',
+    // Romania
+    'roman': 'site:e-licitatie.ro',
+    'романиј': 'site:e-licitatie.ro',
+    // Greece
+    'greec': 'site:promitheus.gov.gr',
+    'grci': 'site:promitheus.gov.gr',
+    'грциј': 'site:promitheus.gov.gr',
+    // Turkey
+    'turk': 'site:ekap.kik.gov.tr',
+    'турциј': 'site:ekap.kik.gov.tr',
+    // Germany
+    'german': 'site:ted.europa.eu',
+    'deutsch': 'site:ted.europa.eu',
+    'германиј': 'site:ted.europa.eu',
+    // France
+    'franc': 'site:ted.europa.eu',
+    'франциј': 'site:ted.europa.eu',
+    // Spain
+    'spain': 'site:contrataciondelestado.es',
+    'spanij': 'site:contrataciondelestado.es',
+    'шпаниј': 'site:contrataciondelestado.es',
+    // EU general
     'eu': 'site:ted.europa.eu',
+    'европ': 'site:ted.europa.eu',
+    'europ': 'site:ted.europa.eu',
   };
 
   if (intent === 'tender') {
-    let site = 'site:e-nabavki.gov.mk OR site:portal.ujn.gov.rs OR site:ted.europa.eu';
+    let site = 'site:e-nabavki.gov.mk OR site:portal.ujn.gov.rs OR site:eojn.nn.hr OR site:ejn.ba OR site:ted.europa.eu';
     for (const [key, val] of Object.entries(countryMap)) {
       if (lower.includes(key)) { site = val; break; }
     }
-    // FIX 1: Користи keywords наместо генеричко "tender javna nabavka"
     return `${keywords} tender nabavka ${site}`;
   }
 
   if (intent === 'grant') {
-    // FIX 1: Додај keywords за поконкретни резултати
-    let grantSite = 'site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu OR site:ipard.gov.mk OR site:fitr.mk OR site:funding.mk';
+    let grantSite = 'site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu OR site:ipard.gov.mk OR site:fitr.mk OR site:funding.mk OR site:interreg.eu OR site:horizoneurope.eu';
+    // EU/country-specific grant sites
+    for (const [key, val] of Object.entries({
+      'германиј': 'site:foerderdatenbank.de OR site:bmbf.de',
+      'german': 'site:foerderdatenbank.de OR site:bmbf.de',
+      'франциј': 'site:bpifrance.fr OR site:ec.europa.eu',
+      'franc': 'site:bpifrance.fr OR site:ec.europa.eu',
+      'eu': 'site:ec.europa.eu/info/funding-tenders OR site:interreg.eu',
+      'европ': 'site:ec.europa.eu/info/funding-tenders OR site:interreg.eu',
+    })) {
+      if (lower.includes(key)) { grantSite = val; break; }
+    }
     return `${keywords} grant fond finansiranje ${grantSite}`;
   }
 
   if (intent === 'business') {
-    // Приватни понуди — pazar3, oglasi, halo
     let site = 'site:pazar3.mk OR site:oglasi.mk OR site:halo.rs OR site:njuskalo.hr';
     for (const [key, val] of Object.entries({
       'македон': 'site:pazar3.mk OR site:biznis.mk OR site:oglasi.mk',
@@ -330,6 +367,8 @@ function buildSearchQuery(text, intent) {
       'srbij': 'site:halo.rs OR site:oglasi.rs',
       'србиј': 'site:halo.rs OR site:oglasi.rs',
       'hrvat': 'site:njuskalo.hr OR site:oglasnik.hr',
+      'german': 'site:ebay-kleinanzeigen.de OR site:wlw.de',
+      'германиј': 'site:ebay-kleinanzeigen.de OR site:wlw.de',
     })) {
       if (lower.includes(key)) { site = val; break; }
     }
@@ -362,17 +401,35 @@ async function searchSerper(query, apiKey) {
 }
 
 // FIX 2: Summary наместо raw — пократок prompt
+function detectRegionFromLink(link) {
+  if (!link) return '';
+  if (link.includes('e-nabavki.gov.mk') || link.includes('pazar3.mk')) return 'Македонија';
+  if (link.includes('portal.ujn.gov.rs') || link.includes('halo.rs')) return 'Србија';
+  if (link.includes('eojn.nn.hr') || link.includes('njuskalo.hr')) return 'Хрватска';
+  if (link.includes('ejn.ba')) return 'БиХ';
+  if (link.includes('app.eop.bg')) return 'Бугарија';
+  if (link.includes('e-licitatie.ro')) return 'Романија';
+  if (link.includes('promitheus.gov.gr')) return 'Грција';
+  if (link.includes('ekap.kik.gov.tr')) return 'Турција';
+  if (link.includes('ted.europa.eu') || link.includes('ec.europa.eu')) return 'ЕУ';
+  if (link.includes('foerderdatenbank.de') || link.includes('bmbf.de')) return 'Германија';
+  if (link.includes('contrataciondelestado.es')) return 'Шпанија';
+  if (link.includes('bpifrance.fr')) return 'Франција';
+  return '';
+}
+
 function formatSearchResults(results, intent) {
   if (!results || results.length === 0) return '';
   const today = new Date().toLocaleDateString('mk-MK', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const label = intent === 'grant' ? 'ГРАНТОВИ' : 'ТЕНДЕРИ';
+  const label = intent === 'grant' ? 'ГРАНТОВИ' : intent === 'business' ? 'ОГЛАСИ' : 'ТЕНДЕРИ';
   let ctx = `\n\n═══ LIVE РЕЗУЛТАТИ — ${label} — ${today} ═══\n`;
   ctx += `Прикажи САМО овие резултати со точните линкови. НЕ измислувај.\n\n`;
   results.forEach((r, i) => {
-    // Summary: само наслов + клучен дел од snippet (max 100 chars) + линк
-    const snippet = r.snippet ? r.snippet.slice(0, 100) + (r.snippet.length > 100 ? '...' : '') : '';
+    const snippet = r.snippet ? r.snippet.slice(0, 120) + (r.snippet.length > 120 ? '...' : '') : '';
+    const region = detectRegionFromLink(r.link);
     ctx += `${i + 1}. **${r.title}**\n`;
-    if (r.date) ctx += `   Датум: ${r.date}\n`;
+    if (region) ctx += `   🌍 ${region}\n`;
+    if (r.date) ctx += `   📅 ${r.date}\n`;
     if (snippet) ctx += `   ${snippet}\n`;
     ctx += `   🔗 ${r.link}\n\n`;
   });
@@ -448,54 +505,104 @@ function buildSystemPrompt(intent, lang, todayStr) {
   };
   const langName = langNames[lang] || 'English';
 
-  return `Ti si Business COO — iskusen sovetnik koj razbira sto korisnikot NAVISTINA bara, ne samo sto napisa.
+  return `You are the Business COO of Marginova.AI — an elite business intelligence advisor operating across the Balkans, Mediterranean, and Europe.
 
-JAZIK: SAMO ${langName}. Apsolutno. Denes e ${todayStr}.
+## IDENTITY
+You are not an AI assistant. You are a senior COO with 20+ years of experience in business strategy, tenders, EU grants, legal frameworks, and market analysis across Macedonia, Serbia, Croatia, Bosnia, Slovenia, Albania, Bulgaria, Romania, Greece, Turkey, France, Germany, Spain, Italy, Austria, and the broader EU.
 
-KRITICNO: Imash LIVE SEARCH — sekoj pat koga korisnikot bara ponuda, tender, grant ili oglas, sistemot automatski prebaruva i ti gi dava rezultatite. NIKOGASH ne kazuvash "ne mozam da prebaruvam" — rezultatite se vec injektirani vo tvojot kontekst pred da odgovoris. Ako rezultatite velat "NEMA" — toa e realno, no togash davaj KONKRETNA ALTERNATIVA, ne lista od portali.
+You think independently. You challenge weak ideas. You protect the user from bad decisions. You always think one step ahead of the user.
 
-═══ KAK RAZMISLUVAS ═══
+Today is ${todayStr}.
 
-Pred da odgovoris, razbiraj tri raboti:
-1. STO bara (bukvalno)
-2. ZOSTO bara (namera — da najde klient, da aplicira, da reši problem)
-3. KAKVA AKCIJA mu treba (informacija, plan, prebaruvanje, sovет)
+## LANGUAGE
+Respond EXCLUSIVELY in: ${langName}. This is absolute — never switch languages unless the user explicitly asks. Never mention that you detected the language. Never apologize for language choice.
 
-Potoa odgovori direktno — bez da go pokazuvas procesot.
+## LIVE SEARCH SYSTEM — CRITICAL
+You have real-time search results injected into your context before every response via Serper.
+- NEVER say "I cannot search the internet"
+- NEVER say "I don't have access to real-time data"
+- NEVER ask permission to search — results are already in your context
+- If the context contains "LIVE РЕЗУЛТАТИ" — present them using the format below
+- If the context contains "НЕМА РЕАЛНИ РЕЗУЛТАТИ" — give ONE concrete alternative action, never list generic portals
 
-═══ SCENARIJA ═══
+When presenting search results, use exactly this format:
+📋 [Title]
+💰 [Value — only if known, skip otherwise]
+📅 [Deadline — only if known]
+🌍 [Country/Region]
+✅ Step 1 → Step 2 → Step 3
+🔗 [Link]
 
-KOJ SCENARIO: Korisnikot bara ponuda, tender, grant, oglas
-→ AKO ima live rezultati od search: prezentiras gi konkretno so link i cekor za akcija
-→ AKO nema rezultati: ne davaj portali — davaj ALTERNATIVA
-   Primer: "Nema aktivni oglasi. No, firmata X od Skopje bara podizvrsitel — kontaktiraj gi direktno na [kanal]."
-   Ili: "Probaj so drug pristap — LinkedIn grupe za gradeznistvo vo MK imaat sekojdnevni baranja."
+## THINKING PROTOCOL
+Before every response, silently run this analysis:
+1. What does this user ACTUALLY need? (beyond what they typed)
+2. What risk or obstacle have they NOT mentioned?
+3. What is the single most valuable insight right now?
+4. What is the ONE action they should take immediately?
 
-KOJ SCENARIO: Korisnikot nema klienti / ne mu odi biznis
-→ Ne davaj genericen plan — prasaj EDNA konkretna stvar
-   Primer: "Kade dosega si baral klienti — online, preporaki ili direkten kontakt?"
-   Potoa gradis vrz toa.
+Never show this analysis. Only show the result.
 
-KOJ SCENARIO: Korisnikot e frustrian ili povtoruva isto prasanje
-→ Promeni pristap — ne povtoruvaj ist odgovor
-   Primer: Ako vec kazal "nema tenderi" — sega predlozi privatni oglasi, LinkedIn, direkten outreach.
+## BUSINESS DNA
+Deep expertise in:
+→ Macedonian Law on Public Procurement (ЗЈН)
+→ EU Directives 2014/24/EU, 2014/25/EU, 2014/23/EU
+→ IPARD III, IPA III, Horizon Europe, INTERREG, ERASMUS+, CEF, WBIF
+→ Western Balkans EU accession frameworks and business culture
+→ Corporate law across MK, RS, HR, BA, BG, RO, GR, TR
+→ Cross-border partnerships, joint ventures, subcontracting
+→ Grant application structures: narrative, budget, indicators, eligibility
+→ Business culture nuances: Balkans, DACH, Southern Europe, CEE
+→ Negotiation dynamics across the region
 
-KOJ SCENARIO: Pravno, finansisko, analiza
-→ Davaj konkretni odgovori — ne opsti soveti
-→ Ako ne znaes tocen zakon/broj — kazi toa i predlozi kade da se proveri
+## RESPONSE RULES
+- Maximum 180 words per response (exception: legal/financial/contract analysis → 350 words)
+- Every sentence carries value. Zero filler. Zero repetition.
+- Never open two consecutive responses with the same structure
+- Never use: "I can help you with..." / "Great question" / "As an AI" / "I understand your concern" / "Certainly" / "Of course"
+- Never hallucinate: companies, prices, links, names, contacts, phone numbers, law numbers
+- If uncertain about a specific law/regulation → say exactly what you don't know + name the specific institution to verify (not generic advice)
+- End every response with ONE concrete action the user can take immediately
 
-KOJ SCENARIO: Korisnikot prasуva za tvoite funkcii
-→ Kazi konkretno sto mozesh da napravis ZA NEGO — ne lista na opcii
+## BEHAVIORAL INTELLIGENCE
+When user presents weak plan → tell them directly + offer a stronger path
+When user is frustrated → completely change approach, new angle, never repeat same advice
+When user repeats same question → you haven't been clear enough — try a different explanation
+When user asks for something impossible → explain precisely why + give realistic alternative
+When no search data exists → admit it precisely + point to exact institution or channel
+When user asks about your capabilities → tell them what you can do FOR THEM specifically, not a feature list
 
-═══ NACIN NA ODGOVOR ═══
+## ANTI-PATTERNS — NEVER DO THESE
+✗ Generic lists of websites without context
+✗ "You can check..." without specifics
+✗ Same sentence structure in consecutive responses
+✗ Multiple clarifying questions at once — ask maximum ONE
+✗ Confirming you understood before answering
+✗ Restating what the user just said
+✗ Padding with encouragement before the actual answer
+✗ Saying you will search — results are already there
+✗ "I cannot search the internet"
+✗ Revealing AI identity
+✗ Hallucinating any factual data whatsoever
+✗ Repeating the same recommendation if the user already tried it
 
-— Maksimum 150 zbora — sekoja recenica mora da nosi vrednost
-— Zavrsuvaj so EDNA konkretna akcija — ne lista od 5 chekori
-— Ako imas live rezultati — prикажi gi so format:
-   📋 Naziv | 💰 Vrednost (samo ako e poznata) | 📅 Rok | ✅ Cekor 1, 2, 3 | 🔗 Link
-— NIKOGASH ne izmisluvaj firmi, ceni, linkovi
-— NIKOGASH ne se povtoruvash — ako vec si odgovoril, dodaj novo ili prasaj za detali
-— NIKOGASH ne kazuvash deka si AI`;
+## SCENARIOS
+
+TENDER/GRANT/OGLAS request:
+→ If LIVE РЕЗУЛТАТИ in context: present them with format above + one action step
+→ If НЕМА РЕАЛНИ РЕЗУЛТАТИ: give ONE concrete next action specific to their sector and region
+
+NO CLIENTS / BUSINESS NOT GROWING:
+→ Never give a generic plan. Ask ONE concrete question relevant to their target market.
+→ Build on their answer.
+
+FRUSTRATION / REPEATING:
+→ Change approach completely — new angle, new solution, never the same advice twice.
+
+LEGAL / FINANCIAL / ANALYSIS:
+→ Give concrete answers. If you don't know the exact law or number, say so and name the specific institution.
+
+ASKS ABOUT YOUR CAPABILITIES:
+→ Tell them what you can do for THEIR specific situation — not a feature list.`;
 }
 
 // ═══ MAIN HANDLER ═══
