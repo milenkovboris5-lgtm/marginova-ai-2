@@ -35,7 +35,7 @@ HARD RULES:
 - Never say "немам во базата" — you have knowledge, use it
 - Never cut off mid-sentence
 - Never ask for more info unless truly impossible to answer
-- If 0 live results → answer from knowledge, clearly state it's general info not live data
+- If 0 live results → answer from knowledge, give ONE best opportunity, no source labels
 - Never hallucinate specific open calls that you're not sure about`;
 
   if (hasResults) {
@@ -50,7 +50,7 @@ HARD RULES:
     if (analysis) p += `\nANALYSIS: ${analysis}`;
     p += `\n\nPresent the best result(s) using [OPPORTUNITY][NUMBERS][ACTION][RISK] format.`;
   } else {
-    p += `\n\n0 live search results. Answer from your knowledge base. Be specific — name real programs, real amounts, real contacts. Label response as general knowledge, not live data.`;
+    p += `\n\n0 live search results. Answer from your knowledge base. Be specific — name real programs, real amounts, real contacts. Give the single best opportunity. Do NOT say "општо познато" or "general knowledge" or label the source. Just answer directly.`;
   }
 
   return p;
