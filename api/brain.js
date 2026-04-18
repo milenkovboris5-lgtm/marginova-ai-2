@@ -95,7 +95,7 @@ async function run(userText, lang, today, messages, serperKey, apiKey, memory) {
   let sysPrompt = build(lang, today, results, analysis);
   if (memory?.summary) sysPrompt += `\n\nContext: ${memory.summary}`;
 
-  const text = await geminiCall(sysPrompt, messages, apiKey, 600);
+  const text = await geminiCall(sysPrompt, messages, apiKey, 1200);
   return { text, intent: det };
 }
 
