@@ -205,10 +205,12 @@ const INTENT_PATTERNS = {
     'ausschreibung','ihale','przetarg','appalto'
   ],
   grant: [
-    'грант','фонд','ipard','ipa','eu фонд','финансирање','финансиска поддршка',
-    'grant','grantovi','fond','fondovi','finansiranje','finansiska','subsidy','podrska',
-    'förderung','hibe','dotacja','subvencija','eu grant','eu fond',
-    'horizon','erasmus','undp','usaid','wbif','fitr'
+    'грант','фонд','ipard','ipa','eu фонд','финансирање','финансиска поддршка','финансиска помош',
+    'grant','grand','grantovi','fond','fondovi','finansiranje','finansiska','finansiska podrska',
+    'subsidy','podrska','subvencija','eu grant','eu fond','eu fonds',
+    'förderung','hibe','dotacja','horizon','erasmus','undp','usaid','wbif','fitr',
+    'startup','стартап','povikot','повик','аплицира','aplicira','aplikacija',
+    'финансиска','финансис','podrska za','support za','финансир'
   ],
   legal: [
     'договор','право','gdpr','закон','трудово','даноци','правни','регулатив',
@@ -344,19 +346,29 @@ function buildSearchQuery(text, intent) {
   }
 
   if (intent === 'grant') {
-    let grantSite = 'site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu OR site:ipard.gov.mk OR site:fitr.mk OR site:funding.mk OR site:interreg.eu OR site:horizoneurope.eu';
-    // EU/country-specific grant sites
+    const sectorMap = {
+      'it': 'IT', 'tech': 'technology', 'software': 'software',
+      'gradez': 'construction', 'zemjodelst': 'agriculture', 'agri': 'agriculture',
+      'turiz': 'tourism', 'tourism': 'tourism', 'energi': 'energy',
+      'startup': 'startup', 'mladi': 'youth', 'youth': 'youth',
+      'inovacij': 'innovation', 'innov': 'innovation',
+    };
+    let sector = '';
+    for (const [key, val] of Object.entries(sectorMap)) {
+      if (lower.includes(key)) { sector = val; break; }
+    }
+    let grantSite = 'site:fitr.mk OR site:ipard.gov.mk OR site:mk.undp.org OR site:westernbalkansfund.org OR site:ec.europa.eu';
     for (const [key, val] of Object.entries({
-      'германиј': 'site:foerderdatenbank.de OR site:bmbf.de',
       'german': 'site:foerderdatenbank.de OR site:bmbf.de',
-      'франциј': 'site:bpifrance.fr OR site:ec.europa.eu',
       'franc': 'site:bpifrance.fr OR site:ec.europa.eu',
-      'eu': 'site:ec.europa.eu/info/funding-tenders OR site:interreg.eu',
-      'европ': 'site:ec.europa.eu/info/funding-tenders OR site:interreg.eu',
+      'eu': 'site:ec.europa.eu OR site:interreg.eu',
+      'европ': 'site:ec.europa.eu OR site:interreg.eu',
+      'srbij': 'site:inovacionifond.rs OR site:apr.gov.rs',
     })) {
       if (lower.includes(key)) { grantSite = val; break; }
     }
-    return `${keywords} grant fond finansiranje ${grantSite}`;
+    const grantKeyword = sector || keywords.split(' ').slice(0, 2).join(' ');
+    return `${grantKeyword} grant funding 2025 ${grantSite}`;
   }
 
   if (intent === 'business') {
@@ -704,8 +716,13 @@ module.exports = async function handler(req, res) {
     const wantsTender = intent === 'tender' || ['тендер','tender','јавна набавка','javna nabavka',
       'државна','drzavna','državna','javna','јавна','nabavka','набавка','ponuda','понуда'].some(k => lower.includes(k));
 
-    // Дали бара грантови
-    const wantsGrant = intent === 'grant';
+    // Дали бара грантови — keyword check + intent
+    const wantsGrant = intent === 'grant' || [
+      'grant','grand','грант','fond','фонд','finansiranje','финансирање',
+      'finansiska','финансиска','subvencija','субвенција','fitr','ipard',
+      'startup','стартап','podrska','поддршка','eu fond','eu фонд',
+      'horizon','erasmus','undp','повик','povikot','aplicira','аплицира'
+    ].some(k => lower.includes(k));
 
     if (serperKey) {
       const allResults = [];
