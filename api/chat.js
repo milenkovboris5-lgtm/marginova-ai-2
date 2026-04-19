@@ -83,8 +83,16 @@ async function incQuota(userId) {
 async function loadProfile(userId) {
   if (!userId) return null;
   try {
-    const rows = await dbGet(`profiles?user_id=eq.${userId}&select=sector,country,organization_type,goals,plan`);
-    return rows?.[0] || null;
+    const rows = await dbGet(`profiles?user_id=eq.${userId}&select=sector,country,organization_type,goals,plan,detected_sector,detected_org_type,detected_country`);
+    const p = rows?.[0];
+    if (!p) return null;
+    // Use detected values as fallback if profile fields are empty
+    return {
+      ...p,
+      sector: p.sector || p.detected_sector || null,
+      organization_type: p.organization_type || p.detected_org_type || null,
+      country: p.country || p.detected_country || 'mk',
+    };
   } catch { return null; }
 }
 
@@ -417,7 +425,7 @@ module.exports = async function handler(req, res) {
       // Detect sector from conversation
       const detectedSector =
         /\bit\b|tech|software|дигитал|веб|web|апп|app|платформ|platform/.test(conversationText) ? 'IT' :
-        /земјоделст|agri|рурал|фарм|farm|сточар|овошт/.test(conversationText) ? 'agriculture' :
+        /земјоделст|земјоделие|земјоделец|земјоделск|agri|рурал|фарм|farm|сточар|овошт|круш|јаболк|лозар|пченк|житар|нива|хектар|hektar|насади|добиток|млеко/.test(conversationText) ? 'agriculture' :
         /образован|education|учење|learning|школ|school|студент/.test(conversationText) ? 'education' :
         /животна средина|environment|зелен|green|еколог|climate/.test(conversationText) ? 'environment' :
         /нво|ngo|здружение|граѓанск|civil society/.test(conversationText) ? 'civil society' :
@@ -429,7 +437,7 @@ module.exports = async function handler(req, res) {
       const detectedOrg =
         /стартап|startup|нова компанија|новооснован|spin.?off/.test(conversationText) ? 'startup' :
         /нво|ngo|здружение|фондација|граѓанск|невладин/.test(conversationText) ? 'ngo' :
-        /земјоделец|фармер|farmer|аграр|стопанство/.test(conversationText) ? 'agri' :
+        /земјоделец|земјоделие|фармер|farmer|аграр|стопанство|насади|хектар|hektar|круш|јаболк|лозар|нива|добиток/.test(conversationText) ? 'agri' :
         /мало претпријатие|средно претпријатие|sme|фирма|компанија|dooел|ооd/.test(conversationText) ? 'sme' :
         /општина|municipality|јавна институција|публичен/.test(conversationText) ? 'municipality' :
         /универзитет|university|институт|истражув/.test(conversationText) ? 'university' :
@@ -452,6 +460,14 @@ module.exports = async function handler(req, res) {
           goals: supaProfile?.goals || 'small'
         };
         console.log('[GAE] Detected from conversation — sector:' + profile.sector + ' org:' + profile.organization_type + ' country:' + profile.country);
+        // Save detected values back to Supabase for future use
+        if (userId) {
+          dbPatch('profiles?user_id=eq.' + userId, {
+            detected_sector: profile.sector,
+            detected_org_type: profile.organization_type,
+            detected_country: profile.country
+          }).catch(() => {});
+        }
       }
     }
 
@@ -464,7 +480,8 @@ module.exports = async function handler(req, res) {
 
     // Load processes for top grant or focused grant
     let processes = [];
-    if (grantFocus || userText.toLowerCase().includes('процес') || userText.toLowerCase().includes('process') || userText.toLowerCase().includes('чекор') || userText.toLowerCase().includes('step') || userText.toLowerCase().includes('апликација') || userText.toLowerCase().includes('application')) {
+    const wantsProcess = grantFocus || /процес|process|чекор|step|апликација|application|водич|guide|како да|how to|бројки|brojki|резултат|rezultat|помош|pomosh/.test(userText.toLowerCase());
+    if (wantsProcess) {
       const targetGrant = grantFocus
         ? matchedGrants.find(g => g.name.toLowerCase().includes(grantFocus.toLowerCase()) || g.funder.toLowerCase().includes(grantFocus.toLowerCase()))
         : matchedGrants[0];
