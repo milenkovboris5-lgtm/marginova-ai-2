@@ -1,5 +1,8 @@
-// ═══ MARGINOVA.AI — api/chat.js ═══
-// 1 Gemini повик. Serper само по потреба. Без memory акумулација.
+// ═══════════════════════════════════════════
+// MARGINOVA.AI — api/chat.js
+// Grant Acquisition Engine
+// Supabase 80% | Gemini 90% | Serper 10%
+// ═══════════════════════════════════════════
 
 const SUPA_URL = process.env.SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -28,13 +31,13 @@ function checkIP(req) {
   return ipStore[key].n <= DAILY_LIMIT;
 }
 
-// ═══ SUPABASE — само quota ═══
+// ═══ SUPABASE HELPER ═══
 async function dbGet(path) {
   if (!SUPA_URL || !SUPA_KEY) return null;
   try {
     const r = await ft(`${SUPA_URL}/rest/v1/${path}`, {
       headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: '' }
-    }, 5000);
+    }, 6000);
     return r.ok ? r.json() : null;
   } catch { return null; }
 }
@@ -50,6 +53,7 @@ async function dbPatch(path, body) {
   } catch {}
 }
 
+// ═══ QUOTA ═══
 async function checkQuota(userId) {
   if (!userId) return true;
   try {
@@ -75,7 +79,105 @@ async function incQuota(userId) {
   } catch {}
 }
 
-// ═══ LANGUAGE DETECTION ═══
+// ═══ LOAD USER PROFILE ═══
+async function loadProfile(userId) {
+  if (!userId) return null;
+  try {
+    const rows = await dbGet(`profiles?user_id=eq.${userId}&select=sector,country,organization_type,goals,plan`);
+    return rows?.[0] || null;
+  } catch { return null; }
+}
+
+// ═══ FIT ENGINE — Supabase grant matching ═══
+function calcFitScore(grant, profile) {
+  if (!profile) return 0;
+  let score = 0;
+
+  // Sector match (40 points)
+  if (grant.sector && profile.sector) {
+    const grantSectors = grant.sector.map(s => s.toLowerCase());
+    const userSector = profile.sector.toLowerCase();
+    if (grantSectors.some(s => s.includes(userSector) || userSector.includes(s))) {
+      score += 40;
+    } else if (grantSectors.some(s => s.includes('сите') || s.includes('all') || s.includes('general'))) {
+      score += 25;
+    }
+  }
+
+  // Country match (30 points)
+  if (grant.country && profile.country) {
+    const grantCountries = grant.country.map(c => c.toLowerCase());
+    const userCountry = profile.country.toLowerCase();
+    if (grantCountries.includes(userCountry)) {
+      score += 30;
+    } else if (grantCountries.includes('eu') || grantCountries.includes('balkans')) {
+      score += 20;
+    }
+  }
+
+  // Budget match (20 points)
+  if (grant.min_amount && grant.max_amount && profile.goals) {
+    const budgetMap = { small: 30000, medium: 150000, large: 500000, xlarge: 2000000 };
+    const userBudget = budgetMap[profile.goals] || 30000;
+    if (userBudget >= grant.min_amount && userBudget <= grant.max_amount) {
+      score += 20;
+    } else if (userBudget >= grant.min_amount * 0.5 && userBudget <= grant.max_amount * 2) {
+      score += 10;
+    }
+  } else {
+    score += 10; // No budget constraint
+  }
+
+  // Organization type match (10 points)
+  if (grant.eligibility && profile.organization_type) {
+    const eligLower = grant.eligibility.toLowerCase();
+    const orgMap = {
+      startup: ['стартап', 'startup', 'претпријатија', 'компании'],
+      sme: ['мало', 'средно', 'претпријатија', 'sme', 'компании'],
+      ngo: ['нво', 'здружение', 'фондација', 'граѓански', 'ngo', 'организации'],
+      agri: ['земјоделск', 'рурал', 'agri', 'стопанства'],
+      municipality: ['општини', 'јавни', 'институции', 'municipality'],
+      university: ['универзитет', 'истражувач', 'university', 'research'],
+      individual: ['физички', 'лица', 'individual', 'претприемач']
+    };
+    const keywords = orgMap[profile.organization_type] || [];
+    if (keywords.some(k => eligLower.includes(k))) {
+      score += 10;
+    }
+  }
+
+  return Math.min(score, 100);
+}
+
+async function loadMatchingGrants(profile) {
+  try {
+    // Земи сите активни грантови
+    const grants = await dbGet(`grants?active=eq.true&select=*`);
+    if (!grants || grants.length === 0) return [];
+
+    // Пресметај fit score за секој грант
+    const scored = grants.map(g => ({
+      ...g,
+      fitScore: calcFitScore(g, profile)
+    }));
+
+    // Врати само оние со score > 40%, сортирани
+    return scored
+      .filter(g => g.fitScore > 40)
+      .sort((a, b) => b.fitScore - a.fitScore)
+      .slice(0, 4);
+  } catch { return []; }
+}
+
+async function loadProcesses(grantId) {
+  if (!grantId) return [];
+  try {
+    const rows = await dbGet(`processes?grant_id=eq.${grantId}&order=step_number.asc&select=*`);
+    return rows || [];
+  } catch { return []; }
+}
+
+// ═══ DETECT LANGUAGE ═══
 function detectLang(text) {
   if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
   if (/ћ|ђ/i.test(text)) return 'sr';
@@ -88,176 +190,131 @@ function detectLang(text) {
   return 'en';
 }
 
-// ═══ SEARCH TRIGGER DETECTION ═══
-const SEARCH_TRIGGERS = [
-  'тендер','набавка','оглас','грант','фонд','финансир','понуда','licitaci','откуп','купи','продава',
-  'tender','nabavka','oglas','grant','fond','finansir','ponuda','startup','licitati',
-  'повик','аплицир','субвенц','ipard','fitr','horizon','erasmus','prebaruvam','prebaraj',
-  'дотација','subvencij','инвестиц','invest','аукциј','auction','javen povik'
-];
-
-function needsSearch(text) {
-  const t = text.toLowerCase();
-  return SEARCH_TRIGGERS.some(k => t.includes(k));
-}
-
+// ═══ DETECT INTENT ═══
 function getIntent(text) {
   const t = text.toLowerCase();
-  if (/тендер|набавка|tender|nabavka|licitaci|јавна набавка|javen povik za nabavka/.test(t)) return 'tender';
-  if (/грант|фонд|grant|fond|финансир|ipard|fitr|субвенц|повик|erasmus|horizon/.test(t)) return 'grant';
+  if (/грант|фонд|grant|fond|финансир|ipard|fitr|субвенц|повик|erasmus|horizon|civica|undp|interreg/.test(t)) return 'grant';
   if (/закон|право|договор|legal|zakon|ugovor|даноц|gdpr/.test(t)) return 'legal';
   if (/анализ|swot|analiz|споредба/.test(t)) return 'analysis';
   return 'business';
 }
 
-// ═══ SERPER SEARCH ═══
-function extractKw(text) {
-  const stop = new Set([
-    'и','или','на','во','за','од','со','да','се','ми','си','ги','го','сакам','барам','имам','можеш','треба','кои','каде','кога','што','дали',
-    'kako','sto','koja','mozes','imam','treba','the','and','for','in','of','to','a','an','is','i','ili','za','od','sa','da','je','su','na'
-  ]);
-  return text.toLowerCase()
-    .replace(/[^\w\s\u0400-\u04FF]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 2 && !stop.has(w))
-    .slice(0, 4).join(' ');
-}
-
-function getCountry(text) {
+// ═══ DETECT IF ASKING ABOUT SPECIFIC GRANT ═══
+function detectGrantFocus(text) {
   const t = text.toLowerCase();
-  if (/македон|makedon|северна македониј|north macedon/.test(t)) return { code: 'mk', gl: 'en' };
-  if (/србиј|srbij/.test(t)) return { code: 'rs', gl: 'rs' };
-  if (/хрват|hrvat/.test(t)) return { code: 'hr', gl: 'hr' };
-  if (/босн|bosn/.test(t)) return { code: 'ba', gl: 'en' };
-  if (/бугар|bulgar/.test(t)) return { code: 'bg', gl: 'bg' };
-  if (/романиј|roman/.test(t)) return { code: 'ro', gl: 'ro' };
-  if (/германиј|german|deutsch/.test(t)) return { code: 'de', gl: 'de' };
-  if (/франциј|franc/.test(t)) return { code: 'fr', gl: 'fr' };
-  if (/\beu\b|европ|europ/.test(t)) return { code: 'eu', gl: 'en' };
-  return { code: 'mk', gl: 'en' };
+  if (/fitr|фитр/.test(t)) return 'FITR';
+  if (/ipard|ипард/.test(t)) return 'IPARD';
+  if (/erasmus|еразмус/.test(t)) return 'ERASMUS';
+  if (/horizon|хоризон/.test(t)) return 'Horizon';
+  if (/interreg|интеррег/.test(t)) return 'INTERREG';
+  if (/civica|цивика/.test(t)) return 'Civica';
+  if (/undp|ундп/.test(t)) return 'UNDP';
+  if (/western balkans|западен балкан|wbf/.test(t)) return 'WBF';
+  return null;
 }
 
-async function serperSearch(query, key, gl = 'en') {
-  try {
-    const r = await ft('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-KEY': key },
-      body: JSON.stringify({ q: query, num: 5, gl })
-    }, 8000);
-    if (!r.ok) return [];
-    const d = await r.json();
-    return (d.organic || []).slice(0, 4).map(x => ({
-      title: x.title || '',
-      snippet: (x.snippet || '').slice(0, 200),
-      link: x.link || '',
-      date: x.date || ''
-    }));
-  } catch { return []; }
-}
-
-async function doSearch(userText, intent, serperKey) {
-  const kw = extractKw(userText);
-  const { code, gl } = getCountry(userText);
-
-  const GRANT_SITES = {
-    mk: 'site:fitr.mk OR site:ipard.gov.mk OR site:westernbalkansfund.org OR site:mk.undp.org OR site:civicamobilitas.mk',
-    rs: 'site:inovacionifond.rs OR site:apr.gov.rs',
-    eu: 'site:ec.europa.eu OR site:interreg.eu OR site:eismea.eu',
-    de: 'site:foerderdatenbank.de OR site:bmbf.de',
-    fr: 'site:bpifrance.fr',
-  };
-  const TENDER_SITES = {
-    mk: 'site:e-nabavki.gov.mk',
-    rs: 'site:portal.ujn.gov.rs',
-    hr: 'site:eojn.nn.hr',
-    ba: 'site:ejn.ba',
-    eu: 'site:ted.europa.eu',
-  };
-
-  const seen = new Set();
-  const results = [];
-  const add = (arr) => arr.forEach(r => {
-    if (r.link && !seen.has(r.link)) { seen.add(r.link); results.push(r); }
-  });
-
-  if (intent === 'grant') {
-    const site = GRANT_SITES[code] || GRANT_SITES.mk;
-    const [r1, r2] = await Promise.all([
-      serperSearch(`${kw} грант финансирање 2025`, serperKey, 'mk'),
-      serperSearch(`${kw} grant fund 2025 ${site}`, serperKey, 'en'),
-    ]);
-    add(r1); add(r2);
-  } else if (intent === 'tender') {
-    const site = TENDER_SITES[code] || TENDER_SITES.mk;
-    const [r1, r2] = await Promise.all([
-      serperSearch(`${kw} тендер набавка ${site}`, serperKey, gl),
-      serperSearch(`${kw} tender 2025 site:ted.europa.eu`, serperKey, 'en'),
-    ]);
-    add(r1); add(r2);
-  } else {
-    add(await serperSearch(`${kw} Македонија оглас понуда 2025`, serperKey, 'mk'));
-  }
-
-  console.log(`[SEARCH] intent:${intent} country:${code} kw:"${kw}" results:${results.length}`);
-  return results.slice(0, 5);
-}
-
-// ═══ SYSTEM PROMPT ═══
+// ═══ BUILD SYSTEM PROMPT ═══
 const LANG_NAMES = {
   mk: 'македонски', sr: 'српски', hr: 'хрватски', bs: 'босански',
   en: 'English', de: 'Deutsch', sq: 'shqip', bg: 'български', tr: 'Türkçe', pl: 'polski'
 };
 
-function buildPrompt(lang, today, searchResults) {
+function buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus) {
   const L = LANG_NAMES[lang] || 'English';
-  const hasResults = searchResults && searchResults.length > 0;
 
-  let p = `You are MARGINOVA — senior business operator, 20 years Balkans and Europe.
-Language: ${L} only. Today: ${today}.
+  // Format profile
+  const profileText = profile ? `
+Organization type: ${profile.organization_type || 'not specified'}
+Sector: ${profile.sector || 'not specified'}
+Country: ${profile.country || 'mk'}
+Budget range: ${profile.goals || 'not specified'}` : 'Profile not set — ask user for sector, country, and organization type.';
 
-CRITICAL RULES — non-negotiable:
-1. Max 120 words per response. Every word earns its place.
-2. NEVER open with: "Разбирам" / "I understand" / "Се разбира" / "Добро"
-3. NEVER use bullet lists with more than 2 items — weave into sentences instead
-4. NEVER cut off mid-sentence — always finish the thought
-5. NEVER say you cannot search or have no data — use your knowledge
-6. NEVER ask more than ONE question per response
-7. Format [OPPORTUNITY][NUMBERS][ACTION][RISK] only for real concrete opportunities
-8. Conversation questions → plain direct sentences, no format tags at all
-
-WHO YOU ARE:
-You have closed deals, read procurement laws, written grant applications.
-You think in outcomes. You have opinions and share them directly.
-You challenge bad plans. You protect people from expensive mistakes.
-Not a directory. Not a chatbot. The operator in the room.
-
-KNOWLEDGE:
-Macedonia: FITR grants €5k-€200k (fitr.mk) | IPARD III 40-65% co-finance (ipard.gov.mk) | Western Balkans Fund (westernbalkansfund.org) | Civica Mobilitas up to €150k | e-nabavki.gov.mk for public tenders | mkizvrsiteli.mk for auctions
-EU: Horizon Europe €95B | INTERREG up to €2M | ERASMUS+ €10k-€400k | EBRD/IFC/World Bank loans | ted.europa.eu for EU tenders
-Balkans: portal.ujn.gov.rs (RS) | eojn.nn.hr (HR) | ejn.ba (BA)
-
-OPPORTUNITY FORMAT (only when presenting real options):
-[OPPORTUNITY] what, where, for whom
-[NUMBERS] cost € | grant size € | co-finance % | days to action
-[ACTION] step 1 → step 2 → step 3
-[RISK] one sentence`;
-
-  if (hasResults) {
-    const d = new Date().toLocaleDateString('mk-MK', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    p += `\n\nLIVE DATA (${d}) — use ONLY these, never invent:\n`;
-    searchResults.forEach((r, i) => {
-      p += `${i + 1}. ${r.title}${r.date ? ' | ' + r.date : ''}\n   ${r.snippet}\n   ${r.link}\n`;
-    });
-    p += `\nPresent best result using the format above.`;
-  } else if (searchResults !== undefined) {
-    p += `\n\n0 live results. Use knowledge — give ONE concrete program, real amount, immediate next step. Do not mention search.`;
+  // Format matched grants
+  let grantsText = '';
+  if (matchedGrants.length > 0) {
+    grantsText = matchedGrants.map(g => `
+---
+Grant: ${g.name}
+Funder: ${g.funder}
+Fit Score: ${g.fitScore}%
+Amount: €${g.min_amount?.toLocaleString() || '?'} — €${g.max_amount?.toLocaleString() || '?'}
+Co-financing: ${g.co_finance_percent || '?'}%
+Sectors: ${g.sector?.join(', ') || 'various'}
+Countries: ${g.country?.join(', ') || 'various'}
+Eligibility: ${g.eligibility || 'see portal'}
+Portal: ${g.portal_url || 'N/A'}
+Active: ${g.active ? 'Yes' : 'No'}`).join('\n');
+  } else {
+    grantsText = 'No grants matched the user profile above 40% fit score.';
   }
 
-  return p;
+  // Format processes
+  let processText = '';
+  if (processes.length > 0) {
+    const grant = matchedGrants.find(g => processes[0]?.grant_id === g.id);
+    processText = `\n\nAPPLICATION PROCESS${grant ? ` FOR ${grant.name.toUpperCase()}` : ''}:\n` +
+      processes.map(p =>
+        `Step ${p.step_number}/${processes.length}: ${p.title}
+  What to do: ${p.description}
+  Documents: ${p.documents?.join(', ') || 'none'}
+  Duration: ${p.duration_days ? p.duration_days + ' days' : 'variable'}
+  Where: ${p.institution || 'N/A'}
+  Link: ${p.url || 'N/A'}`
+      ).join('\n\n');
+  }
+
+  return `You are MARGINOVA — Grant Acquisition Engine for the Balkans and Europe.
+You are not an assistant. You are a grant strategist who has helped organizations win millions in funding.
+You think like an investor: ruthless about fit, honest about chances, concrete about next steps.
+
+Language: ${L} — respond EXCLUSIVELY in this language. Never switch.
+Today: ${today}
+${grantFocus ? `User is asking about: ${grantFocus}` : ''}
+
+═══ USER PROFILE ═══${profileText}
+
+═══ MATCHED GRANTS FROM DATABASE ═══${grantsText}
+${processText}
+
+═══ YOUR MISSION ═══
+
+ASSESS FIT — For each matched grant, the Fit Score is already calculated above.
+Use it to rank and recommend grants.
+
+Fit Score interpretation:
+- 90-100%: Perfect match → recommend immediately
+- 70-89%: Strong match → recommend with minor notes
+- 50-69%: Partial match → recommend with clear conditions
+- Below 50%: Do not recommend
+
+RECOMMEND FORMAT (use for grant recommendations):
+📋 [Grant name]
+🏆 Fit Score: [X%]
+💰 €[min] — €[max] | [co-finance]% co-financing
+✅ Why you qualify: [specific reason based on profile]
+⚠️ Main risk: [one concrete obstacle]
+🔗 [portal_url]
+
+GUIDE FORMAT (use when explaining application steps):
+Step [N]/[total]: [title]
+→ [what to do concisely]
+→ [institution]
+→ [duration]
+→ Documents: [list]
+
+═══ BEHAVIORAL RULES ═══
+- General answers: max 200 words
+- Step-by-step guides: as detailed as needed, no word limit
+- Never hallucinate amounts, deadlines or links not in the database
+- Never say "I cannot help" — always give best available advice
+- If profile is incomplete → ask ONE specific question to complete it
+- Use informal address (ти/твој in Macedonian/Serbian, tu in others)
+- Challenge weak applications directly — protect users from wasting time on low-fit grants
+- If no grants match → explain exactly why and what to change to become eligible
+- End every response with ONE concrete next action the user can take today`;
 }
 
-
-// ═══ GEMINI — 1 ПОВИК ═══
+// ═══ GEMINI CALL ═══
 async function gemini(systemPrompt, messages, apiKey) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   const contents = messages.map(m => ({
@@ -272,9 +329,9 @@ async function gemini(systemPrompt, messages, apiKey) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents,
-      generationConfig: { maxOutputTokens: 1500, temperature: 0.75 }
+      generationConfig: { maxOutputTokens: 4096, temperature: 0.7 }
     })
-  }, 25000);
+  }, 30000);
 
   if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 100)}`);
   const d = await r.json();
@@ -296,7 +353,6 @@ module.exports = async function handler(req, res) {
   if (!checkIP(req)) return res.status(429).json({ error: { message: 'Daily limit reached.' } });
 
   const apiKey = process.env.GEMINI_API_KEY;
-  const serperKey = process.env.SERPER_API_KEY;
   if (!apiKey) return res.status(500).json({ error: { message: 'Missing GEMINI_API_KEY.' } });
 
   try {
@@ -312,25 +368,47 @@ module.exports = async function handler(req, res) {
     const lang = body.lang || detectLang(userText);
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const intent = getIntent(userText);
+    const grantFocus = detectGrantFocus(userText);
 
-    console.log(`[CHAT] lang:${lang} intent:${intent} text:"${userText.slice(0, 60)}"`);
+    console.log(`[GAE] lang:${lang} intent:${intent} focus:${grantFocus || 'none'} user:${userId?.slice(0,8) || 'anon'}`);
 
-    // Serper — само ако треба
-    let searchResults = undefined;
-    if (serperKey && needsSearch(userText)) {
-      searchResults = await doSearch(userText, intent, serperKey);
+    // ═══ SUPABASE — Load profile + matching grants ═══
+    const [profile, allGrants] = await Promise.all([
+      loadProfile(userId),
+      dbGet('grants?active=eq.true&select=*')
+    ]);
+
+    // Fit Engine
+    let matchedGrants = [];
+    if (allGrants && allGrants.length > 0) {
+      const scored = allGrants.map(g => ({ ...g, fitScore: calcFitScore(g, profile) }));
+      matchedGrants = scored.filter(g => g.fitScore > 40).sort((a, b) => b.fitScore - a.fitScore).slice(0, 4);
     }
 
-    // Frontend пораки — тековна сесија
+    // Load processes for top grant or focused grant
+    let processes = [];
+    if (grantFocus || userText.toLowerCase().includes('процес') || userText.toLowerCase().includes('process') || userText.toLowerCase().includes('чекор') || userText.toLowerCase().includes('step') || userText.toLowerCase().includes('апликација') || userText.toLowerCase().includes('application')) {
+      const targetGrant = grantFocus
+        ? matchedGrants.find(g => g.name.toLowerCase().includes(grantFocus.toLowerCase()) || g.funder.toLowerCase().includes(grantFocus.toLowerCase()))
+        : matchedGrants[0];
+      if (targetGrant) {
+        processes = await loadProcesses(targetGrant.id);
+        console.log(`[GAE] Loaded ${processes.length} process steps for ${targetGrant.name}`);
+      }
+    }
+
+    console.log(`[GAE] Profile:${profile ? 'yes' : 'no'} | Matched grants:${matchedGrants.length} | Processes:${processes.length}`);
+
+    // Build messages for Gemini
     const messages = (body.messages || []).slice(-6).map(m => ({
       role: m.role,
       content: String(m.content || '')
     }));
 
-    const systemPrompt = buildPrompt(lang, today, searchResults);
+    const systemPrompt = buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus);
     const text = await gemini(systemPrompt, messages, apiKey);
 
-    // Quota async — не го блокира одговорот
+    // Increment quota async
     if (userId) incQuota(userId).catch(() => {});
 
     return res.status(200).json({ content: [{ type: 'text', text }], intent });
