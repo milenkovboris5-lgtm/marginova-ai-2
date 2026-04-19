@@ -522,8 +522,7 @@ module.exports = async function handler(req, res) {
     const systemPrompt = buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus);
     const text = await gemini(systemPrompt, messages, apiKey);
 
-    // Increment quota async
-    if (userId) incQuota(userId).catch(() => {});
+    // Quota is managed by frontend (deductToken) — no double counting here
 
     return res.status(200).json({ content: [{ type: 'text', text }], intent });
 
