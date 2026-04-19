@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Marginova.AI — Grant Acquisition Engine</title>
 <meta name="description" content="Marginova.AI — Find grants, assess chances, apply with confidence.">
 <meta name="mobile-web-app-capable" content="yes">
@@ -221,8 +221,8 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
       <button class="auth-tab active" onclick="switchAuth('login')" id="tab-login">Login</button>
       <button class="auth-tab" onclick="switchAuth('register')" id="tab-register">Register</button>
     </div>
-    <input class="auth-input" type="email" id="auth-email" placeholder="Email"/>
-    <input class="auth-input" type="password" id="auth-password" placeholder="Password"/>
+    <input class="auth-input" type="email" id="auth-email" placeholder="Email" autocomplete="email" inputmode="email" autocorrect="off" autocapitalize="none"/>
+    <input class="auth-input" type="password" id="auth-password" placeholder="Password" autocomplete="current-password"/>
     <div id="gdpr-notice" style="display:none;">
       <div class="gdpr-note">By registering you agree to <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</div>
     </div>
