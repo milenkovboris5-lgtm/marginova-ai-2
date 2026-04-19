@@ -218,14 +218,21 @@ async function loadProcesses(grantId) {
 
 // ═══ DETECT LANGUAGE ═══
 function detectLang(text) {
+  // Macedonian specific chars
   if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
+  // Serbian specific chars
   if (/ћ|ђ/i.test(text)) return 'sr';
+  // Cyrillic without specific chars — default mk
   if (/[а-шА-Ш]/.test(text)) return 'mk';
-  if (/\b(und|oder|ich|nicht)\b/.test(text)) return 'de';
+  // European languages
+  if (/\b(und|oder|ich|nicht|sie|wir)\b/.test(text)) return 'de';
   if (/\b(jest|się|nie|dla)\b/.test(text)) return 'pl';
-  if (/\b(ve|bir|için|ile)\b/.test(text)) return 'tr';
-  if (/\b(dhe|është|për)\b/.test(text)) return 'sq';
-  if (/\b(sam|smo|ili)\b/.test(text)) return 'sr';
+  if (/\b(ve|bir|için|ile|bu)\b/.test(text)) return 'tr';
+  if (/\b(dhe|është|për|nga)\b/.test(text)) return 'sq';
+  // Serbian Latin indicators
+  if (/\b(sam|smo|nije|nisu|kako ste|brate|bre|jeste|jesam)\b/.test(text)) return 'sr';
+  // Macedonian Latin indicators
+  if (/\b(jas|sum|makedonija|macedonija|kako|zdravo|mozes|mozam|sakam|imam|sektor|zemja|organizacija|pretprijatie|proekt|grant|fond|makedonski|na makedonski)\b/.test(text)) return 'mk';
   return 'en';
 }
 
@@ -260,6 +267,7 @@ const LANG_NAMES = {
 
 function buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus) {
   const L = LANG_NAMES[lang] || 'English';
+  const langCode = lang || 'en';
 
   // Format profile
   const profileText = profile ? `
@@ -302,13 +310,16 @@ Active: ${g.active ? 'Yes' : 'No'}`).join('\n');
       ).join('\n\n');
   }
 
-  return `LANGUAGE INSTRUCTION — HIGHEST PRIORITY — OVERRIDE EVERYTHING ELSE:
-You MUST respond in: ${L}
-If the user writes in ${L}, you respond in ${L}.
-If the user asks to switch to ${L}, you IMMEDIATELY switch and stay in ${L}.
-NEVER respond in Serbian when the user asks for Macedonian.
-NEVER respond in any language other than ${L}.
-This is NON-NEGOTIABLE.
+  return `=== MANDATORY LANGUAGE: ${L.toUpperCase()} ===
+You MUST ONLY respond in ${L}. This overrides all other instructions.
+Detected language code: ${lang}
+- mk = македонски (Macedonian) — NOT Serbian, NOT mixed
+- sr = српски (Serbian)
+- en = English
+Current lang code: ${langCode}
+If user says "можеш на македонски" or "na makedonski" → switch to македонски IMMEDIATELY.
+NEVER say "I can only communicate in Serbian". NEVER refuse to switch language.
+=== END LANGUAGE INSTRUCTION ===
 
 You are MARGINOVA — Grant Acquisition Engine for the Balkans and Europe.
 You are not an assistant. You are a grant strategist who has helped organizations win millions in funding.
