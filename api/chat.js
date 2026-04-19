@@ -90,60 +90,91 @@ async function loadProfile(userId) {
 
 // ═══ FIT ENGINE — Supabase grant matching ═══
 function calcFitScore(grant, profile) {
-  if (!profile) return 0;
+  if (!profile) return 50; // No profile = show all grants
+
   let score = 0;
 
-  // Sector match (40 points)
+  // ═══ SECTOR MATCH (35 points) ═══
   if (grant.sector && profile.sector) {
     const grantSectors = grant.sector.map(s => s.toLowerCase());
     const userSector = profile.sector.toLowerCase();
-    if (grantSectors.some(s => s.includes(userSector) || userSector.includes(s))) {
-      score += 40;
+
+    // Related sector groups — broad matching
+    const sectorGroups = {
+      'it': ['it', 'tech', 'дигитал', 'digital', 'software', 'иновации', 'innovation', 'истражување', 'research', 'образование', 'education'],
+      'agriculture': ['земјоделст', 'agri', 'рурал', 'rural', 'food', 'храна'],
+      'education': ['образование', 'education', 'млади', 'youth', 'обука', 'training', 'it', 'дигитал'],
+      'environment': ['животна средина', 'environment', 'зелена', 'green', 'енерг', 'energy', 'еколог'],
+      'civil society': ['граѓанск', 'civil', 'нво', 'ngo', 'демократ', 'human rights', 'социјалн', 'social'],
+      'tourism': ['туриз', 'tourism', 'култур', 'culture', 'регионал'],
+      'energy': ['енерг', 'energy', 'обновлив', 'renewable', 'животна средина'],
+      'health': ['здравств', 'health', 'социјалн', 'social'],
+      'research': ['истражување', 'research', 'иновации', 'innovation', 'it', 'tech', 'универзитет'],
+    };
+
+    const relatedSectors = sectorGroups[userSector] || [userSector];
+
+    // Exact or related match
+    if (grantSectors.some(s => relatedSectors.some(r => s.includes(r) || r.includes(s)))) {
+      score += 35;
     } else if (grantSectors.some(s => s.includes('сите') || s.includes('all') || s.includes('general'))) {
-      score += 25;
-    }
-  }
-
-  // Country match (30 points)
-  if (grant.country && profile.country) {
-    const grantCountries = grant.country.map(c => c.toLowerCase());
-    const userCountry = profile.country.toLowerCase();
-    if (grantCountries.includes(userCountry)) {
-      score += 30;
-    } else if (grantCountries.includes('eu') || grantCountries.includes('balkans')) {
       score += 20;
-    }
-  }
-
-  // Budget match (20 points)
-  if (grant.min_amount && grant.max_amount && profile.goals) {
-    const budgetMap = { small: 30000, medium: 150000, large: 500000, xlarge: 2000000 };
-    const userBudget = budgetMap[profile.goals] || 30000;
-    if (userBudget >= grant.min_amount && userBudget <= grant.max_amount) {
-      score += 20;
-    } else if (userBudget >= grant.min_amount * 0.5 && userBudget <= grant.max_amount * 2) {
-      score += 10;
+    } else {
+      score += 5; // Small base for cross-sector potential
     }
   } else {
-    score += 10; // No budget constraint
+    score += 20; // No sector specified = partial match
   }
 
-  // Organization type match (10 points)
+  // ═══ COUNTRY MATCH (30 points) ═══
+  if (grant.country && profile.country) {
+    const grantCountries = grant.country.map(c => c.toLowerCase());
+    const userCountry = (profile.country || 'mk').toLowerCase();
+
+    if (grantCountries.includes(userCountry)) {
+      score += 30;
+    } else if (grantCountries.some(c => ['eu','balkans','europe','европ'].includes(c))) {
+      score += 22; // EU/Balkans programs cover WB countries
+    } else if (grantCountries.length > 3) {
+      score += 15; // Multi-country program
+    }
+  } else {
+    score += 15;
+  }
+
+  // ═══ ORGANIZATION TYPE MATCH (25 points) ═══
   if (grant.eligibility && profile.organization_type) {
     const eligLower = grant.eligibility.toLowerCase();
     const orgMap = {
-      startup: ['стартап', 'startup', 'претпријатија', 'компании'],
-      sme: ['мало', 'средно', 'претпријатија', 'sme', 'компании'],
-      ngo: ['нво', 'здружение', 'фондација', 'граѓански', 'ngo', 'организации'],
-      agri: ['земјоделск', 'рурал', 'agri', 'стопанства'],
-      municipality: ['општини', 'јавни', 'институции', 'municipality'],
-      university: ['универзитет', 'истражувач', 'university', 'research'],
-      individual: ['физички', 'лица', 'individual', 'претприемач']
+      startup:      ['стартап', 'startup', 'претпријатија', 'компании', 'иновативни', 'нови'],
+      sme:          ['мало', 'средно', 'претпријатија', 'sme', 'компании', 'бизнис'],
+      ngo:          ['нво', 'здружение', 'фондација', 'граѓански', 'ngo', 'организации', 'граѓанск', 'civil'],
+      agri:         ['земјоделск', 'рурал', 'agri', 'стопанства', 'физички'],
+      municipality: ['општини', 'јавни', 'институции', 'municipality', 'локалн'],
+      university:   ['универзитет', 'истражувач', 'university', 'research', 'институт'],
+      individual:   ['физички', 'лица', 'individual', 'претприемач', 'граѓани']
     };
     const keywords = orgMap[profile.organization_type] || [];
     if (keywords.some(k => eligLower.includes(k))) {
-      score += 10;
+      score += 25;
+    } else {
+      score += 8; // Partial — might still be eligible
     }
+  } else {
+    score += 12;
+  }
+
+  // ═══ BUDGET MATCH (10 points) ═══
+  if (grant.min_amount && grant.max_amount && profile.goals) {
+    const budgetMap = { small: 25000, medium: 90000, large: 300000, xlarge: 1000000 };
+    const userBudget = budgetMap[profile.goals] || 25000;
+    if (userBudget >= grant.min_amount && userBudget <= grant.max_amount) {
+      score += 10;
+    } else if (userBudget >= grant.min_amount * 0.3) {
+      score += 5;
+    }
+  } else {
+    score += 5;
   }
 
   return Math.min(score, 100);
