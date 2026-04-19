@@ -449,7 +449,7 @@ module.exports = async function handler(req, res) {
         /\bit\b|tech|software|дигитал|веб|web|апп|app|платформ|platform/.test(conversationText) ? 'IT' :
         /земјоделст|земјоделие|земјоделец|земјоделск|agri|рурал|фарм|farm|сточар|овошт|круш|јаболк|лозар|пченк|житар|нива|хектар|hektar|насади|добиток|млеко/.test(conversationText) ? 'agriculture' :
         /образован|education|учење|learning|школ|school|студент/.test(conversationText) ? 'education' :
-        /животна средина|environment|зелен|green|еколог|climate/.test(conversationText) ? 'environment' :
+        /животна средина|Животна средина|ЖИВОТНА СРЕДИНА|environment|зелен|green|еколог|climate/.test(conversationText) ? 'environment' :
         /нво|ngo|здружение|граѓанск|civil society/.test(conversationText) ? 'civil society' :
         /туриз|tourism|хотел|hotel|угостител/.test(conversationText) ? 'tourism' :
         /енерг|energy|сончев|solar|обновлив|renewable/.test(conversationText) ? 'energy' :
@@ -458,7 +458,7 @@ module.exports = async function handler(req, res) {
       // Detect org type from conversation
       const detectedOrg =
         /стартап|startup|нова компанија|новооснован|spin.?off/.test(conversationText) ? 'startup' :
-        /нво|ngo|здружение|фондација|граѓанск|невладин/.test(conversationText) ? 'ngo' :
+        /нво|НВО|ngo|NGO|здружение|фондација|граѓанск|невладин/.test(conversationText) ? 'ngo' :
         /земјоделец|земјоделие|фармер|farmer|аграр|стопанство|насади|хектар|hektar|круш|јаболк|лозар|нива|добиток/.test(conversationText) ? 'agri' :
         /мало претпријатие|средно претпријатие|sme|фирма|компанија|dooел|ооd/.test(conversationText) ? 'sme' :
         /општина|municipality|јавна институција|публичен/.test(conversationText) ? 'municipality' :
