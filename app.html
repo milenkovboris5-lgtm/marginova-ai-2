@@ -531,7 +531,7 @@ async function loadTokens() {
 }
 
 async function deductToken() {
-  if (!currentUser) return true;
+  if (!currentUser) return true; // TODO: add anonymous limit after testing phase
   try {
     const today = new Date().toISOString().split('T')[0];
     const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date').eq('user_id', currentUser.id).single();
@@ -541,7 +541,7 @@ async function deductToken() {
     if (limit === -1) return true;
     const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
     if (used >= limit) { openModal('upgrade-modal'); return false; }
-    await db.from('profiles').upsert({ user_id: currentUser.id, daily_msgs: used + 1, last_msg_date: today });
+    await db.from('profiles').update({ daily_msgs: used + 1, last_msg_date: today }).eq('user_id', currentUser.id);
     const el = document.getElementById('token-display');
     if (el) el.textContent = Math.max(0, limit - used - 1);
     return true;
