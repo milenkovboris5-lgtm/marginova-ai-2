@@ -135,6 +135,12 @@ nav::after{
   background:transparent;letter-spacing:0.08em;text-transform:uppercase;transition:all 0.3s;
 }
 .nav-intent.active{border-color:var(--border2);color:var(--gold);background:rgba(201,168,76,0.08);}
+.back-btn{
+  width:32px;height:32px;border-radius:50%;border:1px solid var(--border);
+  background:transparent;cursor:pointer;color:var(--text2);font-size:1rem;
+  display:flex;align-items:center;justify-content:center;transition:all 0.2s;
+}
+.back-btn:hover{border-color:var(--border2);color:var(--gold);}
 .menu-btn{
   width:32px;height:32px;border-radius:50%;border:1px solid var(--border);
   background:transparent;cursor:pointer;color:var(--text2);font-size:0.9rem;
@@ -427,6 +433,7 @@ nav::after{
     <div class="nav-logo-text">MARGIN<b>OVA</b><span>.AI</span></div>
   </div>
   <div class="nav-right">
+    <button class="back-btn" id="back-btn" onclick="backToWelcome()" style="display:none;" title="Почетна">←</button>
     <div class="nav-intent" id="nav-intent">GAE</div>
     <button class="menu-btn" onclick="openDrawer()">☰</button>
   </div>
@@ -703,7 +710,8 @@ function startChat() {
   document.getElementById('welcome-screen').style.display = 'none';
   document.getElementById('messages').style.display = 'flex';
   document.getElementById('input-area').style.display = 'flex';
-  addMsg('ai', 'Кажи ми за твојот проект — секторот, земјата и приближниот буџет. Ќе ти кажам кои грантови имаат реална шанса за тебе.');
+  document.getElementById('back-btn').style.display = 'flex';
+  addMsg('ai', 'Tell me about your project — sector, country, and approximate budget. I will find which grants have a real chance for you.');
   setTimeout(() => document.getElementById('msg-input').focus(), 100);
 }
 
@@ -713,6 +721,7 @@ function backToWelcome() {
   document.getElementById('messages').style.display = 'none';
   document.getElementById('input-area').style.display = 'none';
   document.getElementById('welcome-screen').style.display = 'flex';
+  document.getElementById('back-btn').style.display = 'none';
 }
 
 function addMsg(role, text, intent) {
