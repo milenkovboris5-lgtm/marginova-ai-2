@@ -105,14 +105,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .menu-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text2);font-size:0.9rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
 .menu-btn:hover{border-color:var(--border2);}
 
-/* ═══ LANG BAR ═══ */
-.lang-bar{display:flex;justify-content:center;gap:4px;padding:0.3rem 0.5rem 0.4rem;border-bottom:1px solid rgba(201,168,76,0.08);background:rgba(7,7,15,0.6);flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
-.lang-bar::-webkit-scrollbar{display:none;}
-.lang-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:0.25rem 0.4rem;border-radius:8px;border:1px solid transparent;background:transparent;cursor:pointer;transition:all 0.2s;min-width:34px;flex-shrink:0;}
-.lang-btn img{width:24px;height:16px;object-fit:cover;border-radius:2px;}
-.lang-btn span{font-size:0.4rem;color:var(--muted);font-family:'DM Sans',sans-serif;}
-.lang-btn.active{border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.08);}
-.lang-btn.active span{color:var(--gold);}
+
 
 /* ═══ MAIN ═══ */
 .main{display:flex;flex:1;min-height:0;position:relative;z-index:1;}
@@ -349,24 +342,11 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   </div>
   <div class="nav-right">
     <button class="back-btn" id="back-btn" onclick="backToWelcome()" title="Home">←</button>
-    <div class="nav-intent" id="nav-intent">GAE</div>
+    <div class="nav-intent" id="nav-intent" style="display:none;"></div>
     <button class="menu-btn" onclick="openDrawer()">☰</button>
   </div>
 </nav>
 
-<!-- LANG BAR -->
-<div class="lang-bar" id="lang-bar" style="display:none;">
-  <button class="lang-btn" id="lb-mk" onclick="setLang('mk')"><img src="https://flagcdn.com/w40/mk.png" alt="MK"/><span>MK</span></button>
-  <button class="lang-btn" id="lb-sr" onclick="setLang('sr')"><img src="https://flagcdn.com/w40/rs.png" alt="SR"/><span>SR</span></button>
-  <button class="lang-btn" id="lb-hr" onclick="setLang('hr')"><img src="https://flagcdn.com/w40/hr.png" alt="HR"/><span>HR</span></button>
-  <button class="lang-btn" id="lb-bs" onclick="setLang('bs')"><img src="https://flagcdn.com/w40/ba.png" alt="BS"/><span>BS</span></button>
-  <button class="lang-btn" id="lb-en" onclick="setLang('en')"><img src="https://flagcdn.com/w40/gb.png" alt="EN"/><span>EN</span></button>
-  <button class="lang-btn" id="lb-sq" onclick="setLang('sq')"><img src="https://flagcdn.com/w40/al.png" alt="SQ"/><span>SQ</span></button>
-  <button class="lang-btn" id="lb-de" onclick="setLang('de')"><img src="https://flagcdn.com/w40/de.png" alt="DE"/><span>DE</span></button>
-  <button class="lang-btn" id="lb-bg" onclick="setLang('bg')"><img src="https://flagcdn.com/w40/bg.png" alt="BG"/><span>BG</span></button>
-  <button class="lang-btn" id="lb-tr" onclick="setLang('tr')"><img src="https://flagcdn.com/w40/tr.png" alt="TR"/><span>TR</span></button>
-  <button class="lang-btn" id="lb-pl" onclick="setLang('pl')"><img src="https://flagcdn.com/w40/pl.png" alt="PL"/><span>PL</span></button>
-</div>
 
 <!-- MAIN -->
 <div class="main" id="main-app" style="display:none;">
@@ -509,7 +489,7 @@ async function logout() {
   currentUser = null; chatHistory = [];
   document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('main-nav').style.display = 'none';
-  document.getElementById('lang-bar').style.display = 'none';
+  
   document.getElementById('main-app').style.display = 'none';
   closeDrawer();
 }
@@ -518,7 +498,7 @@ function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('profile-screen').style.display = 'none';
   document.getElementById('main-nav').style.display = 'flex';
-  document.getElementById('lang-bar').style.display = 'flex';
+  
   document.getElementById('main-app').style.display = 'flex';
   setLang(lang);
   if (currentUser) {
@@ -564,9 +544,6 @@ async function deductToken() {
 function setLang(l) {
   lang = l;
   localStorage.setItem('mlang', l);
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('lb-' + l);
-  if (btn) btn.classList.add('active');
 }
 
 // ═══ INTENT BADGE ═══
@@ -575,9 +552,12 @@ const INTENT_LABELS = { tender:'Tender', grant:'Grant', legal:'Legal', analysis:
 function updateIntentBadge(intent) {
   const el = document.getElementById('nav-intent');
   if (!el) return;
-  el.textContent = INTENT_LABELS[intent] || 'GAE';
-  el.className = 'nav-intent active';
-  setTimeout(() => el.classList.remove('active'), 3000);
+  if (intent && intent !== 'business') {
+    el.textContent = INTENT_LABELS[intent] || intent;
+    el.style.display = 'block';
+    el.className = 'nav-intent active';
+    setTimeout(() => { el.classList.remove('active'); el.style.display = 'none'; }, 4000);
+  }
 }
 
 // ═══ MARKDOWN ═══
