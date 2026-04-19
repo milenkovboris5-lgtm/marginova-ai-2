@@ -222,6 +222,8 @@ function detectLang(text) {
   if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
   // Serbian specific chars
   if (/ћ|ђ/i.test(text)) return 'sr';
+  // Macedonian specific words in Cyrillic
+  if (/јас|сум|македонија|животна средина|барам|грант|работам|организација|сектор|земја|општини|НВО|невладина|претпријатие|иновации|образование/i.test(text)) return 'mk';
   // Cyrillic without specific chars — default mk
   if (/[а-шА-Ш]/.test(text)) return 'mk';
   // European languages
