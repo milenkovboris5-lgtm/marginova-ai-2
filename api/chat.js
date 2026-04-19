@@ -404,10 +404,56 @@ module.exports = async function handler(req, res) {
     console.log(`[GAE] lang:${lang} intent:${intent} focus:${grantFocus || 'none'} user:${userId?.slice(0,8) || 'anon'}`);
 
     // ═══ SUPABASE — Load profile + matching grants ═══
-    const [profile, allGrants] = await Promise.all([
+    const [supaProfile, allGrants] = await Promise.all([
       loadProfile(userId),
       dbGet('grants?active=eq.true&select=*')
     ]);
+
+    // Extract profile from conversation if Supabase profile is incomplete
+    const conversationText = (body.messages || []).map(m => m.content || '').join(' ').toLowerCase();
+    let profile = supaProfile;
+
+    if (!profile || !profile.sector || !profile.organization_type) {
+      // Detect sector from conversation
+      const detectedSector =
+        /\bit\b|tech|software|дигитал|веб|web|апп|app|платформ|platform/.test(conversationText) ? 'IT' :
+        /земјоделст|agri|рурал|фарм|farm|сточар|овошт/.test(conversationText) ? 'agriculture' :
+        /образован|education|учење|learning|школ|school|студент/.test(conversationText) ? 'education' :
+        /животна средина|environment|зелен|green|еколог|climate/.test(conversationText) ? 'environment' :
+        /нво|ngo|здружение|граѓанск|civil society/.test(conversationText) ? 'civil society' :
+        /туриз|tourism|хотел|hotel|угостител/.test(conversationText) ? 'tourism' :
+        /енерг|energy|сончев|solar|обновлив|renewable/.test(conversationText) ? 'energy' :
+        null;
+
+      // Detect org type from conversation
+      const detectedOrg =
+        /стартап|startup|нова компанија|новооснован|spin.?off/.test(conversationText) ? 'startup' :
+        /нво|ngo|здружение|фондација|граѓанск|невладин/.test(conversationText) ? 'ngo' :
+        /земјоделец|фармер|farmer|аграр|стопанство/.test(conversationText) ? 'agri' :
+        /мало претпријатие|средно претпријатие|sme|фирма|компанија|dooел|ооd/.test(conversationText) ? 'sme' :
+        /општина|municipality|јавна институција|публичен/.test(conversationText) ? 'municipality' :
+        /универзитет|university|институт|истражув/.test(conversationText) ? 'university' :
+        null;
+
+      // Detect country
+      const detectedCountry =
+        /македониј|makedon|северна македониј|north macedon/.test(conversationText) ? 'mk' :
+        /србиј|srbij/.test(conversationText) ? 'rs' :
+        /хрватск|hrvat/.test(conversationText) ? 'hr' :
+        /босн|bosn/.test(conversationText) ? 'ba' :
+        (supaProfile?.country) || 'mk';
+
+      if (detectedSector || detectedOrg) {
+        profile = {
+          ...supaProfile,
+          sector: detectedSector || supaProfile?.sector || null,
+          organization_type: detectedOrg || supaProfile?.organization_type || null,
+          country: detectedCountry,
+          goals: supaProfile?.goals || 'small'
+        };
+        console.log('[GAE] Detected from conversation — sector:' + profile.sector + ' org:' + profile.organization_type + ' country:' + profile.country);
+      }
+    }
 
     // Fit Engine
     let matchedGrants = [];
