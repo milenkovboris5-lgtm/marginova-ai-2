@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
 // Grant Acquisition Engine
-// VERSION: FINAL — case-insensitive sectors, mk country, threshold 30
+// VERSION: FINAL v4 — mk shortcut fix
 // ═══════════════════════════════════════════
 
 const SUPA_URL = process.env.SUPABASE_URL;
@@ -79,22 +79,25 @@ async function loadProfile(userId) {
   } catch { return null; }
 }
 
-// ═══ FIT ENGINE — handles mixed English/Macedonian sectors, case-insensitive ═══
+// ═══ FIT ENGINE ═══
 function calcFitScore(grant, profile) {
   if (!profile) return 50;
+
+  // ═══ SHORTCUT: if grant covers mk, always show it ═══
+  const hasMk = grant.country?.some(c => c.toLowerCase() === 'mk');
+  if (hasMk) return 70;
+
   let score = 0;
 
   // SECTOR MATCH (35 points)
   if (grant.sector && profile.sector) {
-    // Normalize everything to lowercase
     const grantSectors = grant.sector.map(s => s.toLowerCase().trim());
     const userSector = profile.sector.toLowerCase().trim();
 
-    // All aliases for each sector — includes Macedonian variants from DB
     const sectorAliases = {
       'it': ['it', 'tech', 'digital', 'software', 'innovation', 'иновации', 'дигитал', 'дигитализација', 'истражување', 'research', 'технологија', 'sme'],
       'agriculture': ['agriculture', 'agri', 'rural', 'рурален развој', 'земјоделство', 'food', 'храна'],
-      'education': ['education', 'образование', 'млади', 'youth', 'training', 'обука', 'it', 'дигитал'],
+      'education': ['education', 'образование', 'млади', 'youth', 'training', 'обука'],
       'environment': ['environment', 'животна средина', 'green', 'зелена', 'еколог', 'energy', 'енерг', 'енергетика'],
       'civil society': ['civil society', 'граѓанско општество', 'граѓанск', 'ngo', 'нво', 'демократ', 'human rights'],
       'tourism': ['tourism', 'туризам', 'туриз', 'culture', 'култур', 'регионален развој'],
@@ -105,11 +108,7 @@ function calcFitScore(grant, profile) {
     };
 
     const aliases = sectorAliases[userSector] || [userSector];
-
-    // Check if any grant sector matches any alias
-    const matched = grantSectors.some(gs =>
-      aliases.some(a => gs.includes(a) || a.includes(gs))
-    );
+    const matched = grantSectors.some(gs => aliases.some(a => gs.includes(a) || a.includes(gs)));
 
     if (matched) {
       score += 35;
@@ -146,7 +145,7 @@ function calcFitScore(grant, profile) {
       sme:          ['мало', 'средно', 'претпријатија', 'sme', 'компании', 'бизнис', 'мали и средни', 'претпријатие'],
       ngo:          ['нво', 'здружение', 'фондација', 'граѓански', 'ngo', 'организации', 'граѓанск', 'civil'],
       agri:         ['земјоделск', 'рурал', 'agri', 'стопанства', 'физички лица'],
-      municipality: ['општини', 'јавни', 'институции', 'municipality', 'локалн', 'општини'],
+      municipality: ['општини', 'јавни', 'институции', 'municipality', 'локалн'],
       university:   ['универзитет', 'истражувач', 'university', 'research', 'институт'],
       individual:   ['физички', 'лица', 'individual', 'претприемач', 'граѓани']
     };
@@ -217,7 +216,6 @@ function detectGrantFocus(text) {
   if (/undp|ундп/.test(t)) return 'UNDP';
   if (/western balkans|западен балкан|wbf/.test(t)) return 'WBF';
   if (/eu4business|еу4бизнис/.test(t)) return 'EU4Business';
-  if (/horizon|хоризон/.test(t)) return 'Horizon';
   return null;
 }
 
