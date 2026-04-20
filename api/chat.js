@@ -251,9 +251,9 @@ function detectLang(text) {
   if (/ћ|ђ/i.test(text)) return 'sr';
   if (/јас|сум|македонија|барам|грант|работам|организација|НВО|невладина|фонд/i.test(text)) return 'mk';
   if (/[а-шА-Ш]/.test(text)) return 'mk';
-  if (/\b(jas|sum|makedonija|macedonija|zdravo|mozes|mozam|sakam|imam|sektor|zemja|organizacija|proekt|grant|fond|makedonski|zemjodelie|ovostar|hektar|severna|poedinec|trgovec)\b/.test(text.toLowerCase())) return 'mk';
   if (/\b(und|oder|ich|nicht|sie|wir)\b/.test(text)) return 'de';
   if (/\b(sam|smo|nije|nisu|brate|bre|jeste|jesam)\b/.test(text)) return 'sr';
+  if (/\b(jas|sum|makedonija|macedonija|zdravo|mozes|mozam|sakam|imam|sektor|zemja|organizacija|proekt|grant|fond|makedonski)\b/.test(text)) return 'mk';
   return 'en';
 }
 
@@ -302,8 +302,8 @@ function detectProfile(conversationText, supaProfile) {
 
   const detectedOrg =
     /стартап|startup|нова компанија|новооснован|spin.?off/.test(t) ? 'startup' :
-    /земјоделец|земјоделие|фармер|farmer|аграр|стопанство|хектар|круш|овошт|лозар|добиток|zemjodel|farmer|hektar|krus|ovos|ovostar|lozar|dobitok|trgovec poedinec|трговец поединец|физичко лице земјоделец|zemjodelie|zemjodel/.test(t) ? 'agri' :
     /нво|НВО|ngo|NGO|здружение|фондација|граѓанск|невладин/.test(t) ? 'ngo' :
+    /земјоделец|земјоделие|фармер|farmer|аграр|стопанство|хектар|круш|овошт|лозар|добиток|zemjodel|farmer|hektar|krus|ovos|ovostar|lozar|dobitok|trgovec poedinec|трговец поединец|физичко лице земјоделец/.test(t) ? 'agri' :
     /физичко лице|поединец|претприемач|individual|entrepreneur/.test(t) ? 'individual' :
     /мало претпријатие|средно претпријатие|sme|фирма|компанија|dooел|ооd/.test(t) ? 'sme' :
     /општина|municipality|јавна институција/.test(t) ? 'municipality' :
@@ -578,11 +578,17 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // ── Serper web пребарување — паралелно ──
-    const serperQuery = buildSerperQuery(userText, profile, grantFocus);
-    console.log(`[SERPER] Query: "${serperQuery}"`);
-    const webResults = await serperSearch(serperQuery);
-    console.log(`[SERPER] Results: ${webResults.length}`);
+    // ── Serper САМО кога базата нема доволно резултати (10-20% од случаите) ──
+    const needsWeb = matchedGrants.length === 0 || matchedGrants[0]?.fitScore < 30;
+    let webResults = [];
+    if (needsWeb) {
+      const serperQuery = buildSerperQuery(userText, profile, grantFocus);
+      console.log(`[SERPER] Query: "${serperQuery}"`);
+      webResults = await serperSearch(serperQuery);
+      console.log(`[SERPER] Results: ${webResults.length}`);
+    } else {
+      console.log(`[SERPER] Skipped — db has ${matchedGrants.length} results, top score: ${matchedGrants[0]?.fitScore}%`);
+    }
 
     // ── Генерирај одговор со Gemini ──
     const messages = (body.messages || []).slice(-8).map(m => ({
