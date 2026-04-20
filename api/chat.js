@@ -2,6 +2,7 @@
 // MARGINOVA.AI — api/chat.js
 // Grant Acquisition Engine
 // Supabase 80% | Gemini 90% | Serper 10%
+// VERSION: FIXED — threshold 30, slice 6, budget medium
 // ═══════════════════════════════════════════
 
 const SUPA_URL = process.env.SUPABASE_URL;
@@ -95,13 +96,13 @@ async function loadProfile(userId) {
   } catch { return null; }
 }
 
-// ═══ FIT ENGINE — Supabase grant matching ═══
+// ═══ FIT ENGINE ═══
 function calcFitScore(grant, profile) {
   if (!profile) return 50;
 
   let score = 0;
 
-  // ═══ SECTOR MATCH (35 points) ═══
+  // SECTOR MATCH (35 points)
   if (grant.sector && profile.sector) {
     const grantSectors = grant.sector.map(s => s.toLowerCase());
     const userSector = profile.sector.toLowerCase();
@@ -131,7 +132,7 @@ function calcFitScore(grant, profile) {
     score += 20;
   }
 
-  // ═══ COUNTRY MATCH (30 points) ═══
+  // COUNTRY MATCH (30 points)
   if (grant.country && profile.country) {
     const grantCountries = grant.country.map(c => c.toLowerCase());
     const userCountry = (profile.country || 'mk').toLowerCase();
@@ -147,7 +148,7 @@ function calcFitScore(grant, profile) {
     score += 15;
   }
 
-  // ═══ ORGANIZATION TYPE MATCH (25 points) ═══
+  // ORGANIZATION TYPE MATCH (25 points)
   if (grant.eligibility && profile.organization_type) {
     const eligLower = grant.eligibility.toLowerCase();
     const orgMap = {
@@ -169,10 +170,10 @@ function calcFitScore(grant, profile) {
     score += 12;
   }
 
-  // ═══ BUDGET MATCH (10 points) ═══
+  // BUDGET MATCH (10 points) — FIX: default 90000 not 25000
   if (grant.min_amount && grant.max_amount && profile.goals) {
     const budgetMap = { small: 25000, medium: 90000, large: 300000, xlarge: 1000000 };
-    const userBudget = budgetMap[profile.goals] || 90000; // FIX: default medium not small
+    const userBudget = budgetMap[profile.goals] || 90000;
     if (userBudget >= grant.min_amount && userBudget <= grant.max_amount) {
       score += 10;
     } else if (userBudget >= grant.min_amount * 0.3) {
@@ -183,24 +184,6 @@ function calcFitScore(grant, profile) {
   }
 
   return Math.min(score, 100);
-}
-
-async function loadMatchingGrants(profile) {
-  try {
-    const grants = await dbGet(`grants?active=eq.true&select=*`);
-    if (!grants || grants.length === 0) return [];
-
-    const scored = grants.map(g => ({
-      ...g,
-      fitScore: calcFitScore(g, profile)
-    }));
-
-    // FIX: threshold 40 → 30, results 4 → 6
-    return scored
-      .filter(g => g.fitScore > 30)
-      .sort((a, b) => b.fitScore - a.fitScore)
-      .slice(0, 6);
-  } catch { return []; }
 }
 
 async function loadProcesses(grantId) {
@@ -235,7 +218,7 @@ function getIntent(text) {
   return 'business';
 }
 
-// ═══ DETECT IF ASKING ABOUT SPECIFIC GRANT ═══
+// ═══ DETECT SPECIFIC GRANT ═══
 function detectGrantFocus(text) {
   const t = text.toLowerCase();
   if (/fitr|фитр/.test(t)) return 'FITR';
@@ -419,7 +402,6 @@ module.exports = async function handler(req, res) {
 
     console.log(`[GAE] lang:${lang} intent:${intent} focus:${grantFocus || 'none'} user:${userId?.slice(0,8) || 'anon'}`);
 
-    // ═══ SUPABASE — Load profile + matching grants ═══
     const [supaProfile, allGrants] = await Promise.all([
       loadProfile(userId),
       dbGet('grants?active=eq.true&select=*')
@@ -429,7 +411,6 @@ module.exports = async function handler(req, res) {
     let profile = supaProfile;
 
     if (!profile || !profile.sector || !profile.organization_type) {
-      // Detect sector from conversation
       const detectedSector =
         /\bit\b|tech|software|дигитал|веб|web|апп|app|платформ|platform/.test(conversationText) ? 'IT' :
         /земјоделст|земјоделие|земјоделец|земјоделск|agri|рурал|фарм|farm|сточар|овошт|круш|јаболк|лозар|пченк|житар|нива|хектар|hektar|насади|добиток|млеко/.test(conversationText) ? 'agriculture' :
@@ -440,7 +421,6 @@ module.exports = async function handler(req, res) {
         /енерг|energy|сончев|solar|обновлив|renewable/.test(conversationText) ? 'energy' :
         null;
 
-      // Detect org type from conversation
       const detectedOrg =
         /стартап|startup|нова компанија|новооснован|spin.?off/.test(conversationText) ? 'startup' :
         /нво|НВО|ngo|NGO|здружение|фондација|граѓанск|невладин/.test(conversationText) ? 'ngo' :
@@ -448,11 +428,9 @@ module.exports = async function handler(req, res) {
         /мало претпријатие|средно претпријатие|sme|фирма|компанија|dooел|ооd/.test(conversationText) ? 'sme' :
         /општина|municipality|јавна институција|публичен/.test(conversationText) ? 'municipality' :
         /универзитет|university|институт|истражув/.test(conversationText) ? 'university' :
-        // FIX: detect generic "IT company" as sme
         /it компанија|it firma|it company|tech компанија|software компанија/.test(conversationText) ? 'sme' :
         null;
 
-      // Detect country
       const detectedCountry =
         /македониј|makedon|северна македониј|north macedon/.test(conversationText) ? 'mk' :
         /србиј|srbij/.test(conversationText) ? 'rs' :
@@ -460,7 +438,7 @@ module.exports = async function handler(req, res) {
         /босн|bosn/.test(conversationText) ? 'ba' :
         (supaProfile?.country) || 'mk';
 
-      // FIX: Detect budget from conversation
+      // FIX: detect budget from conversation
       const detectedGoals =
         /1\.?000\.?000|1 милион|един милион|1m\b/.test(conversationText) ? 'xlarge' :
         /500\.?000|500k|петстотини/.test(conversationText) ? 'large' :
@@ -489,21 +467,20 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Fit Engine
     let matchedGrants = [];
     console.log('[DEBUG] allGrants count:', allGrants ? allGrants.length : 'NULL');
     console.log('[DEBUG] profile:', JSON.stringify(profile));
+
     if (allGrants && allGrants.length > 0) {
       const scored = allGrants.map(g => {
         const fitScore = calcFitScore(g, profile);
         console.log('[DEBUG] Grant: ' + g.name + ' | Score: ' + fitScore);
         return { ...g, fitScore };
       });
-      // FIX: threshold 40 → 30, results 4 → 6
+      // FIX: threshold 30 (was 40), slice 6 (was 4)
       matchedGrants = scored.filter(g => g.fitScore > 30).sort((a, b) => b.fitScore - a.fitScore).slice(0, 6);
     }
 
-    // Load processes for top grant or focused grant
     let processes = [];
     const wantsProcess = grantFocus || /процес|process|чекор|step|апликација|application|водич|guide|kako da|how to|бројки|brojki|резултат|rezultat|помош|pomosh/.test(userText.toLowerCase());
     if (wantsProcess) {
