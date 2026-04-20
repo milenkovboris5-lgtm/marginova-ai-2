@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
 // Grant Acquisition Engine
-// VERSION: FINAL v4 — mk shortcut fix
+// VERSION: FINAL v5 — fund/NGO/sector fix
 // ═══════════════════════════════════════════
 
 const SUPA_URL = process.env.SUPABASE_URL;
@@ -79,13 +79,9 @@ async function loadProfile(userId) {
   } catch { return null; }
 }
 
-// ═══ FIT ENGINE ═══
+// ═══ FIT ENGINE v2 — фиксиран, без mk shortcut ═══
 function calcFitScore(grant, profile) {
   if (!profile) return 50;
-
-  // ═══ SHORTCUT: if grant covers mk, always show it ═══
-  const hasMk = grant.country?.some(c => c.toLowerCase() === 'mk');
-  if (hasMk) return 70;
 
   let score = 0;
 
@@ -99,7 +95,7 @@ function calcFitScore(grant, profile) {
       'agriculture': ['agriculture', 'agri', 'rural', 'рурален развој', 'земјоделство', 'food', 'храна'],
       'education': ['education', 'образование', 'млади', 'youth', 'training', 'обука'],
       'environment': ['environment', 'животна средина', 'green', 'зелена', 'еколог', 'energy', 'енерг', 'енергетика'],
-      'civil society': ['civil society', 'граѓанско општество', 'граѓанск', 'ngo', 'нво', 'демократ', 'human rights'],
+      'civil society': ['civil society', 'граѓанско општество', 'граѓанск', 'ngo', 'нво', 'демократ', 'human rights', 'граѓани', 'невладин', 'здружение'],
       'tourism': ['tourism', 'туризам', 'туриз', 'culture', 'култур', 'регионален развој'],
       'energy': ['energy', 'енергетика', 'енерг', 'renewable', 'обновлив', 'животна средина', 'environment'],
       'health': ['health', 'здравство', 'здравств', 'social', 'социјалн'],
@@ -128,7 +124,7 @@ function calcFitScore(grant, profile) {
 
     if (grantCountries.includes(userCountry)) {
       score += 30;
-    } else if (grantCountries.some(c => ['eu', 'balkans', 'europe', 'европ'].includes(c))) {
+    } else if (grantCountries.some(c => ['eu', 'balkans', 'europe', 'европ', 'western balkans', 'западен балкан'].includes(c))) {
       score += 22;
     } else if (grantCountries.length > 3) {
       score += 15;
@@ -137,16 +133,16 @@ function calcFitScore(grant, profile) {
     score += 15;
   }
 
-  // ORGANIZATION TYPE MATCH (25 points)
+  // ORGANIZATION TYPE MATCH (25 points) — ПРОШИРЕНО за НВО/фондации
   if (grant.eligibility && profile.organization_type) {
     const eligLower = grant.eligibility.toLowerCase();
     const orgMap = {
       startup:      ['стартап', 'startup', 'претпријатија', 'компании', 'иновативни', 'нови', 'мали и средни'],
       sme:          ['мало', 'средно', 'претпријатија', 'sme', 'компании', 'бизнис', 'мали и средни', 'претпријатие'],
-      ngo:          ['нво', 'здружение', 'фондација', 'граѓански', 'ngo', 'организации', 'граѓанск', 'civil'],
-      agri:         ['земјоделск', 'рурал', 'agri', 'стопанства', 'физички лица'],
-      municipality: ['општини', 'јавни', 'институции', 'municipality', 'локалн'],
-      university:   ['универзитет', 'истражувач', 'university', 'research', 'институт'],
+      ngo:          ['нво', 'здружение', 'фондација', 'граѓански', 'ngo', 'организации', 'граѓанск', 'civil', 'невладин', 'непрофитн', 'nonprofit', 'civil society', 'граѓанско општество'],
+      agri:         ['земјоделск', 'рурал', 'agri', 'стопанства', 'физички лица', 'фармер'],
+      municipality: ['општини', 'јавни', 'институции', 'municipality', 'локалн', 'јединица локалне'],
+      university:   ['универзитет', 'истражувач', 'university', 'research', 'институт', 'академск'],
       individual:   ['физички', 'лица', 'individual', 'претприемач', 'граѓани']
     };
     const keywords = orgMap[profile.organization_type] || [];
@@ -186,7 +182,7 @@ async function loadProcesses(grantId) {
 function detectLang(text) {
   if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
   if (/ћ|ђ/i.test(text)) return 'sr';
-  if (/јас|сум|македонија|животна средина|барам|грант|работам|организација|сектор|земја|општини|НВО|невладина|претпријатие|иновации|образование/i.test(text)) return 'mk';
+  if (/јас|сум|македонија|животна средина|барам|грант|работам|организација|сектор|земја|општини|НВО|невладина|претпријатие|иновации|образование|фонд/i.test(text)) return 'mk';
   if (/[а-шА-Ш]/.test(text)) return 'mk';
   if (/\b(und|oder|ich|nicht|sie|wir)\b/.test(text)) return 'de';
   if (/\b(jest|się|nie|dla)\b/.test(text)) return 'pl';
@@ -197,14 +193,18 @@ function detectLang(text) {
   return 'en';
 }
 
+// ═══ ПРОШИРЕНА детекција — грант, фонд, НВО, светски фонд ═══
 function getIntent(text) {
   const t = text.toLowerCase();
-  if (/грант|фонд|grant|fond|финансир|ipard|fitr|субвенц|повик|erasmus|horizon|civica|undp|interreg/.test(t)) return 'grant';
+  if (/грант|grant|финансир|ipard|fitr|субвенц|повик|erasmus|horizon|civica|undp|interreg|eu4|wbf/.test(t)) return 'grant';
+  if (/фонд|fond|фондација|foundation|fund|светски фонд|world fund|билатерал|bilateral/.test(t)) return 'fund';
+  if (/нво|нгo|невладин|граѓанск|здружение|civil society|ngo|nonprofit|непрофитн/.test(t)) return 'ngo';
   if (/закон|право|договор|legal|zakon|ugovor|даноц|gdpr/.test(t)) return 'legal';
   if (/анализ|swot|analiz|споредба/.test(t)) return 'analysis';
   return 'business';
 }
 
+// ═══ ПРОШИРЕНА детекција на фокус — вклучува фондови и НВО програми ═══
 function detectGrantFocus(text) {
   const t = text.toLowerCase();
   if (/fitr|фитр/.test(t)) return 'FITR';
@@ -216,6 +216,18 @@ function detectGrantFocus(text) {
   if (/undp|ундп/.test(t)) return 'UNDP';
   if (/western balkans|западен балкан|wbf/.test(t)) return 'WBF';
   if (/eu4business|еу4бизнис/.test(t)) return 'EU4Business';
+  // ═══ НОВИ: фондации и светски фондови ═══
+  if (/rockefeller|рокфелер/.test(t)) return 'Rockefeller';
+  if (/open society|отворено општество|soros|сорос/.test(t)) return 'Open Society';
+  if (/world bank|светска банка/.test(t)) return 'World Bank';
+  if (/usaid|усаид/.test(t)) return 'USAID';
+  if (/giz|гиз/.test(t)) return 'GIZ';
+  if (/matra|матра/.test(t)) return 'Matra';
+  if (/balkan trust|балкан траст/.test(t)) return 'Balkan Trust';
+  if (/eidhr|еидхр/.test(t)) return 'EIDHR';
+  if (/europe for citizens|европа за граѓани/.test(t)) return 'Europe for Citizens';
+  if (/нво|ngo|невладин|граѓанск|здружение/.test(t)) return 'NGO';
+  if (/фонд|fond|fund/.test(t)) return 'FOND';
   return null;
 }
 
@@ -224,7 +236,7 @@ const LANG_NAMES = {
   en: 'English', de: 'Deutsch', sq: 'shqip', bg: 'български', tr: 'Türkçe', pl: 'polski'
 };
 
-function buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus) {
+function buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus, intent) {
   const L = LANG_NAMES[lang] || 'English';
   const langCode = lang || 'en';
 
@@ -234,11 +246,15 @@ Sector: ${profile.sector || 'not specified'}
 Country: ${profile.country || 'mk'}
 Budget range: ${profile.goals || 'not specified'}` : 'Profile not set — ask user for sector, country, and organization type.';
 
+  // ═══ НОВА логика: категоризација на програми ═══
   let grantsText = '';
   if (matchedGrants.length > 0) {
-    grantsText = matchedGrants.map(g => `
+    // Групирај по тип: грант, фонд, НВО програма
+    const grants = matchedGrants.filter(g => g.fitScore > 30);
+    grantsText = grants.map(g => `
 ---
-Grant: ${g.name}
+Program: ${g.name}
+Type: ${g.type || 'grant'}
 Funder: ${g.funder}
 Fit Score: ${g.fitScore}%
 Amount: €${g.min_amount?.toLocaleString() || '?'} — €${g.max_amount?.toLocaleString() || '?'}
@@ -249,7 +265,7 @@ Eligibility: ${g.eligibility || 'see portal'}
 Portal: ${g.portal_url || 'N/A'}
 Active: ${g.active ? 'Yes' : 'No'}`).join('\n');
   } else {
-    grantsText = 'No grants matched the user profile above 30% fit score.';
+    grantsText = 'No programs matched the user profile above 30% fit score.';
   }
 
   let processText = '';
@@ -266,6 +282,17 @@ Active: ${g.active ? 'Yes' : 'No'}`).join('\n');
       ).join('\n\n');
   }
 
+  // Контекст за тип на барање
+  const intentContext = intent === 'fund'
+    ? 'User is asking about FUNDS (фондови) — international/bilateral donor funds, foundations.'
+    : intent === 'ngo'
+    ? 'User is asking about NGO programs — civil society, associations, foundations eligible programs.'
+    : grantFocus === 'NGO'
+    ? 'User is asking about NGO/civil society funding programs.'
+    : grantFocus === 'FOND'
+    ? 'User is asking about donor funds and foundations.'
+    : '';
+
   return `=== MANDATORY LANGUAGE: ${L.toUpperCase()} ===
 You MUST ONLY respond in ${L}. This overrides all other instructions.
 Detected language code: ${lang}
@@ -277,24 +304,32 @@ If user says "можеш на македонски" or "na makedonski" → switc
 NEVER say "I can only communicate in Serbian". NEVER refuse to switch language.
 === END LANGUAGE INSTRUCTION ===
 
-You are MARGINOVA — Grant Acquisition Engine for the Balkans and Europe.
-You are not an assistant. You are a grant strategist who has helped organizations win millions in funding.
+You are MARGINOVA — Grant & Fund Acquisition Engine for the Balkans and Europe.
+You are not an assistant. You are a funding strategist who has helped organizations win millions.
 You think like an investor: ruthless about fit, honest about chances, concrete about next steps.
+
+IMPORTANT: You work with ALL types of funding programs:
+- GRANTS (гранти) — direct EU/national grants
+- FUNDS (фондови) — donor funds, bilateral funds, foundations
+- NGO PROGRAMS — civil society, associations, nonprofits
+- LOAN PROGRAMS — subsidized loans with grant elements
+When a user asks about "фонд" or "НВО" or "невладина организација", find ALL matching programs, not just grants.
 
 Today: ${today}
 ${grantFocus ? 'User is asking about: ' + grantFocus : ''}
+${intentContext}
 
 ═══ USER PROFILE ═══${profileText}
 
 CRITICAL: If profile shows "not specified" — do NOT invent or assume a profile. Ask the user ONE specific question to get the missing info. Never hallucinate sector, org type, or country.
 
-═══ MATCHED GRANTS FROM DATABASE ═══${grantsText}
+═══ MATCHED PROGRAMS FROM DATABASE ═══${grantsText}
 ${processText}
 
 ═══ YOUR MISSION ═══
 
-ASSESS FIT — For each matched grant, the Fit Score is already calculated above.
-Use it to rank and recommend grants.
+ASSESS FIT — For each matched program, the Fit Score is already calculated above.
+Use it to rank and recommend programs.
 
 Fit Score interpretation:
 - 90-100%: Perfect match → recommend immediately
@@ -303,13 +338,16 @@ Fit Score interpretation:
 - 30-49%: Possible match → mention with caveats
 - Below 30%: Do not recommend
 
-RECOMMEND FORMAT (use for grant recommendations):
-📋 [Grant name]
+RECOMMEND FORMAT (use for all program types — grants, funds, NGO programs):
+📋 [Program name] ([TYPE: Grant/Fund/NGO Program])
 🏆 Fit Score: [X%]
 💰 €[min] — €[max] | [co-finance]% co-financing
 ✅ Why you qualify: [specific reason based on profile]
 ⚠️ Main risk: [one concrete obstacle]
 🔗 [portal_url]
+
+If the user asks about a FUND (фонд) and there are NGO or foundation programs in the database — SHOW THEM. Do not only show grants.
+If the user is an NGO and asks "which programs fit me?" — show ALL program types where NGOs are eligible.
 
 GUIDE FORMAT (use when explaining application steps):
 Step [N]/[total]: [title]
@@ -325,8 +363,9 @@ Step [N]/[total]: [title]
 - Never say "I cannot help" — always give best available advice
 - If profile is incomplete → ask ONE specific question to complete it
 - Use informal address (ти/твој in Macedonian/Serbian, tu in others)
-- Challenge weak applications directly — protect users from wasting time on low-fit grants
-- If no grants match → explain exactly why and what to change to become eligible
+- Challenge weak applications directly — protect users from wasting time on low-fit programs
+- If no programs match → explain exactly why and what to change to become eligible
+- If user asks about funds/NGO → explicitly mention if there are fund or NGO-specific programs in the database
 - End every response with ONE concrete next action the user can take today`;
 }
 
@@ -400,7 +439,7 @@ module.exports = async function handler(req, res) {
         /земјоделст|земјоделие|земјоделец|земјоделск|agri|рурал|фарм|farm|сточар|овошт|круш|јаболк|лозар|пченк|житар|нива|хектар|насади|добиток|млеко/.test(conversationText) ? 'agriculture' :
         /образован|education|учење|learning|школ|school|студент/.test(conversationText) ? 'education' :
         /животна средина|environment|зелен|green|еколог|climate/.test(conversationText) ? 'environment' :
-        /нво|ngo|здружение|граѓанск|civil society/.test(conversationText) ? 'civil society' :
+        /нво|ngo|здружение|граѓанск|civil society|невладин|фондација/.test(conversationText) ? 'civil society' :
         /туриз|tourism|хотел|hotel|угостител/.test(conversationText) ? 'tourism' :
         /енерг|energy|сончев|solar|обновлив|renewable|енергетика/.test(conversationText) ? 'energy' :
         null;
@@ -454,18 +493,35 @@ module.exports = async function handler(req, res) {
     console.log('[DEBUG] profile:', JSON.stringify(profile));
 
     if (allGrants && allGrants.length > 0) {
+      // ═══ НОВА ЛОГИКА: ако корисникот прашува за фонд/НВО, намали прагот и прикажи повеќе ═══
+      const isNgoOrFundQuery = intent === 'fund' || intent === 'ngo' || grantFocus === 'NGO' || grantFocus === 'FOND';
+      const scoreThreshold = isNgoOrFundQuery ? 20 : 30; // Понизок праг за фонд/НВО прашања
+      const maxResults = isNgoOrFundQuery ? 8 : 6;       // Повеќе резултати за фонд/НВО
+
       const scored = allGrants.map(g => {
         const fitScore = calcFitScore(g, profile);
         console.log('[DEBUG] Grant: ' + g.name + ' | Score: ' + fitScore);
         return { ...g, fitScore };
       });
-      matchedGrants = scored.filter(g => g.fitScore > 30).sort((a, b) => b.fitScore - a.fitScore).slice(0, 6);
+
+      matchedGrants = scored
+        .filter(g => g.fitScore > scoreThreshold)
+        .sort((a, b) => b.fitScore - a.fitScore)
+        .slice(0, maxResults);
+
+      // ═══ Ако нема резултати со моменталниот праг, прикажи TOP 5 без оглед на score ═══
+      if (matchedGrants.length === 0 && allGrants.length > 0) {
+        matchedGrants = scored
+          .sort((a, b) => b.fitScore - a.fitScore)
+          .slice(0, 5);
+        console.log('[GAE] No matches above threshold, showing top 5 anyway');
+      }
     }
 
     let processes = [];
     const wantsProcess = grantFocus || /процес|process|чекор|step|апликација|application|водич|guide|kako da|how to/.test(userText.toLowerCase());
     if (wantsProcess) {
-      const targetGrant = grantFocus
+      const targetGrant = grantFocus && grantFocus !== 'NGO' && grantFocus !== 'FOND'
         ? matchedGrants.find(g => g.name.toLowerCase().includes(grantFocus.toLowerCase()) || g.funder.toLowerCase().includes(grantFocus.toLowerCase()))
         : matchedGrants[0];
       if (targetGrant) {
@@ -474,14 +530,14 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    console.log(`[GAE] Profile:${profile ? 'yes' : 'no'} | Matched:${matchedGrants.length} | Processes:${processes.length}`);
+    console.log(`[GAE] Profile:${profile ? 'yes' : 'no'} | Matched:${matchedGrants.length} | Processes:${processes.length} | Intent:${intent}`);
 
     const messages = (body.messages || []).slice(-6).map(m => ({
       role: m.role,
       content: String(m.content || '')
     }));
 
-    const systemPrompt = buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus);
+    const systemPrompt = buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus, intent);
     const text = await gemini(systemPrompt, messages, apiKey);
 
     return res.status(200).json({ content: [{ type: 'text', text }], intent });
