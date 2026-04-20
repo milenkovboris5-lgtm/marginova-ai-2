@@ -1,8 +1,7 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
 // Grant Acquisition Engine
-// Supabase 80% | Gemini 90% | Serper 10%
-// VERSION: FIXED — threshold 30, slice 6, budget medium
+// VERSION: FINAL — case-insensitive sectors, mk country, threshold 30
 // ═══════════════════════════════════════════
 
 const SUPA_URL = process.env.SUPABASE_URL;
@@ -11,14 +10,12 @@ const DAILY_LIMIT = 200;
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
 const ipStore = {};
 
-// ═══ FETCH WITH TIMEOUT ═══
 function ft(url, opts = {}, ms = 12000) {
   const c = new AbortController();
   const t = setTimeout(() => c.abort(), ms);
   return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
 }
 
-// ═══ IP RATE LIMIT ═══
 function checkIP(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
   const key = ip + '_' + new Date().toISOString().split('T')[0];
@@ -32,7 +29,6 @@ function checkIP(req) {
   return ipStore[key].n <= DAILY_LIMIT;
 }
 
-// ═══ SUPABASE HELPER ═══
 async function dbGet(path) {
   if (!SUPA_URL || !SUPA_KEY) return null;
   try {
@@ -54,7 +50,6 @@ async function dbPatch(path, body) {
   } catch {}
 }
 
-// ═══ QUOTA ═══
 async function checkQuota(userId) {
   if (!userId) return true;
   try {
@@ -69,18 +64,6 @@ async function checkQuota(userId) {
   } catch { return true; }
 }
 
-async function incQuota(userId) {
-  if (!userId) return;
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const rows = await dbGet(`profiles?user_id=eq.${userId}&select=daily_msgs,last_msg_date`);
-    const p = rows?.[0];
-    const used = p?.last_msg_date === today ? (p?.daily_msgs || 0) : 0;
-    await dbPatch(`profiles?user_id=eq.${userId}`, { daily_msgs: used + 1, last_msg_date: today });
-  } catch {}
-}
-
-// ═══ LOAD USER PROFILE ═══
 async function loadProfile(userId) {
   if (!userId) return null;
   try {
@@ -96,34 +79,41 @@ async function loadProfile(userId) {
   } catch { return null; }
 }
 
-// ═══ FIT ENGINE ═══
+// ═══ FIT ENGINE — handles mixed English/Macedonian sectors, case-insensitive ═══
 function calcFitScore(grant, profile) {
   if (!profile) return 50;
-
   let score = 0;
 
   // SECTOR MATCH (35 points)
   if (grant.sector && profile.sector) {
-    const grantSectors = grant.sector.map(s => s.toLowerCase());
-    const userSector = profile.sector.toLowerCase();
+    // Normalize everything to lowercase
+    const grantSectors = grant.sector.map(s => s.toLowerCase().trim());
+    const userSector = profile.sector.toLowerCase().trim();
 
-    const sectorGroups = {
-      'it': ['it', 'tech', 'дигитал', 'digital', 'software', 'иновации', 'innovation', 'истражување', 'research', 'образование', 'education'],
-      'agriculture': ['земјоделст', 'agri', 'рурал', 'rural', 'food', 'храна'],
-      'education': ['образование', 'education', 'млади', 'youth', 'обука', 'training', 'it', 'дигитал'],
-      'environment': ['животна средина', 'environment', 'зелена', 'green', 'енерг', 'energy', 'еколог'],
-      'civil society': ['граѓанск', 'civil', 'нво', 'ngo', 'демократ', 'human rights', 'социјалн', 'social'],
-      'tourism': ['туриз', 'tourism', 'култур', 'culture', 'регионал'],
-      'energy': ['енерг', 'energy', 'обновлив', 'renewable', 'животна средина'],
-      'health': ['здравств', 'health', 'социјалн', 'social'],
-      'research': ['истражување', 'research', 'иновации', 'innovation', 'it', 'tech', 'универзитет'],
+    // All aliases for each sector — includes Macedonian variants from DB
+    const sectorAliases = {
+      'it': ['it', 'tech', 'digital', 'software', 'innovation', 'иновации', 'дигитал', 'дигитализација', 'истражување', 'research', 'технологија', 'sme'],
+      'agriculture': ['agriculture', 'agri', 'rural', 'рурален развој', 'земјоделство', 'food', 'храна'],
+      'education': ['education', 'образование', 'млади', 'youth', 'training', 'обука', 'it', 'дигитал'],
+      'environment': ['environment', 'животна средина', 'green', 'зелена', 'еколог', 'energy', 'енерг', 'енергетика'],
+      'civil society': ['civil society', 'граѓанско општество', 'граѓанск', 'ngo', 'нво', 'демократ', 'human rights'],
+      'tourism': ['tourism', 'туризам', 'туриз', 'culture', 'култур', 'регионален развој'],
+      'energy': ['energy', 'енергетика', 'енерг', 'renewable', 'обновлив', 'животна средина', 'environment'],
+      'health': ['health', 'здравство', 'здравств', 'social', 'социјалн'],
+      'research': ['research', 'истражување', 'innovation', 'иновации', 'it', 'tech', 'university', 'универзитет'],
+      'sme': ['sme', 'it', 'tech', 'иновации', 'дигитализација', 'економски развој', 'претпријатија', 'компании'],
     };
 
-    const relatedSectors = sectorGroups[userSector] || [userSector];
+    const aliases = sectorAliases[userSector] || [userSector];
 
-    if (grantSectors.some(s => relatedSectors.some(r => s.includes(r) || r.includes(s)))) {
+    // Check if any grant sector matches any alias
+    const matched = grantSectors.some(gs =>
+      aliases.some(a => gs.includes(a) || a.includes(gs))
+    );
+
+    if (matched) {
       score += 35;
-    } else if (grantSectors.some(s => s.includes('сите') || s.includes('all') || s.includes('general'))) {
+    } else if (grantSectors.some(s => s.includes('сите') || s.includes('all') || s.includes('general') || s.includes('економски развој'))) {
       score += 20;
     } else {
       score += 5;
@@ -134,12 +124,12 @@ function calcFitScore(grant, profile) {
 
   // COUNTRY MATCH (30 points)
   if (grant.country && profile.country) {
-    const grantCountries = grant.country.map(c => c.toLowerCase());
-    const userCountry = (profile.country || 'mk').toLowerCase();
+    const grantCountries = grant.country.map(c => c.toLowerCase().trim());
+    const userCountry = (profile.country || 'mk').toLowerCase().trim();
 
     if (grantCountries.includes(userCountry)) {
       score += 30;
-    } else if (grantCountries.some(c => ['eu','balkans','europe','европ'].includes(c))) {
+    } else if (grantCountries.some(c => ['eu', 'balkans', 'europe', 'европ'].includes(c))) {
       score += 22;
     } else if (grantCountries.length > 3) {
       score += 15;
@@ -152,11 +142,11 @@ function calcFitScore(grant, profile) {
   if (grant.eligibility && profile.organization_type) {
     const eligLower = grant.eligibility.toLowerCase();
     const orgMap = {
-      startup:      ['стартап', 'startup', 'претпријатија', 'компании', 'иновативни', 'нови'],
-      sme:          ['мало', 'средно', 'претпријатија', 'sme', 'компании', 'бизнис'],
+      startup:      ['стартап', 'startup', 'претпријатија', 'компании', 'иновативни', 'нови', 'мали и средни'],
+      sme:          ['мало', 'средно', 'претпријатија', 'sme', 'компании', 'бизнис', 'мали и средни', 'претпријатие'],
       ngo:          ['нво', 'здружение', 'фондација', 'граѓански', 'ngo', 'организации', 'граѓанск', 'civil'],
-      agri:         ['земјоделск', 'рурал', 'agri', 'стопанства', 'физички'],
-      municipality: ['општини', 'јавни', 'институции', 'municipality', 'локалн'],
+      agri:         ['земјоделск', 'рурал', 'agri', 'стопанства', 'физички лица'],
+      municipality: ['општини', 'јавни', 'институции', 'municipality', 'локалн', 'општини'],
       university:   ['универзитет', 'истражувач', 'university', 'research', 'институт'],
       individual:   ['физички', 'лица', 'individual', 'претприемач', 'граѓани']
     };
@@ -170,7 +160,7 @@ function calcFitScore(grant, profile) {
     score += 12;
   }
 
-  // BUDGET MATCH (10 points) — FIX: default 90000 not 25000
+  // BUDGET MATCH (10 points)
   if (grant.min_amount && grant.max_amount && profile.goals) {
     const budgetMap = { small: 25000, medium: 90000, large: 300000, xlarge: 1000000 };
     const userBudget = budgetMap[profile.goals] || 90000;
@@ -194,7 +184,6 @@ async function loadProcesses(grantId) {
   } catch { return []; }
 }
 
-// ═══ DETECT LANGUAGE ═══
 function detectLang(text) {
   if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
   if (/ћ|ђ/i.test(text)) return 'sr';
@@ -209,7 +198,6 @@ function detectLang(text) {
   return 'en';
 }
 
-// ═══ DETECT INTENT ═══
 function getIntent(text) {
   const t = text.toLowerCase();
   if (/грант|фонд|grant|fond|финансир|ipard|fitr|субвенц|повик|erasmus|horizon|civica|undp|interreg/.test(t)) return 'grant';
@@ -218,7 +206,6 @@ function getIntent(text) {
   return 'business';
 }
 
-// ═══ DETECT SPECIFIC GRANT ═══
 function detectGrantFocus(text) {
   const t = text.toLowerCase();
   if (/fitr|фитр/.test(t)) return 'FITR';
@@ -229,10 +216,11 @@ function detectGrantFocus(text) {
   if (/civica|цивика/.test(t)) return 'Civica';
   if (/undp|ундп/.test(t)) return 'UNDP';
   if (/western balkans|западен балкан|wbf/.test(t)) return 'WBF';
+  if (/eu4business|еу4бизнис/.test(t)) return 'EU4Business';
+  if (/horizon|хоризон/.test(t)) return 'Horizon';
   return null;
 }
 
-// ═══ BUILD SYSTEM PROMPT ═══
 const LANG_NAMES = {
   mk: 'македонски', sr: 'српски', hr: 'хрватски', bs: 'босански',
   en: 'English', de: 'Deutsch', sq: 'shqip', bg: 'български', tr: 'Türkçe', pl: 'polski'
@@ -344,7 +332,6 @@ Step [N]/[total]: [title]
 - End every response with ONE concrete next action the user can take today`;
 }
 
-// ═══ GEMINI CALL ═══
 async function gemini(systemPrompt, messages, apiKey) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   const contents = messages.map(m => ({
@@ -369,7 +356,6 @@ async function gemini(systemPrompt, messages, apiKey) {
   return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
-// ═══ MAIN HANDLER ═══
 module.exports = async function handler(req, res) {
   const ORIGINS = ['https://marginova.tech', 'https://www.marginova.tech', 'http://localhost:3000'];
   const origin = req.headers.origin || '';
@@ -412,23 +398,22 @@ module.exports = async function handler(req, res) {
 
     if (!profile || !profile.sector || !profile.organization_type) {
       const detectedSector =
-        /\bit\b|tech|software|дигитал|веб|web|апп|app|платформ|platform/.test(conversationText) ? 'IT' :
-        /земјоделст|земјоделие|земјоделец|земјоделск|agri|рурал|фарм|farm|сточар|овошт|круш|јаболк|лозар|пченк|житар|нива|хектар|hektar|насади|добиток|млеко/.test(conversationText) ? 'agriculture' :
+        /\bit\b|tech|software|дигитал|веб|web|апп|app|платформ|platform|дигитализација/.test(conversationText) ? 'it' :
+        /земјоделст|земјоделие|земјоделец|земјоделск|agri|рурал|фарм|farm|сточар|овошт|круш|јаболк|лозар|пченк|житар|нива|хектар|насади|добиток|млеко/.test(conversationText) ? 'agriculture' :
         /образован|education|учење|learning|школ|school|студент/.test(conversationText) ? 'education' :
-        /животна средина|Животна средина|ЖИВОТНА СРЕДИНА|environment|зелен|green|еколог|climate/.test(conversationText) ? 'environment' :
+        /животна средина|environment|зелен|green|еколог|climate/.test(conversationText) ? 'environment' :
         /нво|ngo|здружение|граѓанск|civil society/.test(conversationText) ? 'civil society' :
         /туриз|tourism|хотел|hotel|угостител/.test(conversationText) ? 'tourism' :
-        /енерг|energy|сончев|solar|обновлив|renewable/.test(conversationText) ? 'energy' :
+        /енерг|energy|сончев|solar|обновлив|renewable|енергетика/.test(conversationText) ? 'energy' :
         null;
 
       const detectedOrg =
         /стартап|startup|нова компанија|новооснован|spin.?off/.test(conversationText) ? 'startup' :
         /нво|НВО|ngo|NGO|здружение|фондација|граѓанск|невладин/.test(conversationText) ? 'ngo' :
-        /земјоделец|земјоделие|фармер|farmer|аграр|стопанство|насади|хектар|hektar|круш|јаболк|лозар|нива|добиток/.test(conversationText) ? 'agri' :
-        /мало претпријатие|средно претпријатие|sme|фирма|компанија|dooел|ооd/.test(conversationText) ? 'sme' :
+        /земјоделец|земјоделие|фармер|farmer|аграр|стопанство|насади|хектар|круш|јаболк|лозар|нива|добиток/.test(conversationText) ? 'agri' :
+        /мало претпријатие|средно претпријатие|sme|фирма|компанија|dooел|ооd|it компанија|it firma|it company|tech компанија|software компанија/.test(conversationText) ? 'sme' :
         /општина|municipality|јавна институција|публичен/.test(conversationText) ? 'municipality' :
         /универзитет|university|институт|истражув/.test(conversationText) ? 'university' :
-        /it компанија|it firma|it company|tech компанија|software компанија/.test(conversationText) ? 'sme' :
         null;
 
       const detectedCountry =
@@ -438,9 +423,8 @@ module.exports = async function handler(req, res) {
         /босн|bosn/.test(conversationText) ? 'ba' :
         (supaProfile?.country) || 'mk';
 
-      // FIX: detect budget from conversation
       const detectedGoals =
-        /1\.?000\.?000|1 милион|един милион|1m\b/.test(conversationText) ? 'xlarge' :
+        /1\.?000\.?000|1 милион|1m\b/.test(conversationText) ? 'xlarge' :
         /500\.?000|500k|петстотини/.test(conversationText) ? 'large' :
         /[2-9]\d{2}\.?000|[2-9]\d\dk/.test(conversationText) ? 'large' :
         /100\.?000|100k|сто илјади|сто хиљада/.test(conversationText) ? 'medium' :
@@ -454,7 +438,7 @@ module.exports = async function handler(req, res) {
           sector: detectedSector || supaProfile?.sector || null,
           organization_type: detectedOrg || supaProfile?.organization_type || null,
           country: detectedCountry,
-          goals: detectedGoals || supaProfile?.goals || 'medium' // FIX: default medium
+          goals: detectedGoals || supaProfile?.goals || 'medium'
         };
         console.log('[GAE] Detected — sector:' + profile.sector + ' org:' + profile.organization_type + ' country:' + profile.country + ' budget:' + profile.goals);
         if (userId) {
@@ -477,12 +461,11 @@ module.exports = async function handler(req, res) {
         console.log('[DEBUG] Grant: ' + g.name + ' | Score: ' + fitScore);
         return { ...g, fitScore };
       });
-      // FIX: threshold 30 (was 40), slice 6 (was 4)
       matchedGrants = scored.filter(g => g.fitScore > 30).sort((a, b) => b.fitScore - a.fitScore).slice(0, 6);
     }
 
     let processes = [];
-    const wantsProcess = grantFocus || /процес|process|чекор|step|апликација|application|водич|guide|kako da|how to|бројки|brojki|резултат|rezultat|помош|pomosh/.test(userText.toLowerCase());
+    const wantsProcess = grantFocus || /процес|process|чекор|step|апликација|application|водич|guide|kako da|how to/.test(userText.toLowerCase());
     if (wantsProcess) {
       const targetGrant = grantFocus
         ? matchedGrants.find(g => g.name.toLowerCase().includes(grantFocus.toLowerCase()) || g.funder.toLowerCase().includes(grantFocus.toLowerCase()))
@@ -493,7 +476,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    console.log(`[GAE] Profile:${profile ? 'yes' : 'no'} | Matched grants:${matchedGrants.length} | Processes:${processes.length}`);
+    console.log(`[GAE] Profile:${profile ? 'yes' : 'no'} | Matched:${matchedGrants.length} | Processes:${processes.length}`);
 
     const messages = (body.messages || []).slice(-6).map(m => ({
       role: m.role,
