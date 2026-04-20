@@ -42,8 +42,12 @@ async function dbGet(path) {
     const r = await ft(`${SUPA_URL}/rest/v1/${path}`, {
       headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: '' }
     }, 6000);
+    console.log('[DBGET] status:', r.status, 'path:', path);
     return r.ok ? r.json() : null;
-  } catch { return null; }
+  } catch (e) {
+    console.log('[DBGET] error:', e.message);
+    return null;
+  }
 }
 
 async function dbPatch(path, body) {
