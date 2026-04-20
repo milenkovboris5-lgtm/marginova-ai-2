@@ -170,11 +170,11 @@ function calcFitScore(grant, profile) {
     const userSector = profile.sector.toLowerCase().trim();
 
     const sectorAliases = {
-      'it': ['it', 'tech', 'digital', 'software', 'innovation', 'иновации', 'дигитал', 'дигитализација', 'истражување', 'research', 'технологија', 'sme'],
-      'agriculture': ['agriculture', 'agri', 'rural', 'рурален развој', 'земјоделство', 'food', 'храна', 'овоштарство', 'лозарство'],
+      'it': ['it', 'tech', 'digital', 'software', 'innovation', 'иновации', 'дигитал', 'дигитализација', 'истражување', 'research', 'технологија', 'sme', 'технолошки', 'стартапи', 'стартап'],
+      'agriculture': ['agriculture', 'agri', 'rural', 'рурален развој', 'земјоделство', 'food', 'храна', 'овоштарство', 'лозарство', 'земјоделски', 'рурален', 'сточарство', 'овоштарник', 'насади', 'земјоделец'],
       'education': ['education', 'образование', 'млади', 'youth', 'training', 'обука'],
       'environment': ['environment', 'животна средина', 'green', 'зелена', 'еколог', 'energy', 'енерг'],
-      'civil society': ['civil society', 'граѓанско општество', 'граѓанск', 'ngo', 'нво', 'демократ', 'human rights', 'невладин', 'здружение'],
+      'civil society': ['civil society', 'граѓанско општество', 'граѓанск', 'ngo', 'нво', 'демократ', 'human rights', 'невладин', 'здружение', 'граѓани', 'граѓанска'],
       'tourism': ['tourism', 'туризам', 'туриз', 'culture', 'култур', 'регионален развој'],
       'energy': ['energy', 'енергетика', 'енерг', 'renewable', 'обновлив', 'environment'],
       'health': ['health', 'здравство', 'здравств', 'social', 'социјалн'],
@@ -198,6 +198,7 @@ function calcFitScore(grant, profile) {
     const userCountry = (profile.country || 'mk').toLowerCase().trim();
 
     if (grantCountries.includes(userCountry)) score += 30;
+    else if (grantCountries.some(c => c.includes('македон') || c.includes('macedon'))) score += 30;
     else if (grantCountries.some(c => ['eu', 'balkans', 'europe', 'европ', 'western balkans'].includes(c))) score += 22;
     else if (grantCountries.length > 3) score += 15;
   } else {
@@ -578,17 +579,11 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // ── Serper САМО кога базата нема доволно резултати (10-20% од случаите) ──
-    const needsWeb = matchedGrants.length === 0 || matchedGrants[0]?.fitScore < 30;
-    let webResults = [];
-    if (needsWeb) {
-      const serperQuery = buildSerperQuery(userText, profile, grantFocus);
-      console.log(`[SERPER] Query: "${serperQuery}"`);
-      webResults = await serperSearch(serperQuery);
-      console.log(`[SERPER] Results: ${webResults.length}`);
-    } else {
-      console.log(`[SERPER] Skipped — db has ${matchedGrants.length} results, top score: ${matchedGrants[0]?.fitScore}%`);
-    }
+    // ── Serper web пребарување — паралелно ──
+    const serperQuery = buildSerperQuery(userText, profile, grantFocus);
+    console.log(`[SERPER] Query: "${serperQuery}"`);
+    const webResults = await serperSearch(serperQuery);
+    console.log(`[SERPER] Results: ${webResults.length}`);
 
     // ── Генерирај одговор со Gemini ──
     const messages = (body.messages || []).slice(-8).map(m => ({
