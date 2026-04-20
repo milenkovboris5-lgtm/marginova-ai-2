@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════
+// v7// ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
 // Grant Acquisition Engine
 // VERSION: v6 — Supabase + Serper + Gemini
