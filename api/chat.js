@@ -157,6 +157,81 @@ function buildSerperQuery(userText, profile, grantFocus) {
   return `${sectorTerm} грант финансирање ${year} ${country} отворен повик`;
 }
 
+
+// ═══ НОРМАЛИЗАТОР — македонски/српски → англиски стандард ═══
+function normalizeSector(val) {
+  if (!val) return val;
+  const v = val.toLowerCase().trim();
+  const map = {
+    'земјоделство': 'agriculture', 'земјоделски': 'agriculture',
+    'рурален развој': 'agriculture', 'рурално': 'agriculture',
+    'сточарство': 'agriculture', 'овоштарство': 'agriculture',
+    'лозарство': 'agriculture', 'рурал': 'agriculture',
+    'иновации': 'it', 'дигитализација': 'it', 'дигитален': 'it',
+    'технолошки': 'it', 'технологија': 'it', 'информатика': 'it',
+    'образование': 'education', 'млади': 'education', 'обука': 'education',
+    'животна средина': 'environment', 'еколошки': 'environment',
+    'зелена економија': 'environment', 'клима': 'environment',
+    'граѓанско општество': 'civil society', 'граѓански': 'civil society',
+    'невладини': 'civil society', 'нво': 'civil society',
+    'туризам': 'tourism', 'култура': 'tourism', 'туристички': 'tourism',
+    'енергетика': 'energy', 'обновливи извори': 'energy', 'енергија': 'energy',
+    'здравство': 'health', 'социјални': 'health', 'социјална': 'health',
+    'истражување': 'research', 'наука': 'research', 'иновација': 'research',
+    'мали и средни': 'sme', 'претпријатија': 'sme', 'бизнис': 'sme',
+    'регионален развој': 'tourism', 'прекугранична': 'tourism',
+    // Српски
+    'пољопривреда': 'agriculture', 'рурални развој': 'agriculture',
+    'иновације': 'it', 'дигитализација': 'it',
+    'образовање': 'education', 'млади': 'education',
+    'животна средина': 'environment',
+    'грађанско друштво': 'civil society',
+    'туризам': 'tourism',
+    'енергетика': 'energy',
+    'здравство': 'health',
+    'истраживање': 'research',
+  };
+  for (const [mk, en] of Object.entries(map)) {
+    if (v.includes(mk)) return en;
+  }
+  return v; // врати оригинал ако нема превод
+}
+
+function normalizeCountry(val) {
+  if (!val) return val;
+  const v = val.toLowerCase().trim();
+  const map = {
+    'македонија': 'mk', 'северна македонија': 'mk', 'north macedonia': 'mk',
+    'македониjа': 'mk', 'македонски': 'mk',
+    'србија': 'rs', 'serbia': 'rs',
+    'хрватска': 'hr', 'croatia': 'hr',
+    'босна': 'ba', 'bosnia': 'ba',
+    'албанија': 'al', 'albania': 'al',
+    'косово': 'xk', 'kosovo': 'xk',
+    'бугарија': 'bg', 'bulgaria': 'bg',
+    'западен балкан': 'balkans', 'western balkans': 'balkans',
+    'балкан': 'balkans', 'balkans': 'balkans',
+    'европа': 'europe', 'europe': 'europe', 'европска унија': 'eu',
+    'цела европа': 'europe', 'сите земји': 'all',
+  };
+  for (const [local, en] of Object.entries(map)) {
+    if (v.includes(local)) return en;
+  }
+  return v;
+}
+
+function normalizeGrant(grant) {
+  return {
+    ...grant,
+    sector: Array.isArray(grant.sector)
+      ? grant.sector.map(normalizeSector)
+      : grant.sector,
+    country: Array.isArray(grant.country)
+      ? grant.country.map(normalizeCountry)
+      : grant.country,
+  };
+}
+
 // ═══ FIT ENGINE ═══
 
 function calcFitScore(grant, profile) {
@@ -170,11 +245,11 @@ function calcFitScore(grant, profile) {
     const userSector = profile.sector.toLowerCase().trim();
 
     const sectorAliases = {
-      'it': ['it', 'tech', 'digital', 'software', 'innovation', 'иновации', 'дигитал', 'дигитализација', 'истражување', 'research', 'технологија', 'sme', 'технолошки', 'стартапи', 'стартап'],
-      'agriculture': ['agriculture', 'agri', 'rural', 'рурален развој', 'земјоделство', 'food', 'храна', 'овоштарство', 'лозарство', 'земјоделски', 'рурален', 'сточарство', 'овоштарник', 'насади', 'земјоделец'],
+      'it': ['it', 'tech', 'digital', 'software', 'innovation', 'иновации', 'дигитал', 'дигитализација', 'истражување', 'research', 'технологија', 'sme'],
+      'agriculture': ['agriculture', 'agri', 'rural', 'рурален развој', 'земјоделство', 'food', 'храна', 'овоштарство', 'лозарство'],
       'education': ['education', 'образование', 'млади', 'youth', 'training', 'обука'],
       'environment': ['environment', 'животна средина', 'green', 'зелена', 'еколог', 'energy', 'енерг'],
-      'civil society': ['civil society', 'граѓанско општество', 'граѓанск', 'ngo', 'нво', 'демократ', 'human rights', 'невладин', 'здружение', 'граѓани', 'граѓанска'],
+      'civil society': ['civil society', 'граѓанско општество', 'граѓанск', 'ngo', 'нво', 'демократ', 'human rights', 'невладин', 'здружение'],
       'tourism': ['tourism', 'туризам', 'туриз', 'culture', 'култур', 'регионален развој'],
       'energy': ['energy', 'енергетика', 'енерг', 'renewable', 'обновлив', 'environment'],
       'health': ['health', 'здравство', 'здравств', 'social', 'социјалн'],
@@ -198,7 +273,6 @@ function calcFitScore(grant, profile) {
     const userCountry = (profile.country || 'mk').toLowerCase().trim();
 
     if (grantCountries.includes(userCountry)) score += 30;
-    else if (grantCountries.some(c => c.includes('македон') || c.includes('macedon'))) score += 30;
     else if (grantCountries.some(c => ['eu', 'balkans', 'europe', 'европ', 'western balkans'].includes(c))) score += 22;
     else if (grantCountries.length > 3) score += 15;
   } else {
@@ -548,7 +622,7 @@ module.exports = async function handler(req, res) {
       const threshold = (isAgri || isNgoFund) ? 15 : 25;
       const maxResults = (isAgri || isNgoFund) ? 8 : 6;
 
-      const scored = allGrants.map(g => ({ ...g, fitScore: calcFitScore(g, profile) }));
+      const scored = allGrants.map(g => { const ng = normalizeGrant(g); return { ...ng, fitScore: calcFitScore(ng, profile) }; });
       scored.forEach(g => console.log(`[FIT] ${g.name}: ${g.fitScore}%`));
 
       matchedGrants = scored
