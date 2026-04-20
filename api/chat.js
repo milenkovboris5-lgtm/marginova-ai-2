@@ -86,7 +86,6 @@ async function loadProfile(userId) {
     const rows = await dbGet(`profiles?user_id=eq.${userId}&select=sector,country,organization_type,goals,plan,detected_sector,detected_org_type,detected_country`);
     const p = rows?.[0];
     if (!p) return null;
-    // Use detected values as fallback if profile fields are empty
     return {
       ...p,
       sector: p.sector || p.detected_sector || null,
@@ -98,7 +97,7 @@ async function loadProfile(userId) {
 
 // ═══ FIT ENGINE — Supabase grant matching ═══
 function calcFitScore(grant, profile) {
-  if (!profile) return 50; // No profile = show all grants
+  if (!profile) return 50;
 
   let score = 0;
 
@@ -107,7 +106,6 @@ function calcFitScore(grant, profile) {
     const grantSectors = grant.sector.map(s => s.toLowerCase());
     const userSector = profile.sector.toLowerCase();
 
-    // Related sector groups — broad matching
     const sectorGroups = {
       'it': ['it', 'tech', 'дигитал', 'digital', 'software', 'иновации', 'innovation', 'истражување', 'research', 'образование', 'education'],
       'agriculture': ['земјоделст', 'agri', 'рурал', 'rural', 'food', 'храна'],
@@ -122,16 +120,15 @@ function calcFitScore(grant, profile) {
 
     const relatedSectors = sectorGroups[userSector] || [userSector];
 
-    // Exact or related match
     if (grantSectors.some(s => relatedSectors.some(r => s.includes(r) || r.includes(s)))) {
       score += 35;
     } else if (grantSectors.some(s => s.includes('сите') || s.includes('all') || s.includes('general'))) {
       score += 20;
     } else {
-      score += 5; // Small base for cross-sector potential
+      score += 5;
     }
   } else {
-    score += 20; // No sector specified = partial match
+    score += 20;
   }
 
   // ═══ COUNTRY MATCH (30 points) ═══
@@ -142,9 +139,9 @@ function calcFitScore(grant, profile) {
     if (grantCountries.includes(userCountry)) {
       score += 30;
     } else if (grantCountries.some(c => ['eu','balkans','europe','европ'].includes(c))) {
-      score += 22; // EU/Balkans programs cover WB countries
+      score += 22;
     } else if (grantCountries.length > 3) {
-      score += 15; // Multi-country program
+      score += 15;
     }
   } else {
     score += 15;
@@ -166,7 +163,7 @@ function calcFitScore(grant, profile) {
     if (keywords.some(k => eligLower.includes(k))) {
       score += 25;
     } else {
-      score += 8; // Partial — might still be eligible
+      score += 8;
     }
   } else {
     score += 12;
@@ -175,7 +172,7 @@ function calcFitScore(grant, profile) {
   // ═══ BUDGET MATCH (10 points) ═══
   if (grant.min_amount && grant.max_amount && profile.goals) {
     const budgetMap = { small: 25000, medium: 90000, large: 300000, xlarge: 1000000 };
-    const userBudget = budgetMap[profile.goals] || 25000;
+    const userBudget = budgetMap[profile.goals] || 90000; // FIX: default medium not small
     if (userBudget >= grant.min_amount && userBudget <= grant.max_amount) {
       score += 10;
     } else if (userBudget >= grant.min_amount * 0.3) {
@@ -190,21 +187,19 @@ function calcFitScore(grant, profile) {
 
 async function loadMatchingGrants(profile) {
   try {
-    // Земи сите активни грантови
     const grants = await dbGet(`grants?active=eq.true&select=*`);
     if (!grants || grants.length === 0) return [];
 
-    // Пресметај fit score за секој грант
     const scored = grants.map(g => ({
       ...g,
       fitScore: calcFitScore(g, profile)
     }));
 
-    // Врати само оние со score > 40%, сортирани
+    // FIX: threshold 40 → 30, results 4 → 6
     return scored
-      .filter(g => g.fitScore > 40)
+      .filter(g => g.fitScore > 30)
       .sort((a, b) => b.fitScore - a.fitScore)
-      .slice(0, 4);
+      .slice(0, 6);
   } catch { return []; }
 }
 
@@ -218,22 +213,15 @@ async function loadProcesses(grantId) {
 
 // ═══ DETECT LANGUAGE ═══
 function detectLang(text) {
-  // Macedonian specific chars
   if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
-  // Serbian specific chars
   if (/ћ|ђ/i.test(text)) return 'sr';
-  // Macedonian specific words in Cyrillic
   if (/јас|сум|македонија|животна средина|барам|грант|работам|организација|сектор|земја|општини|НВО|невладина|претпријатие|иновации|образование/i.test(text)) return 'mk';
-  // Cyrillic without specific chars — default mk
   if (/[а-шА-Ш]/.test(text)) return 'mk';
-  // European languages
   if (/\b(und|oder|ich|nicht|sie|wir)\b/.test(text)) return 'de';
   if (/\b(jest|się|nie|dla)\b/.test(text)) return 'pl';
   if (/\b(ve|bir|için|ile|bu)\b/.test(text)) return 'tr';
   if (/\b(dhe|është|për|nga)\b/.test(text)) return 'sq';
-  // Serbian Latin indicators
   if (/\b(sam|smo|nije|nisu|kako ste|brate|bre|jeste|jesam)\b/.test(text)) return 'sr';
-  // Macedonian Latin indicators
   if (/\b(jas|sum|makedonija|macedonija|kako|zdravo|mozes|mozam|sakam|imam|sektor|zemja|organizacija|pretprijatie|proekt|grant|fond|makedonski|na makedonski)\b/.test(text)) return 'mk';
   return 'en';
 }
@@ -271,14 +259,12 @@ function buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus)
   const L = LANG_NAMES[lang] || 'English';
   const langCode = lang || 'en';
 
-  // Format profile
   const profileText = profile ? `
 Organization type: ${profile.organization_type || 'not specified'}
 Sector: ${profile.sector || 'not specified'}
 Country: ${profile.country || 'mk'}
 Budget range: ${profile.goals || 'not specified'}` : 'Profile not set — ask user for sector, country, and organization type.';
 
-  // Format matched grants
   let grantsText = '';
   if (matchedGrants.length > 0) {
     grantsText = matchedGrants.map(g => `
@@ -294,10 +280,9 @@ Eligibility: ${g.eligibility || 'see portal'}
 Portal: ${g.portal_url || 'N/A'}
 Active: ${g.active ? 'Yes' : 'No'}`).join('\n');
   } else {
-    grantsText = 'No grants matched the user profile above 40% fit score.';
+    grantsText = 'No grants matched the user profile above 30% fit score.';
   }
 
-  // Format processes
   let processText = '';
   if (processes.length > 0) {
     const grant = matchedGrants.find(g => processes[0]?.grant_id === g.id);
@@ -346,7 +331,8 @@ Fit Score interpretation:
 - 90-100%: Perfect match → recommend immediately
 - 70-89%: Strong match → recommend with minor notes
 - 50-69%: Partial match → recommend with clear conditions
-- Below 50%: Do not recommend
+- 30-49%: Possible match → mention with caveats
+- Below 30%: Do not recommend
 
 RECOMMEND FORMAT (use for grant recommendations):
 📋 [Grant name]
@@ -439,7 +425,6 @@ module.exports = async function handler(req, res) {
       dbGet('grants?active=eq.true&select=*')
     ]);
 
-    // Extract profile from conversation if Supabase profile is incomplete
     const conversationText = (body.messages || []).map(m => m.content || '').join(' ').toLowerCase();
     let profile = supaProfile;
 
@@ -463,6 +448,8 @@ module.exports = async function handler(req, res) {
         /мало претпријатие|средно претпријатие|sme|фирма|компанија|dooел|ооd/.test(conversationText) ? 'sme' :
         /општина|municipality|јавна институција|публичен/.test(conversationText) ? 'municipality' :
         /универзитет|university|институт|истражув/.test(conversationText) ? 'university' :
+        // FIX: detect generic "IT company" as sme
+        /it компанија|it firma|it company|tech компанија|software компанија/.test(conversationText) ? 'sme' :
         null;
 
       // Detect country
@@ -473,16 +460,25 @@ module.exports = async function handler(req, res) {
         /босн|bosn/.test(conversationText) ? 'ba' :
         (supaProfile?.country) || 'mk';
 
-      if (detectedSector || detectedOrg) {
+      // FIX: Detect budget from conversation
+      const detectedGoals =
+        /1\.?000\.?000|1 милион|един милион|1m\b/.test(conversationText) ? 'xlarge' :
+        /500\.?000|500k|петстотини/.test(conversationText) ? 'large' :
+        /[2-9]\d{2}\.?000|[2-9]\d\dk/.test(conversationText) ? 'large' :
+        /100\.?000|100k|сто илјади|сто хиљада/.test(conversationText) ? 'medium' :
+        /[5-9]\d\.?000|[5-9]\dk/.test(conversationText) ? 'medium' :
+        /[1-4]\d\.?000|[1-4]\dk/.test(conversationText) ? 'small' :
+        null;
+
+      if (detectedSector || detectedOrg || detectedGoals) {
         profile = {
           ...supaProfile,
           sector: detectedSector || supaProfile?.sector || null,
           organization_type: detectedOrg || supaProfile?.organization_type || null,
           country: detectedCountry,
-          goals: supaProfile?.goals || 'small'
+          goals: detectedGoals || supaProfile?.goals || 'medium' // FIX: default medium
         };
-        console.log('[GAE] Detected from conversation — sector:' + profile.sector + ' org:' + profile.organization_type + ' country:' + profile.country);
-        // Save detected values back to Supabase for future use
+        console.log('[GAE] Detected — sector:' + profile.sector + ' org:' + profile.organization_type + ' country:' + profile.country + ' budget:' + profile.goals);
         if (userId) {
           dbPatch('profiles?user_id=eq.' + userId, {
             detected_sector: profile.sector,
@@ -503,12 +499,13 @@ module.exports = async function handler(req, res) {
         console.log('[DEBUG] Grant: ' + g.name + ' | Score: ' + fitScore);
         return { ...g, fitScore };
       });
-      matchedGrants = scored.filter(g => g.fitScore > 40).sort((a, b) => b.fitScore - a.fitScore).slice(0, 4);
+      // FIX: threshold 40 → 30, results 4 → 6
+      matchedGrants = scored.filter(g => g.fitScore > 30).sort((a, b) => b.fitScore - a.fitScore).slice(0, 6);
     }
 
     // Load processes for top grant or focused grant
     let processes = [];
-    const wantsProcess = grantFocus || /процес|process|чекор|step|апликација|application|водич|guide|како да|how to|бројки|brojki|резултат|rezultat|помош|pomosh/.test(userText.toLowerCase());
+    const wantsProcess = grantFocus || /процес|process|чекор|step|апликација|application|водич|guide|kako da|how to|бројки|brojki|резултат|rezultat|помош|pomosh/.test(userText.toLowerCase());
     if (wantsProcess) {
       const targetGrant = grantFocus
         ? matchedGrants.find(g => g.name.toLowerCase().includes(grantFocus.toLowerCase()) || g.funder.toLowerCase().includes(grantFocus.toLowerCase()))
@@ -521,7 +518,6 @@ module.exports = async function handler(req, res) {
 
     console.log(`[GAE] Profile:${profile ? 'yes' : 'no'} | Matched grants:${matchedGrants.length} | Processes:${processes.length}`);
 
-    // Build messages for Gemini
     const messages = (body.messages || []).slice(-6).map(m => ({
       role: m.role,
       content: String(m.content || '')
@@ -529,8 +525,6 @@ module.exports = async function handler(req, res) {
 
     const systemPrompt = buildPrompt(lang, today, profile, matchedGrants, processes, grantFocus);
     const text = await gemini(systemPrompt, messages, apiKey);
-
-    // Quota is managed by frontend (deductToken) — no double counting here
 
     return res.status(200).json({ content: [{ type: 'text', text }], intent });
 
