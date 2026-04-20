@@ -495,8 +495,14 @@ module.exports = async function handler(req, res) {
 
     // Fit Engine
     let matchedGrants = [];
+    console.log('[DEBUG] allGrants count:', allGrants ? allGrants.length : 'NULL');
+    console.log('[DEBUG] profile:', JSON.stringify(profile));
     if (allGrants && allGrants.length > 0) {
-      const scored = allGrants.map(g => ({ ...g, fitScore: calcFitScore(g, profile) }));
+      const scored = allGrants.map(g => {
+        const fitScore = calcFitScore(g, profile);
+        console.log('[DEBUG] Grant: ' + g.name + ' | Score: ' + fitScore);
+        return { ...g, fitScore };
+      });
       matchedGrants = scored.filter(g => g.fitScore > 40).sort((a, b) => b.fitScore - a.fitScore).slice(0, 4);
     }
 
