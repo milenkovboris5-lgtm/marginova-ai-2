@@ -9,6 +9,9 @@ const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SERPER_KEY = process.env.SERPER_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
+// Anon key — public, safe to hardcode, used for grants public read
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
+
 const DAILY_LIMIT = 200;
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
 const CACHE_TTL_HOURS = 24;
@@ -115,7 +118,15 @@ async function searchGrantsDB(profile) {
     const query = 'grants?active=eq.true&select=name,funder,sector,country,min_amount,max_amount,co_finance_percent,deadline,eligibility,portal_url&limit=50';
     const today = new Date().toISOString().split('T')[0];
 
-    const allRows = await dbGet(query);
+    // Use anon key for public grants table — avoids Vercel Sensitive key issues
+    let allRows = null;
+    try {
+      const r = await ft(`${SUPA_URL}/rest/v1/${query}`, {
+        headers: { apikey: SUPA_ANON, Authorization: `Bearer ${SUPA_ANON}` }
+      }, 6000);
+      if (r.ok) allRows = await r.json();
+      else console.log('[DB SEARCH] status:', r.status);
+    } catch (e) { console.log('[DB SEARCH] fetch error:', e.message); }
     console.log('[DB SEARCH] fetched:', allRows?.length ?? 'null');
     if (!allRows || allRows.length === 0) return [];
 
