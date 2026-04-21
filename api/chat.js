@@ -121,25 +121,42 @@ function hashQuery(str) {
 
 async function searchGrantsDB(profile) {
   try {
-    // Базично: само активни грантови
-    let query = 'grants?active=eq.true&select=name,funder,sector,country,min_amount,max_amount,co_finance_percent,deadline,eligibility,portal_url&limit=10';
-
-    // Додај deadline филтер — само идни или без deadline
+    //Земи сите активни — deadline филтер во JS (OR не работи во Supabase REST)
+    const query = 'grants?active=eq.true&select=name,funder,sector,country,min_amount,max_amount,co_finance_percent,deadline,eligibility,portal_url&limit=50';
     const today = new Date().toISOString().split('T')[0];
-    query += `&or=(deadline.gte.${today},deadline.is.null)`;
 
-    const rows = await dbGet(query);
-    if (!rows || rows.length === 0) return [];
+    const allRows = await dbGet(query);
+    if (!allRows || allRows.length === 0) return [];
+
+    // Филтрирај expired во JS
+    const rows = allRows.filter(g => !g.deadline || g.deadline >= today);
+    if (rows.length === 0) return [];
+
+    // Мап: англиски сектори → македонски keywords во базата
+    const SECTOR_MK = {
+      'Education':             ['образование','млади','обука','спорт','деца','стипендии'],
+      'Civil Society':         ['граѓанско општество','граѓанско опшество','демократија','човекови права','невладини','здружение'],
+      'Agriculture':           ['земјоделство','рурален развој','агробизнис','сточарство','агротуризам'],
+      'IT / Technology':       ['IT','иновации','дигитализација','технологија','стартапи'],
+      'Environment / Energy':  ['животна средина','зелена економија','обновлива енергија','климатски промени','енергетска ефикасност'],
+      'Research / Innovation': ['истражување','иновации','наука','образование'],
+      'SME / Business':        ['МСП','бизнис','претприемаштво','инфраструктура'],
+      'Tourism / Culture':     ['туризам','култура','уметност','агротуризам'],
+      'Health / Social':       ['здравство','социјална заштита','социјална'],
+    };
 
     // Score секој резултат врз основа на профилот
     const scored = rows.map(g => {
       let score = 0;
-      const sectorArr = Array.isArray(g.sector) ? g.sector : [];
+      const sectorArr = Array.isArray(g.sector) ? g.sector.map(s => s.toLowerCase()) : [];
       const countryArr = Array.isArray(g.country) ? g.country : [];
 
-      // Sector match (+40)
-      if (profile.sector && sectorArr.some(s => s.toLowerCase().includes(profile.sector.toLowerCase()) || profile.sector.toLowerCase().includes(s.toLowerCase()))) {
-        score += 40;
+      // Sector match (+40) — проверува и англиски и македонски
+      if (profile.sector) {
+        const mkKeywords = SECTOR_MK[profile.sector] || [];
+        const englishMatch = sectorArr.some(s => s.includes(profile.sector.toLowerCase()) || profile.sector.toLowerCase().includes(s));
+        const mkMatch = mkKeywords.some(kw => sectorArr.some(s => s.includes(kw.toLowerCase())));
+        if (englishMatch || mkMatch) score += 40;
       }
 
       // Country match (+30)
