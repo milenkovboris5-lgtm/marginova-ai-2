@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// VERSION: v9 — Smart Cache (Supabase cache + Serper on demand)
+// VERSION: v10 — Smart Cache + Relevance Scoring
 // ═══════════════════════════════════════════
 
 const SUPA_URL = process.env.SUPABASE_URL;
@@ -40,6 +40,105 @@ function hashQuery(str) {
   let h = 0;
   for (let i = 0; i < n.length; i++) { h = ((h << 5) - h) + n.charCodeAt(i); h |= 0; }
   return Math.abs(h).toString(36);
+}
+
+// ═══════════════════════════════════════════
+// RELEVANCE SCORING
+// Дава score 0-100 на секој Serper резултат
+// врз основа на профилот на корисникот
+// ═══════════════════════════════════════════
+function scoreResult(result, profile) {
+  const text = (result.title + ' ' + result.snippet).toLowerCase();
+  let score = 0;
+
+  // 1. SECTOR MATCH (+25) — најважно
+  const sectorKeywords = {
+    'Agriculture':           ['agri', 'farm', 'rural', 'ipard', 'crop', 'food', 'земјодел'],
+    'IT / Technology':       ['tech', 'digital', 'software', 'startup', 'innovation', 'ai', 'ict'],
+    'Civil Society':         ['ngo', 'civil', 'society', 'nonprofit', 'community', 'граѓанск'],
+    'Education':             ['education', 'youth', 'school', 'erasmus', 'learning', 'training'],
+    'Environment / Energy':  ['environment', 'climate', 'green', 'energy', 'renewable', 'solar'],
+    'Health / Social':       ['health', 'social', 'welfare', 'care', 'medical'],
+    'Research / Innovation': ['research', 'innovation', 'university', 'horizon', 'science'],
+    'SME / Business':        ['sme', 'business', 'enterprise', 'company', 'entrepreneur'],
+    'Tourism / Culture':     ['tourism', 'culture', 'heritage', 'creative', 'art'],
+  };
+  if (profile.sector && sectorKeywords[profile.sector]) {
+    const hits = sectorKeywords[profile.sector].filter(kw => text.includes(kw));
+    if (hits.length > 0) score += Math.min(25, hits.length * 10);
+  }
+
+  // 2. COUNTRY/REGION MATCH (+20)
+  const countryKeywords = {
+    'North Macedonia': ['macedonia', 'makedon', 'mkd', 'western balkans', 'balkans', 'ipa', 'ipard'],
+    'Serbia':          ['serbia', 'srbija', 'western balkans', 'balkans'],
+    'Croatia':         ['croatia', 'hrvatska', 'western balkans'],
+    'Bosnia':          ['bosnia', 'western balkans', 'balkans'],
+    'Bulgaria':        ['bulgaria', 'bulgar'],
+    'Albania':         ['albania', 'shqip'],
+    'Kosovo':          ['kosovo'],
+  };
+  if (profile.country && countryKeywords[profile.country]) {
+    const hits = countryKeywords[profile.country].filter(kw => text.includes(kw));
+    if (hits.length > 0) score += Math.min(20, hits.length * 10);
+  }
+  // Bonus за EU/global кога нема country match
+  if (!profile.country || score < 10) {
+    if (/\b(eu|european|global|international|worldwide|undp|usaid|giz|un\b)/i.test(text)) score += 10;
+  }
+
+  // 3. АКТУЕЛНОСТ (+20) — 2025/2026 повици
+  const currentYear = new Date().getFullYear();
+  if (text.includes(String(currentYear))) score += 15;
+  if (text.includes(String(currentYear + 1))) score += 10;
+  if (/open call|apply now|deadline|applications open|call for proposal/i.test(text)) score += 10;
+
+  // 4. ORG TYPE MATCH (+15)
+  const orgKeywords = {
+    'NGO / Association':      ['ngo', 'nonprofit', 'civil society', 'association', 'foundation'],
+    'Startup':                ['startup', 'early stage', 'seed', 'venture'],
+    'Agricultural holding':   ['farmer', 'agricultural', 'holding', 'ipard'],
+    'SME':                    ['sme', 'small business', 'enterprise', 'company'],
+    'Municipality / Public body': ['municipality', 'local government', 'public', 'urban'],
+    'University / Research':  ['university', 'research', 'academic', 'institute'],
+    'Individual / Entrepreneur': ['individual', 'entrepreneur', 'freelance', 'self-employed'],
+  };
+  if (profile.orgType && orgKeywords[profile.orgType]) {
+    const hits = orgKeywords[profile.orgType].filter(kw => text.includes(kw));
+    if (hits.length > 0) score += Math.min(15, hits.length * 8);
+  }
+
+  // 5. ФИНАНСИСКИ ИНДИКАТОРИ (+10)
+  if (/€|eur|usd|\$|grant amount|funding|million|thousand/i.test(text)) score += 5;
+  if (/\d+[\.,]?\d*\s*(eur|usd|€|\$|million|thousand)/i.test(text)) score += 5;
+
+  // 6. BUDGET RANGE MATCH (+10)
+  const budgetMap = {
+    'up to €30k':     [/\d{1,2}[\.,]?\d{3}\s*(eur|€)/i, /up to 30/i, /small grant/i],
+    '€30k–€150k':    [/[3-9]\d[\.,]?\d{3}\s*(eur|€)/i, /medium grant/i],
+    '€150k–€500k':   [/[1-4]\d{2}[\.,]?\d{3}\s*(eur|€)/i, /large grant/i],
+    'above €500k':    [/[5-9]\d{2}[\.,]?\d{3}\s*(eur|€)/i, /million/i],
+  };
+  if (profile.budget && budgetMap[profile.budget]) {
+    const hits = budgetMap[profile.budget].filter(rx => rx.test(text));
+    if (hits.length > 0) score += 10;
+  }
+
+  // 7. NEGATIVE SIGNALS — намали score
+  // Стари повици, затворени, не релевантни
+  if (/closed|expired|2022|2023|deadline passed/i.test(text)) score -= 20;
+  if (/login required|subscription|paywall/i.test(text)) score -= 10;
+
+  // Нормализирај 0-100
+  return Math.max(0, Math.min(100, score));
+}
+
+// Сортирај и зачувај само top резултати
+function rankResults(results, profile, topN = 8) {
+  return results
+    .map(r => ({ ...r, score: scoreResult(r, profile) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topN);
 }
 
 // ═══ SUPABASE ═══
@@ -146,7 +245,12 @@ async function loadProfile(userId) {
     const rows = await dbGet(`profiles?user_id=eq.${userId}&select=sector,country,organization_type,goals,plan,detected_sector,detected_org_type,detected_country`);
     const p = rows?.[0];
     if (!p) return null;
-    return { ...p, sector: p.sector || p.detected_sector || null, organization_type: p.organization_type || p.detected_org_type || null, country: p.country || p.detected_country || null };
+    return {
+      ...p,
+      sector: p.sector || p.detected_sector || null,
+      organization_type: p.organization_type || p.detected_org_type || null,
+      country: p.country || p.detected_country || null,
+    };
   } catch { return null; }
 }
 
@@ -167,7 +271,10 @@ function detectLang(text) {
   return 'en';
 }
 
-const LANG_NAMES = { mk:'Macedonian', sr:'Serbian', en:'English', de:'German', fr:'French', es:'Spanish', it:'Italian', pl:'Polish', tr:'Turkish' };
+const LANG_NAMES = {
+  mk: 'Macedonian', sr: 'Serbian', en: 'English', de: 'German',
+  fr: 'French', es: 'Spanish', it: 'Italian', pl: 'Polish', tr: 'Turkish'
+};
 
 // ═══ INTENT ═══
 
@@ -178,6 +285,7 @@ function needsSearch(text, conversationText) {
 
 function detectProfile(text, supaProfile) {
   const t = text.toLowerCase();
+
   const sector =
     /\bit\b|tech|software|digital|дигитал|технолог/.test(t) ? 'IT / Technology' :
     /agri|farm|земјодел|rural|овошт|насади|hektar|добиток/.test(t) ? 'Agriculture' :
@@ -227,11 +335,15 @@ async function serperSearch(query) {
     const r = await ft('https://google.serper.dev/search', {
       method: 'POST',
       headers: { 'X-API-KEY': SERPER_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query, num: 5 })
+      body: JSON.stringify({ q: query, num: 6 })
     }, 8000);
     if (!r.ok) return [];
     const d = await r.json();
-    return (d.organic || []).slice(0, 5).map(item => ({ title: item.title || '', snippet: item.snippet || '', link: item.link || '' }));
+    return (d.organic || []).slice(0, 6).map(item => ({
+      title: item.title || '',
+      snippet: item.snippet || '',
+      link: item.link || ''
+    }));
   } catch (e) { console.log('[SERPER]', e.message); return []; }
 }
 
@@ -240,57 +352,76 @@ function buildSearchQueries(userText, profile) {
   const sector = profile.sector || 'funding';
   const country = profile.country || '';
   const queries = [];
-  const pm = userText.match(/\b(ipard|fitr|erasmus|horizon|interreg|civica|undp|usaid|giz|world bank|open society)\b/i);
+
+  const pm = userText.match(/\b(ipard|fitr|erasmus|horizon|interreg|civica|undp|usaid|giz|world bank|open society|eu4business|eidhr)\b/i);
   if (pm) queries.push(`${pm[0]} grant ${year} open call`);
+
   queries.push(`${sector} grant fund ${year} open call ${country}`.trim());
   queries.push(`${sector} funding ${year} global international grant`);
+
   return [...new Set(queries)].slice(0, 3);
 }
 
-// ═══ CACHED SEARCH ═══
+// ═══ CACHED SEARCH + SCORING ═══
 
 async function getSearchResults(userText, profile) {
   if (!SERPER_KEY) return [];
+
   const queries = buildSearchQueries(userText, profile);
   const cacheKey = hashQuery(queries.join('|'));
 
-  // 1. Провери cache прво
+  // 1. Провери cache
   const cached = await getCached(cacheKey);
   if (cached) {
-    console.log('[SEARCH] from cache, Serper NOT called');
-    return cached;
+    console.log('[SEARCH] from cache — Serper NOT called');
+    // Ре-скорирај од cache со тековниот профил
+    return rankResults(cached, profile);
   }
 
-  // 2. Cache miss → повикај Serper
-  console.log('[SEARCH] cache miss, calling Serper:', queries.length, 'queries');
+  // 2. Cache miss → Serper
+  console.log('[SEARCH] cache miss — calling Serper:', queries.length, 'queries');
   const results = await Promise.all(queries.map(q => serperSearch(q)));
   let webResults = results.flat().filter(r => r.title && r.link);
 
+  // Deduplicate
   const seen = new Set();
   webResults = webResults.filter(r => {
     if (seen.has(r.link)) return false;
     seen.add(r.link); return true;
-  }).slice(0, 10);
+  });
 
-  // 3. Зачувај во cache
+  // 3. SCORE & RANK — пред да кешираме
+  const ranked = rankResults(webResults, profile);
+
+  // Логирај scoring за debug
+  console.log('[SCORING] top 3:', ranked.slice(0, 3).map(r => `${r.score}pts — ${r.title?.slice(0, 50)}`));
+
+  // 4. Зачувај RAW резултати во cache (без score — ре-скорираме секој пат)
   if (webResults.length > 0) {
     saveCache(cacheKey, queries.join(' | '), webResults).catch(() => {});
   }
 
-  return webResults;
+  return ranked;
 }
 
 // ═══ SYSTEM PROMPT ═══
 
 function buildSystemPrompt(lang, today, profile, webResults) {
   const L = LANG_NAMES[lang] || 'English';
+
   const profileText = profile.sector || profile.orgType || profile.country
-    ? `\nOrganization: ${profile.orgType || 'not specified'}\nSector: ${profile.sector || 'not specified'}\nCountry: ${profile.country || 'not specified'}\nBudget: ${profile.budget || 'not specified'}`
+    ? `\nOrganization: ${profile.orgType || 'not specified'}
+Sector: ${profile.sector || 'not specified'}
+Country: ${profile.country || 'not specified'}
+Budget: ${profile.budget || 'not specified'}`
     : '\nProfile not set yet.';
 
   let webText = '';
   if (webResults.length > 0) {
-    webText = '\n\nLIVE SEARCH RESULTS:\n' + webResults.map((r, i) => `[${i+1}] ${r.title}\n${r.snippet}\nURL: ${r.link}`).join('\n\n');
+    webText = '\n\nSEARCH RESULTS (pre-ranked by relevance score):\n' +
+      webResults.map((r, i) =>
+        `[${i + 1}] SCORE:${r.score || '?'} | ${r.title}\n${r.snippet}\nURL: ${r.link}`
+      ).join('\n\n');
   }
 
   return `LANGUAGE: Respond ONLY in ${L}. Always match the user's language.
@@ -303,9 +434,11 @@ Today: ${today}
 USER PROFILE:${profileText}
 
 INSTRUCTIONS:
+- Results above are PRE-RANKED by relevance score (higher = better match for this user)
+- Prioritize results with high scores — they are most relevant
 - If profile is incomplete, ask ONE specific question
 - Be direct and specific — no Wikipedia answers
-- Format for recommendations:
+- Format:
 
 📋 [Program name]
 💰 Amount range | Co-financing %
@@ -313,7 +446,7 @@ INSTRUCTIONS:
 ⚠️ Main risk: [one obstacle]
 🔗 [URL]
 
-- End every response with ONE concrete action the user can take TODAY
+- End with ONE concrete action the user can take TODAY
 - Never say "I cannot help" — always find something${webText}`;
 }
 
@@ -321,13 +454,23 @@ INSTRUCTIONS:
 
 async function gemini(systemPrompt, messages) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
-  const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content || '') }] }));
+
+  const contents = messages.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: String(m.content || '') }]
+  }));
   if (!contents.length) contents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+
   const r = await ft(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: systemPrompt }] }, contents, generationConfig: { maxOutputTokens: 4096, temperature: 0.65 } })
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents,
+      generationConfig: { maxOutputTokens: 4096, temperature: 0.65 }
+    })
   }, 30000);
+
   if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`);
   const d = await r.json();
   if (d.error) throw new Error(d.error.message);
@@ -363,9 +506,11 @@ module.exports = async function handler(req, res) {
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const conversationText = (body.messages || []).map(m => m.content || '').join(' ');
 
+    // Load profile
     const supaProfile = userId ? await loadProfile(userId) : null;
     const profile = detectProfile(conversationText, supaProfile);
 
+    // Save detected profile async
     if (userId && (profile.sector || profile.orgType || profile.country)) {
       dbPatch('profiles?user_id=eq.' + userId, {
         detected_sector: profile.sector,
@@ -374,18 +519,23 @@ module.exports = async function handler(req, res) {
       }).catch(() => {});
     }
 
-    // Чисти expired cache на секои ~20 барања
+    // Чисти expired cache ~5% од барањата
     if (Math.random() < 0.05) cleanExpiredCache().catch(() => {});
 
+    // Smart search со cache + scoring
     const shouldSearch = needsSearch(userText, conversationText);
     let webResults = [];
     if (shouldSearch) {
       webResults = await getSearchResults(userText, profile);
     }
 
-    console.log(`[v9] lang:${lang} search:${shouldSearch} results:${webResults.length} user:${userId?.slice(0,8)||'anon'}`);
+    console.log(`[v10] lang:${lang} search:${shouldSearch} results:${webResults.length} topScore:${webResults[0]?.score || 0} user:${userId?.slice(0, 8) || 'anon'}`);
 
-    const messages = (body.messages || []).slice(-8).map(m => ({ role: m.role, content: String(m.content || '') }));
+    const messages = (body.messages || []).slice(-8).map(m => ({
+      role: m.role,
+      content: String(m.content || '')
+    }));
+
     const systemPrompt = buildSystemPrompt(lang, today, profile, webResults);
     const text = await gemini(systemPrompt, messages);
 
