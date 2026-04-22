@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// VERSION: v12 — Clean Production Build
+// VERSION: v13 — Anon key fallback for all DB operations
 // Global scope, English comments, DB-first search
 // ═══════════════════════════════════════════
 
@@ -28,10 +28,12 @@ function ft(url, opts = {}, ms = 12000) {
 // ═══ SUPABASE HELPERS ═══
 
 async function dbGet(path) {
-  if (!SUPA_URL || !SUPA_KEY) return null;
+  if (!SUPA_URL) return null;
+  // Use service key if available, fall back to anon key
+  const key = SUPA_KEY || SUPA_ANON;
   try {
     const r = await ft(`${SUPA_URL}/rest/v1/${path}`, {
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: '' }
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: '' }
     }, 6000);
     if (!r.ok) { console.log('[DB GET]', r.status, path); return null; }
     return r.json();
@@ -39,11 +41,12 @@ async function dbGet(path) {
 }
 
 async function dbPost(path, body) {
-  if (!SUPA_URL || !SUPA_KEY) return false;
+  if (!SUPA_URL) return false;
+  const key = SUPA_KEY || SUPA_ANON;
   try {
     const r = await ft(`${SUPA_URL}/rest/v1/${path}`, {
       method: 'POST',
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify(body)
     }, 6000);
     return r.ok;
@@ -51,22 +54,24 @@ async function dbPost(path, body) {
 }
 
 async function dbPatch(path, body) {
-  if (!SUPA_URL || !SUPA_KEY) return;
+  if (!SUPA_URL) return;
+  const key = SUPA_KEY || SUPA_ANON;
   try {
     await ft(`${SUPA_URL}/rest/v1/${path}`, {
       method: 'PATCH',
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify(body)
     }, 5000);
   } catch {}
 }
 
 async function dbDelete(path) {
-  if (!SUPA_URL || !SUPA_KEY) return;
+  if (!SUPA_URL) return;
+  const key = SUPA_KEY || SUPA_ANON;
   try {
     await ft(`${SUPA_URL}/rest/v1/${path}`, {
       method: 'DELETE',
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
+      headers: { apikey: key, Authorization: `Bearer ${key}` }
     }, 5000);
   } catch {}
 }
