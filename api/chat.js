@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// VERSION: v13 — Anon key fallback for all DB operations
+// VERSION: v14 — Match % restored in text + JSON
 // Global scope, English comments, DB-first search
 // ═══════════════════════════════════════════
 
@@ -29,15 +29,20 @@ function ft(url, opts = {}, ms = 12000) {
 
 async function dbGet(path) {
   if (!SUPA_URL) return null;
-  // Use service key if available, fall back to anon key
   const key = SUPA_KEY || SUPA_ANON;
   try {
     const r = await ft(`${SUPA_URL}/rest/v1/${path}`, {
       headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: '' }
     }, 6000);
-    if (!r.ok) { console.log('[DB GET]', r.status, path); return null; }
+    if (!r.ok) {
+      console.log('[DB GET]', r.status, path);
+      return null;
+    }
     return r.json();
-  } catch (e) { console.log('[DB GET]', e.message); return null; }
+  } catch (e) {
+    console.log('[DB GET]', e.message);
+    return null;
+  }
 }
 
 async function dbPost(path, body) {
@@ -46,11 +51,19 @@ async function dbPost(path, body) {
   try {
     const r = await ft(`${SUPA_URL}/rest/v1/${path}`, {
       method: 'POST',
-      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
       body: JSON.stringify(body)
     }, 6000);
     return r.ok;
-  } catch (e) { console.log('[DB POST]', e.message); return false; }
+  } catch (e) {
+    console.log('[DB POST]', e.message);
+    return false;
+  }
 }
 
 async function dbPatch(path, body) {
@@ -59,7 +72,12 @@ async function dbPatch(path, body) {
   try {
     await ft(`${SUPA_URL}/rest/v1/${path}`, {
       method: 'PATCH',
-      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
       body: JSON.stringify(body)
     }, 5000);
   } catch {}
@@ -77,19 +95,21 @@ async function dbDelete(path) {
 }
 
 // ═══ IP RATE LIMIT — Stored in Supabase, not memory ═══
-// Table: ip_limits(ip text PK, count int, reset_date date)
 
 async function checkIP(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
   const today = new Date().toISOString().split('T')[0];
+
   try {
     const rows = await dbGet(`ip_limits?ip=eq.${encodeURIComponent(ip)}&select=count,reset_date`);
     const row = rows?.[0];
+
     if (!row || row.reset_date !== today) {
       await ft(`${SUPA_URL}/rest/v1/ip_limits`, {
         method: 'POST',
         headers: {
-          apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+          apikey: SUPA_KEY,
+          Authorization: `Bearer ${SUPA_KEY}`,
           'Content-Type': 'application/json',
           Prefer: 'resolution=merge-duplicates,return=minimal'
         },
@@ -97,12 +117,14 @@ async function checkIP(req) {
       }, 4000);
       return true;
     }
+
     if (row.count >= DAILY_LIMIT) return false;
+
     await dbPatch(`ip_limits?ip=eq.${encodeURIComponent(ip)}`, { count: row.count + 1 });
     return true;
   } catch (e) {
     console.log('[IP CHECK]', e.message);
-    return true; // Fail open if DB unavailable
+    return true;
   }
 }
 
@@ -111,7 +133,10 @@ async function checkIP(req) {
 function hashQuery(str) {
   const n = str.toLowerCase().trim().replace(/\s+/g, ' ');
   let h = 0;
-  for (let i = 0; i < n.length; i++) { h = ((h << 5) - h) + n.charCodeAt(i); h |= 0; }
+  for (let i = 0; i < n.length; i++) {
+    h = ((h << 5) - h) + n.charCodeAt(i);
+    h |= 0;
+  }
   return Math.abs(h).toString(36);
 }
 
@@ -119,11 +144,9 @@ function hashQuery(str) {
 
 async function searchGrantsDB(profile) {
   try {
-    // Fetch all active grants — filter deadline in JS (Supabase REST OR syntax unreliable)
     const query = 'grants?active=eq.true&select=name,funder,sector,country,min_amount,max_amount,co_finance_percent,deadline,eligibility,portal_url&limit=50';
     const today = new Date().toISOString().split('T')[0];
 
-    // Use anon key for public grants table — avoids Vercel Sensitive key issues
     let allRows = null;
     try {
       const r = await ft(`${SUPA_URL}/rest/v1/${query}`, {
@@ -131,18 +154,19 @@ async function searchGrantsDB(profile) {
       }, 6000);
       if (r.ok) allRows = await r.json();
       else console.log('[DB SEARCH] status:', r.status);
-    } catch (e) { console.log('[DB SEARCH] fetch error:', e.message); }
+    } catch (e) {
+      console.log('[DB SEARCH] fetch error:', e.message);
+    }
+
     console.log('[DB SEARCH] fetched:', allRows?.length ?? 'null');
     if (!allRows || allRows.length === 0) return [];
 
-    // Filter out expired grants in JS
     const rows = allRows.filter(g => !g.deadline || g.deadline >= today);
     if (rows.length === 0) return [];
 
-    // Score each grant against user profile
     const scored = rows.map(g => {
       let score = 0;
-      const sectorArr = Array.isArray(g.sector) ? g.sector.map(s => s.toLowerCase()) : [];
+      const sectorArr = Array.isArray(g.sector) ? g.sector.map(s => String(s).toLowerCase()) : [];
       const countryArr = Array.isArray(g.country) ? g.country : [];
 
       // Sector match (+40)
@@ -154,10 +178,14 @@ async function searchGrantsDB(profile) {
       // Country match (+30) — empty country array means global
       if (profile.country) {
         const pc = profile.country.toLowerCase();
-        if (countryArr.length === 0 ||
-            countryArr.some(c => c.toLowerCase().includes(pc) ||
-                                 c.toLowerCase().includes('western balkans') ||
-                                 c.toLowerCase().includes('global'))) {
+        if (
+          countryArr.length === 0 ||
+          countryArr.some(c =>
+            String(c).toLowerCase().includes(pc) ||
+            String(c).toLowerCase().includes('western balkans') ||
+            String(c).toLowerCase().includes('global')
+          )
+        ) {
           score += 30;
         }
       }
@@ -165,10 +193,10 @@ async function searchGrantsDB(profile) {
       // Budget match (+20)
       if (profile.budget && g.min_amount != null && g.max_amount != null) {
         const budgetRanges = {
-          'up to €30k':    [0, 30000],
-          '€30k–€150k':   [30000, 150000],
-          '€150k–€500k':  [150000, 500000],
-          'above €500k':   [500000, Infinity]
+          'up to €30k': [0, 30000],
+          '€30k–€150k': [30000, 150000],
+          '€150k–€500k': [150000, 500000],
+          'above €500k': [500000, Infinity]
         };
         const [minB, maxB] = budgetRanges[profile.budget] || [0, Infinity];
         if (g.max_amount >= minB && g.min_amount <= maxB) score += 20;
@@ -176,15 +204,15 @@ async function searchGrantsDB(profile) {
 
       // Org type match via eligibility text (+10)
       if (profile.orgType && g.eligibility) {
-        const eli = g.eligibility.toLowerCase();
+        const eli = String(g.eligibility).toLowerCase();
         const orgMap = {
-          'NGO / Association':          ['ngo', 'nonprofit', 'association', 'civil society', 'foundation'],
-          'Startup':                    ['startup', 'early stage', 'seed'],
-          'Agricultural holding':       ['farmer', 'agricultural', 'holding', 'ipard'],
-          'SME':                        ['sme', 'enterprise', 'company', 'business'],
+          'NGO / Association': ['ngo', 'nonprofit', 'association', 'civil society', 'foundation'],
+          'Startup': ['startup', 'early stage', 'seed'],
+          'Agricultural holding': ['farmer', 'agricultural', 'holding', 'ipard'],
+          'SME': ['sme', 'enterprise', 'company', 'business'],
           'Municipality / Public body': ['municipality', 'local government', 'public body', 'public institution'],
-          'University / Research':      ['university', 'research', 'academic', 'institute'],
-          'Individual / Entrepreneur':  ['individual', 'entrepreneur', 'freelance', 'self-employed'],
+          'University / Research': ['university', 'research', 'academic', 'institute'],
+          'Individual / Entrepreneur': ['individual', 'entrepreneur', 'freelance', 'self-employed'],
         };
         const kws = orgMap[profile.orgType] || [];
         if (kws.some(kw => eli.includes(kw))) score += 10;
@@ -192,12 +220,12 @@ async function searchGrantsDB(profile) {
 
       return {
         ...g,
-        score,
+        score: Math.max(0, Math.min(100, score)),
         source: 'db',
         title: g.name,
         snippet: [
           g.funder,
-          g.min_amount ? `€${g.min_amount.toLocaleString()} – €${g.max_amount?.toLocaleString() || '?'}` : null,
+          g.min_amount ? `€${Number(g.min_amount).toLocaleString()} – €${g.max_amount != null ? Number(g.max_amount).toLocaleString() : '?'}` : null,
           g.co_finance_percent ? `Co-financing: ${g.co_finance_percent}%` : null,
           g.eligibility
         ].filter(Boolean).join(' | '),
@@ -217,20 +245,21 @@ async function searchGrantsDB(profile) {
 // ═══ RELEVANCE SCORING — for Serper web results ═══
 
 function scoreResult(result, profile) {
-  const text = (result.title + ' ' + result.snippet).toLowerCase();
+  const text = `${result.title} ${result.snippet}`.toLowerCase();
   let score = 0;
 
   const sectorKeywords = {
-    'Agriculture':           ['agri', 'farm', 'rural', 'ipard', 'crop', 'food'],
-    'IT / Technology':       ['tech', 'digital', 'software', 'startup', 'innovation', 'ai', 'ict'],
-    'Civil Society':         ['ngo', 'civil society', 'nonprofit', 'community', 'association'],
-    'Education':             ['education', 'youth', 'school', 'erasmus', 'learning', 'training'],
-    'Environment / Energy':  ['environment', 'climate', 'green', 'energy', 'renewable', 'solar'],
-    'Health / Social':       ['health', 'social', 'welfare', 'care', 'medical'],
+    'Agriculture': ['agri', 'farm', 'rural', 'ipard', 'crop', 'food'],
+    'IT / Technology': ['tech', 'digital', 'software', 'startup', 'innovation', 'ai', 'ict'],
+    'Civil Society': ['ngo', 'civil society', 'nonprofit', 'community', 'association'],
+    'Education': ['education', 'youth', 'school', 'erasmus', 'learning', 'training'],
+    'Environment / Energy': ['environment', 'climate', 'green', 'energy', 'renewable', 'solar'],
+    'Health / Social': ['health', 'social', 'welfare', 'care', 'medical'],
     'Research / Innovation': ['research', 'innovation', 'university', 'horizon', 'science'],
-    'SME / Business':        ['sme', 'business', 'enterprise', 'company', 'entrepreneur'],
-    'Tourism / Culture':     ['tourism', 'culture', 'heritage', 'creative', 'art'],
+    'SME / Business': ['sme', 'business', 'enterprise', 'company', 'entrepreneur'],
+    'Tourism / Culture': ['tourism', 'culture', 'heritage', 'creative', 'art'],
   };
+
   if (profile.sector && sectorKeywords[profile.sector]) {
     const hits = sectorKeywords[profile.sector].filter(kw => text.includes(kw));
     if (hits.length > 0) score += Math.min(25, hits.length * 10);
@@ -238,17 +267,19 @@ function scoreResult(result, profile) {
 
   const countryKeywords = {
     'North Macedonia': ['macedonia', 'makedon', 'mkd', 'western balkans', 'balkans', 'ipa'],
-    'Serbia':          ['serbia', 'srbija', 'western balkans', 'balkans'],
-    'Croatia':         ['croatia', 'hrvatska', 'western balkans'],
-    'Bosnia':          ['bosnia', 'western balkans', 'balkans'],
-    'Bulgaria':        ['bulgaria', 'bulgar'],
-    'Albania':         ['albania'],
-    'Kosovo':          ['kosovo'],
+    'Serbia': ['serbia', 'srbija', 'western balkans', 'balkans'],
+    'Croatia': ['croatia', 'hrvatska', 'western balkans'],
+    'Bosnia': ['bosnia', 'western balkans', 'balkans'],
+    'Bulgaria': ['bulgaria', 'bulgar'],
+    'Albania': ['albania'],
+    'Kosovo': ['kosovo'],
   };
+
   if (profile.country && countryKeywords[profile.country]) {
     const hits = countryKeywords[profile.country].filter(kw => text.includes(kw));
     if (hits.length > 0) score += Math.min(20, hits.length * 10);
   }
+
   if (!profile.country || score < 10) {
     if (/\b(eu|european|global|international|worldwide|undp|usaid|giz|un\b)/i.test(text)) score += 10;
   }
@@ -260,7 +291,6 @@ function scoreResult(result, profile) {
   if (/€|eur|usd|\$|grant amount|funding|million|thousand/i.test(text)) score += 5;
   if (/\d+[\.,]?\d*\s*(eur|usd|€|\$|million|thousand)/i.test(text)) score += 5;
 
-  // Strong negative signals
   if (/closed|expired|deadline passed/i.test(text)) score -= 50;
   if (/2022|2023/i.test(text)) score -= 30;
   if (/login required|subscription|paywall/i.test(text)) score -= 15;
@@ -286,7 +316,10 @@ async function getCached(queryHash) {
       return { results: rows[0].results, created_at: rows[0].created_at };
     }
     return null;
-  } catch (e) { console.log('[CACHE] get error:', e.message); return null; }
+  } catch (e) {
+    console.log('[CACHE] get error:', e.message);
+    return null;
+  }
 }
 
 async function saveCache(queryHash, queryText, results) {
@@ -301,7 +334,9 @@ async function saveCache(queryHash, queryText, results) {
       created_at: now.toISOString(),
       expires_at: expires.toISOString()
     });
-  } catch (e) { console.log('[CACHE] save error:', e.message); }
+  } catch (e) {
+    console.log('[CACHE] save error:', e.message);
+  }
 }
 
 async function cleanExpiredCache() {
@@ -323,7 +358,9 @@ async function checkQuota(userId) {
     if (limit === -1) return true;
     const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
     return used < limit;
-  } catch { return true; }
+  } catch {
+    return true;
+  }
 }
 
 async function loadProfile(userId) {
@@ -338,7 +375,9 @@ async function loadProfile(userId) {
       organization_type: p.organization_type || p.detected_org_type || null,
       country: p.country || p.detected_country || null,
     };
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 // ═══ LANGUAGE DETECTION ═══
@@ -359,14 +398,21 @@ function detectLang(text) {
 }
 
 const LANG_NAMES = {
-  mk: 'Macedonian', sr: 'Serbian', en: 'English', de: 'German',
-  fr: 'French', es: 'Spanish', it: 'Italian', pl: 'Polish', tr: 'Turkish'
+  mk: 'Macedonian',
+  sr: 'Serbian',
+  en: 'English',
+  de: 'German',
+  fr: 'French',
+  es: 'Spanish',
+  it: 'Italian',
+  pl: 'Polish',
+  tr: 'Turkish'
 };
 
 // ═══ INTENT DETECTION ═══
 
 function needsSearch(text, conversationText) {
-  const t = (text + ' ' + conversationText).toLowerCase();
+  const t = `${text} ${conversationText}`.toLowerCase();
   return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support|money|euros|invest/i.test(t);
 }
 
@@ -401,7 +447,7 @@ function detectProfile(text, supaProfile) {
     /croatia|hrvatska/.test(t) ? 'Croatia' :
     /\bbosnia\b/.test(t) ? 'Bosnia' :
     /bulgaria|bulgar/.test(t) ? 'Bulgaria' :
-    /\balkania\b/.test(t) ? 'Albania' :
+    /\balbania\b/.test(t) ? 'Albania' :
     /\bkosovo\b/.test(t) ? 'Kosovo' :
     supaProfile?.country || null;
 
@@ -424,18 +470,15 @@ function buildSearchQueries(userText, profile) {
   const country = profile.country || 'Western Balkans';
   const queries = [];
 
-  // 1. Program-specific match
   const pm = userText.match(/\b(ipard|fitr|erasmus|horizon|interreg|civica|undp|usaid|giz|world bank|open society|eu4business|eidhr|wbif|ryco)\b/i);
   if (pm) queries.push(`${pm[0]} open call ${year} apply`);
 
-  // 2. Country-targeted query
   if (profile.country === 'North Macedonia') {
     queries.push(`${sector} grant ${year} North Macedonia open call apply`);
   } else {
     queries.push(`${sector} grant ${year} "${country}" open call`);
   }
 
-  // 3. Global fallback
   queries.push(`${sector} ${profile.orgType || ''} grant ${year} open call apply now`.trim());
 
   return [...new Set(queries)].slice(0, 3);
@@ -446,10 +489,15 @@ async function serperSearch(query) {
   try {
     const r = await ft('https://google.serper.dev/search', {
       method: 'POST',
-      headers: { 'X-API-KEY': SERPER_KEY, 'Content-Type': 'application/json' },
+      headers: {
+        'X-API-KEY': SERPER_KEY,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ q: query, num: 6 })
     }, 8000);
+
     if (!r.ok) return [];
+
     const d = await r.json();
     return (d.organic || []).slice(0, 6).map(item => ({
       title: item.title || '',
@@ -457,7 +505,10 @@ async function serperSearch(query) {
       link: item.link || '',
       source: 'serper'
     }));
-  } catch (e) { console.log('[SERPER]', e.message); return []; }
+  } catch (e) {
+    console.log('[SERPER]', e.message);
+    return [];
+  }
 }
 
 // ═══ MAIN SEARCH LOGIC — DB first, Serper as fallback ═══
@@ -467,10 +518,8 @@ async function getSearchResults(userText, profile) {
   let cachedAt = null;
   let fromCache = false;
 
-  // 1. Search grants database first
   const dbResults = await searchGrantsDB(profile);
 
-  // 2. Only call Serper if DB returns fewer than MIN_DB_RESULTS
   if (dbResults.length < MIN_DB_RESULTS && SERPER_KEY) {
     const queries = buildSearchQueries(userText, profile);
     const cacheKey = hashQuery(queries.join('|'));
@@ -483,15 +532,23 @@ async function getSearchResults(userText, profile) {
     } else {
       const raw = await Promise.all(queries.map(q => serperSearch(q)));
       let webResults = raw.flat().filter(r => r.title && r.link);
+
       const seen = new Set();
-      webResults = webResults.filter(r => { if (seen.has(r.link)) return false; seen.add(r.link); return true; });
+      webResults = webResults.filter(r => {
+        if (seen.has(r.link)) return false;
+        seen.add(r.link);
+        return true;
+      });
+
       serperResults = rankResults(webResults, profile);
-      if (webResults.length > 0) saveCache(cacheKey, queries.join(' | '), webResults).catch(() => {});
+      if (webResults.length > 0) {
+        saveCache(cacheKey, queries.join(' | '), webResults).catch(() => {});
+      }
     }
   }
 
   const combined = [...dbResults, ...serperResults].slice(0, 8);
-  console.log(`[v12] db:${dbResults.length} serper:${serperResults.length} cache:${fromCache} top:${combined[0]?.score || 0}`);
+  console.log(`[v14] db:${dbResults.length} serper:${serperResults.length} cache:${fromCache} top:${combined[0]?.score || 0}`);
   return { results: combined, cachedAt, fromCache };
 }
 
@@ -512,7 +569,7 @@ Budget range: ${profile.budget || 'not specified'}`
     webText = '\n\nGRANT RESULTS (✅ DB = verified database | 🌐 Web = live search):\n' +
       webResults.map((r, i) => {
         const src = r.source === 'db' ? '✅ DB' : '🌐 Web';
-        return `[${i + 1}] ${src} | Score:${r.score ?? '?'} | ${r.title}\n${r.snippet}\nURL: ${r.link}`;
+        return `[${i + 1}] ${src} | Match Score:${r.score ?? 0}% | ${r.title}\n${r.snippet}\nURL: ${r.link}`;
       }).join('\n\n');
   }
 
@@ -527,12 +584,14 @@ USER PROFILE:${profileText}
 RULES:
 - ✅ DB results are pre-verified — ALWAYS prioritize them over web results
 - 🌐 Web results supplement — cite only if DB results are insufficient
-- Never fabricate grant names, amounts, or deadlines
+- Never fabricate grant names, amounts, deadlines, or match percentages
+- If a result includes Match Score, show it exactly as a percentage
 - If profile is incomplete, ask exactly ONE clarifying question before searching
 - Be direct and specific — no generic advice
 
-FORMAT each opportunity:
+FORMAT each opportunity exactly like this:
 📋 [Program name]
+🎯 Match: [X]%
 💰 [Amount range] | Co-financing: [%]
 ✅ Why you qualify: [specific, personalized reason]
 ⚠️ Main risk: [one realistic obstacle]
@@ -552,14 +611,15 @@ async function geminiCall(systemPrompt, messages, imageData, imageType) {
     parts: [{ text: String(m.content || '') }]
   }));
 
-  // Attach file to last message if provided
   if (imageData && imageType && contents.length > 0) {
     contents[contents.length - 1].parts.push({
       inline_data: { mime_type: imageType, data: imageData }
     });
   }
 
-  if (!contents.length) contents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+  if (!contents.length) {
+    contents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+  }
 
   const r = await ft(url, {
     method: 'POST',
@@ -572,8 +632,10 @@ async function geminiCall(systemPrompt, messages, imageData, imageType) {
   }, 30000);
 
   if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`);
+
   const d = await r.json();
   if (d.error) throw new Error(d.error.message);
+
   const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
   if (!text) throw new Error('Gemini returned empty response');
   return text;
@@ -598,10 +660,12 @@ async function gemini(systemPrompt, messages, imageData, imageType) {
 module.exports = async function handler(req, res) {
   const ORIGINS = ['https://marginova.tech', 'https://www.marginova.tech', 'http://localhost:3000'];
   const origin = req.headers.origin || '';
+
   res.setHeader('Access-Control-Allow-Origin', ORIGINS.includes(origin) ? origin : ORIGINS[0]);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: { message: 'Method Not Allowed' } });
   if (!GEMINI_KEY) return res.status(500).json({ error: { message: 'Missing GEMINI_API_KEY.' } });
@@ -617,20 +681,28 @@ module.exports = async function handler(req, res) {
     const imageData = body.image || null;
     const imageType = body.imageType || null;
 
-    if (userText.length > 2000) return res.status(400).json({ error: { message: 'Message too long. Max 2000 characters.' } });
+    if (userText.length > 2000) {
+      return res.status(400).json({ error: { message: 'Message too long. Max 2000 characters.' } });
+    }
 
     if (userId && !(await checkQuota(userId))) {
-      return res.status(429).json({ error: { message: 'Message limit reached. Please upgrade your plan.' }, quota_exceeded: true });
+      return res.status(429).json({
+        error: { message: 'Message limit reached. Please upgrade your plan.' },
+        quota_exceeded: true
+      });
     }
 
     const lang = body.lang || detectLang(userText);
-    const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const today = new Date().toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
     const conversationText = (body.messages || []).map(m => m.content || '').join(' ');
 
     const supaProfile = userId ? await loadProfile(userId) : null;
     const profile = detectProfile(conversationText, supaProfile);
 
-    // Save detected profile async (fire and forget)
     if (userId && (profile.sector || profile.orgType || profile.country)) {
       dbPatch('profiles?user_id=eq.' + userId, {
         detected_sector: profile.sector,
@@ -639,7 +711,6 @@ module.exports = async function handler(req, res) {
       }).catch(() => {});
     }
 
-    // Occasionally clean expired cache
     if (Math.random() < 0.05) cleanExpiredCache().catch(() => {});
 
     const shouldSearch = needsSearch(userText, conversationText) || !!imageData;
@@ -668,7 +739,14 @@ module.exports = async function handler(req, res) {
       cached: fromCache,
       cached_at: cachedAt,
       db_results: webResults.filter(r => r.source === 'db').length,
-      web_results: webResults.filter(r => r.source === 'serper').length
+      web_results: webResults.filter(r => r.source === 'serper').length,
+      top_matches: webResults.slice(0, 5).map(r => ({
+        title: r.title || '',
+        match_score: Number.isFinite(r.score) ? r.score : 0,
+        source: r.source || 'unknown',
+        link: r.link || '',
+        snippet: r.snippet || ''
+      }))
     });
 
   } catch (err) {
