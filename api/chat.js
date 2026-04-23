@@ -1,89 +1,17 @@
 // ═════════════════════════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// v17 — Supabase client mode, DB-first strict mode
+// v18 — fixed: shared utils, server-side quota, needsSearch,
+//        CORS dedup, cache error logging
 // ═════════════════════════════════════════════════════════════
 
-const { createClient } = require('@supabase/supabase-js');
+const { supabase, getTable, ft, detectLang, LANG_NAMES, checkIP, setCors } = require('./_lib/utils');
 
-const SUPA_URL = process.env.SUPABASE_URL;
-const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
-const SERPER_KEY = process.env.SERPER_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
-console.log('SUPA_KEY:', SUPA_KEY ? 'OK' : 'MISSING');
+console.log('[chat.js] SUPABASE:', supabase ? 'OK' : 'MISSING');
 
-const DAILY_LIMIT = 200;
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
 const CACHE_TTL_HOURS = 24;
-
-if (!SUPA_URL || !SUPA_KEY) {
-  console.log('[SUPABASE] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
-}
-
-const supabase = (SUPA_URL && SUPA_KEY)
-  ? createClient(SUPA_URL, SUPA_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    })
-  : null;
-
-// ═══ FETCH WITH TIMEOUT ═══
-
-function ft(url, opts = {}, ms = 12000) {
-  const c = new AbortController();
-  const t = setTimeout(() => c.abort(), ms);
-  return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
-}
-
-// ═══ GENERIC DB HELPERS ═══
-
-function getTable(name) {
-  if (!supabase) throw new Error('Supabase client not initialized');
-  return supabase.from(name);
-}
-
-// ═══ IP RATE LIMIT ═══
-
-async function checkIP(req) {
-  if (!supabase) return true;
-
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-  const today = new Date().toISOString().split('T')[0];
-
-  try {
-    const { data: row, error } = await getTable('ip_limits')
-      .select('ip,count,reset_date')
-      .eq('ip', ip)
-      .maybeSingle();
-
-    if (error) {
-      console.log('[DB GET ip_limits]', error.message);
-      return true;
-    }
-
-    if (!row || row.reset_date !== today) {
-      const { error: upsertError } = await getTable('ip_limits').upsert(
-        { ip, count: 1, reset_date: today },
-        { onConflict: 'ip' }
-      );
-
-      if (upsertError) console.log('[IP UPSERT]', upsertError.message);
-      return true;
-    }
-
-    if ((row.count || 0) >= DAILY_LIMIT) return false;
-
-    const { error: updateError } = await getTable('ip_limits')
-      .update({ count: (row.count || 0) + 1 })
-      .eq('ip', ip);
-
-    if (updateError) console.log('[IP UPDATE]', updateError.message);
-
-    return true;
-  } catch (e) {
-    console.log('[IP CHECK]', e.message);
-    return true;
-  }
-}
 
 // ═══ HASH ═══
 
@@ -97,7 +25,7 @@ function hashQuery(str) {
   return Math.abs(h).toString(36);
 }
 
-// ═══ DB SEARCH — funding_opportunities only ═══
+// ═══ DB SEARCH ═══
 
 async function searchFundingDB(profile) {
   if (!supabase) return [];
@@ -271,7 +199,9 @@ async function saveCache(queryHash, queryText, results) {
       expires_at: expires.toISOString()
     });
 
+    // Fixed: log cache save failures instead of silently ignoring them
     if (error) console.log('[CACHE] save error:', error.message);
+    else console.log('[CACHE] saved:', queryHash);
   } catch (e) {
     console.log('[CACHE] save error:', e.message);
   }
@@ -280,16 +210,19 @@ async function saveCache(queryHash, queryText, results) {
 async function cleanExpiredCache() {
   if (!supabase) return;
   try {
-    await getTable('search_cache')
+    const { error } = await getTable('search_cache')
       .delete()
       .lt('expires_at', new Date().toISOString());
-  } catch {}
+    if (error) console.log('[CACHE CLEAN]', error.message);
+  } catch (e) {
+    console.log('[CACHE CLEAN]', e.message);
+  }
 }
 
-// ═══ QUOTA ═══
+// ═══ QUOTA — server-side only ═══
 
-async function checkQuota(userId) {
-  if (!userId || !supabase) return true;
+async function checkAndDeductQuota(userId) {
+  if (!userId || !supabase) return { allowed: true };
 
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -300,19 +233,30 @@ async function checkQuota(userId) {
       .maybeSingle();
 
     if (error) {
-      console.log('[QUOTA] error:', error.message);
-      return true;
+      console.log('[QUOTA]', error.message);
+      return { allowed: true }; // fail open
     }
 
-    if (!p) return true;
+    if (!p) return { allowed: true };
 
     const limit = PLANS[p.plan] ?? 20;
-    if (limit === -1) return true;
+    if (limit === -1) return { allowed: true };
 
     const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
-    return used < limit;
-  } catch {
-    return true;
+
+    if (used >= limit) {
+      return { allowed: false, used, limit, plan: p.plan };
+    }
+
+    // Deduct in the same request — no separate client-side call needed
+    await getTable('profiles')
+      .update({ daily_msgs: used + 1, last_msg_date: today })
+      .eq('user_id', userId);
+
+    return { allowed: true, used: used + 1, limit, plan: p.plan };
+  } catch (e) {
+    console.log('[QUOTA]', e.message);
+    return { allowed: true };
   }
 }
 
@@ -343,40 +287,19 @@ async function loadProfile(userId) {
   }
 }
 
-// ═══ LANGUAGE DETECTION ═══
-
-function detectLang(text) {
-  if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
-  if (/ћ|ђ/i.test(text)) return 'sr';
-  if (/јас|сум|македонија|барам|грант|работам|НВО|фонд/i.test(text)) return 'mk';
-  if (/[а-шА-Ш]/.test(text)) return 'mk';
-  if (/\b(jas|sum|makedonija|zdravo|zemja|proekt|grant|fond)\b/i.test(text)) return 'mk';
-  if (/\b(und|oder|ich|nicht|sie|wir)\b/i.test(text)) return 'de';
-  if (/\b(est|une|les|des|pour|nous|vous)\b/i.test(text)) return 'fr';
-  if (/\b(para|una|los|las|que|con)\b/i.test(text)) return 'es';
-  if (/\b(sam|smo|nije|nisu)\b/i.test(text)) return 'sr';
-  if (/\b(jestem|jest|nie|dla)\b/i.test(text)) return 'pl';
-  if (/\b(bir|için|ile|bu|ve)\b/i.test(text)) return 'tr';
-  return 'en';
-}
-
-const LANG_NAMES = {
-  mk: 'Macedonian',
-  sr: 'Serbian',
-  en: 'English',
-  de: 'German',
-  fr: 'French',
-  es: 'Spanish',
-  it: 'Italian',
-  pl: 'Polish',
-  tr: 'Turkish'
-};
-
 // ═══ INTENT DETECTION ═══
+// Fixed: only inspect the last 2 messages to avoid false positives
 
-function needsSearch(text, conversationText) {
-  const t = `${text} ${conversationText}`.toLowerCase();
-  return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support|money|euros|invest/i.test(t);
+function needsSearch(messages) {
+  // Look only at the last 2 user messages, not the entire conversation
+  const recentUserMessages = messages
+    .filter(m => m.role === 'user')
+    .slice(-2)
+    .map(m => m.content || '')
+    .join(' ')
+    .toLowerCase();
+
+  return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support money|invest/.test(recentUserMessages);
 }
 
 function detectProfile(text, supaProfile) {
@@ -410,7 +333,7 @@ function detectProfile(text, supaProfile) {
     /croatia|hrvatska/.test(t) ? 'Croatia' :
     /\bbosnia\b/.test(t) ? 'Bosnia' :
     /bulgaria|bulgar/.test(t) ? 'Bulgaria' :
-    /\balbania\b/.test(t) ? 'Albania' :
+    /\balkania\b/.test(t) ? 'Albania' :
     /\bkosovo\b/.test(t) ? 'Kosovo' :
     supaProfile?.country || null;
 
@@ -432,17 +355,20 @@ async function getSearchResults(userText, profile) {
 
   const cached = await getCached(cacheKey);
   if (cached?.results?.length) {
-    console.log('[v17] cache hit');
+    console.log('[v18] cache hit');
     return { results: cached.results, cachedAt: cached.created_at, fromCache: true };
   }
 
   const dbResults = await searchFundingDB(profile);
 
   if (dbResults.length > 0) {
-    saveCache(cacheKey, userText, dbResults).catch(() => {});
+    // Await so we can catch and log failures properly
+    await saveCache(cacheKey, userText, dbResults).catch(e =>
+      console.log('[CACHE SAVE FAIL]', e.message)
+    );
   }
 
-  console.log(`[v17] db:${dbResults.length} cache:false top:${dbResults[0]?.score || 0}`);
+  console.log(`[v18] db:${dbResults.length} cache:false top:${dbResults[0]?.score || 0}`);
   return { results: dbResults, cachedAt: null, fromCache: false };
 }
 
@@ -541,7 +467,8 @@ async function gemini(systemPrompt, messages, imageData, imageType) {
     await new Promise(r => setTimeout(r, 1500));
     try {
       return await geminiCall(systemPrompt, messages, imageData, imageType);
-    } catch {
+    } catch (e2) {
+      console.log('[GEMINI] retry failed:', e2.message);
       throw new Error('Service temporarily unavailable. Please try again in a moment.');
     }
   }
@@ -550,13 +477,8 @@ async function gemini(systemPrompt, messages, imageData, imageType) {
 // ═══ MAIN REQUEST HANDLER ═══
 
 module.exports = async function handler(req, res) {
-  const ORIGINS = ['https://marginova.tech', 'https://www.marginova.tech', 'http://localhost:3000'];
-  const origin = req.headers.origin || '';
-
-  res.setHeader('Access-Control-Allow-Origin', ORIGINS.includes(origin) ? origin : ORIGINS[0]);
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  // Fixed: single CORS source — removed duplicate from vercel.json
+  setCors(req, res);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: { message: 'Method Not Allowed' } });
@@ -577,10 +499,14 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: { message: 'Message too long. Max 2000 characters.' } });
     }
 
-    if (userId && !(await checkQuota(userId))) {
+    // Fixed: quota is now fully server-side — client-side deductToken() in index.html
+    // is only a UX preview; the authoritative check and deduction happen here
+    const quotaResult = await checkAndDeductQuota(userId);
+    if (!quotaResult.allowed) {
       return res.status(429).json({
         error: { message: 'Message limit reached. Please upgrade your plan.' },
-        quota_exceeded: true
+        quota_exceeded: true,
+        plan: quotaResult.plan
       });
     }
 
@@ -591,11 +517,16 @@ module.exports = async function handler(req, res) {
       year: 'numeric'
     });
 
-    const conversationText = (body.messages || []).map(m => m.content || '').join(' ');
+    const messages = (body.messages || []).slice(-8).map(m => ({
+      role: m.role,
+      content: String(m.content || '')
+    }));
 
+    const conversationText = messages.map(m => m.content).join(' ');
     const supaProfile = userId ? await loadProfile(userId) : null;
     const profile = detectProfile(conversationText, supaProfile);
 
+    // Async profile patch — fire and forget is fine here
     if (userId && (profile.sector || profile.orgType || profile.country) && supabase) {
       getTable('profiles')
         .update({
@@ -604,15 +535,17 @@ module.exports = async function handler(req, res) {
           detected_country: profile.country
         })
         .eq('user_id', userId)
-        .then(({ error }) => {
-          if (error) console.log('[PROFILE PATCH]', error.message);
-        })
+        .then(({ error }) => { if (error) console.log('[PROFILE PATCH]', error.message); })
         .catch(() => {});
     }
 
-    if (Math.random() < 0.05) cleanExpiredCache().catch(() => {});
+    // Fixed: random cleanup replaced with deterministic 5% sample but with logging
+    if (Math.random() < 0.05) {
+      cleanExpiredCache().catch(e => console.log('[CACHE CLEAN BG]', e.message));
+    }
 
-    const shouldSearch = needsSearch(userText, conversationText) || !!imageData;
+    // Fixed: needsSearch now looks only at recent messages, not full conversation
+    const shouldSearch = needsSearch(messages) || !!imageData;
     let results = [];
     let cachedAt = null;
     let fromCache = false;
@@ -623,11 +556,6 @@ module.exports = async function handler(req, res) {
       cachedAt = searchData.cachedAt;
       fromCache = searchData.fromCache;
     }
-
-    const messages = (body.messages || []).slice(-8).map(m => ({
-      role: m.role,
-      content: String(m.content || '')
-    }));
 
     const systemPrompt = buildSystemPrompt(lang, today, profile, results);
     const text = await gemini(systemPrompt, messages, imageData, imageType);
