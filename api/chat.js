@@ -1,15 +1,12 @@
-
+// ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// VERSION: v16 — funding_opportunities only, DB-first strict mode
-// Global scope, English comments
+// VERSION: v16
 // ═══════════════════════════════════════════
 
 const SUPA_URL = process.env.SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SERPER_KEY = process.env.SERPER_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const SUPA_URL = process.env.SUPABASE_URL;
-const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 console.log('SUPA_KEY:', SUPA_KEY ? 'OK' : 'MISSING');
 // Anon key — public, safe to hardcode, used for public read
