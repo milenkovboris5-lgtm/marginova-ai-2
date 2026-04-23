@@ -641,7 +641,7 @@ module.exports = async function handler(req, res) {
       db_results: results.length,
       web_results: 0,
       top_matches: results.slice(0, 5).map(r => ({
-        title: r.title || '',
+      debug_results: results  title: r.title || '',
         score: Number.isFinite(r.score) ? r.score : 0,
         score_type: 'match',
         source: 'db',
