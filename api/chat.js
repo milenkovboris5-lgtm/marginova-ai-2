@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// VERSION: v14 — Match % restored in text + JSON
+// VERSION: v15 — DB Match vs Web Relevance separated
 // Global scope, English comments, DB-first search
 // ═══════════════════════════════════════════
 
@@ -169,13 +169,11 @@ async function searchGrantsDB(profile) {
       const sectorArr = Array.isArray(g.sector) ? g.sector.map(s => String(s).toLowerCase()) : [];
       const countryArr = Array.isArray(g.country) ? g.country : [];
 
-      // Sector match (+40)
       if (profile.sector) {
         const ps = profile.sector.toLowerCase();
         if (sectorArr.some(s => s.includes(ps) || ps.includes(s))) score += 40;
       }
 
-      // Country match (+30) — empty country array means global
       if (profile.country) {
         const pc = profile.country.toLowerCase();
         if (
@@ -190,7 +188,6 @@ async function searchGrantsDB(profile) {
         }
       }
 
-      // Budget match (+20)
       if (profile.budget && g.min_amount != null && g.max_amount != null) {
         const budgetRanges = {
           'up to €30k': [0, 30000],
@@ -202,7 +199,6 @@ async function searchGrantsDB(profile) {
         if (g.max_amount >= minB && g.min_amount <= maxB) score += 20;
       }
 
-      // Org type match via eligibility text (+10)
       if (profile.orgType && g.eligibility) {
         const eli = String(g.eligibility).toLowerCase();
         const orgMap = {
@@ -221,6 +217,7 @@ async function searchGrantsDB(profile) {
       return {
         ...g,
         score: Math.max(0, Math.min(100, score)),
+        score_type: 'match',
         source: 'db',
         title: g.name,
         snippet: [
@@ -295,12 +292,16 @@ function scoreResult(result, profile) {
   if (/2022|2023/i.test(text)) score -= 30;
   if (/login required|subscription|paywall/i.test(text)) score -= 15;
 
-  return Math.max(0, Math.min(100, score));
+  return Math.max(0, Math.min(75, score));
 }
 
 function rankResults(results, profile, topN = 6) {
   return results
-    .map(r => ({ ...r, score: scoreResult(r, profile) }))
+    .map(r => ({
+      ...r,
+      score: scoreResult(r, profile),
+      score_type: 'relevance'
+    }))
     .sort((a, b) => b.score - a.score)
     .slice(0, topN);
 }
@@ -548,7 +549,7 @@ async function getSearchResults(userText, profile) {
   }
 
   const combined = [...dbResults, ...serperResults].slice(0, 8);
-  console.log(`[v14] db:${dbResults.length} serper:${serperResults.length} cache:${fromCache} top:${combined[0]?.score || 0}`);
+  console.log(`[v15] db:${dbResults.length} serper:${serperResults.length} cache:${fromCache} top:${combined[0]?.score || 0}`);
   return { results: combined, cachedAt, fromCache };
 }
 
@@ -569,7 +570,8 @@ Budget range: ${profile.budget || 'not specified'}`
     webText = '\n\nGRANT RESULTS (✅ DB = verified database | 🌐 Web = live search):\n' +
       webResults.map((r, i) => {
         const src = r.source === 'db' ? '✅ DB' : '🌐 Web';
-        return `[${i + 1}] ${src} | Match Score:${r.score ?? 0}% | ${r.title}\n${r.snippet}\nURL: ${r.link}`;
+        const label = r.source === 'db' ? 'Match Score' : 'Relevance';
+        return `[${i + 1}] ${src} | ${label}:${r.score ?? 0}% | ${r.title}\n${r.snippet}\nURL: ${r.link}`;
       }).join('\n\n');
   }
 
@@ -584,14 +586,17 @@ USER PROFILE:${profileText}
 RULES:
 - ✅ DB results are pre-verified — ALWAYS prioritize them over web results
 - 🌐 Web results supplement — cite only if DB results are insufficient
-- Never fabricate grant names, amounts, deadlines, or match percentages
-- If a result includes Match Score, show it exactly as a percentage
+- Never fabricate grant names, amounts, deadlines, relevance, or match percentages
+- Show DB results as "🎯 Match: X%"
+- Show Web results as "🔎 Relevance: X%"
+- Never present web relevance as true eligibility or guaranteed fit
 - If profile is incomplete, ask exactly ONE clarifying question before searching
 - Be direct and specific — no generic advice
 
 FORMAT each opportunity exactly like this:
 📋 [Program name]
-🎯 Match: [X]%
+🎯 Match: [X]%   ← only for DB results
+🔎 Relevance: [X]%   ← only for Web results
 💰 [Amount range] | Co-financing: [%]
 ✅ Why you qualify: [specific, personalized reason]
 ⚠️ Main risk: [one realistic obstacle]
@@ -742,7 +747,8 @@ module.exports = async function handler(req, res) {
       web_results: webResults.filter(r => r.source === 'serper').length,
       top_matches: webResults.slice(0, 5).map(r => ({
         title: r.title || '',
-        match_score: Number.isFinite(r.score) ? r.score : 0,
+        score: Number.isFinite(r.score) ? r.score : 0,
+        score_type: r.source === 'db' ? 'match' : 'relevance',
         source: r.source || 'unknown',
         link: r.link || '',
         snippet: r.snippet || ''
