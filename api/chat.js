@@ -1,7 +1,9 @@
-// ═══════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// VERSION: v16
-// ═══════════════════════════════════════════
+// v17 — Supabase client mode, DB-first strict mode
+// ═════════════════════════════════════════════════════════════
+
+const { createClient } = require('@supabase/supabase-js');
 
 const SUPA_URL = process.env.SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -9,12 +11,20 @@ const SERPER_KEY = process.env.SERPER_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
 console.log('SUPA_KEY:', SUPA_KEY ? 'OK' : 'MISSING');
-// Anon key — public, safe to hardcode, used for public read
-const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
 
 const DAILY_LIMIT = 200;
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
 const CACHE_TTL_HOURS = 24;
+
+if (!SUPA_URL || !SUPA_KEY) {
+  console.log('[SUPABASE] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+}
+
+const supabase = (SUPA_URL && SUPA_KEY)
+  ? createClient(SUPA_URL, SUPA_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    })
+  : null;
 
 // ═══ FETCH WITH TIMEOUT ═══
 
@@ -24,103 +34,50 @@ function ft(url, opts = {}, ms = 12000) {
   return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
 }
 
-// ═══ SUPABASE HELPERS ═══
+// ═══ GENERIC DB HELPERS ═══
 
-async function dbGet(path) {
-  if (!SUPA_URL) return null;
-  const key = SUPA_KEY || SUPA_ANON;
-  try {
-    const r = await ft(`${SUPA_URL}/rest/v1/${path}`, {
-      headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: '' }
-    }, 6000);
-    if (!r.ok) {
-      console.log('[DB GET]', r.status, path);
-      return null;
-    }
-    return r.json();
-  } catch (e) {
-    console.log('[DB GET]', e.message);
-    return null;
-  }
+function getTable(name) {
+  if (!supabase) throw new Error('Supabase client not initialized');
+  return supabase.from(name);
 }
 
-async function dbPost(path, body) {
-  if (!SUPA_URL) return false;
-  const key = SUPA_KEY || SUPA_ANON;
-  try {
-    const r = await ft(`${SUPA_URL}/rest/v1/${path}`, {
-      method: 'POST',
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal'
-      },
-      body: JSON.stringify(body)
-    }, 6000);
-    return r.ok;
-  } catch (e) {
-    console.log('[DB POST]', e.message);
-    return false;
-  }
-}
-
-async function dbPatch(path, body) {
-  if (!SUPA_URL) return;
-  const key = SUPA_KEY || SUPA_ANON;
-  try {
-    await ft(`${SUPA_URL}/rest/v1/${path}`, {
-      method: 'PATCH',
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal'
-      },
-      body: JSON.stringify(body)
-    }, 5000);
-  } catch {}
-}
-
-async function dbDelete(path) {
-  if (!SUPA_URL) return;
-  const key = SUPA_KEY || SUPA_ANON;
-  try {
-    await ft(`${SUPA_URL}/rest/v1/${path}`, {
-      method: 'DELETE',
-      headers: { apikey: key, Authorization: `Bearer ${key}` }
-    }, 5000);
-  } catch {}
-}
-
-// ═══ IP RATE LIMIT — Stored in Supabase, not memory ═══
+// ═══ IP RATE LIMIT ═══
 
 async function checkIP(req) {
+  if (!supabase) return true;
+
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
   const today = new Date().toISOString().split('T')[0];
-  const key = SUPA_KEY || SUPA_ANON;
 
   try {
-    const rows = await dbGet(`ip_limits?ip=eq.${encodeURIComponent(ip)}&select=count,reset_date`);
-    const row = rows?.[0];
+    const { data: row, error } = await getTable('ip_limits')
+      .select('ip,count,reset_date')
+      .eq('ip', ip)
+      .maybeSingle();
 
-    if (!row || row.reset_date !== today) {
-      await ft(`${SUPA_URL}/rest/v1/ip_limits`, {
-        method: 'POST',
-        headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`,
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates,return=minimal'
-        },
-        body: JSON.stringify({ ip, count: 1, reset_date: today })
-      }, 4000);
+    if (error) {
+      console.log('[DB GET ip_limits]', error.message);
       return true;
     }
 
-    if (row.count >= DAILY_LIMIT) return false;
+    if (!row || row.reset_date !== today) {
+      const { error: upsertError } = await getTable('ip_limits').upsert(
+        { ip, count: 1, reset_date: today },
+        { onConflict: 'ip' }
+      );
 
-    await dbPatch(`ip_limits?ip=eq.${encodeURIComponent(ip)}`, { count: row.count + 1 });
+      if (upsertError) console.log('[IP UPSERT]', upsertError.message);
+      return true;
+    }
+
+    if ((row.count || 0) >= DAILY_LIMIT) return false;
+
+    const { error: updateError } = await getTable('ip_limits')
+      .update({ count: (row.count || 0) + 1 })
+      .eq('ip', ip);
+
+    if (updateError) console.log('[IP UPDATE]', updateError.message);
+
     return true;
   } catch (e) {
     console.log('[IP CHECK]', e.message);
@@ -143,28 +100,23 @@ function hashQuery(str) {
 // ═══ DB SEARCH — funding_opportunities only ═══
 
 async function searchFundingDB(profile) {
+  if (!supabase) return [];
+
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    const query =
-      'funding_opportunities?' +
-      'status=eq.Open' +
-      '&select=title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url' +
-      '&limit=100';
+    const { data: allRows, error } = await getTable('funding_opportunities')
+      .select('title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
+      .eq('status', 'Open')
+      .limit(100);
 
-    let allRows = null;
-    try {
-      const r = await ft(`${SUPA_URL}/rest/v1/${query}`, {
-        headers: { apikey: SUPA_ANON, Authorization: `Bearer ${SUPA_ANON}` }
-      }, 6000);
-
-      if (r.ok) allRows = await r.json();
-      else console.log('[DB SEARCH] status:', r.status);
-    } catch (e) {
-      console.log('[DB SEARCH] fetch error:', e.message);
+    if (error) {
+      console.log('[DB SEARCH] error:', error.message);
+      return [];
     }
 
-    console.log('[DB SEARCH] fetched:', allRows?.length ?? 'null');
+    console.log('[DB SEARCH] fetched:', allRows?.length ?? 0);
+
     if (!allRows || allRows.length === 0) return [];
 
     const rows = allRows.filter(g => !g.application_deadline || g.application_deadline >= today);
@@ -179,7 +131,6 @@ async function searchFundingDB(profile) {
       const type = String(g.opportunity_type || '').toLowerCase();
       const country = String(g.country || '').toLowerCase();
 
-      // Sector match (+35)
       if (profile.sector) {
         const sectorMap = {
           'IT / Technology': ['ai', 'technology', 'digital', 'software', 'startup', 'innovation', 'ict', 'tech'],
@@ -199,7 +150,6 @@ async function searchFundingDB(profile) {
         if (hits > 0) score += Math.min(35, hits * 12);
       }
 
-      // Country match (+25)
       if (profile.country) {
         const pc = profile.country.toLowerCase();
         if (
@@ -213,7 +163,6 @@ async function searchFundingDB(profile) {
         }
       }
 
-      // Org type match (+20)
       if (profile.orgType) {
         const orgMap = {
           'NGO / Association': ['ngo', 'nonprofit', 'association', 'civil society', 'foundation'],
@@ -231,7 +180,6 @@ async function searchFundingDB(profile) {
         if (hits > 0) score += Math.min(20, hits * 10);
       }
 
-      // Budget match (+15)
       if (profile.budget && g.award_amount != null) {
         const amt = Number(g.award_amount);
         const budgetRanges = {
@@ -244,7 +192,6 @@ async function searchFundingDB(profile) {
         if (amt >= minB && amt <= maxB) score += 15;
       }
 
-      // Deadline present (+5)
       if (g.application_deadline) score += 5;
 
       return {
@@ -279,13 +226,27 @@ async function searchFundingDB(profile) {
 // ═══ CACHE ═══
 
 async function getCached(queryHash) {
+  if (!supabase) return null;
+
   try {
     const now = new Date().toISOString();
-    const rows = await dbGet(`search_cache?query_hash=eq.${queryHash}&expires_at=gt.${encodeURIComponent(now)}&select=results,created_at&limit=1`);
-    if (rows?.length > 0) {
-      console.log('[CACHE] hit:', queryHash);
-      return { results: rows[0].results, created_at: rows[0].created_at };
+
+    const { data, error } = await getTable('search_cache')
+      .select('results,created_at,expires_at')
+      .eq('query_hash', queryHash)
+      .gt('expires_at', now)
+      .limit(1);
+
+    if (error) {
+      console.log('[CACHE] get error:', error.message);
+      return null;
     }
+
+    if (data?.length > 0) {
+      console.log('[CACHE] hit:', queryHash);
+      return { results: data[0].results, created_at: data[0].created_at };
+    }
+
     return null;
   } catch (e) {
     console.log('[CACHE] get error:', e.message);
@@ -294,39 +255,60 @@ async function getCached(queryHash) {
 }
 
 async function saveCache(queryHash, queryText, results) {
+  if (!supabase) return;
+
   try {
     const now = new Date();
     const expires = new Date(now.getTime() + CACHE_TTL_HOURS * 3600000);
-    await dbDelete(`search_cache?query_hash=eq.${queryHash}`);
-    await dbPost('search_cache', {
+
+    await getTable('search_cache').delete().eq('query_hash', queryHash);
+
+    const { error } = await getTable('search_cache').insert({
       query_hash: queryHash,
       query_text: queryText,
       results,
       created_at: now.toISOString(),
       expires_at: expires.toISOString()
     });
+
+    if (error) console.log('[CACHE] save error:', error.message);
   } catch (e) {
     console.log('[CACHE] save error:', e.message);
   }
 }
 
 async function cleanExpiredCache() {
+  if (!supabase) return;
   try {
-    await dbDelete(`search_cache?expires_at=lt.${encodeURIComponent(new Date().toISOString())}`);
+    await getTable('search_cache')
+      .delete()
+      .lt('expires_at', new Date().toISOString());
   } catch {}
 }
 
 // ═══ QUOTA ═══
 
 async function checkQuota(userId) {
-  if (!userId) return true;
+  if (!userId || !supabase) return true;
+
   try {
     const today = new Date().toISOString().split('T')[0];
-    const rows = await dbGet(`profiles?user_id=eq.${userId}&select=plan,daily_msgs,last_msg_date`);
-    const p = rows?.[0];
+
+    const { data: p, error } = await getTable('profiles')
+      .select('plan,daily_msgs,last_msg_date')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.log('[QUOTA] error:', error.message);
+      return true;
+    }
+
     if (!p) return true;
+
     const limit = PLANS[p.plan] ?? 20;
     if (limit === -1) return true;
+
     const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
     return used < limit;
   } catch {
@@ -335,11 +317,21 @@ async function checkQuota(userId) {
 }
 
 async function loadProfile(userId) {
-  if (!userId) return null;
+  if (!userId || !supabase) return null;
+
   try {
-    const rows = await dbGet(`profiles?user_id=eq.${userId}&select=sector,country,organization_type,goals,plan,detected_sector,detected_org_type,detected_country`);
-    const p = rows?.[0];
+    const { data: p, error } = await getTable('profiles')
+      .select('sector,country,organization_type,goals,plan,detected_sector,detected_org_type,detected_country')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.log('[PROFILE] error:', error.message);
+      return null;
+    }
+
     if (!p) return null;
+
     return {
       ...p,
       sector: p.sector || p.detected_sector || null,
@@ -406,7 +398,7 @@ function detectProfile(text, supaProfile) {
     /startup/.test(t) ? 'Startup' :
     /\bngo\b|nonprofit|association|foundation|civil society/.test(t) ? 'NGO / Association' :
     /farmer|farm|agricultural|holding|ipard/.test(t) ? 'Agricultural holding' :
-    /individual|freelance|self.employed/.test(t) ? 'Individual / Entrepreneur' :
+    /individual|freelance|self.employed|poedinec|creator/.test(t) ? 'Individual / Entrepreneur' :
     /\bsme\b|\bltd\b|\bdoo\b|small business/.test(t) ? 'SME' :
     /municipality|local government|public body/.test(t) ? 'Municipality / Public body' :
     /university|research institute|academic/.test(t) ? 'University / Research' :
@@ -433,14 +425,14 @@ function detectProfile(text, supaProfile) {
   return { sector, orgType, country, budget };
 }
 
-// ═══ MAIN SEARCH LOGIC — DB only for stability ═══
+// ═══ MAIN SEARCH LOGIC ═══
 
 async function getSearchResults(userText, profile) {
   const cacheKey = hashQuery(JSON.stringify({ userText, profile }));
 
   const cached = await getCached(cacheKey);
   if (cached?.results?.length) {
-    console.log('[v16] cache hit');
+    console.log('[v17] cache hit');
     return { results: cached.results, cachedAt: cached.created_at, fromCache: true };
   }
 
@@ -450,7 +442,7 @@ async function getSearchResults(userText, profile) {
     saveCache(cacheKey, userText, dbResults).catch(() => {});
   }
 
-  console.log(`[v16] db:${dbResults.length} cache:false top:${dbResults[0]?.score || 0}`);
+  console.log(`[v17] db:${dbResults.length} cache:false top:${dbResults[0]?.score || 0}`);
   return { results: dbResults, cachedAt: null, fromCache: false };
 }
 
@@ -501,7 +493,7 @@ If there are no DB results, say clearly that no strong database matches were fou
 Close with ONE concrete action the user can take TODAY.${dbText}`;
 }
 
-// ═══ GEMINI — with retry ═══
+// ═══ GEMINI ═══
 
 async function geminiCall(systemPrompt, messages, imageData, imageType) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
@@ -598,17 +590,24 @@ module.exports = async function handler(req, res) {
       month: '2-digit',
       year: 'numeric'
     });
+
     const conversationText = (body.messages || []).map(m => m.content || '').join(' ');
 
     const supaProfile = userId ? await loadProfile(userId) : null;
     const profile = detectProfile(conversationText, supaProfile);
 
-    if (userId && (profile.sector || profile.orgType || profile.country)) {
-      dbPatch('profiles?user_id=eq.' + userId, {
-        detected_sector: profile.sector,
-        detected_org_type: profile.orgType,
-        detected_country: profile.country
-      }).catch(() => {});
+    if (userId && (profile.sector || profile.orgType || profile.country) && supabase) {
+      getTable('profiles')
+        .update({
+          detected_sector: profile.sector,
+          detected_org_type: profile.orgType,
+          detected_country: profile.country
+        })
+        .eq('user_id', userId)
+        .then(({ error }) => {
+          if (error) console.log('[PROFILE PATCH]', error.message);
+        })
+        .catch(() => {});
     }
 
     if (Math.random() < 0.05) cleanExpiredCache().catch(() => {});
@@ -633,23 +632,23 @@ module.exports = async function handler(req, res) {
     const systemPrompt = buildSystemPrompt(lang, today, profile, results);
     const text = await gemini(systemPrompt, messages, imageData, imageType);
 
-   return res.status(200).json({
-  content: [{ type: 'text', text }],
-  intent: shouldSearch ? 'grant' : 'general',
-  cached: fromCache,
-  cached_at: cachedAt,
-  db_results: results.length,
-  web_results: 0,
-  top_matches: results.slice(0, 5).map(r => ({
-    title: r.title || '',
-    score: Number.isFinite(r.score) ? r.score : 0,
-    score_type: 'match',
-    source: 'db',
-    link: r.link || '',
-    snippet: r.snippet || ''
-  })),
-  debug_results: results
-});
+    return res.status(200).json({
+      content: [{ type: 'text', text }],
+      intent: shouldSearch ? 'grant' : 'general',
+      cached: fromCache,
+      cached_at: cachedAt,
+      db_results: results.length,
+      web_results: 0,
+      top_matches: results.slice(0, 5).map(r => ({
+        title: r.title || '',
+        score: Number.isFinite(r.score) ? r.score : 0,
+        score_type: 'match',
+        source: 'db',
+        link: r.link || '',
+        snippet: r.snippet || ''
+      })),
+      debug_results: results
+    });
 
   } catch (err) {
     console.error('[ERROR]', err.message);
