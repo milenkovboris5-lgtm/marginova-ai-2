@@ -1,21 +1,27 @@
+// ═════════════════════════════════════════════════════════════
+// MARGINOVA.AI — api/chat.js
+// v18 — DB first + external fallback prompt unlock
+// ═════════════════════════════════════════════════════════════
+
 const { createClient } = require('@supabase/supabase-js');
 
 const SUPA_URL = process.env.SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const SERPER_KEY = process.env.SERPER_API_KEY;
 
 console.log('SUPA_KEY:', SUPA_KEY ? 'OK' : 'MISSING');
-console.log('SERPER_KEY:', SERPER_KEY ? 'OK' : 'MISSING');
 
 const DAILY_LIMIT = 200;
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
+const CACHE_TTL_HOURS = 24;
 
 const supabase = (SUPA_URL && SUPA_KEY)
   ? createClient(SUPA_URL, SUPA_KEY, {
       auth: { persistSession: false, autoRefreshToken: false }
     })
   : null;
+
+// ═══ FETCH WITH TIMEOUT ═══
 
 function ft(url, opts = {}, ms = 12000) {
   const c = new AbortController();
@@ -27,6 +33,8 @@ function getTable(name) {
   if (!supabase) throw new Error('Supabase client not initialized');
   return supabase.from(name);
 }
+
+// ═══ IP RATE LIMIT ═══
 
 async function checkIP(req) {
   if (!supabase) return true;
@@ -62,6 +70,7 @@ async function checkIP(req) {
       .eq('ip', ip);
 
     if (updateError) console.log('[IP UPDATE]', updateError.message);
+
     return true;
   } catch (e) {
     console.log('[IP CHECK]', e.message);
@@ -69,116 +78,19 @@ async function checkIP(req) {
   }
 }
 
-async function checkQuota(userId) {
-  if (!userId || !supabase) return true;
+// ═══ HASH ═══
 
-  try {
-    const today = new Date().toISOString().split('T')[0];
-
-    const { data: p, error } = await getTable('profiles')
-      .select('plan,daily_msgs,last_msg_date')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error || !p) return true;
-
-    const limit = PLANS[p.plan] ?? 20;
-    if (limit === -1) return true;
-
-    const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
-    return used < limit;
-  } catch {
-    return true;
+function hashQuery(str) {
+  const n = str.toLowerCase().trim().replace(/\s+/g, ' ');
+  let h = 0;
+  for (let i = 0; i < n.length; i++) {
+    h = ((h << 5) - h) + n.charCodeAt(i);
+    h |= 0;
   }
+  return Math.abs(h).toString(36);
 }
 
-async function loadProfile(userId) {
-  if (!userId || !supabase) return null;
-
-  try {
-    const { data: p, error } = await getTable('profiles')
-      .select('sector,country,organization_type,goals,plan,detected_sector,detected_org_type,detected_country')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error || !p) return null;
-
-    return {
-      ...p,
-      sector: p.sector || p.detected_sector || null,
-      organization_type: p.organization_type || p.detected_org_type || null,
-      country: p.country || p.detected_country || null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function detectLang(text) {
-  if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
-  if (/ћ|ђ/i.test(text)) return 'sr';
-  if (/јас|сум|македонија|барам|грант|работам|НВО|фонд/i.test(text)) return 'mk';
-  if (/[а-шА-Ш]/.test(text)) return 'mk';
-  if (/\b(jas|sum|makedonija|zdravo|zemja|proekt|grant|fond)\b/i.test(text)) return 'mk';
-  return 'en';
-}
-
-const LANG_NAMES = {
-  mk: 'Macedonian',
-  sr: 'Serbian',
-  en: 'English'
-};
-
-function needsSearch(text, conversationText) {
-  const t = `${text} ${conversationText}`.toLowerCase();
-  return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support|money|euros|invest|tender|startup|funding/i.test(t);
-}
-
-function detectProfile(text, supaProfile) {
-  const t = text.toLowerCase();
-
-  const sector =
-    /\bit\b|tech|software|digital|technology|ai/.test(t) ? 'IT / Technology' :
-    /agri|farm|rural|crop|livestock|ipard/.test(t) ? 'Agriculture' :
-    /educat|school|youth|training|learning/.test(t) ? 'Education' :
-    /environment|climate|green|energy|renewable|solar/.test(t) ? 'Environment / Energy' :
-    /civil|ngo|nonprofit|association|society/.test(t) ? 'Civil Society' :
-    /tourism|culture|heritage|creative|art/.test(t) ? 'Tourism / Culture' :
-    /health|medical|social|welfare/.test(t) ? 'Health / Social' :
-    /research|science|innovation|university|academic/.test(t) ? 'Research / Innovation' :
-    /sme|small business|company|enterprise|startup/.test(t) ? 'SME / Business' :
-    supaProfile?.sector || null;
-
-  const orgType =
-    /startup/.test(t) ? 'Startup' :
-    /\bngo\b|nonprofit|association|foundation|civil society/.test(t) ? 'NGO / Association' :
-    /farmer|farm|agricultural|holding|ipard/.test(t) ? 'Agricultural holding' :
-    /individual|freelance|self-employed|self.employed|poedinec|creator/.test(t) ? 'Individual / Entrepreneur' :
-    /\bsme\b|\bltd\b|\bdoo\b|small business/.test(t) ? 'SME' :
-    /municipality|local government|public body/.test(t) ? 'Municipality / Public body' :
-    /university|research institute|academic/.test(t) ? 'University / Research' :
-    supaProfile?.organization_type || null;
-
-  const country =
-    /macedon|makedon|north macedon|mkd/.test(t) ? 'North Macedonia' :
-    /\bserbia\b|srbija/.test(t) ? 'Serbia' :
-    /croatia|hrvatska/.test(t) ? 'Croatia' :
-    /\bbosnia\b/.test(t) ? 'Bosnia' :
-    /bulgaria|bulgar/.test(t) ? 'Bulgaria' :
-    /\balbania\b/.test(t) ? 'Albania' :
-    /\bkosovo\b/.test(t) ? 'Kosovo' :
-    supaProfile?.country || null;
-
-  const budget =
-    /1[\s,.]?000[\s,.]?000|1\s*million/.test(t) ? 'above €500k' :
-    /500[\s,.]?000|500k/.test(t) ? '€150k–€500k' :
-    /100[\s,.]?000|100k/.test(t) ? '€30k–€150k' :
-    /[5-9]\d[\s,.]?000/.test(t) ? '€30k–€150k' :
-    /[1-4]\d[\s,.]?000/.test(t) ? 'up to €30k' :
-    supaProfile?.goals || null;
-
-  return { sector, orgType, country, budget };
-}
+// ═══ FUNDING SEARCH ═══
 
 async function searchFundingDB(profile) {
   if (!supabase) return [];
@@ -196,9 +108,11 @@ async function searchFundingDB(profile) {
       return [];
     }
 
+    console.log('[DB SEARCH] fetched:', allRows?.length ?? 0);
     if (!allRows || allRows.length === 0) return [];
 
     const rows = allRows.filter(g => !g.application_deadline || g.application_deadline >= today);
+    if (rows.length === 0) return [];
 
     const scored = rows.map(g => {
       let score = 0;
@@ -275,6 +189,7 @@ async function searchFundingDB(profile) {
       return {
         ...g,
         score: Math.max(0, Math.min(100, score)),
+        score_type: 'match',
         source: 'db',
         title: g.title,
         snippet: [
@@ -287,65 +202,243 @@ async function searchFundingDB(profile) {
       };
     });
 
-    return scored
+    const ranked = scored
       .filter(r => r.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 6);
+
+    console.log('[DB SEARCH] matched:', ranked.length, 'top score:', ranked[0]?.score ?? 0);
+    return ranked;
   } catch (e) {
     console.log('[DB SEARCH] error:', e.message);
     return [];
   }
 }
 
-function buildSerperQuery(userText, profile) {
-  const parts = [
-    userText,
-    profile.sector || '',
-    profile.orgType || '',
-    profile.country || '',
-    'grants funding programs open call'
-  ].filter(Boolean);
+// ═══ CACHE ═══
 
-  return parts.join(' ');
-}
-
-async function searchWebSerper(userText, profile) {
-  if (!SERPER_KEY) return [];
-
-  const q = buildSerperQuery(userText, profile);
+async function getCached(queryHash) {
+  if (!supabase) return null;
 
   try {
-    const r = await ft('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: {
-        'X-API-KEY': SERPER_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ q, num: 6 })
-    }, 10000);
+    const now = new Date().toISOString();
 
-    if (!r.ok) {
-      console.log('[SERPER] status:', r.status);
-      return [];
+    const { data, error } = await getTable('search_cache')
+      .select('results,created_at,expires_at')
+      .eq('query_hash', queryHash)
+      .gt('expires_at', now)
+      .limit(1);
+
+    if (error) {
+      console.log('[CACHE] get error:', error.message);
+      return null;
     }
 
-    const data = await r.json();
-    const organic = Array.isArray(data.organic) ? data.organic : [];
+    if (data?.length > 0) {
+      console.log('[CACHE] hit:', queryHash);
+      return { results: data[0].results, created_at: data[0].created_at };
+    }
 
-    return organic.slice(0, 6).map(item => ({
-      source: 'web',
-      title: item.title || '',
-      link: item.link || '',
-      snippet: item.snippet || '',
-      score: 0
-    }));
+    return null;
   } catch (e) {
-    console.log('[SERPER] error:', e.message);
-    return [];
+    console.log('[CACHE] get error:', e.message);
+    return null;
   }
 }
 
-function buildSystemPrompt(lang, today, profile, dbResults, webResults) {
+async function saveCache(queryHash, queryText, results) {
+  if (!supabase) return;
+
+  try {
+    const now = new Date();
+    const expires = new Date(now.getTime() + CACHE_TTL_HOURS * 3600000);
+
+    await getTable('search_cache').delete().eq('query_hash', queryHash);
+
+    const { error } = await getTable('search_cache').insert({
+      query_hash: queryHash,
+      query_text: queryText,
+      results,
+      created_at: now.toISOString(),
+      expires_at: expires.toISOString()
+    });
+
+    if (error) console.log('[CACHE] save error:', error.message);
+  } catch (e) {
+    console.log('[CACHE] save error:', e.message);
+  }
+}
+
+async function cleanExpiredCache() {
+  if (!supabase) return;
+  try {
+    await getTable('search_cache')
+      .delete()
+      .lt('expires_at', new Date().toISOString());
+  } catch {}
+}
+
+// ═══ QUOTA / PROFILE ═══
+
+async function checkQuota(userId) {
+  if (!userId || !supabase) return true;
+
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: p, error } = await getTable('profiles')
+      .select('plan,daily_msgs,last_msg_date')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.log('[QUOTA] error:', error.message);
+      return true;
+    }
+
+    if (!p) return true;
+
+    const limit = PLANS[p.plan] ?? 20;
+    if (limit === -1) return true;
+
+    const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
+    return used < limit;
+  } catch {
+    return true;
+  }
+}
+
+async function loadProfile(userId) {
+  if (!userId || !supabase) return null;
+
+  try {
+    const { data: p, error } = await getTable('profiles')
+      .select('sector,country,organization_type,goals,plan,detected_sector,detected_org_type,detected_country')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.log('[PROFILE] error:', error.message);
+      return null;
+    }
+
+    if (!p) return null;
+
+    return {
+      ...p,
+      sector: p.sector || p.detected_sector || null,
+      organization_type: p.organization_type || p.detected_org_type || null,
+      country: p.country || p.detected_country || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ═══ LANGUAGE / PROFILE DETECTION ═══
+
+function detectLang(text) {
+  if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
+  if (/ћ|ђ/i.test(text)) return 'sr';
+  if (/јас|сум|македонија|барам|грант|работам|НВО|фонд/i.test(text)) return 'mk';
+  if (/[а-шА-Ш]/.test(text)) return 'mk';
+  if (/\b(jas|sum|makedonija|zdravo|zemja|proekt|grant|fond)\b/i.test(text)) return 'mk';
+  if (/\b(und|oder|ich|nicht|sie|wir)\b/i.test(text)) return 'de';
+  if (/\b(est|une|les|des|pour|nous|vous)\b/i.test(text)) return 'fr';
+  if (/\b(para|una|los|las|que|con)\b/i.test(text)) return 'es';
+  if (/\b(sam|smo|nije|nisu)\b/i.test(text)) return 'sr';
+  if (/\b(jestem|jest|nie|dla)\b/i.test(text)) return 'pl';
+  if (/\b(bir|için|ile|bu|ve)\b/i.test(text)) return 'tr';
+  return 'en';
+}
+
+const LANG_NAMES = {
+  mk: 'Macedonian',
+  sr: 'Serbian',
+  en: 'English',
+  de: 'German',
+  fr: 'French',
+  es: 'Spanish',
+  it: 'Italian',
+  pl: 'Polish',
+  tr: 'Turkish'
+};
+
+function needsSearch(text, conversationText) {
+  const t = `${text} ${conversationText}`.toLowerCase();
+  return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support|money|euros|invest/i.test(t);
+}
+
+function detectProfile(text, supaProfile) {
+  const t = text.toLowerCase();
+
+  const sector =
+    /\bit\b|tech|software|digital|technology/.test(t) ? 'IT / Technology' :
+    /agri|farm|rural|crop|livestock|hektar|ipard/.test(t) ? 'Agriculture' :
+    /educat|school|youth|training|learning/.test(t) ? 'Education' :
+    /environment|climate|green|energy|renewable|solar/.test(t) ? 'Environment / Energy' :
+    /civil|ngo|nonprofit|association|society/.test(t) ? 'Civil Society' :
+    /tourism|culture|heritage|creative|art/.test(t) ? 'Tourism / Culture' :
+    /health|medical|social|welfare/.test(t) ? 'Health / Social' :
+    /research|science|innovation|university|academic/.test(t) ? 'Research / Innovation' :
+    /sme|small business|company|enterprise|startup/.test(t) ? 'SME / Business' :
+    supaProfile?.sector || null;
+
+  const orgType =
+    /startup/.test(t) ? 'Startup' :
+    /\bngo\b|nonprofit|association|foundation|civil society/.test(t) ? 'NGO / Association' :
+    /farmer|farm|agricultural|holding|ipard/.test(t) ? 'Agricultural holding' :
+    /individual|freelance|self.employed|creator/.test(t) ? 'Individual / Entrepreneur' :
+    /\bsme\b|\bltd\b|\bdoo\b|small business/.test(t) ? 'SME' :
+    /municipality|local government|public body/.test(t) ? 'Municipality / Public body' :
+    /university|research institute|academic/.test(t) ? 'University / Research' :
+    supaProfile?.organization_type || null;
+
+  const country =
+    /macedon|makedon|north macedon|mkd/.test(t) ? 'North Macedonia' :
+    /\bserbia\b|srbija/.test(t) ? 'Serbia' :
+    /croatia|hrvatska/.test(t) ? 'Croatia' :
+    /\bbosnia\b/.test(t) ? 'Bosnia' :
+    /bulgaria|bulgar/.test(t) ? 'Bulgaria' :
+    /\balbania\b/.test(t) ? 'Albania' :
+    /\bkosovo\b/.test(t) ? 'Kosovo' :
+    supaProfile?.country || null;
+
+  const budget =
+    /1[\s,.]?000[\s,.]?000|1\s*million/.test(t) ? 'above €500k' :
+    /500[\s,.]?000|500k/.test(t) ? '€150k–€500k' :
+    /100[\s,.]?000|100k/.test(t) ? '€30k–€150k' :
+    /[5-9]\d[\s,.]?000/.test(t) ? '€30k–€150k' :
+    /[1-4]\d[\s,.]?000/.test(t) ? 'up to €30k' :
+    supaProfile?.goals || null;
+
+  return { sector, orgType, country, budget };
+}
+
+// ═══ SEARCH LOGIC ═══
+
+async function getSearchResults(userText, profile) {
+  const cacheKey = hashQuery(JSON.stringify({ userText, profile }));
+
+  const cached = await getCached(cacheKey);
+  if (cached?.results?.length) {
+    console.log('[v18] cache hit');
+    return { results: cached.results, cachedAt: cached.created_at, fromCache: true };
+  }
+
+  const dbResults = await searchFundingDB(profile);
+
+  if (dbResults.length > 0) {
+    saveCache(cacheKey, userText, dbResults).catch(() => {});
+  }
+
+  console.log(`[v18] db:${dbResults.length} cache:false top:${dbResults[0]?.score || 0}`);
+  return { results: dbResults, cachedAt: null, fromCache: false };
+}
+
+// ═══ SYSTEM PROMPT ═══
+
+function buildSystemPrompt(lang, today, profile, results, allowExternalFallback = false) {
   const L = LANG_NAMES[lang] || 'English';
 
   const profileText = profile.sector || profile.orgType || profile.country
@@ -355,61 +448,75 @@ Country: ${profile.country || 'not specified'}
 Budget range: ${profile.budget || 'not specified'}`
     : '\nProfile not yet collected — ask one targeted question.';
 
-  const dbText = dbResults.length
-    ? '\n\nDATABASE RESULTS:\n' + dbResults.map((r, i) =>
+  let dbText = '';
+  if (results.length > 0) {
+    dbText =
+      '\n\nDATABASE RESULTS:\n' +
+      results.map((r, i) =>
         `[${i + 1}] Match:${r.score ?? 0}% | ${r.title}\n${r.snippet}\nURL: ${r.link || 'N/A'}`
-      ).join('\n\n')
-    : '\n\nDATABASE RESULTS:\nNone';
+      ).join('\n\n');
+  }
 
-  const webText = webResults.length
-    ? '\n\nWEB RESULTS:\n' + webResults.map((r, i) =>
-        `[${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.link || 'N/A'}`
-      ).join('\n\n')
-    : '\n\nWEB RESULTS:\nNone';
+  const fallbackRule = allowExternalFallback
+    ? `
+EXTERNAL FALLBACK:
+- Database results are weak or insufficient
+- You MAY use broader funding knowledge and external reasoning
+- Clearly separate:
+  1. Database-verified opportunities
+  2. Additional external opportunities
+- Never present external opportunities as if they came from the database
+- For any external opportunity, explicitly label it as "External"
+- Be conservative and avoid invented details
+- If you are uncertain, say what must be verified officially`
+    : `
+DATABASE MODE:
+- Prioritize database results
+- Use database results as the primary source of truth
+- Do NOT replace valid database results with external suggestions`;
 
   return `LANGUAGE: Always respond in ${L}. Match the user's language exactly.
 
-You are MARGINOVA — a funding intelligence engine.
+You are MARGINOVA — a global funding intelligence engine.
 
 Today: ${today}
 USER PROFILE:${profileText}
 
-RULES:
-- Prioritize database results first
-- If database results exist, show them first
-- If web results exist, show them in a separate external section
-- Do not say you cannot search the web if WEB RESULTS are provided
-- Do not ask follow-up questions if database or web opportunities are already available
-- If database results are weak, combine database + web in a practical way
-- Never claim web results are internal database results
-- Be direct, practical, and concise
+CORE RULES:
+- Prioritize database results when available
+- Rank database results strictly by Match score
+- Be direct, specific, and practical
+- If profile is incomplete, ask exactly ONE focused follow-up question
+${fallbackRule}
 
-OUTPUT STRUCTURE:
-1. Brief conclusion
-2. Database matches
-3. External matches
-4. One concrete next action
+OUTPUT RULES:
+- If database matches exist, show them first
+- If external fallback is allowed, show external suggestions in a clearly separate section
+- Never mix database and external results into one undifferentiated list
+- Never claim external suggestions are verified in the internal database
 
 FORMAT FOR DATABASE RESULTS:
 📋 [Program name]
-🏷️ Извор: База на податоци
-🎯 Совпаѓање: [X]%
+🏷️ Source: Database
+🎯 Match: [X]%
 💰 [Amount / range if available]
-✅ Зошто се квалификувате
-⚠️ Главен ризик
+✅ Why you qualify: [based only on provided DB fields]
+⚠️ Main risk: [based only on eligibility, country, budget, deadline, or org type mismatch]
 🔗 [URL]
 
 FORMAT FOR EXTERNAL RESULTS:
 📋 [Program name]
-🏷️ Извор: Web / External
-🎯 Проценет fit: [Low / Medium / Strong]
+🏷️ Source: External
+🎯 Estimated fit: [Low / Medium / Strong]
 💰 [Amount / range if known]
-✅ Зошто може да одговара
-⚠️ Што мора да се провери
-🔗 [URL or "Провери официјален извор"]
+✅ Why it may fit
+⚠️ What must be verified
+🔗 [URL if known, otherwise write: Verify official source]
 
-If database matches are limited or weak, explicitly say so, then show external options.${dbText}${webText}`;
+If there are no strong database matches, clearly say that internal database matches are limited and then provide external fallback suggestions if allowed.${dbText}`;
 }
+
+// ═══ GEMINI ═══
 
 async function geminiCall(systemPrompt, messages, imageData, imageType) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
@@ -462,6 +569,8 @@ async function gemini(systemPrompt, messages, imageData, imageType) {
     }
   }
 }
+
+// ═══ HANDLER ═══
 
 module.exports = async function handler(req, res) {
   const ORIGINS = ['https://marginova.tech', 'https://www.marginova.tech', 'http://localhost:3000'];
@@ -523,24 +632,30 @@ module.exports = async function handler(req, res) {
         .catch(() => {});
     }
 
+    if (Math.random() < 0.05) cleanExpiredCache().catch(() => {});
+
     const shouldSearch = needsSearch(userText, conversationText) || !!imageData;
 
-    let dbResults = [];
-    let webResults = [];
+    let results = [];
+    let cachedAt = null;
+    let fromCache = false;
 
     if (shouldSearch && !imageData) {
-      dbResults = await searchFundingDB(profile);
+      const searchData = await getSearchResults(userText, profile);
+      results = searchData.results || [];
+      cachedAt = searchData.cachedAt;
+      fromCache = searchData.fromCache;
     }
 
-    const bestScore = dbResults[0]?.score || 0;
+    const strongDbResults = results.filter(r => (r.score || 0) >= 75);
     const allowExternalFallback =
       shouldSearch &&
       !imageData &&
-      (dbResults.length === 0 || bestScore < 85);
-
-    if (allowExternalFallback) {
-      webResults = await searchWebSerper(userText, profile);
-    }
+      (
+        results.length === 0 ||
+        strongDbResults.length === 0 ||
+        (results[0]?.score || 0) < 75
+      );
 
     const messages = (body.messages || []).slice(-8).map(m => ({
       role: m.role,
@@ -551,8 +666,8 @@ module.exports = async function handler(req, res) {
       lang,
       today,
       profile,
-      dbResults,
-      webResults
+      results,
+      allowExternalFallback
     );
 
     const text = await gemini(systemPrompt, messages, imageData, imageType);
@@ -560,21 +675,20 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       content: [{ type: 'text', text }],
       intent: shouldSearch ? 'grant' : 'general',
-      db_results: dbResults.length,
-      web_results: webResults.length,
+      cached: fromCache,
+      cached_at: cachedAt,
+      db_results: results.length,
+      web_results: 0,
       external_fallback_allowed: allowExternalFallback,
-      top_matches: dbResults.slice(0, 5).map(r => ({
+      top_matches: results.slice(0, 5).map(r => ({
         title: r.title || '',
         score: Number.isFinite(r.score) ? r.score : 0,
+        score_type: 'match',
         source: 'db',
         link: r.link || '',
         snippet: r.snippet || ''
       })),
-      web_matches: webResults.slice(0, 5),
-      debug_results: {
-        db: dbResults,
-        web: webResults
-      }
+      debug_results: results
     });
 
   } catch (err) {
