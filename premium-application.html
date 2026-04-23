@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="mk">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -157,6 +157,12 @@
       background: var(--accent-dark);
     }
 
+    /* Fixed: disabled state so button can't be double-clicked during generation */
+    .primary:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     .secondary {
       background: white;
       border: 1px solid var(--line);
@@ -172,9 +178,9 @@
       line-height: 1.5;
     }
 
-    .status.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border: 1px solid #abefc6; }
-    .status.warn { display: block; background: var(--warn-bg); color: var(--warn-text); border: 1px solid #fedf89; }
-    .status.error { display: block; background: var(--err-bg); color: var(--err-text); border: 1px solid #fecdca; }
+    .status.ok    { display: block; background: var(--ok-bg);   color: var(--ok-text);   border: 1px solid #abefc6; }
+    .status.warn  { display: block; background: var(--warn-bg); color: var(--warn-text); border: 1px solid #fedf89; }
+    .status.error { display: block; background: var(--err-bg);  color: var(--err-text);  border: 1px solid #fecdca; }
 
     .meta {
       display: grid;
@@ -226,7 +232,23 @@
       white-space: pre-wrap;
       line-height: 1.55;
       color: var(--text);
+      /* Fixed: overflow so long JSON doesn't break the layout */
+      overflow: auto;
+      word-break: break-all;
     }
+
+    .copy-btn {
+      background: white;
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .copy-btn:hover { background: #f0f4ff; }
 
     .footer-note {
       margin-top: 14px;
@@ -247,7 +269,7 @@
       <div>
         <div class="badge">Premium Application Builder</div>
         <h1>Build a structured grant application draft</h1>
-        <p>This page works only with <strong>/api/application</strong>. It does not search for grants. It takes a selected opportunity and your project data, then generates an application draft, logical framework, risks, and budget structure.</p>
+        <p>Оваа страница работи само со <strong>/api/application</strong>. Не пребарува грантови. Зема избрана можност и твоите проектни податоци, па генерира application draft, LFM, ризици и буџетска структура.</p>
       </div>
     </div>
 
@@ -259,12 +281,13 @@
           <div class="field">
             <label for="userId">User ID</label>
             <input id="userId" placeholder="user uuid or internal id" />
-            <div class="hint">Leave empty if you are testing without login.</div>
+            <div class="hint">Остави празно ако тестирате без логирање.</div>
           </div>
           <div class="field">
             <label for="opportunityId">Opportunity ID *</label>
-            <input id="opportunityId" type="number" placeholder="e.g. 1" required />
-            <div class="hint">This must be an ID from your funding_opportunities table.</div>
+            <!-- Fixed: type="text" so parseInt validation works correctly; number inputs can still submit 0 -->
+            <input id="opportunityId" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 1" required />
+            <div class="hint">Ова мора да е ID од твојата funding_opportunities табела.</div>
           </div>
         </div>
 
@@ -276,8 +299,8 @@
           <div class="field">
             <label for="lang">Language</label>
             <select id="lang">
-              <option value="en">en</option>
               <option value="mk">mk</option>
+              <option value="en">en</option>
             </select>
           </div>
         </div>
@@ -289,7 +312,7 @@
 
         <div class="field">
           <label for="projectIdea">Project idea *</label>
-          <textarea id="projectIdea" class="lg" placeholder="Describe what the project does, what problem it solves, and how it works."></textarea>
+          <textarea id="projectIdea" class="lg" placeholder="Опиши ја суштината на проектот, што решава и како."></textarea>
         </div>
 
         <div class="row">
@@ -331,17 +354,17 @@
 
         <div class="field">
           <label for="problemStatement">Problem statement</label>
-          <textarea id="problemStatement" placeholder="What problem are you solving and why does it exist?"></textarea>
+          <textarea id="problemStatement" placeholder="Кој проблем го решавате и зошто постои?"></textarea>
         </div>
 
         <div class="field">
           <label for="expectedResults">Expected results</label>
-          <textarea id="expectedResults" placeholder="What should concretely change by the end of the project?"></textarea>
+          <textarea id="expectedResults" placeholder="Што сакате конкретно да се смени до крај на проектот?"></textarea>
         </div>
 
         <div class="field">
           <label for="notes">Additional notes</label>
-          <textarea id="notes" placeholder="Add short notes: experience, partners, equipment, constraints, donor-specific details..."></textarea>
+          <textarea id="notes" placeholder="Додај кратки напомени: дали имаш искуство, партнери, опрема, ограничувања..."></textarea>
         </div>
 
         <div class="actions">
@@ -351,7 +374,7 @@
         </div>
 
         <div id="status" class="status"></div>
-        <div class="footer-note">This frontend sends a POST request to <code>/api/application</code>. The detector can still fill the content if you pass detected project data into this payload.</div>
+        <div class="footer-note">Овој frontend праќа POST кон <code>/api/application</code>. Ако сакаш друго доменско API, смени го <code>API_URL</code> во script делот.</div>
       </section>
 
       <section class="card">
@@ -376,9 +399,12 @@
           </div>
         </div>
 
-        <div class="small-output" id="rawResponse">Response preview will appear here.</div>
+        <div class="small-output" id="rawResponse">Response preview ќе се појави тука.</div>
         <div style="height:12px"></div>
-        <div class="output" id="outputBox">Generated application draft will appear here.</div>
+        <div class="output" id="outputBox">Generated application draft ќе се појави тука.</div>
+
+        <!-- Fixed: copy button for the generated output -->
+        <button class="copy-btn" id="copyOutputBtn" style="display:none">Copy output</button>
       </section>
     </div>
   </div>
@@ -386,13 +412,15 @@
   <script>
     const API_URL = '/api/application';
 
-    const statusBox = document.getElementById('status');
-    const outputBox = document.getElementById('outputBox');
-    const rawResponseBox = document.getElementById('rawResponse');
-    const metaMode = document.getElementById('metaMode');
-    const metaConfig = document.getElementById('metaConfig');
+    const statusBox       = document.getElementById('status');
+    const outputBox       = document.getElementById('outputBox');
+    const rawResponseBox  = document.getElementById('rawResponse');
+    const metaMode        = document.getElementById('metaMode');
+    const metaConfig      = document.getElementById('metaConfig');
     const metaOpportunity = document.getElementById('metaOpportunity');
-    const metaSaved = document.getElementById('metaSaved');
+    const metaSaved       = document.getElementById('metaSaved');
+    const generateBtn     = document.getElementById('generateBtn');
+    const copyOutputBtn   = document.getElementById('copyOutputBtn');
 
     function setStatus(type, message) {
       statusBox.className = `status ${type}`;
@@ -405,38 +433,43 @@
     }
 
     function clearOutput() {
-      outputBox.textContent = 'Generated application draft will appear here.';
-      rawResponseBox.textContent = 'Response preview will appear here.';
-      metaMode.textContent = '—';
-      metaConfig.textContent = '—';
+      outputBox.textContent = 'Generated application draft ќе се појави тука.';
+      rawResponseBox.textContent = 'Response preview ќе се појави тука.';
+      metaMode.textContent        = '—';
+      metaConfig.textContent      = '—';
       metaOpportunity.textContent = '—';
-      metaSaved.textContent = '—';
+      metaSaved.textContent       = '—';
+      copyOutputBtn.style.display = 'none';
     }
 
     function getPayload() {
+      // Fixed: use parseInt for opportunityId — Number(null)=0 previously slipped through
+      const rawId = document.getElementById('opportunityId').value.trim();
+      const parsedId = rawId ? parseInt(rawId, 10) : null;
+
       return {
-        userId: document.getElementById('userId').value.trim() || null,
-        opportunityId: Number(document.getElementById('opportunityId').value) || null,
-        configKey: document.getElementById('configKey').value.trim() || 'premium_application_system',
-        lang: document.getElementById('lang').value,
-        project_title: document.getElementById('projectTitle').value.trim(),
-        project_idea: document.getElementById('projectIdea').value.trim(),
-        target_group: document.getElementById('targetGroup').value.trim(),
-        location: document.getElementById('location').value.trim(),
-        duration_months: Number(document.getElementById('durationMonths').value) || null,
-        budget_amount: Number(document.getElementById('budgetAmount').value) || null,
-        budget_currency: document.getElementById('budgetCurrency').value,
-        partners: document.getElementById('partners').value.trim(),
-        problem_statement: document.getElementById('problemStatement').value.trim(),
+        userId:           document.getElementById('userId').value.trim() || null,
+        opportunityId:    !parsedId || isNaN(parsedId) ? null : parsedId,
+        configKey:        document.getElementById('configKey').value.trim() || 'premium_application_system',
+        lang:             document.getElementById('lang').value,
+        project_title:    document.getElementById('projectTitle').value.trim(),
+        project_idea:     document.getElementById('projectIdea').value.trim(),
+        target_group:     document.getElementById('targetGroup').value.trim(),
+        location:         document.getElementById('location').value.trim(),
+        duration_months:  Number(document.getElementById('durationMonths').value) || null,
+        budget_amount:    Number(document.getElementById('budgetAmount').value) || null,
+        budget_currency:  document.getElementById('budgetCurrency').value,
+        partners:         document.getElementById('partners').value.trim(),
+        problem_statement:document.getElementById('problemStatement').value.trim(),
         expected_results: document.getElementById('expectedResults').value.trim(),
-        notes: document.getElementById('notes').value.trim()
+        notes:            document.getElementById('notes').value.trim()
       };
     }
 
     function validate(payload) {
-      if (!payload.opportunityId) return 'Opportunity ID is required.';
-      if (!payload.project_title) return 'Project title is required.';
-      if (!payload.project_idea) return 'Project idea is required.';
+      if (!payload.opportunityId) return 'Opportunity ID е задолжително и мора да биде позитивен број.';
+      if (!payload.project_title) return 'Project title е задолжително.';
+      if (!payload.project_idea)  return 'Project idea е задолжително.';
       return null;
     }
 
@@ -450,21 +483,27 @@
         return;
       }
 
-      setStatus('warn', 'Generating application draft...');
+      // Fixed: disable button during generation to prevent double-submit
+      generateBtn.disabled = true;
+      setStatus('warn', 'Се генерира application draft...');
       outputBox.textContent = 'Generating...';
       rawResponseBox.textContent = 'Loading response...';
+      copyOutputBtn.style.display = 'none';
 
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
 
         const data = await response.json();
-        rawResponseBox.textContent = JSON.stringify(data, null, 2);
+
+        // Show raw JSON but truncate if very long (avoid layout explosion)
+        const rawStr = JSON.stringify(data, null, 2);
+        rawResponseBox.textContent = rawStr.length > 2000
+          ? rawStr.slice(0, 2000) + '\n...[truncated]'
+          : rawStr;
 
         if (!response.ok) {
           throw new Error(data?.error?.message || 'Request failed');
@@ -472,7 +511,7 @@
 
         const text = data?.content?.[0]?.text || 'No output returned.';
         outputBox.textContent = text;
-        metaMode.textContent = data.mode || 'application';
+        metaMode.textContent   = data.mode || 'application';
         metaConfig.textContent = data.config_key || payload.configKey;
         metaOpportunity.textContent = data?.opportunity?.title
           ? `${data.opportunity.title}${data.opportunity.deadline ? ` | Deadline: ${data.opportunity.deadline}` : ''}`
@@ -481,29 +520,41 @@
           ? `Saved ID: ${data.saved_session.id} | Status: ${data.saved_session.status || 'draft'}`
           : 'Not saved / no session metadata';
 
-        setStatus('ok', 'Application draft generated successfully.');
+        copyOutputBtn.style.display = 'block';
+        setStatus('ok', 'Application draft е успешно генериран.');
+
       } catch (error) {
         outputBox.textContent = 'Error while generating output.';
-        setStatus('error', `Error: ${error.message}`);
+        setStatus('error', `Грешка: ${error.message}`);
+      } finally {
+        generateBtn.disabled = false;
       }
     }
 
+    // Copy output button
+    copyOutputBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(outputBox.textContent).then(() => {
+        copyOutputBtn.textContent = '✓ Copied!';
+        setTimeout(() => { copyOutputBtn.textContent = 'Copy output'; }, 1500);
+      });
+    });
+
     function fillDemo() {
-      document.getElementById('userId').value = '';
-      document.getElementById('opportunityId').value = '1';
-      document.getElementById('configKey').value = 'premium_application_system';
-      document.getElementById('lang').value = 'en';
-      document.getElementById('projectTitle').value = 'Digital Support for Small Farmers';
-      document.getElementById('projectIdea').value = 'The project builds practical digital support for small farmers through training, planning tools, and better access to market information and funding readiness.';
-      document.getElementById('targetGroup').value = 'small farmers and young producers';
-      document.getElementById('location').value = 'North Macedonia';
-      document.getElementById('durationMonths').value = '6';
-      document.getElementById('budgetAmount').value = '30000';
-      document.getElementById('budgetCurrency').value = 'EUR';
-      document.getElementById('partners').value = 'local association and advisory organization';
-      document.getElementById('problemStatement').value = 'Small farmers have weak access to structured information, digital tools, and practical support for improving productivity and preparing for funding opportunities.';
-      document.getElementById('expectedResults').value = 'Improved capacity for at least 40 farmers, practical planning tools, and stronger readiness to use future funding calls.';
-      document.getElementById('notes').value = 'Emphasize a practical approach, clear indicators, and a realistic budget.';
+      document.getElementById('userId').value          = '';
+      document.getElementById('opportunityId').value   = '1';
+      document.getElementById('configKey').value       = 'premium_application_system';
+      document.getElementById('lang').value            = 'mk';
+      document.getElementById('projectTitle').value    = 'Дигитална поддршка за мали земјоделци';
+      document.getElementById('projectIdea').value     = 'Проектот воспоставува практична дигитална поддршка за мали земјоделци преку обука, алатки за планирање и подобрен пристап до пазарни информации и финансиски можности.';
+      document.getElementById('targetGroup').value     = 'мали земјоделци и млади производители';
+      document.getElementById('location').value        = 'Северна Македонија';
+      document.getElementById('durationMonths').value  = '6';
+      document.getElementById('budgetAmount').value    = '30000';
+      document.getElementById('budgetCurrency').value  = 'EUR';
+      document.getElementById('partners').value        = 'локално здружение и советодавна организација';
+      document.getElementById('problemStatement').value = 'Малите земјоделци имаат слаб пристап до организирани информации, дигитални алатки и структурирана поддршка за подобрување на продуктивноста и подготовка за финансирање.';
+      document.getElementById('expectedResults').value  = 'Подобрени капацитети кај најмалку 40 земјоделци, практични алатки за планирање и подобра подготвеност за користење идни финансиски повици.';
+      document.getElementById('notes').value           = 'Нагласи практичен пристап, јасни индикатори и реален буџет.';
       clearStatus();
     }
 
@@ -511,14 +562,14 @@
       document.querySelectorAll('input, textarea').forEach(el => {
         if (el.id !== 'configKey') el.value = '';
       });
-      document.getElementById('configKey').value = 'premium_application_system';
-      document.getElementById('lang').value = 'en';
+      document.getElementById('configKey').value      = 'premium_application_system';
+      document.getElementById('lang').value           = 'mk';
       document.getElementById('budgetCurrency').value = 'EUR';
       clearStatus();
       clearOutput();
     }
 
-    document.getElementById('generateBtn').addEventListener('click', generateApplication);
+    generateBtn.addEventListener('click', generateApplication);
     document.getElementById('fillDemoBtn').addEventListener('click', fillDemo);
     document.getElementById('clearBtn').addEventListener('click', clearForm);
 
