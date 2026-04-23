@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marginova Premium Application</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --line: #d9e2ec;
+      --text: #172033;
+      --muted: #667085;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --ok-bg: #ecfdf3;
+      --ok-text: #067647;
+      --warn-bg: #fffaeb;
+      --warn-text: #b54708;
+      --err-bg: #fef3f2;
+      --err-text: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.15;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.6;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #eaf2ff;
+      color: var(--accent-dark);
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+    }
+
+    .card h2 {
+      margin: 0 0 16px;
+      font-size: 20px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 12px 14px;
+      font: inherit;
+      background: white;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .lg {
+      min-height: 150px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .primary:hover {
+      background: var(--accent-dark);
+    }
+
+    .secondary {
+      background: white;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .status {
+      display: none;
+      margin-top: 14px;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .status.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border: 1px solid #abefc6; }
+    .status.warn { display: block; background: var(--warn-bg); color: var(--warn-text); border: 1px solid #fedf89; }
+    .status.error { display: block; background: var(--err-bg); color: var(--err-text); border: 1px solid #fecdca; }
+
+    .meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .meta-box {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: #fbfcfe;
+    }
+
+    .meta-box .k {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .meta-box .v {
+      font-size: 15px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .output {
+      min-height: 520px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #0f172a;
+      color: #e5eefc;
+      padding: 18px;
+      white-space: pre-wrap;
+      line-height: 1.65;
+      overflow: auto;
+    }
+
+    .small-output {
+      min-height: 100px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fbfcfe;
+      padding: 14px;
+      white-space: pre-wrap;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      .layout, .row, .meta { grid-template-columns: 1fr; }
+      .wrap { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <div class="badge">Premium Application Builder</div>
+        <h1>Build a structured grant application draft</h1>
+        <p>Оваа страница работи само со <strong>/api/application</strong>. Не пребарува грантови. Земa избрана можност и твоите проектни податоци, па генерира application draft, LFM, ризици и буџетска структура.</p>
+      </div>
+    </div>
+
+    <div class="layout">
+      <section class="card">
+        <h2>Project input</h2>
+
+        <div class="row">
+          <div class="field">
+            <label for="userId">User ID</label>
+            <input id="userId" placeholder="user uuid or internal id" />
+            <div class="hint">Остави празно ако тестирате без логирање.</div>
+          </div>
+          <div class="field">
+            <label for="opportunityId">Opportunity ID *</label>
+            <input id="opportunityId" type="number" placeholder="e.g. 1" required />
+            <div class="hint">Ова мора да е ID од твојата funding_opportunities табела.</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="configKey">Config key</label>
+            <input id="configKey" value="premium_application_system" />
+          </div>
+          <div class="field">
+            <label for="lang">Language</label>
+            <select id="lang">
+              <option value="mk">mk</option>
+              <option value="en">en</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="projectTitle">Project title *</label>
+          <input id="projectTitle" placeholder="e.g. Digital Transition for Small Farmers" />
+        </div>
+
+        <div class="field">
+          <label for="projectIdea">Project idea *</label>
+          <textarea id="projectIdea" class="lg" placeholder="Опиши ја суштината на проектот, што решава и како."></textarea>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="targetGroup">Target group</label>
+            <input id="targetGroup" placeholder="e.g. young farmers, NGOs, SMEs" />
+          </div>
+          <div class="field">
+            <label for="location">Location</label>
+            <input id="location" placeholder="e.g. North Macedonia / Veles" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="durationMonths">Duration (months)</label>
+            <input id="durationMonths" type="number" min="1" placeholder="e.g. 6" />
+          </div>
+          <div class="field">
+            <label for="budgetAmount">Budget amount</label>
+            <input id="budgetAmount" type="number" min="0" step="0.01" placeholder="e.g. 30000" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="budgetCurrency">Budget currency</label>
+            <select id="budgetCurrency">
+              <option value="EUR">EUR</option>
+              <option value="USD">USD</option>
+              <option value="MKD">MKD</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="partners">Partners</label>
+            <input id="partners" placeholder="e.g. municipality, NGO, association" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="problemStatement">Problem statement</label>
+          <textarea id="problemStatement" placeholder="Кој проблем го решавате и зошто постои?"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="expectedResults">Expected results</label>
+          <textarea id="expectedResults" placeholder="Што сакате конкретно да се смени до крај на проектот?"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="notes">Additional notes</label>
+          <textarea id="notes" placeholder="Додај кратки напомени: дали имаш искуство, партнери, опрема, ограничувања..."></textarea>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="generateBtn">Generate application draft</button>
+          <button class="secondary" id="fillDemoBtn">Fill demo</button>
+          <button class="secondary" id="clearBtn">Clear</button>
+        </div>
+
+        <div id="status" class="status"></div>
+        <div class="footer-note">Овој frontend праќа POST кон <code>/api/application</code>. Ако сакаш друго доменско API, смени го <code>API_URL</code> во script делот.</div>
+      </section>
+
+      <section class="card">
+        <h2>Generated output</h2>
+
+        <div class="meta">
+          <div class="meta-box">
+            <div class="k">Mode</div>
+            <div class="v" id="metaMode">—</div>
+          </div>
+          <div class="meta-box">
+            <div class="k">Config key</div>
+            <div class="v" id="metaConfig">—</div>
+          </div>
+          <div class="meta-box">
+            <div class="k">Opportunity</div>
+            <div class="v" id="metaOpportunity">—</div>
+          </div>
+          <div class="meta-box">
+            <div class="k">Saved session</div>
+            <div class="v" id="metaSaved">—</div>
+          </div>
+        </div>
+
+        <div class="small-output" id="rawResponse">Response preview ќе се појави тука.</div>
+        <div style="height:12px"></div>
+        <div class="output" id="outputBox">Generated application draft ќе се појави тука.</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api/application';
+
+    const statusBox = document.getElementById('status');
+    const outputBox = document.getElementById('outputBox');
+    const rawResponseBox = document.getElementById('rawResponse');
+    const metaMode = document.getElementById('metaMode');
+    const metaConfig = document.getElementById('metaConfig');
+    const metaOpportunity = document.getElementById('metaOpportunity');
+    const metaSaved = document.getElementById('metaSaved');
+
+    function setStatus(type, message) {
+      statusBox.className = `status ${type}`;
+      statusBox.textContent = message;
+    }
+
+    function clearStatus() {
+      statusBox.className = 'status';
+      statusBox.textContent = '';
+    }
+
+    function clearOutput() {
+      outputBox.textContent = 'Generated application draft ќе се појави тука.';
+      rawResponseBox.textContent = 'Response preview ќе се појави тука.';
+      metaMode.textContent = '—';
+      metaConfig.textContent = '—';
+      metaOpportunity.textContent = '—';
+      metaSaved.textContent = '—';
+    }
+
+    function getPayload() {
+      return {
+        userId: document.getElementById('userId').value.trim() || null,
+        opportunityId: Number(document.getElementById('opportunityId').value) || null,
+        configKey: document.getElementById('configKey').value.trim() || 'premium_application_system',
+        lang: document.getElementById('lang').value,
+        project_title: document.getElementById('projectTitle').value.trim(),
+        project_idea: document.getElementById('projectIdea').value.trim(),
+        target_group: document.getElementById('targetGroup').value.trim(),
+        location: document.getElementById('location').value.trim(),
+        duration_months: Number(document.getElementById('durationMonths').value) || null,
+        budget_amount: Number(document.getElementById('budgetAmount').value) || null,
+        budget_currency: document.getElementById('budgetCurrency').value,
+        partners: document.getElementById('partners').value.trim(),
+        problem_statement: document.getElementById('problemStatement').value.trim(),
+        expected_results: document.getElementById('expectedResults').value.trim(),
+        notes: document.getElementById('notes').value.trim()
+      };
+    }
+
+    function validate(payload) {
+      if (!payload.opportunityId) return 'Opportunity ID е задолжително.';
+      if (!payload.project_title) return 'Project title е задолжително.';
+      if (!payload.project_idea) return 'Project idea е задолжително.';
+      return null;
+    }
+
+    async function generateApplication() {
+      clearStatus();
+      const payload = getPayload();
+      const validationError = validate(payload);
+
+      if (validationError) {
+        setStatus('warn', validationError);
+        return;
+      }
+
+      setStatus('warn', 'Се генерира application draft...');
+      outputBox.textContent = 'Generating...';
+      rawResponseBox.textContent = 'Loading response...';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        rawResponseBox.textContent = JSON.stringify(data, null, 2);
+
+        if (!response.ok) {
+          throw new Error(data?.error?.message || 'Request failed');
+        }
+
+        const text = data?.content?.[0]?.text || 'No output returned.';
+        outputBox.textContent = text;
+        metaMode.textContent = data.mode || 'application';
+        metaConfig.textContent = data.config_key || payload.configKey;
+        metaOpportunity.textContent = data?.opportunity?.title
+          ? `${data.opportunity.title}${data.opportunity.deadline ? ` | Deadline: ${data.opportunity.deadline}` : ''}`
+          : 'No opportunity data';
+        metaSaved.textContent = data?.saved_session?.id
+          ? `Saved ID: ${data.saved_session.id} | Status: ${data.saved_session.status || 'draft'}`
+          : 'Not saved / no session metadata';
+
+        setStatus('ok', 'Application draft е успешно генериран.');
+      } catch (error) {
+        outputBox.textContent = 'Error while generating output.';
+        setStatus('error', `Грешка: ${error.message}`);
+      }
+    }
+
+    function fillDemo() {
+      document.getElementById('userId').value = '';
+      document.getElementById('opportunityId').value = '1';
+      document.getElementById('configKey').value = 'premium_application_system';
+      document.getElementById('lang').value = 'mk';
+      document.getElementById('projectTitle').value = 'Дигитална поддршка за мали земјоделци';
+      document.getElementById('projectIdea').value = 'Проектот воспоставува практична дигитална поддршка за мали земјоделци преку обука, алатки за планирање и подобрен пристап до пазарни информации и финансиски можности.';
+      document.getElementById('targetGroup').value = 'мали земјоделци и млади производители';
+      document.getElementById('location').value = 'Северна Македонија';
+      document.getElementById('durationMonths').value = '6';
+      document.getElementById('budgetAmount').value = '30000';
+      document.getElementById('budgetCurrency').value = 'EUR';
+      document.getElementById('partners').value = 'локално здружение и советодавна организација';
+      document.getElementById('problemStatement').value = 'Малите земјоделци имаат слаб пристап до организирани информации, дигитални алатки и структурирана поддршка за подобрување на продуктивноста и подготовка за финансирање.';
+      document.getElementById('expectedResults').value = 'Подобрени капацитети кај најмалку 40 земјоделци, практични алатки за планирање и подобра подготвеност за користење идни финансиски повици.';
+      document.getElementById('notes').value = 'Нагласи практичен пристап, јасни индикатори и реален буџет.';
+      clearStatus();
+    }
+
+    function clearForm() {
+      document.querySelectorAll('input, textarea').forEach(el => {
+        if (el.id !== 'configKey') el.value = '';
+      });
+      document.getElementById('configKey').value = 'premium_application_system';
+      document.getElementById('lang').value = 'mk';
+      document.getElementById('budgetCurrency').value = 'EUR';
+      clearStatus();
+      clearOutput();
+    }
+
+    document.getElementById('generateBtn').addEventListener('click', generateApplication);
+    document.getElementById('fillDemoBtn').addEventListener('click', fillDemo);
+    document.getElementById('clearBtn').addEventListener('click', clearForm);
+
+    clearOutput();
+  </script>
+</body>
+</html>
