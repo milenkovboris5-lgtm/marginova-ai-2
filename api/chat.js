@@ -3,7 +3,7 @@
 // v17 — Supabase client mode, DB-first strict mode
 // ═════════════════════════════════════════════════════════════
 
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const SUPA_URL = process.env.SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
