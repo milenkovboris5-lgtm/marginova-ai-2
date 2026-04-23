@@ -10,7 +10,6 @@ console.log('SERPER_KEY:', SERPER_KEY ? 'OK' : 'MISSING');
 
 const DAILY_LIMIT = 200;
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
-const CACHE_TTL_HOURS = 24;
 
 const supabase = (SUPA_URL && SUPA_KEY)
   ? createClient(SUPA_URL, SUPA_KEY, {
@@ -51,6 +50,7 @@ async function checkIP(req) {
         { ip, count: 1, reset_date: today },
         { onConflict: 'ip' }
       );
+
       if (upsertError) console.log('[IP UPSERT]', upsertError.message);
       return true;
     }
@@ -69,14 +69,115 @@ async function checkIP(req) {
   }
 }
 
-function hashQuery(str) {
-  const n = str.toLowerCase().trim().replace(/\s+/g, ' ');
-  let h = 0;
-  for (let i = 0; i < n.length; i++) {
-    h = ((h << 5) - h) + n.charCodeAt(i);
-    h |= 0;
+async function checkQuota(userId) {
+  if (!userId || !supabase) return true;
+
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: p, error } = await getTable('profiles')
+      .select('plan,daily_msgs,last_msg_date')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error || !p) return true;
+
+    const limit = PLANS[p.plan] ?? 20;
+    if (limit === -1) return true;
+
+    const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
+    return used < limit;
+  } catch {
+    return true;
   }
-  return Math.abs(h).toString(36);
+}
+
+async function loadProfile(userId) {
+  if (!userId || !supabase) return null;
+
+  try {
+    const { data: p, error } = await getTable('profiles')
+      .select('sector,country,organization_type,goals,plan,detected_sector,detected_org_type,detected_country')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error || !p) return null;
+
+    return {
+      ...p,
+      sector: p.sector || p.detected_sector || null,
+      organization_type: p.organization_type || p.detected_org_type || null,
+      country: p.country || p.detected_country || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function detectLang(text) {
+  if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
+  if (/ћ|ђ/i.test(text)) return 'sr';
+  if (/јас|сум|македонија|барам|грант|работам|НВО|фонд/i.test(text)) return 'mk';
+  if (/[а-шА-Ш]/.test(text)) return 'mk';
+  if (/\b(jas|sum|makedonija|zdravo|zemja|proekt|grant|fond)\b/i.test(text)) return 'mk';
+  return 'en';
+}
+
+const LANG_NAMES = {
+  mk: 'Macedonian',
+  sr: 'Serbian',
+  en: 'English'
+};
+
+function needsSearch(text, conversationText) {
+  const t = `${text} ${conversationText}`.toLowerCase();
+  return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support|money|euros|invest|tender|startup|funding/i.test(t);
+}
+
+function detectProfile(text, supaProfile) {
+  const t = text.toLowerCase();
+
+  const sector =
+    /\bit\b|tech|software|digital|technology|ai/.test(t) ? 'IT / Technology' :
+    /agri|farm|rural|crop|livestock|ipard/.test(t) ? 'Agriculture' :
+    /educat|school|youth|training|learning/.test(t) ? 'Education' :
+    /environment|climate|green|energy|renewable|solar/.test(t) ? 'Environment / Energy' :
+    /civil|ngo|nonprofit|association|society/.test(t) ? 'Civil Society' :
+    /tourism|culture|heritage|creative|art/.test(t) ? 'Tourism / Culture' :
+    /health|medical|social|welfare/.test(t) ? 'Health / Social' :
+    /research|science|innovation|university|academic/.test(t) ? 'Research / Innovation' :
+    /sme|small business|company|enterprise|startup/.test(t) ? 'SME / Business' :
+    supaProfile?.sector || null;
+
+  const orgType =
+    /startup/.test(t) ? 'Startup' :
+    /\bngo\b|nonprofit|association|foundation|civil society/.test(t) ? 'NGO / Association' :
+    /farmer|farm|agricultural|holding|ipard/.test(t) ? 'Agricultural holding' :
+    /individual|freelance|self-employed|self.employed|poedinec|creator/.test(t) ? 'Individual / Entrepreneur' :
+    /\bsme\b|\bltd\b|\bdoo\b|small business/.test(t) ? 'SME' :
+    /municipality|local government|public body/.test(t) ? 'Municipality / Public body' :
+    /university|research institute|academic/.test(t) ? 'University / Research' :
+    supaProfile?.organization_type || null;
+
+  const country =
+    /macedon|makedon|north macedon|mkd/.test(t) ? 'North Macedonia' :
+    /\bserbia\b|srbija/.test(t) ? 'Serbia' :
+    /croatia|hrvatska/.test(t) ? 'Croatia' :
+    /\bbosnia\b/.test(t) ? 'Bosnia' :
+    /bulgaria|bulgar/.test(t) ? 'Bulgaria' :
+    /\balbania\b/.test(t) ? 'Albania' :
+    /\bkosovo\b/.test(t) ? 'Kosovo' :
+    supaProfile?.country || null;
+
+  const budget =
+    /1[\s,.]?000[\s,.]?000|1\s*million/.test(t) ? 'above €500k' :
+    /500[\s,.]?000|500k/.test(t) ? '€150k–€500k' :
+    /100[\s,.]?000|100k/.test(t) ? '€30k–€150k' :
+    /[5-9]\d[\s,.]?000/.test(t) ? '€30k–€150k' :
+    /[1-4]\d[\s,.]?000/.test(t) ? 'up to €30k' :
+    supaProfile?.goals || null;
+
+  return { sector, orgType, country, budget };
 }
 
 async function searchFundingDB(profile) {
@@ -196,167 +297,6 @@ async function searchFundingDB(profile) {
   }
 }
 
-async function getCached(queryHash) {
-  if (!supabase) return null;
-
-  try {
-    const now = new Date().toISOString();
-
-    const { data, error } = await getTable('search_cache')
-      .select('results,created_at,expires_at')
-      .eq('query_hash', queryHash)
-      .gt('expires_at', now)
-      .limit(1);
-
-    if (error) return null;
-    if (data?.length > 0) return { results: data[0].results, created_at: data[0].created_at };
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function saveCache(queryHash, queryText, results) {
-  if (!supabase) return;
-
-  try {
-    const now = new Date();
-    const expires = new Date(now.getTime() + CACHE_TTL_HOURS * 3600000);
-
-    await getTable('search_cache').delete().eq('query_hash', queryHash);
-
-    await getTable('search_cache').insert({
-      query_hash: queryHash,
-      query_text: queryText,
-      results,
-      created_at: now.toISOString(),
-      expires_at: expires.toISOString()
-    });
-  } catch (e) {
-    console.log('[CACHE SAVE]', e.message);
-  }
-}
-
-async function cleanExpiredCache() {
-  if (!supabase) return;
-  try {
-    await getTable('search_cache')
-      .delete()
-      .lt('expires_at', new Date().toISOString());
-  } catch {}
-}
-
-async function checkQuota(userId) {
-  if (!userId || !supabase) return true;
-
-  try {
-    const today = new Date().toISOString().split('T')[0];
-
-    const { data: p, error } = await getTable('profiles')
-      .select('plan,daily_msgs,last_msg_date')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error || !p) return true;
-
-    const limit = PLANS[p.plan] ?? 20;
-    if (limit === -1) return true;
-
-    const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
-    return used < limit;
-  } catch {
-    return true;
-  }
-}
-
-async function loadProfile(userId) {
-  if (!userId || !supabase) return null;
-
-  try {
-    const { data: p, error } = await getTable('profiles')
-      .select('sector,country,organization_type,goals,plan,detected_sector,detected_org_type,detected_country')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error || !p) return null;
-
-    return {
-      ...p,
-      sector: p.sector || p.detected_sector || null,
-      organization_type: p.organization_type || p.detected_org_type || null,
-      country: p.country || p.detected_country || null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function detectLang(text) {
-  if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
-  if (/ћ|ђ/i.test(text)) return 'sr';
-  if (/јас|сум|македонија|барам|грант|работам|НВО|фонд/i.test(text)) return 'mk';
-  if (/[а-шА-Ш]/.test(text)) return 'mk';
-  if (/\b(jas|sum|makedonija|zdravo|zemja|proekt|grant|fond)\b/i.test(text)) return 'mk';
-  return 'en';
-}
-
-const LANG_NAMES = {
-  mk: 'Macedonian',
-  sr: 'Serbian',
-  en: 'English'
-};
-
-function needsSearch(text, conversationText) {
-  const t = `${text} ${conversationText}`.toLowerCase();
-  return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support|money|euros|invest|tender|startup|funding/i.test(t);
-}
-
-function detectProfile(text, supaProfile) {
-  const t = text.toLowerCase();
-
-  const sector =
-    /\bit\b|tech|software|digital|technology|ai/.test(t) ? 'IT / Technology' :
-    /agri|farm|rural|crop|livestock|ipard/.test(t) ? 'Agriculture' :
-    /educat|school|youth|training|learning/.test(t) ? 'Education' :
-    /environment|climate|green|energy|renewable|solar/.test(t) ? 'Environment / Energy' :
-    /civil|ngo|nonprofit|association|society/.test(t) ? 'Civil Society' :
-    /tourism|culture|heritage|creative|art/.test(t) ? 'Tourism / Culture' :
-    /health|medical|social|welfare/.test(t) ? 'Health / Social' :
-    /research|science|innovation|university|academic/.test(t) ? 'Research / Innovation' :
-    /sme|small business|company|enterprise|startup/.test(t) ? 'SME / Business' :
-    supaProfile?.sector || null;
-
-  const orgType =
-    /startup/.test(t) ? 'Startup' :
-    /\bngo\b|nonprofit|association|foundation|civil society/.test(t) ? 'NGO / Association' :
-    /farmer|farm|agricultural|holding|ipard/.test(t) ? 'Agricultural holding' :
-    /individual|freelance|self.employed|poedinec|creator/.test(t) ? 'Individual / Entrepreneur' :
-    /\bsme\b|\bltd\b|\bdoo\b|small business/.test(t) ? 'SME' :
-    /municipality|local government|public body/.test(t) ? 'Municipality / Public body' :
-    /university|research institute|academic/.test(t) ? 'University / Research' :
-    supaProfile?.organization_type || null;
-
-  const country =
-    /macedon|makedon|north macedon|mkd/.test(t) ? 'North Macedonia' :
-    /\bserbia\b|srbija/.test(t) ? 'Serbia' :
-    /croatia|hrvatska/.test(t) ? 'Croatia' :
-    /\bbosnia\b/.test(t) ? 'Bosnia' :
-    /bulgaria|bulgar/.test(t) ? 'Bulgaria' :
-    /\balbania\b/.test(t) ? 'Albania' :
-    /\bkosovo\b/.test(t) ? 'Kosovo' :
-    supaProfile?.country || null;
-
-  const budget =
-    /1[\s,.]?000[\s,.]?000|1\s*million/.test(t) ? 'above €500k' :
-    /500[\s,.]?000|500k/.test(t) ? '€150k–€500k' :
-    /100[\s,.]?000|100k/.test(t) ? '€30k–€150k' :
-    /[5-9]\d[\s,.]?000/.test(t) ? '€30k–€150k' :
-    /[1-4]\d[\s,.]?000/.test(t) ? 'up to €30k' :
-    supaProfile?.goals || null;
-
-  return { sector, orgType, country, budget };
-}
-
 function buildSerperQuery(userText, profile) {
   const parts = [
     userText,
@@ -381,10 +321,7 @@ async function searchWebSerper(userText, profile) {
         'X-API-KEY': SERPER_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        q,
-        num: 6
-      })
+      body: JSON.stringify({ q, num: 6 })
     }, 10000);
 
     if (!r.ok) {
@@ -408,24 +345,7 @@ async function searchWebSerper(userText, profile) {
   }
 }
 
-async function getSearchResults(userText, profile) {
-  const cacheKey = hashQuery(JSON.stringify({ userText, profile }));
-
-  const cached = await getCached(cacheKey);
-  if (cached?.results?.length) {
-    return { results: cached.results, cachedAt: cached.created_at, fromCache: true };
-  }
-
-  const dbResults = await searchFundingDB(profile);
-
-  if (dbResults.length > 0) {
-    saveCache(cacheKey, userText, dbResults).catch(() => {});
-  }
-
-  return { results: dbResults, cachedAt: null, fromCache: false };
-}
-
-function buildSystemPrompt(lang, today, profile, dbResults, webResults, allowExternalFallback = false) {
+function buildSystemPrompt(lang, today, profile, dbResults, webResults) {
   const L = LANG_NAMES[lang] || 'English';
 
   const profileText = profile.sector || profile.orgType || profile.country
@@ -456,17 +376,18 @@ USER PROFILE:${profileText}
 
 RULES:
 - Prioritize database results first
-- If strong database results exist, show them first
-- If web results are provided, use them only as external supplementary opportunities
-- Never claim web results are verified in the internal database
-- Be practical, direct, and concise
-- Do not say you have no web access if WEB RESULTS are provided
-- If profile is incomplete, ask exactly one focused follow-up question
+- If database results exist, show them first
+- If web results exist, show them in a separate external section
+- Do not say you cannot search the web if WEB RESULTS are provided
+- Do not ask follow-up questions if database or web opportunities are already available
+- If database results are weak, combine database + web in a practical way
+- Never claim web results are internal database results
+- Be direct, practical, and concise
 
 OUTPUT STRUCTURE:
 1. Brief conclusion
 2. Database matches
-3. External matches (only if provided)
+3. External matches
 4. One concrete next action
 
 FORMAT FOR DATABASE RESULTS:
@@ -487,7 +408,7 @@ FORMAT FOR EXTERNAL RESULTS:
 ⚠️ Што мора да се провери
 🔗 [URL or "Провери официјален извор"]
 
-If there are no database matches but web results exist, say clearly that the internal database has limited matches and then show external opportunities.${dbText}${webText}`;
+If database matches are limited or weak, explicitly say so, then show external options.${dbText}${webText}`;
 }
 
 async function geminiCall(systemPrompt, messages, imageData, imageType) {
@@ -602,31 +523,20 @@ module.exports = async function handler(req, res) {
         .catch(() => {});
     }
 
-    if (Math.random() < 0.05) cleanExpiredCache().catch(() => {});
-
     const shouldSearch = needsSearch(userText, conversationText) || !!imageData;
 
     let dbResults = [];
-    let cachedAt = null;
-    let fromCache = false;
     let webResults = [];
 
     if (shouldSearch && !imageData) {
-      const searchData = await getSearchResults(userText, profile);
-      dbResults = searchData.results || [];
-      cachedAt = searchData.cachedAt;
-      fromCache = searchData.fromCache;
+      dbResults = await searchFundingDB(profile);
     }
 
-    const strongDbResults = dbResults.filter(r => (r.score || 0) >= 75);
+    const bestScore = dbResults[0]?.score || 0;
     const allowExternalFallback =
       shouldSearch &&
       !imageData &&
-      (
-        dbResults.length === 0 ||
-        strongDbResults.length === 0 ||
-        (dbResults[0]?.score || 0) < 75
-      );
+      (dbResults.length === 0 || bestScore < 85);
 
     if (allowExternalFallback) {
       webResults = await searchWebSerper(userText, profile);
@@ -642,8 +552,7 @@ module.exports = async function handler(req, res) {
       today,
       profile,
       dbResults,
-      webResults,
-      allowExternalFallback
+      webResults
     );
 
     const text = await gemini(systemPrompt, messages, imageData, imageType);
@@ -651,8 +560,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       content: [{ type: 'text', text }],
       intent: shouldSearch ? 'grant' : 'general',
-      cached: fromCache,
-      cached_at: cachedAt,
       db_results: dbResults.length,
       web_results: webResults.length,
       external_fallback_allowed: allowExternalFallback,
