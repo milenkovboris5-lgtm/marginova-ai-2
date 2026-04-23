@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -149,7 +148,7 @@ button,input,textarea,select{font:inherit}
   <main class="main">
     <div class="workspace-top">
       <div class="welcome-bar">
-        <div class="welcome-title">Hello! I’m Marginova AI.</div>
+        <div class="welcome-title">Hello! I'm Marginova AI.</div>
         <div class="welcome-sub">A clear work surface for grant search, eligibility checks, project analysis and premium application building.</div>
       </div>
 
@@ -259,7 +258,7 @@ button,input,textarea,select{font:inherit}
     <div class="dsep"></div>
     <button class="drawer-btn danger" onclick="doSignOut()">Sign out</button>
   </div>
-  <div class="drawer-foot"><div class="d-version">Marginova.AI Workspace v1</div></div>
+  <div class="drawer-foot"><div class="d-version">Marginova.AI Workspace v2</div></div>
 </div>
 
 <div class="modal-overlay" id="upgrade-modal">
@@ -277,9 +276,10 @@ button,input,textarea,select{font:inherit}
 <div class="toast" id="toast"></div>
 
 <script>
+// NOTE: SUPA_KEY is intentionally left visible during testing phase.
+// Before production: move to server-side only and enforce RLS in Supabase.
 const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
-
+const SUPA_KEY = 'YOUR_SUPABASE_ANON_KEY';
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, storageKey: 'marginova_auth' }
@@ -290,182 +290,385 @@ let authMode = 'login';
 let lang = localStorage.getItem('mlang') || 'en';
 let chatHistory = [];
 let currentFile = null;
-let currentOpportunity = null;
+let isSending = false; // Fixed: prevent double-send on rapid clicks
 
-function setAuthMode(m){
+function setAuthMode(m) {
   authMode = m;
-  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&m==='login')||(i===1&&m==='signup')));
-  document.getElementById('auth-pw').placeholder = m === 'signup' ? 'Choose a password (min 6 chars)' : 'Password';
+  document.querySelectorAll('.auth-tab').forEach((t, i) =>
+    t.classList.toggle('active', (i === 0 && m === 'login') || (i === 1 && m === 'signup'))
+  );
+  document.getElementById('auth-pw').placeholder =
+    m === 'signup' ? 'Choose a password (min 6 chars)' : 'Password';
 }
 
-async function doAuth(){
+async function doAuth() {
   const email = document.getElementById('auth-email').value.trim();
   const pw = document.getElementById('auth-pw').value;
   const err = document.getElementById('auth-err');
   err.style.display = 'none';
-  if(!email || !pw){ err.style.color='var(--danger)'; err.textContent='Please fill all fields.'; err.style.display='block'; return; }
-  try{
+  if (!email || !pw) {
+    err.style.color = 'var(--danger)';
+    err.textContent = 'Please fill all fields.';
+    err.style.display = 'block';
+    return;
+  }
+  try {
     let res;
-    if(authMode==='signup'){
+    if (authMode === 'signup') {
       res = await db.auth.signUp({ email, password: pw });
-      if(!res.error){ err.style.color='var(--green)'; err.textContent='Check your email to confirm your account.'; err.style.display='block'; return; }
+      if (!res.error) {
+        err.style.color = 'var(--green)';
+        err.textContent = 'Check your email to confirm your account.';
+        err.style.display = 'block';
+        return;
+      }
     } else {
       res = await db.auth.signInWithPassword({ email, password: pw });
     }
-    if(res.error){ err.style.color='var(--danger)'; err.textContent=res.error.message; err.style.display='block'; return; }
-    currentUser = res.data.user; initApp();
-  } catch(e){ err.style.color='var(--danger)'; err.textContent=e.message; err.style.display='block'; }
+    if (res.error) {
+      err.style.color = 'var(--danger)';
+      err.textContent = res.error.message;
+      err.style.display = 'block';
+      return;
+    }
+    currentUser = res.data.user;
+    initApp();
+  } catch (e) {
+    err.style.color = 'var(--danger)';
+    err.textContent = e.message;
+    err.style.display = 'block';
+  }
 }
 
-function initApp(){
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('app').style.display='grid';
-  if(currentUser){ document.getElementById('drawer-email').textContent=currentUser.email; loadUserProfile(); }
+function initApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'grid';
+  if (currentUser) {
+    document.getElementById('drawer-email').textContent = currentUser.email;
+    loadUserProfile();
+  }
 }
 
-async function loadUserProfile(){
-  if(!currentUser) return;
-  try{
-    const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country').eq('user_id', currentUser.id).single();
+// Fixed: loadUserProfile is now read-only — just for display.
+// Quota deduction happens server-side in api/chat.js only.
+async function loadUserProfile() {
+  if (!currentUser) return;
+  try {
+    const { data } = await db
+      .from('profiles')
+      .select('plan,daily_msgs,last_msg_date,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country')
+      .eq('user_id', currentUser.id)
+      .single();
+
     const plan = data?.plan || 'free';
-    const limits = { free:20, starter:500, pro:2000, business:-1 };
+    const limits = { free: 20, starter: 500, pro: 2000, business: -1 };
     const limit = limits[plan] ?? 20;
     const today = new Date().toISOString().split('T')[0];
     const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
-    const remaining = limit === -1 ? Infinity : Math.max(0, limit - used);
-    document.getElementById('drawer-plan').textContent = plan.charAt(0).toUpperCase()+plan.slice(1);
-    document.getElementById('tok-badge').textContent = plan.charAt(0).toUpperCase()+plan.slice(1);
-    if(limit !== -1){
-      const pct = Math.min(100, Math.round((used/limit)*100));
-      document.getElementById('drawer-quota').style.display='block';
+
+    document.getElementById('drawer-plan').textContent =
+      plan.charAt(0).toUpperCase() + plan.slice(1);
+    document.getElementById('tok-badge').textContent =
+      plan.charAt(0).toUpperCase() + plan.slice(1);
+
+    if (limit !== -1) {
+      const pct = Math.min(100, Math.round((used / limit) * 100));
+      document.getElementById('drawer-quota').style.display = 'block';
       document.getElementById('quota-text').textContent = `${used} / ${limit} messages used today`;
       document.getElementById('quota-fill').style.width = pct + '%';
     }
-    document.getElementById('profile-org').textContent = data?.organization_type || data?.detected_org_type || 'Not set yet';
-    document.getElementById('profile-country').textContent = data?.country || data?.detected_country || 'Not set yet';
-    document.getElementById('profile-sector').textContent = data?.sector || data?.detected_sector || 'Not set yet';
-    document.getElementById('profile-budget').textContent = `Budget range: ${data?.goals || 'not set'}`;
-  } catch(e){}
+
+    document.getElementById('profile-org').textContent =
+      data?.organization_type || data?.detected_org_type || 'Not set yet';
+    document.getElementById('profile-country').textContent =
+      data?.country || data?.detected_country || 'Not set yet';
+    document.getElementById('profile-sector').textContent =
+      data?.sector || data?.detected_sector || 'Not set yet';
+    document.getElementById('profile-budget').textContent =
+      `Budget range: ${data?.goals || 'not set'}`;
+  } catch (e) {
+    console.log('[loadUserProfile]', e.message);
+  }
 }
 
-async function deductToken(){
-  if(!currentUser) return true;
-  try{
-    const today = new Date().toISOString().split('T')[0];
-    const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date').eq('user_id', currentUser.id).single();
-    const plan = data?.plan || 'free';
-    const limits = { free:20, starter:500, pro:2000, business:-1 };
-    const limit = limits[plan] ?? 20;
-    if(limit === -1) return true;
-    const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
-    if(used >= limit){ openModal('upgrade-modal'); return false; }
-    await db.from('profiles').upsert({ user_id: currentUser.id, plan, daily_msgs: used+1, last_msg_date: today });
-    return true;
-  } catch(e){ return true; }
+async function doSignOut() {
+  await db.auth.signOut();
+  currentUser = null;
+  chatHistory = [];
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  closeDrawer();
 }
 
-async function doSignOut(){ await db.auth.signOut(); currentUser = null; chatHistory = []; document.getElementById('app').style.display='none'; document.getElementById('auth-screen').style.display='flex'; closeDrawer(); }
-function openDrawer(){ document.getElementById('drawer').classList.add('open'); }
-function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); }
-function openModal(id){ document.getElementById(id).classList.add('open'); }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-function openPremium(){ openModal('upgrade-modal'); }
-function setLang(l){ lang = l; localStorage.setItem('mlang', l); showToast('Language set to ' + l.toUpperCase()); }
-function showToast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2500); }
+function openDrawer() { document.getElementById('drawer').classList.add('open'); }
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openPremium() { openModal('upgrade-modal'); }
+function setLang(l) { lang = l; localStorage.setItem('mlang', l); showToast('Language set to ' + l.toUpperCase()); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
 
-function parseMarkdown(text){
-  const links=[]; let i=0;
-  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,(_,t,u)=>{ links.push(`<a href="${u}" target="_blank" rel="noopener">${t}</a>`); return `\x00LINK${i++}\x00`; });
-  text = text.replace(/(https?:\/\/[^\s<>")\x00]+)/g,(_,u)=>{ links.push(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`); return `\x00LINK${i++}\x00`; });
-  text = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  text = text.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*\n]+)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h3>$1</h3>').replace(/^[-•]\s+(.+)$/gm,'<li>$1</li>').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
-  text = text.replace(/\x00LINK(\d+)\x00/g,(_,n)=>links[+n]);
+function parseMarkdown(text) {
+  const links = [];
+  let i = 0;
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (_, t, u) => {
+    links.push(`<a href="${u}" target="_blank" rel="noopener">${t}</a>`);
+    return `\x00LINK${i++}\x00`;
+  });
+  text = text.replace(/(https?:\/\/[^\s<>")\x00]+)/g, (_, u) => {
+    links.push(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+    return `\x00LINK${i++}\x00`;
+  });
+  text = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+  text = text.replace(/\x00LINK(\d+)\x00/g, (_, n) => links[+n]);
   return text;
 }
-const INTENT_LABELS = { grant:'Grant', fund:'Fund', ngo:'NGO', general:'General' };
 
-function clearChat(){
+const INTENT_LABELS = { grant: 'Grant', fund: 'Fund', ngo: 'NGO', general: 'General' };
+
+function clearChat() {
   chatHistory = [];
-  document.getElementById('messages').innerHTML = `<div class="msg-row"><div class="msg-av">M</div><div class="bubble ai"><p>Hi! I can help you discover funding opportunities, check eligibility, analyze your project, and guide you to the best next steps.</p><p>What would you like to explore today?</p></div></div>`;
+  document.getElementById('messages').innerHTML = `
+    <div class="msg-row">
+      <div class="msg-av">M</div>
+      <div class="bubble ai">
+        <p>Hi! I can help you discover funding opportunities, check eligibility, analyze your project, and guide you to the best next steps.</p>
+        <p>What would you like to explore today?</p>
+      </div>
+    </div>`;
   showToast('Chat cleared');
 }
 
-function addMsg(role, text, intent, actions = []){
+function addMsg(role, text, intent, actions = []) {
   const msgs = document.getElementById('messages');
   const row = document.createElement('div');
   row.className = 'msg-row' + (role === 'user' ? ' user' : '');
-  if(role === 'ai'){
-    const av = document.createElement('div'); av.className='msg-av'; av.textContent='M'; row.appendChild(av);
+
+  if (role === 'ai') {
+    const av = document.createElement('div');
+    av.className = 'msg-av';
+    av.textContent = 'M';
+    row.appendChild(av);
   }
-  const b = document.createElement('div'); b.className='bubble ' + role;
-  if(role === 'ai' && intent && intent !== 'general'){ b.innerHTML = `<span class="itag ${intent}">${INTENT_LABELS[intent] || intent}</span><br>`; }
-  const span = document.createElement('span'); span.innerHTML = '<p>' + parseMarkdown(text) + '</p>'; b.appendChild(span);
-  if(role === 'ai'){
-    const wrap = document.createElement('div'); wrap.className='msg-actions';
-    const copyBtn = document.createElement('button'); copyBtn.className='msg-btn'; copyBtn.textContent='Copy';
-    copyBtn.onclick = () => navigator.clipboard.writeText(text).then(()=>{ copyBtn.textContent='✓'; copyBtn.classList.add('copied'); setTimeout(()=>{ copyBtn.textContent='Copy'; copyBtn.classList.remove('copied'); },1500); });
+
+  const b = document.createElement('div');
+  b.className = 'bubble ' + role;
+
+  if (role === 'ai' && intent && intent !== 'general') {
+    b.innerHTML = `<span class="itag ${intent}">${INTENT_LABELS[intent] || intent}</span><br>`;
+  }
+
+  const span = document.createElement('span');
+  span.innerHTML = '<p>' + parseMarkdown(text) + '</p>';
+  b.appendChild(span);
+
+  if (role === 'ai') {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-actions';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'msg-btn';
+    copyBtn.textContent = 'Copy';
+    copyBtn.onclick = () =>
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = '✓';
+        copyBtn.classList.add('copied');
+        setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1500);
+      });
     wrap.appendChild(copyBtn);
+
     actions.forEach(a => {
-      const btn = document.createElement('button'); btn.className='msg-btn'; btn.textContent = a.label; btn.onclick = a.onClick; wrap.appendChild(btn);
+      const btn = document.createElement('button');
+      btn.className = 'msg-btn';
+      btn.textContent = a.label;
+      btn.onclick = a.onClick;
+      wrap.appendChild(btn);
     });
     b.appendChild(wrap);
+    row.appendChild(b);
   } else {
-    const av = document.createElement('div'); av.className='msg-user-av'; av.textContent='You'; row.appendChild(b); row.appendChild(av); msgs.appendChild(row); document.getElementById('chat-wrap').scrollTop=999999; return;
+    const av = document.createElement('div');
+    av.className = 'msg-user-av';
+    av.textContent = 'You';
+    row.appendChild(b);
+    row.appendChild(av);
   }
-  row.appendChild(b); msgs.appendChild(row); document.getElementById('chat-wrap').scrollTop=999999;
+
+  msgs.appendChild(row);
+  document.getElementById('chat-wrap').scrollTop = 999999;
 }
 
-function addTyping(){ const msgs=document.getElementById('messages'); const row=document.createElement('div'); row.className='msg-row'; row.id='typing'; row.innerHTML='<div class="msg-av">M</div><div class="bubble ai typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>'; msgs.appendChild(row); document.getElementById('chat-wrap').scrollTop=999999; }
-function removeTyping(){ const t=document.getElementById('typing'); if(t) t.remove(); }
+function addTyping() {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.id = 'typing';
+  row.innerHTML = '<div class="msg-av">M</div><div class="bubble ai typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>';
+  msgs.appendChild(row);
+  document.getElementById('chat-wrap').scrollTop = 999999;
+}
 
-function handleFile(e){ const file = e.target.files[0]; if(!file) return; readFile(file); }
-function handlePhoto(e){ const file = e.target.files[0]; if(!file) return; readFile(file); }
-function readFile(file){ const reader = new FileReader(); reader.onload = ev => { currentFile = { data: ev.target.result.split(',')[1], type:file.type, name:file.name }; document.getElementById('file-name').textContent = file.name; document.getElementById('file-preview').style.display='flex'; showToast('File attached'); }; reader.readAsDataURL(file); }
-function removeFile(){ currentFile = null; document.getElementById('file-preview').style.display='none'; document.getElementById('file-input').value=''; const pi=document.getElementById('photo-input'); if(pi) pi.value=''; }
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
 
-async function sendMsg(){
+function handleFile(e) { const file = e.target.files[0]; if (file) readFile(file); }
+function handlePhoto(e) { const file = e.target.files[0]; if (file) readFile(file); }
+
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentFile = { data: ev.target.result.split(',')[1], type: file.type, name: file.name };
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-preview').style.display = 'flex';
+    showToast('File attached');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeFile() {
+  currentFile = null;
+  document.getElementById('file-preview').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  const pi = document.getElementById('photo-input');
+  if (pi) pi.value = '';
+}
+
+async function sendMsg() {
+  // Fixed: guard against double-send
+  if (isSending) return;
+
   const inp = document.getElementById('msg-input');
   const text = inp.value.trim();
-  if(!text && !currentFile) return;
-  inp.value=''; inp.style.height='auto';
-  const sendBtn = document.getElementById('send-btn'); sendBtn.disabled=true; sendBtn.classList.add('loading');
-  if(text) addMsg('user', text);
-  if(currentFile) addMsg('user', '📎 ' + currentFile.name);
-  chatHistory.push({ role:'user', content:text || '[Document attached]' });
-  const ok = await deductToken(); if(!ok){ sendBtn.disabled=false; sendBtn.classList.remove('loading'); return; }
+  if (!text && !currentFile) return;
+
+  isSending = true;
+  inp.value = '';
+  inp.style.height = 'auto';
+
+  const sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  sendBtn.classList.add('loading');
+
+  if (text) addMsg('user', text);
+  if (currentFile) addMsg('user', '📎 ' + currentFile.name);
+
+  chatHistory.push({ role: 'user', content: text || '[Document attached]' });
   addTyping();
-  try{
-    const payload = { messages: chatHistory.slice(-8), lang, userId: currentUser?.id || null, image: currentFile?.data || null, imageType: currentFile?.type || null, imageText: text || 'Analyze this document and find relevant grants.' };
-    const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+
+  try {
+    const payload = {
+      messages: chatHistory.slice(-8),
+      lang,
+      userId: currentUser?.id || null,
+      image: currentFile?.data || null,
+      imageType: currentFile?.type || null,
+      imageText: text || 'Analyze this document and find relevant grants.'
+    };
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
     const data = await res.json();
-    removeTyping(); removeFile();
-    if(!res.ok) throw new Error(data?.error?.message || data?.message || 'Request failed');
-    const reply = data?.content?.[0]?.text || data?.result || data?.reply || data?.message || data?.output || data?.text || 'No response received.';
-    const intent = data?.intent || 'general';
-    chatHistory.push({ role:'assistant', content:reply });
-    const actions = [];
-    if(intent === 'grant' || (data?.top_matches && data.top_matches.length)){
-      const top = data?.top_matches?.[0];
-      if(top?.title){
-        document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0,3).map(x => `<div class="opp-item"><strong>${x.title}</strong><div>${x.snippet || ''}</div><span class="new-tag">Match ${x.score || 0}%</span></div>`).join('');
-      }
-      actions.push({ label:'Build application', onClick:() => openPremium() });
+    removeTyping();
+    removeFile();
+
+    // Fixed: quota_exceeded now comes from server response (authoritative)
+    if (res.status === 429 && data?.quota_exceeded) {
+      openModal('upgrade-modal');
+      isSending = false;
+      sendBtn.disabled = false;
+      sendBtn.classList.remove('loading');
+      return;
     }
+
+    if (!res.ok) throw new Error(data?.error?.message || data?.message || 'Request failed');
+
+    const reply =
+      data?.content?.[0]?.text ||
+      data?.result ||
+      data?.reply ||
+      data?.message ||
+      data?.output ||
+      data?.text ||
+      'No response received.';
+    const intent = data?.intent || 'general';
+
+    chatHistory.push({ role: 'assistant', content: reply });
+
+    const actions = [];
+    if (intent === 'grant' || (data?.top_matches && data.top_matches.length)) {
+      const top = data?.top_matches?.[0];
+      if (top?.title) {
+        document.getElementById('recent-opps').innerHTML = data.top_matches
+          .slice(0, 3)
+          .map(x => `<div class="opp-item"><strong>${x.title}</strong><div>${x.snippet || ''}</div><span class="new-tag">Match ${x.score || 0}%</span></div>`)
+          .join('');
+      }
+      actions.push({ label: 'Build application', onClick: () => openPremium() });
+    }
+
     addMsg('ai', reply, intent, actions);
-  } catch(e){ removeTyping(); addMsg('ai', '⚠️ ' + (e.message || 'Connection error. Please try again.')); }
-  sendBtn.disabled=false; sendBtn.classList.remove('loading'); inp.focus();
+
+    // Refresh quota display after each message (read-only, non-blocking)
+    loadUserProfile().catch(() => {});
+
+  } catch (e) {
+    removeTyping();
+    addMsg('ai', '⚠️ ' + (e.message || 'Connection error. Please try again.'));
+  }
+
+  isSending = false;
+  sendBtn.disabled = false;
+  sendBtn.classList.remove('loading');
+  inp.focus();
 }
 
-function quickStart(text){ document.getElementById('msg-input').value = text; sendMsg(); }
+function quickStart(text) {
+  document.getElementById('msg-input').value = text;
+  sendMsg();
+}
 
 const dropzone = document.getElementById('dropzone');
-['dragenter','dragover'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
-['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
-dropzone.addEventListener('drop', e => { const file = e.dataTransfer.files?.[0]; if(file) readFile(file); });
+['dragenter', 'dragover'].forEach(ev =>
+  dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); })
+);
+['dragleave', 'drop'].forEach(ev =>
+  dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); })
+);
+dropzone.addEventListener('drop', e => {
+  const file = e.dataTransfer.files?.[0];
+  if (file) readFile(file);
+});
 
-db.auth.onAuthStateChange((event, session) => { if(session){ currentUser = session.user; initApp(); } });
-db.auth.getSession().then(({ data:{ session } }) => { if(session){ currentUser = session.user; initApp(); } });
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeDrawer(); });
+db.auth.onAuthStateChange((event, session) => {
+  if (session) { currentUser = session.user; initApp(); }
+});
+db.auth.getSession().then(({ data: { session } }) => {
+  if (session) { currentUser = session.user; initApp(); }
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 </script>
 </body>
 </html>
