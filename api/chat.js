@@ -1,13 +1,12 @@
 // ═════════════════════════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// v17 — Supabase client mode, DB-first strict mode
+// v18 — DB first + external fallback prompt unlock
 // ═════════════════════════════════════════════════════════════
 
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const SUPA_URL = process.env.SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
-const SERPER_KEY = process.env.SERPER_API_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
 console.log('SUPA_KEY:', SUPA_KEY ? 'OK' : 'MISSING');
@@ -15,10 +14,6 @@ console.log('SUPA_KEY:', SUPA_KEY ? 'OK' : 'MISSING');
 const DAILY_LIMIT = 200;
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
 const CACHE_TTL_HOURS = 24;
-
-if (!SUPA_URL || !SUPA_KEY) {
-  console.log('[SUPABASE] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
-}
 
 const supabase = (SUPA_URL && SUPA_KEY)
   ? createClient(SUPA_URL, SUPA_KEY, {
@@ -33,8 +28,6 @@ function ft(url, opts = {}, ms = 12000) {
   const t = setTimeout(() => c.abort(), ms);
   return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
 }
-
-// ═══ GENERIC DB HELPERS ═══
 
 function getTable(name) {
   if (!supabase) throw new Error('Supabase client not initialized');
@@ -97,7 +90,7 @@ function hashQuery(str) {
   return Math.abs(h).toString(36);
 }
 
-// ═══ DB SEARCH — funding_opportunities only ═══
+// ═══ FUNDING SEARCH ═══
 
 async function searchFundingDB(profile) {
   if (!supabase) return [];
@@ -116,7 +109,6 @@ async function searchFundingDB(profile) {
     }
 
     console.log('[DB SEARCH] fetched:', allRows?.length ?? 0);
-
     if (!allRows || allRows.length === 0) return [];
 
     const rows = allRows.filter(g => !g.application_deadline || g.application_deadline >= today);
@@ -286,7 +278,7 @@ async function cleanExpiredCache() {
   } catch {}
 }
 
-// ═══ QUOTA ═══
+// ═══ QUOTA / PROFILE ═══
 
 async function checkQuota(userId) {
   if (!userId || !supabase) return true;
@@ -343,7 +335,7 @@ async function loadProfile(userId) {
   }
 }
 
-// ═══ LANGUAGE DETECTION ═══
+// ═══ LANGUAGE / PROFILE DETECTION ═══
 
 function detectLang(text) {
   if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
@@ -372,8 +364,6 @@ const LANG_NAMES = {
   tr: 'Turkish'
 };
 
-// ═══ INTENT DETECTION ═══
-
 function needsSearch(text, conversationText) {
   const t = `${text} ${conversationText}`.toLowerCase();
   return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support|money|euros|invest/i.test(t);
@@ -398,7 +388,7 @@ function detectProfile(text, supaProfile) {
     /startup/.test(t) ? 'Startup' :
     /\bngo\b|nonprofit|association|foundation|civil society/.test(t) ? 'NGO / Association' :
     /farmer|farm|agricultural|holding|ipard/.test(t) ? 'Agricultural holding' :
-    /individual|freelance|self.employed|poedinec|creator/.test(t) ? 'Individual / Entrepreneur' :
+    /individual|freelance|self.employed|creator/.test(t) ? 'Individual / Entrepreneur' :
     /\bsme\b|\bltd\b|\bdoo\b|small business/.test(t) ? 'SME' :
     /municipality|local government|public body/.test(t) ? 'Municipality / Public body' :
     /university|research institute|academic/.test(t) ? 'University / Research' :
@@ -425,14 +415,14 @@ function detectProfile(text, supaProfile) {
   return { sector, orgType, country, budget };
 }
 
-// ═══ MAIN SEARCH LOGIC ═══
+// ═══ SEARCH LOGIC ═══
 
 async function getSearchResults(userText, profile) {
   const cacheKey = hashQuery(JSON.stringify({ userText, profile }));
 
   const cached = await getCached(cacheKey);
   if (cached?.results?.length) {
-    console.log('[v17] cache hit');
+    console.log('[v18] cache hit');
     return { results: cached.results, cachedAt: cached.created_at, fromCache: true };
   }
 
@@ -442,13 +432,13 @@ async function getSearchResults(userText, profile) {
     saveCache(cacheKey, userText, dbResults).catch(() => {});
   }
 
-  console.log(`[v17] db:${dbResults.length} cache:false top:${dbResults[0]?.score || 0}`);
+  console.log(`[v18] db:${dbResults.length} cache:false top:${dbResults[0]?.score || 0}`);
   return { results: dbResults, cachedAt: null, fromCache: false };
 }
 
 // ═══ SYSTEM PROMPT ═══
 
-function buildSystemPrompt(lang, today, profile, results) {
+function buildSystemPrompt(lang, today, profile, results, allowExternalFallback = false) {
   const L = LANG_NAMES[lang] || 'English';
 
   const profileText = profile.sector || profile.orgType || profile.country
@@ -460,11 +450,30 @@ Budget range: ${profile.budget || 'not specified'}`
 
   let dbText = '';
   if (results.length > 0) {
-    dbText = '\n\nDATABASE RESULTS:\n' +
+    dbText =
+      '\n\nDATABASE RESULTS:\n' +
       results.map((r, i) =>
-        `[${i + 1}] Match:${r.score ?? 0}% | ${r.title}\n${r.snippet}\nURL: ${r.link}`
+        `[${i + 1}] Match:${r.score ?? 0}% | ${r.title}\n${r.snippet}\nURL: ${r.link || 'N/A'}`
       ).join('\n\n');
   }
+
+  const fallbackRule = allowExternalFallback
+    ? `
+EXTERNAL FALLBACK:
+- Database results are weak or insufficient
+- You MAY use broader funding knowledge and external reasoning
+- Clearly separate:
+  1. Database-verified opportunities
+  2. Additional external opportunities
+- Never present external opportunities as if they came from the database
+- For any external opportunity, explicitly label it as "External"
+- Be conservative and avoid invented details
+- If you are uncertain, say what must be verified officially`
+    : `
+DATABASE MODE:
+- Prioritize database results
+- Use database results as the primary source of truth
+- Do NOT replace valid database results with external suggestions`;
 
   return `LANGUAGE: Always respond in ${L}. Match the user's language exactly.
 
@@ -473,24 +482,38 @@ You are MARGINOVA — a global funding intelligence engine.
 Today: ${today}
 USER PROFILE:${profileText}
 
-RULES:
-- Use ONLY the provided DB results unless there are zero DB results
-- Do NOT invent programs, deadlines, amounts, co-financing, or eligibility
-- If DB results exist, do not add external opportunities from memory
-- Rank results strictly by provided Match score
-- If profile is incomplete, ask exactly ONE clarifying question before searching
-- Be direct and specific — no generic advice
+CORE RULES:
+- Prioritize database results when available
+- Rank database results strictly by Match score
+- Be direct, specific, and practical
+- If profile is incomplete, ask exactly ONE focused follow-up question
+${fallbackRule}
 
-FORMAT each opportunity exactly like this:
+OUTPUT RULES:
+- If database matches exist, show them first
+- If external fallback is allowed, show external suggestions in a clearly separate section
+- Never mix database and external results into one undifferentiated list
+- Never claim external suggestions are verified in the internal database
+
+FORMAT FOR DATABASE RESULTS:
 📋 [Program name]
+🏷️ Source: Database
 🎯 Match: [X]%
 💰 [Amount / range if available]
 ✅ Why you qualify: [based only on provided DB fields]
 ⚠️ Main risk: [based only on eligibility, country, budget, deadline, or org type mismatch]
 🔗 [URL]
 
-If there are no DB results, say clearly that no strong database matches were found and ask one focused follow-up question.
-Close with ONE concrete action the user can take TODAY.${dbText}`;
+FORMAT FOR EXTERNAL RESULTS:
+📋 [Program name]
+🏷️ Source: External
+🎯 Estimated fit: [Low / Medium / Strong]
+💰 [Amount / range if known]
+✅ Why it may fit
+⚠️ What must be verified
+🔗 [URL if known, otherwise write: Verify official source]
+
+If there are no strong database matches, clearly say that internal database matches are limited and then provide external fallback suggestions if allowed.${dbText}`;
 }
 
 // ═══ GEMINI ═══
@@ -547,7 +570,7 @@ async function gemini(systemPrompt, messages, imageData, imageType) {
   }
 }
 
-// ═══ MAIN REQUEST HANDLER ═══
+// ═══ HANDLER ═══
 
 module.exports = async function handler(req, res) {
   const ORIGINS = ['https://marginova.tech', 'https://www.marginova.tech', 'http://localhost:3000'];
@@ -592,7 +615,6 @@ module.exports = async function handler(req, res) {
     });
 
     const conversationText = (body.messages || []).map(m => m.content || '').join(' ');
-
     const supaProfile = userId ? await loadProfile(userId) : null;
     const profile = detectProfile(conversationText, supaProfile);
 
@@ -613,6 +635,7 @@ module.exports = async function handler(req, res) {
     if (Math.random() < 0.05) cleanExpiredCache().catch(() => {});
 
     const shouldSearch = needsSearch(userText, conversationText) || !!imageData;
+
     let results = [];
     let cachedAt = null;
     let fromCache = false;
@@ -624,12 +647,29 @@ module.exports = async function handler(req, res) {
       fromCache = searchData.fromCache;
     }
 
+    const strongDbResults = results.filter(r => (r.score || 0) >= 75);
+    const allowExternalFallback =
+      shouldSearch &&
+      !imageData &&
+      (
+        results.length === 0 ||
+        strongDbResults.length === 0 ||
+        (results[0]?.score || 0) < 75
+      );
+
     const messages = (body.messages || []).slice(-8).map(m => ({
       role: m.role,
       content: String(m.content || '')
     }));
 
-    const systemPrompt = buildSystemPrompt(lang, today, profile, results);
+    const systemPrompt = buildSystemPrompt(
+      lang,
+      today,
+      profile,
+      results,
+      allowExternalFallback
+    );
+
     const text = await gemini(systemPrompt, messages, imageData, imageType);
 
     return res.status(200).json({
@@ -639,6 +679,7 @@ module.exports = async function handler(req, res) {
       cached_at: cachedAt,
       db_results: results.length,
       web_results: 0,
+      external_fallback_allowed: allowExternalFallback,
       top_matches: results.slice(0, 5).map(r => ({
         title: r.title || '',
         score: Number.isFinite(r.score) ? r.score : 0,
