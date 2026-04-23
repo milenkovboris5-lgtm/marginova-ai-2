@@ -1,1 +1,471 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Marginova.AI — Workspace</title>
+<meta name="description" content="Marginova.AI workspace for funding search and premium application building.">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23f7f4ee'/><text y='22' x='6' font-size='18' fill='%23C9A84C'>M</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C9A84C;
+  --gold-dark:#9E7724;
+  --gold-soft:#F6EFD9;
+  --blue:#4A50DB;
+  --green:#6E8B2D;
+  --bg:#F6F4EF;
+  --panel:#FFFFFF;
+  --line:rgba(0,0,0,.08);
+  --line-gold:rgba(201,168,76,.18);
+  --text:#171717;
+  --muted:#6F6A61;
+  --dark:#11131A;
+  --danger:#D94A4A;
+}
+html,body{height:100%}
+body{
+  font-family:'DM Sans',sans-serif;
+  color:var(--text);
+  background:linear-gradient(180deg,#FBFAF7 0%, #F2EFE7 100%);
+  overflow:hidden;
+}
+button,input,textarea,select{font:inherit}
+.auth-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:linear-gradient(180deg,#FBFAF7 0%, #F2EFE7 100%)}
+.auth-box{background:rgba(255,255,255,.94);border:1px solid var(--line-gold);border-radius:24px;padding:2rem 1.5rem;width:min(380px,92vw);display:flex;flex-direction:column;gap:1rem;box-shadow:0 30px 80px rgba(0,0,0,.08)}
+.auth-logo{text-align:center}
+.auth-wordmark{font-family:'Cormorant Garamond',serif;font-size:1.8rem}.auth-wordmark span{color:var(--gold)}
+.auth-sub{font-size:.72rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:.3rem}
+.auth-tabs{display:flex;gap:4px;background:#F7F3EA;padding:4px;border-radius:999px;border:1px solid var(--line-gold)}
+.auth-tab{flex:1;padding:.6rem;border:none;border-radius:999px;background:transparent;color:var(--muted);cursor:pointer}.auth-tab.active{background:#fff;color:var(--gold-dark);box-shadow:0 6px 18px rgba(0,0,0,.05)}
+.auth-input{width:100%;padding:.85rem .95rem;border:1px solid var(--line-gold);border-radius:12px;outline:none;background:#fff}.auth-btn{width:100%;padding:.85rem;border:none;border-radius:12px;background:linear-gradient(135deg,#C9A84C,#D8B862);color:#fff;cursor:pointer;box-shadow:0 14px 28px rgba(201,168,76,.22)}
+.auth-msg,.auth-err{font-size:.76rem;text-align:center}.auth-msg{color:var(--muted)}
+.app{display:none;height:100%;grid-template-columns:260px 1fr 320px;grid-template-rows:64px 1fr 116px;grid-template-areas:'sidebar header sidepanel' 'sidebar main sidepanel' 'sidebar composer sidepanel'}
+.header{grid-area:header;display:flex;align-items:center;justify-content:space-between;padding:0 1rem;border-bottom:1px solid var(--line);background:rgba(250,248,243,.88);backdrop-filter:blur(12px)}
+.logo{font-family:'Cormorant Garamond',serif;font-size:1.35rem}.logo span{color:var(--gold)}
+.head-center{font-size:.95rem;color:var(--muted)}
+.head-actions{display:flex;align-items:center;gap:.6rem}
+.badge{background:rgba(201,168,76,.1);border:1px solid var(--line-gold);padding:.38rem .7rem;border-radius:999px;font-size:.72rem;color:var(--gold-dark)}
+.hbtn{background:#fff;border:1px solid var(--line);border-radius:12px;padding:.55rem .8rem;cursor:pointer;color:#4D4D4D;display:flex;align-items:center;gap:.4rem}
+.hbtn.gold{background:linear-gradient(135deg,#C9A84C,#D8B459);color:#fff;border:none}
+.sidebar{grid-area:sidebar;border-right:1px solid var(--line);background:rgba(248,246,241,.8);padding:1.25rem 1rem;display:flex;flex-direction:column;gap:1rem}
+.brand{display:flex;align-items:center;gap:.7rem;padding:.2rem .2rem .8rem}.brand-mark{width:42px;height:42px;border-radius:14px;background:#FBF8F0;border:1px solid var(--line-gold);display:flex;align-items:center;justify-content:center;color:var(--gold)}.brand-name{font-family:'Cormorant Garamond',serif;font-size:1.5rem}.brand-name span{color:var(--gold)}
+.nav{display:flex;flex-direction:column;gap:.45rem}.nav-btn{display:flex;align-items:center;gap:.75rem;padding:.9rem .95rem;border-radius:14px;border:1px solid transparent;background:transparent;color:#3E3B36;cursor:pointer;text-align:left}.nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,.82);border-color:var(--line-gold);color:var(--gold-dark)}
+.premium-card,.status-card{background:rgba(255,255,255,.82);border:1px solid var(--line-gold);border-radius:20px;padding:1rem}
+.premium-title{font-size:1.35rem;font-family:'Cormorant Garamond',serif;color:var(--gold-dark);margin-bottom:.5rem}.premium-text{font-size:.9rem;line-height:1.6;color:#55524A}.premium-btn{margin-top:.9rem;width:100%;padding:.85rem;border:none;border-radius:12px;background:linear-gradient(135deg,#C9A84C,#D8B459);color:#fff;cursor:pointer}
+.side-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem}.stat{text-align:center;padding:.45rem 0}.stat strong{display:block;font-size:1.15rem;color:var(--gold-dark)}.stat span{font-size:.74rem;color:var(--muted)}
+.status-card{margin-top:auto;font-size:.85rem;color:#3B3B3B;display:flex;align-items:center;gap:.55rem}.live-dot{width:8px;height:8px;border-radius:50%;background:#1fa94b}
+.main{grid-area:main;display:flex;flex-direction:column;overflow:hidden}
+.workspace-top{padding:1.2rem 1.2rem 0;display:flex;flex-direction:column;gap:1rem}
+.welcome-bar{background:rgba(255,255,255,.82);border:1px solid var(--line-gold);border-radius:22px;padding:1.2rem 1.3rem}.welcome-title{font-family:'Cormorant Garamond',serif;font-size:2.2rem;margin-bottom:.25rem}.welcome-sub{font-size:1rem;color:#4D4A44}
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.85rem}.quick-card{background:rgba(255,255,255,.84);border:1px solid var(--line);border-radius:18px;padding:1rem;min-height:112px;cursor:pointer;transition:.2s}.quick-card:hover{transform:translateY(-1px);border-color:var(--line-gold)}.quick-card h3{font-size:1.08rem;margin:.6rem 0 .25rem}.quick-card p{font-size:.88rem;color:var(--muted);line-height:1.45}.premium-tag{display:inline-block;background:rgba(201,168,76,.12);border:1px solid var(--line-gold);color:var(--gold-dark);padding:.2rem .5rem;border-radius:999px;font-size:.68rem;margin-left:.35rem}
+.chat-wrap{flex:1;overflow-y:auto;padding:1rem 1.2rem 1rem}.chat-wrap::-webkit-scrollbar{width:6px}.chat-wrap::-webkit-scrollbar-thumb{background:rgba(0,0,0,.14);border-radius:6px}
+.messages{max-width:860px;display:flex;flex-direction:column;gap:1rem}
+.msg-row{display:flex;align-items:flex-start;gap:.7rem}.msg-row.user{flex-direction:row-reverse}.msg-av,.msg-user-av{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.msg-av{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.16)}.msg-user-av{background:rgba(74,80,219,.08);border:1px solid rgba(74,80,219,.14);font-size:.72rem;color:#4A50DB}
+.bubble{padding:.95rem 1rem;border-radius:18px;max-width:84%;font-size:.92rem;line-height:1.72}.bubble.ai{background:rgba(255,255,255,.92);border:1px solid rgba(0,0,0,.06);border-top-left-radius:6px;box-shadow:0 14px 34px rgba(0,0,0,.04)}.bubble.user{background:rgba(74,80,219,.07);border:1px solid rgba(74,80,219,.12);border-top-right-radius:6px}.bubble h3{font-size:.88rem;font-weight:600;color:#9A7421;margin:.85rem 0 .4rem}.bubble p{margin:.35rem 0}.bubble ul{padding-left:1.1rem;margin:.3rem 0}.bubble li{margin:.2rem 0}.bubble a{color:#4A50DB;text-decoration:none}.bubble strong{color:#B48720}.bubble code{background:rgba(0,0,0,.05);padding:.1rem .35rem;border-radius:4px;font-size:.78rem;font-family:monospace}
+.itag{display:inline-block;padding:.16rem .5rem;border-radius:999px;font-size:.64rem;letter-spacing:.06em;margin-bottom:.45rem}.itag.grant{background:rgba(201,168,76,.1);color:#9A7421;border:1px solid rgba(201,168,76,.16)}.itag.general{background:rgba(74,80,219,.08);color:#4A50DB;border:1px solid rgba(74,80,219,.12)}
+.msg-actions{margin-top:.55rem;display:flex;gap:.45rem;flex-wrap:wrap}.msg-btn{background:transparent;border:1px solid rgba(0,0,0,.08);border-radius:8px;padding:.3rem .6rem;font-size:.7rem;color:#777;cursor:pointer}.msg-btn:hover,.msg-btn.copied{border-color:var(--line-gold);color:#9A7421}
+.bubble.typing{display:flex;gap:4px;align-items:center}.td{width:6px;height:6px;border-radius:50%;background:#C9A84C;opacity:.4;animation:td 1.2s infinite}.td:nth-child(2){animation-delay:.2s}.td:nth-child(3){animation-delay:.4s}@keyframes td{0%,80%,100%{opacity:.2;transform:scale(.9)}40%{opacity:.8;transform:scale(1)}}
+.composer{grid-area:composer;border-top:1px solid var(--line);background:rgba(250,248,243,.9);backdrop-filter:blur(12px);padding:.9rem 1.2rem 1rem}
+.file-preview{display:none;align-items:center;gap:.6rem;background:rgba(255,255,255,.86);border:1px solid var(--line-gold);border-radius:12px;padding:.55rem .8rem;max-width:860px;margin:0 auto .55rem}.file-name{font-size:.78rem;color:#5B564E;flex:1}.file-rm{background:transparent;border:none;color:#999;cursor:pointer;font-size:1rem}
+.composer-inner{max-width:860px;margin:0 auto;background:#fff;border:1px solid var(--line-gold);border-radius:22px;padding:.95rem 1rem;box-shadow:0 16px 40px rgba(0,0,0,.04)}
+.composer-top{display:flex;gap:.7rem;align-items:flex-start}.msg-input{flex:1;min-height:88px;max-height:180px;resize:none;border:none;outline:none;font-size:.96rem;line-height:1.55;background:transparent}.send-btn{width:52px;height:52px;border:none;border-radius:16px;background:linear-gradient(135deg,#C9A84C,#D8B459);color:#fff;cursor:pointer;box-shadow:0 10px 22px rgba(201,168,76,.2)}.send-btn.loading{opacity:.55;pointer-events:none}
+.composer-tools{display:flex;justify-content:space-between;align-items:center;gap:.7rem;margin-top:.85rem;flex-wrap:wrap}.tool-left,.tool-right{display:flex;gap:.65rem;align-items:center;flex-wrap:wrap}.tool-btn{display:flex;align-items:center;gap:.5rem;padding:.7rem .85rem;border-radius:12px;border:1px solid var(--line);background:#fff;color:#4A4742;cursor:pointer}.dropzone{padding:.8rem 1rem;border-radius:14px;border:1px dashed rgba(0,0,0,.14);min-width:290px;background:#FBFAF7;color:#5C584F;text-align:center}.dropzone.drag{border-color:var(--gold);background:#FBF7EE}.composer-tip{font-size:.8rem;color:var(--muted);text-align:center;margin-top:.75rem}
+.sidepanel{grid-area:sidepanel;border-left:1px solid var(--line);background:rgba(248,246,241,.72);padding:1rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto}
+.panel-card{background:rgba(255,255,255,.86);border:1px solid var(--line);border-radius:20px;padding:1rem}.panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem}.panel-title h3{font-size:1.05rem}.pill{display:inline-block;padding:.35rem .6rem;border-radius:999px;background:#FBF3E5;color:var(--gold-dark);font-size:.75rem}
+.profile-stack{display:flex;flex-direction:column;gap:.55rem}.profile-line{font-size:.96rem;color:#3F3B36}.opp-list{display:flex;flex-direction:column;gap:.9rem}.opp-item{padding-bottom:.85rem;border-bottom:1px solid rgba(0,0,0,.06)}.opp-item:last-child{border-bottom:none;padding-bottom:0}.opp-item strong{display:block;font-size:1rem;margin-bottom:.25rem}.opp-item div{font-size:.9rem;color:#55524A;line-height:1.55}.new-tag{display:inline-block;padding:.18rem .5rem;border-radius:999px;background:rgba(31,169,75,.12);color:#238b47;font-size:.7rem;margin-top:.35rem}
+.toast{position:fixed;bottom:6rem;left:50%;transform:translateX(-50%);background:rgba(17,19,26,.96);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:.55rem 1rem;font-size:.76rem;color:#fff;opacity:0;transition:opacity .3s;z-index:999;white-space:nowrap}.toast.show{opacity:1}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center}.modal-overlay.open{display:flex}.modal{background:#fff;border:1px solid var(--line-gold);border-radius:18px;padding:1.5rem;width:min(360px,90vw);display:flex;flex-direction:column;gap:.8rem;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.14)}.modal h3{font-family:'Cormorant Garamond',serif;font-size:1.45rem;color:#9A7421}.modal p{font-size:.84rem;color:#5D5951;line-height:1.6}.modal-close{position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:#888;cursor:pointer;font-size:1.1rem}.modal-btns{display:flex;gap:.55rem;margin-top:.35rem}.mbtn{flex:1;padding:.68rem;border-radius:10px;font-size:.82rem;cursor:pointer;border:1px solid rgba(0,0,0,.08);background:#fff;color:#555}.mbtn.gold{background:linear-gradient(135deg,#C9A84C,#D8B459);border:none;color:#fff}
+.drawer{position:fixed;top:0;right:-290px;width:270px;height:100%;background:#fff;border-left:1px solid rgba(0,0,0,.06);z-index:150;transition:right .3s;display:flex;flex-direction:column;box-shadow:-20px 0 50px rgba(0,0,0,.06)}.drawer.open{right:0}.drawer-head{padding:1.15rem 1rem;border-bottom:1px solid rgba(0,0,0,.06);display:flex;justify-content:space-between;align-items:center}.drawer-head h3{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#9A7421}.drawer-close{background:transparent;border:none;color:#888;cursor:pointer;font-size:1.1rem}.drawer-body{flex:1;padding:1rem;display:flex;flex-direction:column;gap:.55rem;overflow-y:auto}.d-email{font-size:.76rem;color:#57524B;padding:.6rem .75rem;background:#FAF8F3;border-radius:10px;border:1px solid var(--line-gold)}.d-plan{display:flex;justify-content:space-between;align-items:center;padding:.6rem .75rem;background:#FBF8F0;border-radius:10px;border:1px solid var(--line-gold)}.d-plan-label{font-size:.72rem;color:#8A8478}.d-plan-val{font-size:.78rem;color:#9A7421;font-weight:600}.d-quota{font-size:.72rem;color:#5C574F;padding:.5rem .75rem;background:#FAF8F3;border-radius:10px;border:1px solid rgba(0,0,0,.06)}.d-quota-bar{height:4px;background:rgba(0,0,0,.06);border-radius:999px;margin-top:.45rem}.d-quota-fill{height:100%;background:#C9A84C;border-radius:999px;transition:width .3s}.dsep{height:1px;background:rgba(0,0,0,.06);margin:.35rem 0}.d-section{font-size:.65rem;color:#8A8478;text-transform:uppercase;letter-spacing:.08em;padding:.2rem 0}.drawer-btn{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:.52rem .82rem;color:#56514A;font-size:.77rem;cursor:pointer;text-align:left;display:flex;align-items:center;gap:.5rem}.drawer-btn:hover{border-color:var(--line-gold);color:#9A7421}.drawer-btn.danger:hover{border-color:rgba(217,74,74,.25);color:var(--danger)}.drawer-foot{padding:.85rem 1rem;border-top:1px solid rgba(0,0,0,.06)}.d-version{font-size:.63rem;color:#8A8478;text-align:center}
+@media (max-width:1280px){.app{grid-template-columns:220px 1fr 290px}.quick-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:980px){.app{grid-template-columns:1fr;grid-template-rows:64px auto 1fr 116px;grid-template-areas:'header' 'main' 'main' 'composer'}.sidebar,.sidepanel{display:none}.head-center{display:none}.quick-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.quick-grid{grid-template-columns:1fr}.workspace-top,.chat-wrap,.composer{padding-left:.85rem;padding-right:.85rem}.welcome-title{font-size:1.9rem}.tool-left,.tool-right,.composer-tools{width:100%}.dropzone{min-width:unset;width:100%}.composer-top{align-items:stretch}.send-btn{height:auto}}
+</style>
+</head>
+<body>
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-wordmark"><b>Marginova</b><span>.AI</span></div>
+      <div class="auth-sub">Funding workspace</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="setAuthMode('login')">Sign In</button>
+      <button class="auth-tab" onclick="setAuthMode('signup')">Create Account</button>
+    </div>
+    <input class="auth-input" id="auth-email" type="email" placeholder="email@example.com" autocomplete="email">
+    <input class="auth-input" id="auth-pw" type="password" placeholder="Password" autocomplete="current-password">
+    <div id="auth-err" class="auth-err"></div>
+    <button class="auth-btn" onclick="doAuth()">Continue</button>
+    <div class="auth-msg">By continuing you accept our terms of use.</div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div class="brand-name">Marginova<span>.AI</span></div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-btn active">💬 Chat</button>
+      <button class="nav-btn">🧭 Opportunities</button>
+      <button class="nav-btn">👤 My Profile</button>
+      <button class="nav-btn">📈 Analysis</button>
+      <button class="nav-btn">🔖 Saved</button>
+      <button class="nav-btn">📄 Documents</button>
+    </nav>
+
+    <div class="premium-card">
+      <div class="premium-title">Premium</div>
+      <div class="premium-text">Unlock full power. Build applications, export LFM, budget drafts and premium proposal flow.</div>
+      <button class="premium-btn" onclick="openPremium()">Go Premium</button>
+    </div>
+
+    <div class="side-stats">
+      <div class="stat"><strong>200+</strong><span>Programs</span></div>
+      <div class="stat"><strong>40+</strong><span>Countries</span></div>
+      <div class="stat"><strong>24/7</strong><span>Scanning</span></div>
+    </div>
+
+    <div class="status-card"><span class="live-dot"></span> All systems active</div>
+  </aside>
+
+  <header class="header">
+    <div class="logo"><b>Marginova</b><span>.AI</span></div>
+    <div class="head-center">Your AI funding decision layer</div>
+    <div class="head-actions">
+      <div class="badge" id="tok-badge">Free</div>
+      <button class="hbtn gold" onclick="openPremium()">Upgrade to Premium</button>
+      <button class="hbtn" onclick="openDrawer()">Account</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="workspace-top">
+      <div class="welcome-bar">
+        <div class="welcome-title">Hello! I’m Marginova AI.</div>
+        <div class="welcome-sub">A clear work surface for grant search, eligibility checks, project analysis and premium application building.</div>
+      </div>
+
+      <div class="quick-grid">
+        <button class="quick-card" onclick="quickStart('Find funding opportunities for my organization based on sector, country and budget.')">
+          <div>🌍</div><h3>Find funding</h3><p>Discover opportunities matched to your profile.</p>
+        </button>
+        <button class="quick-card" onclick="quickStart('Check whether my organization is eligible for relevant grants and tell me the main risks.')">
+          <div>✅</div><h3>Check eligibility</h3><p>See fit, risks and what needs verification.</p>
+        </button>
+        <button class="quick-card" onclick="quickStart('Analyze my project idea and tell me which type of funding path fits best.')">
+          <div>💡</div><h3>Analyze idea</h3><p>Turn a rough idea into a structured funding direction.</p>
+        </button>
+        <button class="quick-card" onclick="openPremium()">
+          <div>🧩 <span class="premium-tag">Premium</span></div><h3>Build application</h3><p>Open the premium application builder and proposal workflow.</p>
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-wrap" id="chat-wrap">
+      <div class="messages" id="messages">
+        <div class="msg-row">
+          <div class="msg-av">M</div>
+          <div class="bubble ai">
+            <p>Hi! I can help you discover funding opportunities, check eligibility, analyze your project, and guide you to the best next steps.</p>
+            <p>What would you like to explore today?</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="composer">
+    <div class="file-preview" id="file-preview">
+      <span>📎</span>
+      <span class="file-name" id="file-name">document.pdf</span>
+      <button class="file-rm" onclick="removeFile()">✕</button>
+    </div>
+
+    <div class="composer-inner" id="dropzone-wrap">
+      <div class="composer-top">
+        <textarea class="msg-input" id="msg-input" placeholder="Ask anything about grants, funding, eligibility or your project..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMsg()">➤</button>
+      </div>
+
+      <div class="composer-tools">
+        <div class="tool-left">
+          <label class="tool-btn">
+            <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.xlsx,.xls" style="display:none" onchange="handleFile(event)">
+            📎 Attach file
+          </label>
+          <label class="tool-btn">
+            <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+            📷 Photo
+          </label>
+        </div>
+
+        <div class="tool-right">
+          <div class="dropzone" id="dropzone">Drag & drop files here<br><small>PDF, DOCX, XLSX, JPG, PNG</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer-tip">Tip: The more details you provide, the better the funding decisions and premium outputs.</div>
+  </div>
+
+  <aside class="sidepanel">
+    <div class="panel-card">
+      <div class="panel-title"><h3>Your Profile</h3><button class="hbtn" style="padding:.35rem .6rem" onclick="showToast('Profile editor later')">Edit</button></div>
+      <div class="profile-stack">
+        <div class="profile-line"><strong id="profile-org">NGO</strong></div>
+        <div class="profile-line" id="profile-country">North Macedonia</div>
+        <div class="profile-line"><span class="pill" id="profile-sector">Not set yet</span></div>
+        <div class="profile-line" id="profile-budget">Budget range: not set</div>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-title"><h3>Recent Opportunities</h3><button class="hbtn" style="padding:.35rem .6rem" onclick="quickStart('Show me the top recent opportunities again.')">View all</button></div>
+      <div class="opp-list" id="recent-opps">
+        <div class="opp-item"><strong>No loaded opportunities yet</strong><div>Run a funding analysis and recent matches will appear here.</div></div>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-title"><h3>Premium Power</h3></div>
+      <div class="premium-text">Build complete applications, logical frameworks, budget drafts and premium proposal flow.</div>
+      <button class="premium-btn" style="margin-top:1rem" onclick="openPremium()">Upgrade now</button>
+    </div>
+  </aside>
+</div>
+
+<div class="drawer" id="drawer">
+  <div class="drawer-head"><h3>Account</h3><button class="drawer-close" onclick="closeDrawer()">✕</button></div>
+  <div class="drawer-body">
+    <div class="d-email" id="drawer-email">user@example.com</div>
+    <div class="d-plan"><span class="d-plan-label">Plan</span><span class="d-plan-val" id="drawer-plan">Free</span></div>
+    <div class="d-quota" id="drawer-quota" style="display:none"><span id="quota-text">0 / 20 messages used today</span><div class="d-quota-bar"><div class="d-quota-fill" id="quota-fill" style="width:0%"></div></div></div>
+    <div class="dsep"></div>
+    <div class="d-section">Chat</div>
+    <button class="drawer-btn" onclick="clearChat();closeDrawer()">Clear history</button>
+    <div class="dsep"></div>
+    <div class="d-section">Language</div>
+    <button class="drawer-btn" onclick="setLang('en');closeDrawer()">🇬🇧 English</button>
+    <button class="drawer-btn" onclick="setLang('mk');closeDrawer()">🇲🇰 Macedonian</button>
+    <button class="drawer-btn" onclick="setLang('sr');closeDrawer()">🇷🇸 Serbian</button>
+    <div class="dsep"></div>
+    <button class="drawer-btn danger" onclick="doSignOut()">Sign out</button>
+  </div>
+  <div class="drawer-foot"><div class="d-version">Marginova.AI Workspace v1</div></div>
+</div>
+
+<div class="modal-overlay" id="upgrade-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('upgrade-modal')">✕</button>
+    <h3>Premium workspace</h3>
+    <p>Unlock application builder, LFM generation, budget draft, proposal structure and premium export flow.</p>
+    <div class="modal-btns">
+      <button class="mbtn" onclick="closeModal('upgrade-modal')">Later</button>
+      <button class="mbtn gold" onclick="window.location.href='/premium-application.html'">Open Premium</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
+
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'marginova_auth' }
+});
+
+let currentUser = null;
+let authMode = 'login';
+let lang = localStorage.getItem('mlang') || 'en';
+let chatHistory = [];
+let currentFile = null;
+let currentOpportunity = null;
+
+function setAuthMode(m){
+  authMode = m;
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&m==='login')||(i===1&&m==='signup')));
+  document.getElementById('auth-pw').placeholder = m === 'signup' ? 'Choose a password (min 6 chars)' : 'Password';
+}
+
+async function doAuth(){
+  const email = document.getElementById('auth-email').value.trim();
+  const pw = document.getElementById('auth-pw').value;
+  const err = document.getElementById('auth-err');
+  err.style.display = 'none';
+  if(!email || !pw){ err.style.color='var(--danger)'; err.textContent='Please fill all fields.'; err.style.display='block'; return; }
+  try{
+    let res;
+    if(authMode==='signup'){
+      res = await db.auth.signUp({ email, password: pw });
+      if(!res.error){ err.style.color='var(--green)'; err.textContent='Check your email to confirm your account.'; err.style.display='block'; return; }
+    } else {
+      res = await db.auth.signInWithPassword({ email, password: pw });
+    }
+    if(res.error){ err.style.color='var(--danger)'; err.textContent=res.error.message; err.style.display='block'; return; }
+    currentUser = res.data.user; initApp();
+  } catch(e){ err.style.color='var(--danger)'; err.textContent=e.message; err.style.display='block'; }
+}
+
+function initApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='grid';
+  if(currentUser){ document.getElementById('drawer-email').textContent=currentUser.email; loadUserProfile(); }
+}
+
+async function loadUserProfile(){
+  if(!currentUser) return;
+  try{
+    const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country').eq('user_id', currentUser.id).single();
+    const plan = data?.plan || 'free';
+    const limits = { free:20, starter:500, pro:2000, business:-1 };
+    const limit = limits[plan] ?? 20;
+    const today = new Date().toISOString().split('T')[0];
+    const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
+    const remaining = limit === -1 ? Infinity : Math.max(0, limit - used);
+    document.getElementById('drawer-plan').textContent = plan.charAt(0).toUpperCase()+plan.slice(1);
+    document.getElementById('tok-badge').textContent = plan.charAt(0).toUpperCase()+plan.slice(1);
+    if(limit !== -1){
+      const pct = Math.min(100, Math.round((used/limit)*100));
+      document.getElementById('drawer-quota').style.display='block';
+      document.getElementById('quota-text').textContent = `${used} / ${limit} messages used today`;
+      document.getElementById('quota-fill').style.width = pct + '%';
+    }
+    document.getElementById('profile-org').textContent = data?.organization_type || data?.detected_org_type || 'Not set yet';
+    document.getElementById('profile-country').textContent = data?.country || data?.detected_country || 'Not set yet';
+    document.getElementById('profile-sector').textContent = data?.sector || data?.detected_sector || 'Not set yet';
+    document.getElementById('profile-budget').textContent = `Budget range: ${data?.goals || 'not set'}`;
+  } catch(e){}
+}
+
+async function deductToken(){
+  if(!currentUser) return true;
+  try{
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await db.from('profiles').select('plan,daily_msgs,last_msg_date').eq('user_id', currentUser.id).single();
+    const plan = data?.plan || 'free';
+    const limits = { free:20, starter:500, pro:2000, business:-1 };
+    const limit = limits[plan] ?? 20;
+    if(limit === -1) return true;
+    const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
+    if(used >= limit){ openModal('upgrade-modal'); return false; }
+    await db.from('profiles').upsert({ user_id: currentUser.id, plan, daily_msgs: used+1, last_msg_date: today });
+    return true;
+  } catch(e){ return true; }
+}
+
+async function doSignOut(){ await db.auth.signOut(); currentUser = null; chatHistory = []; document.getElementById('app').style.display='none'; document.getElementById('auth-screen').style.display='flex'; closeDrawer(); }
+function openDrawer(){ document.getElementById('drawer').classList.add('open'); }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function openPremium(){ openModal('upgrade-modal'); }
+function setLang(l){ lang = l; localStorage.setItem('mlang', l); showToast('Language set to ' + l.toUpperCase()); }
+function showToast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2500); }
+
+function parseMarkdown(text){
+  const links=[]; let i=0;
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,(_,t,u)=>{ links.push(`<a href="${u}" target="_blank" rel="noopener">${t}</a>`); return `\x00LINK${i++}\x00`; });
+  text = text.replace(/(https?:\/\/[^\s<>")\x00]+)/g,(_,u)=>{ links.push(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`); return `\x00LINK${i++}\x00`; });
+  text = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  text = text.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*\n]+)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h3>$1</h3>').replace(/^[-•]\s+(.+)$/gm,'<li>$1</li>').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+  text = text.replace(/\x00LINK(\d+)\x00/g,(_,n)=>links[+n]);
+  return text;
+}
+const INTENT_LABELS = { grant:'Grant', fund:'Fund', ngo:'NGO', general:'General' };
+
+function clearChat(){
+  chatHistory = [];
+  document.getElementById('messages').innerHTML = `<div class="msg-row"><div class="msg-av">M</div><div class="bubble ai"><p>Hi! I can help you discover funding opportunities, check eligibility, analyze your project, and guide you to the best next steps.</p><p>What would you like to explore today?</p></div></div>`;
+  showToast('Chat cleared');
+}
+
+function addMsg(role, text, intent, actions = []){
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row' + (role === 'user' ? ' user' : '');
+  if(role === 'ai'){
+    const av = document.createElement('div'); av.className='msg-av'; av.textContent='M'; row.appendChild(av);
+  }
+  const b = document.createElement('div'); b.className='bubble ' + role;
+  if(role === 'ai' && intent && intent !== 'general'){ b.innerHTML = `<span class="itag ${intent}">${INTENT_LABELS[intent] || intent}</span><br>`; }
+  const span = document.createElement('span'); span.innerHTML = '<p>' + parseMarkdown(text) + '</p>'; b.appendChild(span);
+  if(role === 'ai'){
+    const wrap = document.createElement('div'); wrap.className='msg-actions';
+    const copyBtn = document.createElement('button'); copyBtn.className='msg-btn'; copyBtn.textContent='Copy';
+    copyBtn.onclick = () => navigator.clipboard.writeText(text).then(()=>{ copyBtn.textContent='✓'; copyBtn.classList.add('copied'); setTimeout(()=>{ copyBtn.textContent='Copy'; copyBtn.classList.remove('copied'); },1500); });
+    wrap.appendChild(copyBtn);
+    actions.forEach(a => {
+      const btn = document.createElement('button'); btn.className='msg-btn'; btn.textContent = a.label; btn.onclick = a.onClick; wrap.appendChild(btn);
+    });
+    b.appendChild(wrap);
+  } else {
+    const av = document.createElement('div'); av.className='msg-user-av'; av.textContent='You'; row.appendChild(b); row.appendChild(av); msgs.appendChild(row); document.getElementById('chat-wrap').scrollTop=999999; return;
+  }
+  row.appendChild(b); msgs.appendChild(row); document.getElementById('chat-wrap').scrollTop=999999;
+}
+
+function addTyping(){ const msgs=document.getElementById('messages'); const row=document.createElement('div'); row.className='msg-row'; row.id='typing'; row.innerHTML='<div class="msg-av">M</div><div class="bubble ai typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>'; msgs.appendChild(row); document.getElementById('chat-wrap').scrollTop=999999; }
+function removeTyping(){ const t=document.getElementById('typing'); if(t) t.remove(); }
+
+function handleFile(e){ const file = e.target.files[0]; if(!file) return; readFile(file); }
+function handlePhoto(e){ const file = e.target.files[0]; if(!file) return; readFile(file); }
+function readFile(file){ const reader = new FileReader(); reader.onload = ev => { currentFile = { data: ev.target.result.split(',')[1], type:file.type, name:file.name }; document.getElementById('file-name').textContent = file.name; document.getElementById('file-preview').style.display='flex'; showToast('File attached'); }; reader.readAsDataURL(file); }
+function removeFile(){ currentFile = null; document.getElementById('file-preview').style.display='none'; document.getElementById('file-input').value=''; const pi=document.getElementById('photo-input'); if(pi) pi.value=''; }
+
+async function sendMsg(){
+  const inp = document.getElementById('msg-input');
+  const text = inp.value.trim();
+  if(!text && !currentFile) return;
+  inp.value=''; inp.style.height='auto';
+  const sendBtn = document.getElementById('send-btn'); sendBtn.disabled=true; sendBtn.classList.add('loading');
+  if(text) addMsg('user', text);
+  if(currentFile) addMsg('user', '📎 ' + currentFile.name);
+  chatHistory.push({ role:'user', content:text || '[Document attached]' });
+  const ok = await deductToken(); if(!ok){ sendBtn.disabled=false; sendBtn.classList.remove('loading'); return; }
+  addTyping();
+  try{
+    const payload = { messages: chatHistory.slice(-8), lang, userId: currentUser?.id || null, image: currentFile?.data || null, imageType: currentFile?.type || null, imageText: text || 'Analyze this document and find relevant grants.' };
+    const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const data = await res.json();
+    removeTyping(); removeFile();
+    if(!res.ok) throw new Error(data?.error?.message || data?.message || 'Request failed');
+    const reply = data?.content?.[0]?.text || data?.result || data?.reply || data?.message || data?.output || data?.text || 'No response received.';
+    const intent = data?.intent || 'general';
+    chatHistory.push({ role:'assistant', content:reply });
+    const actions = [];
+    if(intent === 'grant' || (data?.top_matches && data.top_matches.length)){
+      const top = data?.top_matches?.[0];
+      if(top?.title){
+        document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0,3).map(x => `<div class="opp-item"><strong>${x.title}</strong><div>${x.snippet || ''}</div><span class="new-tag">Match ${x.score || 0}%</span></div>`).join('');
+      }
+      actions.push({ label:'Build application', onClick:() => openPremium() });
+    }
+    addMsg('ai', reply, intent, actions);
+  } catch(e){ removeTyping(); addMsg('ai', '⚠️ ' + (e.message || 'Connection error. Please try again.')); }
+  sendBtn.disabled=false; sendBtn.classList.remove('loading'); inp.focus();
+}
+
+function quickStart(text){ document.getElementById('msg-input').value = text; sendMsg(); }
+
+const dropzone = document.getElementById('dropzone');
+['dragenter','dragover'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e => { const file = e.dataTransfer.files?.[0]; if(file) readFile(file); });
+
+db.auth.onAuthStateChange((event, session) => { if(session){ currentUser = session.user; initApp(); } });
+db.auth.getSession().then(({ data:{ session } }) => { if(session){ currentUser = session.user; initApp(); } });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeDrawer(); });
+</script>
+</body>
+</html>
