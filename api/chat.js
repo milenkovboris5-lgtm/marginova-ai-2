@@ -633,22 +633,23 @@ module.exports = async function handler(req, res) {
     const systemPrompt = buildSystemPrompt(lang, today, profile, results);
     const text = await gemini(systemPrompt, messages, imageData, imageType);
 
-    return res.status(200).json({
-      content: [{ type: 'text', text }],
-      intent: shouldSearch ? 'grant' : 'general',
-      cached: fromCache,
-      cached_at: cachedAt,
-      db_results: results.length,
-      web_results: 0,
-      top_matches: results.slice(0, 5).map(r => ({
-      debug_results: results  title: r.title || '',
-        score: Number.isFinite(r.score) ? r.score : 0,
-        score_type: 'match',
-        source: 'db',
-        link: r.link || '',
-        snippet: r.snippet || ''
-      }))
-    });
+   return res.status(200).json({
+  content: [{ type: 'text', text }],
+  intent: shouldSearch ? 'grant' : 'general',
+  cached: fromCache,
+  cached_at: cachedAt,
+  db_results: results.length,
+  web_results: 0,
+  top_matches: results.slice(0, 5).map(r => ({
+    title: r.title || '',
+    score: Number.isFinite(r.score) ? r.score : 0,
+    score_type: 'match',
+    source: 'db',
+    link: r.link || '',
+    snippet: r.snippet || ''
+  })),
+  debug_results: results
+});
 
   } catch (err) {
     console.error('[ERROR]', err.message);
