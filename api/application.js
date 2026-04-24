@@ -1,43 +1,56 @@
 // ═════════════════════════════════════════════════════════════
 // MARGINOVA.AI — api/application.js
-// Premium Application Engine v1
-// Separate from grant search chat.js
+// Premium Application Engine v2
+// Consolidated: uses shared _lib/utils.js (no more duplicates)
 // ═════════════════════════════════════════════════════════════
 
-const { createClient } = require('@supabase/supabase-js');
+const { supabase, getTable, ft, detectLang, LANG_NAMES, checkIP, setCors } = require('./_lib/utils');
 
-const SUPA_URL = process.env.SUPABASE_URL;
-const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
-const supabase = (SUPA_URL && SUPA_KEY)
-  ? createClient(SUPA_URL, SUPA_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    })
-  : null;
+// ═══ QUOTA — same as chat.js ═══
 
-function getTable(name) {
-  if (!supabase) throw new Error('Supabase client not initialized');
-  return supabase.from(name);
+const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
+
+async function checkAndDeductQuota(userId) {
+  if (!userId || !supabase) return { allowed: true };
+
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: p, error } = await getTable('profiles')
+      .select('plan,daily_msgs,last_msg_date')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.log('[QUOTA]', error.message);
+      return { allowed: true };
+    }
+
+    if (!p) return { allowed: true };
+
+    const limit = PLANS[p.plan] ?? 20;
+    if (limit === -1) return { allowed: true };
+
+    const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
+
+    if (used >= limit) {
+      return { allowed: false, used, limit, plan: p.plan };
+    }
+
+    await getTable('profiles')
+      .update({ daily_msgs: used + 1, last_msg_date: today })
+      .eq('user_id', userId);
+
+    return { allowed: true, used: used + 1, limit, plan: p.plan };
+  } catch (e) {
+    console.log('[QUOTA]', e.message);
+    return { allowed: true };
+  }
 }
 
-function ft(url, opts = {}, ms = 30000) {
-  const c = new AbortController();
-  const t = setTimeout(() => c.abort(), ms);
-  return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
-}
-
-function detectLang(text) {
-  if (/ќ|ѓ|ѕ|љ|њ|џ/i.test(text)) return 'mk';
-  if (/јас|сум|барат|проект|грант|апликација|буџет|цели/i.test(text)) return 'mk';
-  if (/[а-шА-Ш]/.test(text)) return 'mk';
-  return 'en';
-}
-
-const LANG_NAMES = {
-  mk: 'Macedonian',
-  en: 'English'
-};
+// ═══ LOADERS ═══
 
 async function loadPromptConfig(configKey = 'premium_application_system') {
   if (!supabase) return null;
@@ -93,6 +106,19 @@ async function loadUserProfile(userId) {
     country: data.country || data.detected_country || null,
   };
 }
+
+// ═══ INPUT SANITIZATION ═══
+
+function sanitizeField(str, maxLen = 500) {
+  if (!str) return '';
+  return String(str)
+    .trim()
+    .slice(0, maxLen)
+    .replace(/<\/?(system|prompt|instruction)[^>]*>/gi, '')
+    .replace(/```/g, '');
+}
+
+// ═══ PROMPT BUILDERS ═══
 
 function buildFallbackPrompt(lang, today, profile, opportunity, input) {
   const L = LANG_NAMES[lang] || 'English';
@@ -159,7 +185,7 @@ function buildConfigDrivenPrompt(lang, today, profile, opportunity, input, confi
   return `LANGUAGE: Always respond in ${L}. Match the user's language exactly.
 
 MODULE: ${config.module_name || 'Application Engine'}
-VERSION: ${config.version || 'v1'}
+VERSION: ${config.version || 'v2'}
 DESCRIPTION: ${config.description || ''}
 TODAY: ${today}
 
@@ -203,6 +229,8 @@ Problem statement: ${input?.problem_statement || 'Not provided'}
 Expected results: ${input?.expected_results || 'Not provided'}`;
 }
 
+// ═══ GEMINI ═══
+
 async function geminiCall(systemPrompt, userMessage) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
 
@@ -211,16 +239,8 @@ async function geminiCall(systemPrompt, userMessage) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: userMessage || 'Build the application draft.' }]
-        }
-      ],
-      generationConfig: {
-        maxOutputTokens: 4096,
-        temperature: 0.35
-      }
+      contents: [{ role: 'user', parts: [{ text: userMessage || 'Build the application draft.' }] }],
+      generationConfig: { maxOutputTokens: 4096, temperature: 0.35 }
     })
   }, 30000);
 
@@ -242,6 +262,8 @@ async function gemini(systemPrompt, userMessage) {
   }
 }
 
+// ═══ SAVE SESSION ═══
+
 async function saveApplicationSession(payload) {
   if (!supabase) return null;
 
@@ -258,19 +280,20 @@ async function saveApplicationSession(payload) {
   return data || null;
 }
 
-module.exports = async function handler(req, res) {
-  const ORIGINS = ['https://marginova.tech', 'https://www.marginova.tech', 'http://localhost:3000'];
-  const origin = req.headers.origin || '';
+// ═══ MAIN HANDLER ═══
 
-  res.setHeader('Access-Control-Allow-Origin', ORIGINS.includes(origin) ? origin : ORIGINS[0]);
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+module.exports = async function handler(req, res) {
+  setCors(req, res);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: { message: 'Method Not Allowed' } });
   if (!GEMINI_KEY) return res.status(500).json({ error: { message: 'Missing GEMINI_API_KEY.' } });
   if (!supabase) return res.status(500).json({ error: { message: 'Supabase is not configured.' } });
+
+  // IP rate limit — same guard as chat.js
+  if (!(await checkIP(req))) {
+    return res.status(429).json({ error: { message: 'Daily limit reached. Try again tomorrow.' } });
+  }
 
   try {
     const body = req.body || {};
@@ -278,18 +301,29 @@ module.exports = async function handler(req, res) {
     const opportunityId = body.opportunityId || null;
     const configKey = body.configKey || 'premium_application_system';
 
+    // Server-side quota check — same as chat.js
+    const quotaResult = await checkAndDeductQuota(userId);
+    if (!quotaResult.allowed) {
+      return res.status(429).json({
+        error: { message: 'Message limit reached. Please upgrade your plan.' },
+        quota_exceeded: true,
+        plan: quotaResult.plan
+      });
+    }
+
+    // Sanitize all user inputs
     const input = {
-      project_title: String(body.project_title || '').trim(),
-      project_idea: String(body.project_idea || '').trim(),
-      target_group: String(body.target_group || '').trim(),
-      location: String(body.location || '').trim(),
-      duration_months: body.duration_months || null,
-      budget_amount: body.budget_amount || null,
-      budget_currency: String(body.budget_currency || 'EUR').trim(),
-      partners: String(body.partners || '').trim(),
-      problem_statement: String(body.problem_statement || '').trim(),
-      expected_results: String(body.expected_results || '').trim(),
-      notes: String(body.notes || '').trim()
+      project_title:     sanitizeField(body.project_title),
+      project_idea:      sanitizeField(body.project_idea, 800),
+      target_group:      sanitizeField(body.target_group),
+      location:          sanitizeField(body.location, 200),
+      duration_months:   body.duration_months || null,
+      budget_amount:     body.budget_amount || null,
+      budget_currency:   sanitizeField(body.budget_currency || 'EUR', 10),
+      partners:          sanitizeField(body.partners),
+      problem_statement: sanitizeField(body.problem_statement, 800),
+      expected_results:  sanitizeField(body.expected_results, 800),
+      notes:             sanitizeField(body.notes, 400)
     };
 
     const lang = body.lang || detectLang([
@@ -301,20 +335,18 @@ module.exports = async function handler(req, res) {
     ].join(' '));
 
     const today = new Date().toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+      day: '2-digit', month: '2-digit', year: 'numeric'
     });
+
+    if (!opportunityId) {
+      return res.status(400).json({ error: { message: 'Missing opportunityId.' } });
+    }
 
     const [profile, opportunity, config] = await Promise.all([
       loadUserProfile(userId),
       loadOpportunity(opportunityId),
       loadPromptConfig(configKey)
     ]);
-
-    if (!opportunityId) {
-      return res.status(400).json({ error: { message: 'Missing opportunityId.' } });
-    }
 
     if (!opportunity) {
       return res.status(404).json({ error: { message: 'Selected funding opportunity was not found.' } });
@@ -332,23 +364,23 @@ module.exports = async function handler(req, res) {
     const text = await gemini(systemPrompt, userMessage);
 
     const saved = await saveApplicationSession({
-      user_id: userId,
-      opportunity_id: opportunityId,
-      config_key: configKey,
-      project_title: input.project_title || null,
-      project_idea: input.project_idea || null,
-      target_group: input.target_group || null,
-      location: input.location || null,
-      duration_months: input.duration_months,
-      budget_amount: input.budget_amount,
-      budget_currency: input.budget_currency,
-      partners: input.partners || null,
+      user_id:           userId,
+      opportunity_id:    opportunityId,
+      config_key:        configKey,
+      project_title:     input.project_title || null,
+      project_idea:      input.project_idea || null,
+      target_group:      input.target_group || null,
+      location:          input.location || null,
+      duration_months:   input.duration_months,
+      budget_amount:     input.budget_amount,
+      budget_currency:   input.budget_currency,
+      partners:          input.partners || null,
       problem_statement: input.problem_statement || null,
-      expected_results: input.expected_results || null,
-      notes: input.notes || null,
-      output_text: text,
-      status: 'draft',
-      updated_at: new Date().toISOString()
+      expected_results:  input.expected_results || null,
+      notes:             input.notes || null,
+      output_text:       text,
+      status:            'draft',
+      updated_at:        new Date().toISOString()
     });
 
     return res.status(200).json({
@@ -356,14 +388,15 @@ module.exports = async function handler(req, res) {
       mode: 'application',
       config_key: configKey,
       opportunity: {
-        id: opportunity.id,
-        title: opportunity.title,
+        id:               opportunity.id,
+        title:            opportunity.title,
         organization_name: opportunity.organization_name,
-        deadline: opportunity.application_deadline,
-        source_url: opportunity.source_url
+        deadline:         opportunity.application_deadline,
+        source_url:       opportunity.source_url
       },
       saved_session: saved || null
     });
+
   } catch (err) {
     console.error('[APPLICATION ERROR]', err.message);
     return res.status(500).json({ error: { message: err.message } });
