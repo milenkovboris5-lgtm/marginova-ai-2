@@ -15,10 +15,14 @@
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+   {
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/app.html", "dest": "/app.html" },
+    { "src": "/premium-application.html", "dest": "/premium-application.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
+    ]
+}
   ],
   "headers": [
     {
