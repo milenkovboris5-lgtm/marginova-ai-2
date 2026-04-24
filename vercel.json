@@ -1,5 +1,4 @@
 {
-  "version": 2,
   "functions": {
     "api/chat.js": {
       "maxDuration": 30,
@@ -10,19 +9,10 @@
       "memory": 512
     }
   },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-   {
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/app.html", "dest": "/app.html" },
-    { "src": "/premium-application.html", "dest": "/premium-application.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
-    ]
-}
+  "rewrites": [
+    { "source": "/app.html", "destination": "/app.html" },
+    { "source": "/premium-application.html", "destination": "/premium-application.html" },
+    { "source": "/api/:path*", "destination": "/api/:path*" }
   ],
   "headers": [
     {
