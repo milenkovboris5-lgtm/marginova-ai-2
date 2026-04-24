@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marginova — Funding Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#C9A84C;--gold-l:#E8C97A;--gold-d:#9E7724;
+  --navy:#0B1220;--navy-2:#141E30;--navy-3:#1E2D45;
+  --white:#fff;--muted:rgba(255,255,255,.45);
+  --border:rgba(201,168,76,.15);--border-s:rgba(201,168,76,.08);
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);overflow-x:hidden}
+button,input,a{font:inherit}
+a{color:inherit;text-decoration:none}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1rem 3rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-s);background:rgba(11,18,32,.88);backdrop-filter:blur(20px)}
+.nav-logo{display:flex;align-items:center;gap:.75rem}
+.nav-wordmark{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600}
+.nav-wordmark span{color:var(--gold)}
+.nav-links{display:flex;gap:2rem}
+.nav-links a{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);transition:color .2s}
+.nav-links a:hover{color:var(--gold)}
+.nav-cta{display:flex;gap:.75rem}
+.btn-ghost{padding:.5rem 1.1rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;font-size:.8rem;transition:.2s}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn-gold{padding:.55rem 1.3rem;border-radius:8px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-l));color:var(--navy);font-size:.8rem;font-weight:600;cursor:pointer;transition:.2s;box-shadow:0 4px 16px rgba(201,168,76,.25)}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(201,168,76,.35)}
+
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 5rem;position:relative;overflow:hidden}
+.orb{position:absolute;border-radius:50%;pointer-events:none}
+.orb-1{width:700px;height:700px;top:-200px;left:-150px;background:radial-gradient(circle,rgba(201,168,76,.06) 0%,transparent 70%)}
+.orb-2{width:500px;height:500px;bottom:-100px;right:-100px;background:radial-gradient(circle,rgba(201,168,76,.04) 0%,transparent 70%)}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--border);border-radius:999px;padding:.38rem 1rem;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:2rem;animation:fu .6s ease both}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+h1{font-family:'Cormorant Garamond',serif;font-size:clamp(3.2rem,6.5vw,5.8rem);font-weight:300;line-height:1.06;letter-spacing:-.02em;margin-bottom:1.5rem;animation:fu .7s .1s ease both}
+h1 em{font-style:italic;color:var(--gold)}
+h1 strong{font-weight:600;display:block}
+.hero-sub{font-size:1.05rem;font-weight:300;color:var(--muted);max-width:540px;line-height:1.75;margin-bottom:2.5rem;animation:fu .7s .2s ease both}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;animation:fu .7s .3s ease both}
+.btn-primary{padding:.9rem 2.2rem;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-l));color:var(--navy);font-weight:600;font-size:.95rem;cursor:pointer;transition:.2s;box-shadow:0 8px 28px rgba(201,168,76,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(201,168,76,.4)}
+.btn-outline{padding:.9rem 2.2rem;border-radius:10px;border:1px solid var(--border);background:transparent;color:rgba(255,255,255,.8);font-size:.95rem;cursor:pointer;transition:.2s}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.hero-stats{display:flex;gap:3rem;justify-content:center;margin-top:4rem;padding-top:3rem;border-top:1px solid var(--border-s);animation:fu .7s .4s ease both;flex-wrap:wrap}
+.hero-stat strong{display:block;font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:600;color:var(--gold)}
+.hero-stat span{font-size:.72rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+@keyframes fu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+section{padding:6rem 2rem}
+.inner{max-width:1100px;margin:0 auto}
+.s-label{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem}
+.s-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3rem);font-weight:300;line-height:1.15;margin-bottom:1rem}
+.s-title em{font-style:italic;color:var(--gold)}
+.s-sub{font-size:.95rem;color:var(--muted);line-height:1.7;max-width:560px}
+
+.problem-strip{background:var(--navy-2);border-top:1px solid var(--border-s);border-bottom:1px solid var(--border-s);padding:5rem 2rem}
+.problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2.5rem;margin-top:3rem}
+.p-item{border-left:1px solid var(--border);padding-left:1.5rem}
+.p-num{font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:600;color:var(--gold);line-height:1}
+.p-item p{font-size:.85rem;color:var(--muted);margin-top:.5rem;line-height:1.6}
+
+.how-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;margin-top:3.5rem;position:relative}
+.how-steps::before{content:'';position:absolute;top:22px;left:calc(12.5% + 16px);right:calc(12.5% + 16px);height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.3),transparent)}
+.h-step{text-align:center;position:relative}
+.h-num{width:44px;height:44px;border-radius:12px;background:var(--navy-3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:var(--gold);position:relative;z-index:1}
+.h-step h4{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;margin-bottom:.4rem}
+.h-step p{font-size:.78rem;color:var(--muted);line-height:1.55}
+
+.pricing-bg{background:var(--navy-2)}
+.billing-toggle{display:flex;align-items:center;gap:.75rem;margin-top:1.5rem;font-size:.82rem;color:var(--muted)}
+.t-track{width:40px;height:22px;border-radius:999px;background:var(--navy-3);border:1px solid var(--border);cursor:pointer;position:relative;transition:.3s}
+.t-track.on{background:var(--gold)}
+.t-knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--white);transition:.3s;pointer-events:none}
+.t-track.on .t-knob{left:20px}
+.save-badge{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid var(--border);border-radius:999px;padding:.2rem .65rem;font-size:.68rem;font-weight:500}
+.plans{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2.5rem}
+.plan{background:var(--navy-3);border:1px solid var(--border-s);border-radius:20px;padding:1.5rem;display:flex;flex-direction:column;transition:.25s;position:relative;overflow:hidden}
+.plan::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.3),transparent);opacity:0;transition:.3s}
+.plan:hover{border-color:var(--border);transform:translateY(-2px)}
+.plan:hover::before,.plan.hot::before{opacity:1}
+.plan.hot{border-color:var(--gold);background:linear-gradient(160deg,rgba(201,168,76,.07) 0%,var(--navy-3) 55%)}
+.popular-tag{background:var(--gold);color:var(--navy);font-size:.65rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:.25rem .7rem;border-radius:999px;display:inline-block;margin-bottom:.85rem}
+.plan-name{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;margin-bottom:.2rem}
+.plan-desc{font-size:.75rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.45}
+.plan-price{font-size:2.5rem;font-weight:500;line-height:1}
+.plan-price sup{font-size:1rem;vertical-align:top;margin-top:.55rem;font-weight:300}
+.plan-price sub{font-size:.75rem;font-weight:300;color:var(--muted)}
+.plan-cycle{font-size:.7rem;color:var(--muted);margin-top:.3rem;margin-bottom:1.25rem;min-height:1.2em}
+.plan-div{height:1px;background:var(--border-s);margin:1rem 0}
+.pf{font-size:.75rem;color:rgba(255,255,255,.6);padding:4px 0;display:flex;gap:7px;align-items:flex-start;line-height:1.45}
+.pf .y{color:var(--gold);flex-shrink:0}
+.pf .n{color:rgba(255,255,255,.18);flex-shrink:0}
+.plan-action{margin-top:auto;padding-top:1.25rem}
+.plan-action button{width:100%;padding:.75rem;border-radius:10px;font-size:.82rem;font-weight:500;cursor:pointer;transition:.2s}
+.b-line{background:transparent;border:1px solid var(--border);color:rgba(255,255,255,.7)}
+.b-line:hover{border-color:var(--gold);color:var(--gold)}
+.b-gold{background:linear-gradient(135deg,var(--gold),var(--gold-l));border:none;color:var(--navy);font-weight:600}
+.b-gold:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(201,168,76,.3)}
+.b-white{background:var(--white);border:none;color:var(--navy);font-weight:600}
+
+.ppu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2.5rem}
+.ppu-card{background:var(--navy-2);border:1px solid var(--border-s);border-radius:18px;padding:1.5rem;transition:.25s;position:relative;overflow:hidden}
+.ppu-card:hover{border-color:var(--border);transform:translateY(-2px)}
+.ppu-icon{width:40px;height:40px;border-radius:10px;background:rgba(201,168,76,.08);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:1.1rem}
+.ppu-price{font-size:2rem;font-weight:500;color:var(--gold);line-height:1;margin-bottom:.3rem}
+.ppu-price sup{font-size:.9rem;vertical-align:top;margin-top:.35rem}
+.ppu-name{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;margin-bottom:.4rem}
+.ppu-desc{font-size:.75rem;color:var(--muted);line-height:1.5}
+.ppu-btn{margin-top:1.25rem;width:100%;padding:.6rem;border-radius:8px;background:rgba(201,168,76,.08);border:1px solid var(--border);color:var(--gold);font-size:.75rem;font-weight:500;cursor:pointer;transition:.2s}
+.ppu-btn:hover{background:rgba(201,168,76,.18)}
+.ppu-note{text-align:center;margin-top:1.5rem;font-size:.78rem;color:var(--muted)}
+
+.roi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3rem}
+.roi-card{background:var(--navy-3);border:1px solid var(--border-s);border-radius:20px;padding:1.75rem;position:relative;overflow:hidden}
+.roi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.roi-who{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem}
+.roi-scenario{font-size:.83rem;color:var(--muted);line-height:1.7;margin-bottom:1.25rem}
+.roi-result{background:rgba(201,168,76,.07);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem}
+.roi-result .rl{font-size:.65rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.3rem}
+.roi-result .rv{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:600;color:var(--gold)}
+
+.langs-section{background:var(--navy);text-align:center;padding:4rem 2rem}
+.lang-cloud{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-top:2rem;max-width:900px;margin-left:auto;margin-right:auto}
+.lang-tag{background:var(--navy-2);border:1px solid var(--border-s);border-radius:999px;padding:.3rem .85rem;font-size:.75rem;color:var(--muted)}
+
+.testimonial{background:var(--navy-2);padding:5rem 2rem;text-align:center}
+.t-quote{font-family:'Cormorant Garamond',serif;font-size:clamp(1.4rem,3vw,1.9rem);font-weight:300;font-style:italic;line-height:1.5;color:var(--white);max-width:640px;margin:0 auto 1.25rem}
+.t-quote em{color:var(--gold)}
+.t-cite{font-size:.78rem;color:var(--muted)}
+
+.cta-final{padding:7rem 2rem;text-align:center;position:relative;overflow:hidden}
+.cta-final::before{content:'FUNDING · GROWTH · IMPACT ·';position:absolute;bottom:-20px;left:0;right:0;font-family:'Cormorant Garamond',serif;font-size:5rem;font-weight:300;color:rgba(201,168,76,.03);white-space:nowrap;letter-spacing:.4em;pointer-events:none}
+
+footer{background:var(--navy-2);border-top:1px solid var(--border-s);padding:2.5rem 3rem}
+.footer-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:rgba(255,255,255,.5)}
+.footer-logo span{color:var(--gold)}
+.footer-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+.footer-links a{font-size:.72rem;color:rgba(255,255,255,.3);transition:color .2s}
+.footer-links a:hover{color:var(--gold)}
+.footer-copy{font-size:.7rem;color:rgba(255,255,255,.2)}
+
+@media(max-width:960px){
+  nav{padding:1rem 1.5rem}.nav-links{display:none}
+  .problem-grid,.how-steps,.plans,.ppu-grid,.roi-grid{grid-template-columns:1fr 1fr}
+  section{padding:4rem 1.5rem}.problem-strip{padding:4rem 1.5rem}
+  .hero-stats{gap:2rem}
+}
+@media(max-width:600px){
+  .problem-grid,.ppu-grid,.roi-grid,.plans{grid-template-columns:1fr}
+  .how-steps{grid-template-columns:1fr 1fr}
+  h1{font-size:2.8rem}
+  footer{padding:2rem 1.5rem}
+  .footer-inner{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+      <rect width="34" height="34" rx="9" fill="#141E30"/>
+      <text x="17" y="25" text-anchor="middle" font-family="Cormorant Garamond,serif" font-size="21" font-weight="600" fill="#C9A84C">M</text>
+    </svg>
+    <div class="nav-wordmark">Marginova<span>.AI</span></div>
+  </div>
+  <div class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#ppu">Pay-per-use</a>
+    <a href="#roi">ROI</a>
+  </div>
+  <div class="nav-cta">
+    <button class="btn-ghost" onclick="window.location.href='/app.html'">Sign In</button>
+    <button class="btn-gold" onclick="window.location.href='/app.html'">Start Free</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="grid-bg"></div>
+  <div class="hero-badge"><div class="badge-dot"></div>AI-Powered · Real-time · 40+ Languages</div>
+  <h1>Stop paying €200/hour<br><em>for something</em><br><strong>AI does in minutes.</strong></h1>
+  <p class="hero-sub">Marginova matches your organization to verified grants, checks eligibility, and builds complete application drafts — with LFM, budget and submission checklist included.</p>
+  <div class="hero-actions">
+    <button class="btn-primary" onclick="window.location.href='/app.html'">Start Free — No Card Required</button>
+    <button class="btn-outline" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See how it works →</button>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><strong>110+</strong><span>Verified Programs</span></div>
+    <div class="hero-stat"><strong>40+</strong><span>Languages</span></div>
+    <div class="hero-stat"><strong>24/7</strong><span>Live Scanning</span></div>
+    <div class="hero-stat"><strong>6×</strong><span>Cheaper than Instrumentl</span></div>
+  </div>
+</section>
+
+<div class="problem-strip">
+  <div class="inner">
+    <div class="s-label">The problem</div>
+    <h2 class="s-title">Funding is broken.<br><em>Marginova fixes it.</em></h2>
+    <div class="problem-grid">
+      <div class="p-item"><div class="p-num">€200</div><p>Average hourly rate of a grant consultant. A full application costs €1,600–€4,000 — before you even know if you qualify.</p></div>
+      <div class="p-item"><div class="p-num">3 wks</div><p>Average time to research, match and prepare a grant application manually. Deadlines don't wait for slow processes.</p></div>
+      <div class="p-item"><div class="p-num">67%</div><p>Of NGOs and SMEs in the Western Balkans never apply for EU funding — not because they don't qualify, but because they don't know where to start.</p></div>
+    </div>
+  </div>
+</div>
+
+<section id="how" style="background:var(--navy)">
+  <div class="inner">
+    <div class="s-label">Process</div>
+    <h2 class="s-title">From idea to <em>funded project</em><br>in four steps.</h2>
+    <div class="how-steps">
+      <div class="h-step"><div class="h-num">1</div><h4>Describe your project</h4><p>Tell Marginova your sector, country, org type and budget in plain language — any of 40+ languages.</p></div>
+      <div class="h-step"><div class="h-num">2</div><h4>Get matched instantly</h4><p>AI scores every active program against your profile and ranks the best fits with a match percentage.</p></div>
+      <div class="h-step"><div class="h-num">3</div><h4>Check eligibility</h4><p>Understand exactly why you qualify, what risks exist, and what you need to address before applying.</p></div>
+      <div class="h-step"><div class="h-num">4</div><h4>Build the application</h4><p>Generate Abstract, LFM, Risk Matrix, Budget Draft and Submission Checklist — ready to submit.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="pricing-bg" id="pricing">
+  <div class="inner">
+    <div class="s-label">Pricing</div>
+    <h2 class="s-title">Transparent pricing.<br><em>No surprises.</em></h2>
+    <div class="billing-toggle">
+      <span>Monthly</span>
+      <div class="t-track" id="toggle" onclick="toggleBilling()"><div class="t-knob"></div></div>
+      <span>Annual</span>
+      <span class="save-badge">Save up to 30%</span>
+    </div>
+    <div class="plans">
+      <div class="plan">
+        <div class="plan-name">Free</div>
+        <div class="plan-desc">Explore with no commitment</div>
+        <div class="plan-price"><sup>€</sup>0<sub>/mo</sub></div>
+        <div class="plan-cycle">Forever free</div>
+        <div class="plan-div"></div>
+        <div class="pf"><span class="y">✓</span> 20 messages / day</div>
+        <div class="pf"><span class="y">✓</span> Grant matching (DB)</div>
+        <div class="pf"><span class="y">✓</span> Eligibility check</div>
+        <div class="pf"><span class="y">✓</span> All 40+ languages</div>
+        <div class="pf"><span class="n">✗</span> No live web search</div>
+        <div class="pf"><span class="n">✗</span> No application builder</div>
+        <div class="pf"><span class="n">✗</span> No export</div>
+        <div class="plan-action"><button class="b-line" onclick="window.location.href='/app.html'">Start Free</button></div>
+      </div>
+      <div class="plan">
+        <div class="plan-name">Starter</div>
+        <div class="plan-desc">Individuals, small NGOs, entrepreneurs</div>
+        <div class="plan-price" id="pp-s"><sup>€</sup>19<sub>/mo</sub></div>
+        <div class="plan-cycle" id="pc-s">or €159/year — save €69</div>
+        <div class="plan-div"></div>
+        <div class="pf"><span class="y">✓</span> 200 messages / day</div>
+        <div class="pf"><span class="y">✓</span> Live web search</div>
+        <div class="pf"><span class="y">✓</span> 5 application drafts / mo</div>
+        <div class="pf"><span class="y">✓</span> PDF export</div>
+        <div class="pf"><span class="y">✓</span> Saved searches</div>
+        <div class="pf"><span class="n">✗</span> No LFM + budget</div>
+        <div class="pf"><span class="n">✗</span> No team access</div>
+        <div class="plan-action"><button class="b-line" onclick="window.location.href='/app.html'">Get Starter</button></div>
+      </div>
+      <div class="plan hot">
+        <div class="popular-tag">Most Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-desc">NGOs, SMEs, consultants — the full engine</div>
+        <div class="plan-price" id="pp-p"><sup>€</sup>49<sub>/mo</sub></div>
+        <div class="plan-cycle" id="pc-p">or €399/year — save €189</div>
+        <div class="plan-div"></div>
+        <div class="pf"><span class="y">✓</span> Unlimited messages</div>
+        <div class="pf"><span class="y">✓</span> Hybrid live search</div>
+        <div class="pf"><span class="y">✓</span> Unlimited applications</div>
+        <div class="pf"><span class="y">✓</span> LFM + budget + checklist</div>
+        <div class="pf"><span class="y">✓</span> PDF + DOCX export</div>
+        <div class="pf"><span class="y">✓</span> Priority support</div>
+        <div class="pf"><span class="y">✓</span> Application history</div>
+        <div class="plan-action"><button class="b-gold" onclick="window.location.href='/app.html'">Get Pro</button></div>
+      </div>
+      <div class="plan">
+        <div class="plan-name">Agency</div>
+        <div class="plan-desc">Consulting firms, agencies, donor orgs</div>
+        <div class="plan-price" id="pp-a"><sup>€</sup>199<sub>/mo</sub></div>
+        <div class="plan-cycle" id="pc-a">or €1,699/year — save €689</div>
+        <div class="plan-div"></div>
+        <div class="pf"><span class="y">✓</span> Everything in Pro</div>
+        <div class="pf"><span class="y">✓</span> Up to 10 users</div>
+        <div class="pf"><span class="y">✓</span> White-label branding</div>
+        <div class="pf"><span class="y">✓</span> API access</div>
+        <div class="pf"><span class="y">✓</span> Dedicated account manager</div>
+        <div class="pf"><span class="y">✓</span> Branded client proposals</div>
+        <div class="pf"><span class="y">✓</span> Client dashboard</div>
+        <div class="plan-action"><button class="b-white" onclick="window.location.href='mailto:hello@marginova.tech'">Contact Us</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="ppu" style="background:var(--navy)">
+  <div class="inner">
+    <div class="s-label">Pay-per-use</div>
+    <h2 class="s-title">No subscription.<br><em>Pay only for what you need.</em></h2>
+    <p class="s-sub">Perfect for one-off applications or testing before committing to a plan. Credits never expire.</p>
+    <div class="ppu-grid">
+      <div class="ppu-card">
+        <div class="ppu-icon">🔍</div>
+        <div class="ppu-price"><sup>€</sup>4.90</div>
+        <div class="ppu-name">Eligibility Deep Check</div>
+        <div class="ppu-desc">Full eligibility analysis with risk matrix and qualification reasons for any program.</div>
+        <button class="ppu-btn" onclick="window.location.href='/app.html'">Buy now →</button>
+      </div>
+      <div class="ppu-card">
+        <div class="ppu-icon">📝</div>
+        <div class="ppu-price"><sup>€</sup>7.90</div>
+        <div class="ppu-name">Application Draft</div>
+        <div class="ppu-desc">Abstract, objectives, activities and timeline — structured, ready to refine and submit.</div>
+        <button class="ppu-btn" onclick="window.location.href='/app.html'">Buy now →</button>
+      </div>
+      <div class="ppu-card">
+        <div class="ppu-icon">🧩</div>
+        <div class="ppu-price"><sup>€</sup>14.90</div>
+        <div class="ppu-name">Full Proposal Package</div>
+        <div class="ppu-desc">Complete draft with LFM, Risk Matrix, Budget structure and Submission Checklist. PDF + DOCX.</div>
+        <button class="ppu-btn" onclick="window.location.href='/app.html'">Buy now →</button>
+      </div>
+      <div class="ppu-card">
+        <div class="ppu-icon">🏢</div>
+        <div class="ppu-price"><sup>€</sup>29.90</div>
+        <div class="ppu-name">Premium Client Package</div>
+        <div class="ppu-desc">Full branded proposal for a client — polished, submission-ready. Ideal for agencies charging €500+.</div>
+        <button class="ppu-btn" onclick="window.location.href='/app.html'">Buy now →</button>
+      </div>
+    </div>
+    <div class="ppu-note">All pay-per-use credits never expire · No subscription required · Secure payment via Stripe</div>
+  </div>
+</section>
+
+<section id="roi" style="background:var(--navy-2)">
+  <div class="inner">
+    <div class="s-label">Return on investment</div>
+    <h2 class="s-title">The math is simple.<br><em>Marginova pays for itself.</em></h2>
+    <p class="s-sub">One successful grant application covers your Marginova subscription for years.</p>
+    <div class="roi-grid">
+      <div class="roi-card">
+        <div class="roi-who">NGO / Individual</div>
+        <div class="roi-scenario">Grant consultant charges <strong style="color:var(--white)">€200/hour</strong>. A full application takes 8–20 hours — that's <strong style="color:var(--white)">€1,600–€4,000</strong> before you know if you qualify.<br><br>Marginova Pro generates the same output in <strong style="color:var(--white)">under 15 minutes</strong>.</div>
+        <div class="roi-result"><div class="rl">Savings per application</div><div class="rv">€1,550 – €3,950</div></div>
+      </div>
+      <div class="roi-card">
+        <div class="roi-who">SME / Startup</div>
+        <div class="roi-scenario">Grant search + eligibility research takes <strong style="color:var(--white)">2–3 days</strong> of staff time. At average cost: <strong style="color:var(--white)">€400–€900 per cycle</strong>.<br><br>Marginova delivers matched results with scores and eligibility reasons in <strong style="color:var(--white)">seconds</strong>.</div>
+        <div class="roi-result"><div class="rl">Staff hours saved / month</div><div class="rv">20+ hours</div></div>
+      </div>
+      <div class="roi-card">
+        <div class="roi-who">Agency / Consulting firm</div>
+        <div class="roi-scenario">Agencies charge clients <strong style="color:var(--white)">€1,000–€5,000</strong> per application. With Marginova Agency at <strong style="color:var(--white)">€199/mo</strong>, serve 10 clients simultaneously under your own brand.</div>
+        <div class="roi-result"><div class="rl">Revenue potential / month</div><div class="rv">€10,000+</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="langs-section">
+  <div class="s-label">Global reach</div>
+  <h2 class="s-title" style="margin-bottom:.5rem">Works in <em>40+ languages.</em></h2>
+  <p style="font-size:.88rem;color:var(--muted)">Ask in your language. Get answers in your language. No translation needed.</p>
+  <div class="lang-cloud">
+    <span class="lang-tag">🇬🇧 English</span><span class="lang-tag">🇲🇰 Macedonian</span><span class="lang-tag">🇷🇸 Serbian</span><span class="lang-tag">🇩🇪 German</span><span class="lang-tag">🇫🇷 French</span><span class="lang-tag">🇪🇸 Spanish</span><span class="lang-tag">🇮🇹 Italian</span><span class="lang-tag">🇵🇱 Polish</span><span class="lang-tag">🇹🇷 Turkish</span><span class="lang-tag">🇷🇴 Romanian</span><span class="lang-tag">🇧🇬 Bulgarian</span><span class="lang-tag">🇭🇷 Croatian</span><span class="lang-tag">🇦🇱 Albanian</span><span class="lang-tag">🇸🇮 Slovenian</span><span class="lang-tag">🇭🇺 Hungarian</span><span class="lang-tag">🇵🇹 Portuguese</span><span class="lang-tag">🇳🇱 Dutch</span><span class="lang-tag">🇸🇪 Swedish</span><span class="lang-tag">+ 22 more</span>
+  </div>
+</div>
+
+<div class="testimonial">
+  <p class="t-quote">"We found a €50,000 grant match in <em>8 minutes.</em> Our consultant quoted us €2,400 for the same search."</p>
+  <div class="t-cite">— Early access user, NGO · North Macedonia</div>
+</div>
+
+<section class="cta-final">
+  <div class="inner">
+    <div class="s-label">Get started today</div>
+    <h2 class="s-title" style="max-width:600px;margin:1rem auto">Stop missing grants.<br><em>Start winning them.</em></h2>
+    <p style="font-size:.95rem;color:var(--muted);margin:0 auto 2.5rem;max-width:480px;line-height:1.7">Free forever. No credit card. No bureaucracy. Just funding intelligence that works.</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <button class="btn-primary" onclick="window.location.href='/app.html'">Open Workspace Free</button>
+      <button class="btn-outline" onclick="window.location.href='mailto:hello@marginova.tech'">Talk to us →</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">Marginova<span>.AI</span></div>
+    <div class="footer-links">
+      <a href="/terms.html">Terms of Service</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/refund.html">Refund Policy</a>
+      <a href="mailto:hello@marginova.tech">Contact</a>
+    </div>
+    <div class="footer-copy">© 2026 Marginova. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+let annual=false;
+function toggleBilling(){
+  annual=!annual;
+  document.getElementById('toggle').classList.toggle('on',annual);
+  document.getElementById('pp-s').innerHTML=annual?'<sup>€</sup>13<sub>/mo</sub>':'<sup>€</sup>19<sub>/mo</sub>';
+  document.getElementById('pp-p').innerHTML=annual?'<sup>€</sup>33<sub>/mo</sub>':'<sup>€</sup>49<sub>/mo</sub>';
+  document.getElementById('pp-a').innerHTML=annual?'<sup>€</sup>141<sub>/mo</sub>':'<sup>€</sup>199<sub>/mo</sub>';
+  document.getElementById('pc-s').textContent=annual?'billed €159/year':'or €159/year — save €69';
+  document.getElementById('pc-p').textContent=annual?'billed €399/year':'or €399/year — save €189';
+  document.getElementById('pc-a').textContent=annual?'billed €1,699/year':'or €1,699/year — save €689';
+}
+</script>
+</body>
+</html>
