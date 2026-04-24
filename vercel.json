@@ -9,11 +9,6 @@
       "memory": 512
     }
   },
-  "rewrites": [
-    { "source": "/app.html", "destination": "/app.html" },
-    { "source": "/premium-application.html", "destination": "/premium-application.html" },
-    { "source": "/api/:path*", "destination": "/api/:path*" }
-  ],
   "headers": [
     {
       "source": "/(.*)",
