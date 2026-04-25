@@ -1,6 +1,7 @@
 // ═════════════════════════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// v20 — Scholarship/student support + limit 150 + improved scoring
+// v21 — Decision Engine: YES/NO/CONDITIONAL + Probability score
+// Top 3 only — APPLY / CONDITIONAL / BACKUP
 // ═════════════════════════════════════════════════════════════
 
 const { supabase, getTable, ft, detectLang, LANG_NAMES, checkIP, setCors } = require('./_lib/utils');
@@ -8,8 +9,8 @@ const { supabase, getTable, ft, detectLang, LANG_NAMES, checkIP, setCors } = req
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const SERPER_KEY = process.env.SERPER_API_KEY;
 
-console.log('[chat.js v20] SUPABASE:', supabase ? 'OK' : 'MISSING');
-console.log('[chat.js v20] SERPER:', SERPER_KEY ? 'OK' : 'MISSING');
+console.log('[chat.js v21] SUPABASE:', supabase ? 'OK' : 'MISSING');
+console.log('[chat.js v21] SERPER:', SERPER_KEY ? 'OK' : 'MISSING');
 
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
 const CACHE_TTL_HOURS = 24;
@@ -400,6 +401,83 @@ function detectProfile(text, supaProfile) {
 
 // ═══ SYSTEM PROMPT ═══
 
+// ═══ PROBABILITY ENGINE ═══
+// Calculates success probability based on match score + risk factors
+
+function calcProbability(score, result, profile) {
+  let prob = Math.round(score * 0.75); // base: 75% of match score
+
+  const elig    = String(result.eligibility  || '').toLowerCase();
+  const country = String(result.country      || '').toLowerCase();
+  const desc    = String(result.description  || '').toLowerCase();
+
+  // Eligibility alignment bonus/penalty
+  if (profile.orgType) {
+    const orgLower = profile.orgType.toLowerCase();
+    if (elig.includes(orgLower.split('/')[0].trim().toLowerCase())) prob += 12;
+    else if (elig.includes('ngo') && orgLower.includes('ngo'))      prob += 12;
+    else if (elig.includes('sme') && orgLower.includes('sme'))      prob += 12;
+    else                                                             prob -= 8;
+  }
+
+  // Country alignment
+  if (profile.country) {
+    const pc = profile.country.toLowerCase();
+    if (country.includes(pc) || country.includes('global') || country.includes('europe')) prob += 10;
+    else prob -= 12;
+  }
+
+  // Competition penalty based on known high-competition programs
+  if (desc.includes('horizon') || desc.includes('eic') || desc.includes('google')) prob -= 10;
+
+  // Deadline urgency bonus — closer deadline = less competition remaining
+  if (result.application_deadline) {
+    const daysLeft = Math.round((new Date(result.application_deadline) - new Date()) / 86400000);
+    if (daysLeft > 0 && daysLeft < 45) prob += 5;
+  }
+
+  return Math.max(10, Math.min(92, prob));
+}
+
+function getDecision(prob, result, profile) {
+  const elig    = String(result.eligibility || '').toLowerCase();
+  const orgLower = (profile.orgType || '').toLowerCase().split('/')[0].trim().toLowerCase();
+
+  // Hard NO conditions
+  const eligMismatch = elig.length > 0 && !elig.includes(orgLower) &&
+    !elig.includes('global') && !elig.includes('all') && !elig.includes('any');
+
+  if (prob >= 60 && !eligMismatch) return 'APPLY';
+  if (prob >= 35)                  return 'CONDITIONAL';
+  return 'BACKUP';
+}
+
+function getRisks(result, profile) {
+  const risks = [];
+  const elig    = String(result.eligibility  || '').toLowerCase();
+  const country = String(result.country      || '').toLowerCase();
+  const desc    = String(result.description  || '').toLowerCase();
+  const orgLower = (profile.orgType || '').toLowerCase();
+
+  if (elig.length > 0 && !elig.includes(orgLower.split('/')[0].trim())) {
+    risks.push('eligibility mismatch — verify org type requirement');
+  }
+  if (profile.country && !country.includes('global') && !country.includes(profile.country.toLowerCase())) {
+    risks.push('region limitation — check country eligibility');
+  }
+  if (desc.includes('horizon') || desc.includes('eic') || desc.includes('google')) {
+    risks.push('competition level: high — strong global applicants');
+  } else if (desc.includes('open') || desc.includes('all')) {
+    risks.push('competition level: medium');
+  }
+  if (!result.application_deadline) {
+    risks.push('deadline not confirmed — verify on source');
+  }
+
+  if (risks.length === 0) risks.push('no major risks identified — strong match');
+  return risks;
+}
+
 function buildSystemPrompt(lang, today, profile, results, sources) {
   const L = LANG_NAMES[lang] || 'English';
 
@@ -410,56 +488,86 @@ Country: ${profile.country || 'not specified'}
 Budget range: ${profile.budget || 'not specified'}`
     : '\nProfile not yet collected — ask one targeted question.';
 
-  const dbCount     = sources?.db     ?? 0;
-  const serperCount = sources?.serper ?? 0;
+  // Build decision-enriched results — TOP 3 only with YES/NO/CONDITIONAL
+  let decisionsText = '';
+  if (results.length > 0) {
+    const top3 = results.slice(0, 3);
+    const roles = ['APPLY', 'CONDITIONAL', 'BACKUP'];
 
-  let sourceNote = '';
-  if (serperCount > 0 && dbCount === 0) {
-    sourceNote = '\n\nNOTE: No database matches found. Results below are from live web search — verify deadlines and eligibility directly on the source URL.';
-  } else if (serperCount > 0) {
-    sourceNote = `\n\nNOTE: ${dbCount} verified DB results + ${serperCount} live web results. DB results are pre-verified; web results need direct verification.`;
+    decisionsText = '\n\nDECISION RESULTS (TOP 3 ONLY):\n';
+    top3.forEach((r, i) => {
+      const prob     = calcProbability(r.score ?? 0, r, profile);
+      const decision = i === 0 ? roles[0] : i === 1 ? roles[1] : roles[2];
+      const risks    = getRisks(r, profile);
+      const src      = r.source === 'serper' ? '[WEB — verify directly]' : '[VERIFIED]';
+
+      decisionsText += `
+[${i + 1}] ${decision} ${src}
+Program: ${r.title}
+Decision: ${decision === 'APPLY' ? 'YES' : decision === 'CONDITIONAL' ? 'CONDITIONAL' : 'BACKUP'}
+Probability of success: ${prob}%
+Amount: ${r.award_amount ? `${r.award_amount} ${r.currency || ''}`.trim() : (r.funding_range || 'varies')}
+Deadline: ${r.application_deadline || 'verify on source'}
+Risks:
+${risks.map(risk => `  - ${risk}`).join('\n')}
+URL: ${r.link}
+`;
+    });
   }
 
-  let resultsText = '';
-  if (results.length > 0) {
-    resultsText = '\n\nRESULTS:\n' + results.map((r, i) => {
-      const sourceLabel = r.source === 'serper' ? '[WEB]' : '[DB]';
-      return `[${i + 1}] ${sourceLabel} Match:${r.score ?? 0}% | ${r.title}\n${r.snippet}\nURL: ${r.link}`;
-    }).join('\n\n');
+  const dbCount     = sources?.db     ?? 0;
+  const serperCount = sources?.serper ?? 0;
+  let sourceNote = '';
+  if (serperCount > 0 && dbCount === 0) {
+    sourceNote = '\n\nNOTE: Results are from live web search — verify all details directly on source URLs.';
+  } else if (serperCount > 0) {
+    sourceNote = `\n\nNOTE: ${dbCount} verified + ${serperCount} web results included.`;
   }
 
   return `LANGUAGE: Always respond in ${L}. Match the user's language exactly.
 
-You are MARGINOVA — a global funding intelligence engine.
-You have access to a verified funding database (200+ active programs) and real-time web search via Serper.
-Before this conversation reached you, the system already searched both sources and injected the results below.
-Results marked [DB] are from the verified Marginova database.
-Results marked [WEB] are from a live web search conducted moments ago.
-NEVER say you cannot search or access external data — the search already happened.
-NEVER reveal technical details like Supabase, Serper, Gemini, or API keys.
-If asked how you work: say you are powered by a verified funding database and real-time web intelligence.
+You are MARGINOVA — a funding decision and application system.
+You turn funding discovery into executable decisions.
+You have access to a verified funding database and real-time web intelligence.
+NEVER reveal technical details. NEVER invent programs, URLs, amounts or deadlines.
+NEVER mention other tools or platforms by name.
 
 Today: ${today}
 USER PROFILE:${profileText}
 
-CRITICAL RULES:
-- NEVER invent programs, URLs, deadlines, amounts, or eligibility criteria
-- If a result has source [DB] — it is verified, present it with confidence
-- If a result has source [WEB] — present it but add: "Verify directly on the source link"
-- If there are ZERO results — say clearly no matches found, do NOT invent anything
-- Rank results strictly by provided Match score
-- If profile is incomplete, ask exactly ONE clarifying question before searching
-- Be direct and specific
+CORE PHILOSOPHY:
+- Clarity over quantity — TOP 3 only, never more
+- Every result gets a DECISION: YES / CONDITIONAL / BACKUP
+- Every result gets a Probability of success: X%
+- Every result gets specific Risks — not vague warnings
+- The user must know exactly what to do next
 
-FORMAT each opportunity exactly like this:
+FORMAT — use exactly this structure for each of the 3 results:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[ROLE: APPLY / CONDITIONAL / BACKUP]
 📋 [Program name]
-🎯 Match: [X]%
-💰 [Amount / range if available]
-✅ Why you qualify: [based only on provided fields]
-⚠️ Main risk: [based only on eligibility, country, budget, deadline, or org type]
+📊 Decision: YES / CONDITIONAL / BACKUP
+🎯 Probability of success: X%
+💰 [Amount]
+📅 Deadline: [date or "verify on source"]
+✅ Why you qualify: [1-2 specific reasons based only on profile data]
+⚠️ Risks:
+  • [risk 1]
+  • [risk 2]
 🔗 [URL]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Close with ONE concrete action the user can take TODAY.${sourceNote}${resultsText}`;
+After the 3 results, close with:
+▶ NEXT STEP: One concrete action the user can take TODAY — specific, not generic.
+
+RULES:
+- Present exactly 3 results — no more, no less (unless fewer results exist)
+- First result = highest probability = APPLY
+- Second result = medium probability = CONDITIONAL
+- Third result = lowest or backup path = BACKUP
+- If profile is incomplete — ask exactly ONE question before showing results
+- If ZERO results — say clearly, do not invent${sourceNote}${decisionsText}`;
 }
 
 // ═══ GEMINI ═══
@@ -584,7 +692,7 @@ module.exports = async function handler(req, res) {
         results   = cached.results;
         cachedAt  = cached.created_at;
         fromCache = true;
-        console.log('[v20] cache hit');
+        console.log('[v21] cache hit');
       } else {
         const hybrid = await hybridSearch(userText, profile);
         results  = hybrid.results;
@@ -595,7 +703,7 @@ module.exports = async function handler(req, res) {
             console.log('[CACHE SAVE FAIL]', e.message)
           );
         }
-        console.log(`[v20] db:${sources.db} serper:${sources.serper} total:${results.length}`);
+        console.log(`[v21] db:${sources.db} serper:${sources.serper} total:${results.length}`);
       }
     }
 
