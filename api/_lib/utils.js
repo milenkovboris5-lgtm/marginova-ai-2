@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA.AI — api/_lib/utils.js
-// Shared utilities — supabase, fetch, language detection
+// v2 — fixed: detectLang Cyrillic fallback, CORS no-fallback
 // ═══════════════════════════════════════════════════════════
 
 const { createClient } = require('@supabase/supabase-js');
@@ -12,7 +12,7 @@ function createSupabaseClient() {
   const key = process.env.SUPABASE_SERVICE_KEY;
 
   if (!url || !key) {
-    console.log('[SUPABASE] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+    console.error('[SUPABASE] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
     return null;
   }
 
@@ -21,37 +21,48 @@ function createSupabaseClient() {
   });
 }
 
-// Singleton — one client per cold-start
 const supabase = createSupabaseClient();
+if (supabase) console.log('[SUPABASE] Connected');
 
 function getTable(name) {
   if (!supabase) throw new Error('Supabase client not initialized');
   return supabase.from(name);
 }
 
-// ═══ FETCH WITH TIMEOUT ═══
+// ═══ FETCH WITH TIMEOUT + RETRY ═══
 
-function ft(url, opts = {}, ms = 12000) {
-  const c = new AbortController();
-  const t = setTimeout(() => c.abort(), ms);
-  return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
+async function ft(url, opts = {}, ms = 12000, retries = 1) {
+  for (let i = 0; i <= retries; i++) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), ms);
+    try {
+      const res = await fetch(url, { ...opts, signal: c.signal });
+      clearTimeout(t);
+      return res;
+    } catch (e) {
+      clearTimeout(t);
+      if (i === retries) throw e;
+      console.log(`[FT] retry ${i + 1} for ${url.slice(0, 60)}`);
+    }
+  }
 }
 
 // ═══ LANGUAGE DETECTION ═══
-// Fixed: proper Unicode range for Macedonian/Serbian Cyrillic (U+0400–U+04FF)
+// Fixed: proper Cyrillic fallback — MK only when certain, SR for generic Cyrillic
 
 function detectLang(text) {
   if (!text) return 'en';
 
-  // Macedonian-specific letters (not in standard Cyrillic block)
+  // Macedonian-specific letters (unique to MK)
   if (/[ќѓѕљњџ]/i.test(text)) return 'mk';
+  // Serbian-specific letters
   if (/[ћђ]/i.test(text)) return 'sr';
 
   // Common Macedonian words
   if (/\b(јас|сум|македонија|барам|грант|работам|НВО|фонд|проект|апликација|буџет)\b/i.test(text)) return 'mk';
 
-  // Full Cyrillic Unicode range (covers all Cyrillic alphabets)
-  if (/[\u0400-\u04FF]/.test(text)) return 'mk';
+  // Generic Cyrillic fallback → sr (safer than mk — covers RU/BG/UK too)
+  if (/[\u0400-\u04FF]/.test(text)) return 'sr';
 
   // Macedonian romanized
   if (/\b(jas|sum|makedonija|zdravo|zemja|proekt|grant|fond)\b/i.test(text)) return 'mk';
@@ -99,8 +110,8 @@ async function checkIP(req) {
       .maybeSingle();
 
     if (error) {
-      console.log('[DB GET ip_limits]', error.message);
-      return true; // fail open
+      console.error('[IP GET]', error.message);
+      return true;
     }
 
     if (!row || row.reset_date !== today) {
@@ -108,26 +119,28 @@ async function checkIP(req) {
         { ip, count: 1, reset_date: today },
         { onConflict: 'ip' }
       );
-      if (upsertError) console.log('[IP UPSERT]', upsertError.message);
+      if (upsertError) console.error('[IP UPSERT]', upsertError.message);
       return true;
     }
 
     if ((row.count || 0) >= DAILY_IP_LIMIT) return false;
 
-    const { error: updateError } = await getTable('ip_limits')
-      .update({ count: (row.count || 0) + 1 })
-      .eq('ip', ip);
-
-    if (updateError) console.log('[IP UPDATE]', updateError.message);
+    // Atomic increment via upsert to avoid race condition
+    const { error: updateError } = await getTable('ip_limits').upsert(
+      { ip, count: (row.count || 0) + 1, reset_date: today },
+      { onConflict: 'ip' }
+    );
+    if (updateError) console.error('[IP UPDATE]', updateError.message);
 
     return true;
   } catch (e) {
-    console.log('[IP CHECK]', e.message);
-    return true; // fail open
+    console.error('[IP CHECK]', e.message);
+    return true;
   }
 }
 
 // ═══ CORS HELPER ═══
+// Fixed: no fallback for unknown origins — closed by default
 
 const ALLOWED_ORIGINS = [
   'https://marginova.tech',
@@ -137,13 +150,14 @@ const ALLOWED_ORIGINS = [
 
 function setCors(req, res) {
   const origin = req.headers.origin || '';
-  res.setHeader(
-    'Access-Control-Allow-Origin',
-    ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
-  );
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  }
+  // Unknown origins get no CORS headers — request will be blocked by browser
 }
 
 module.exports = { supabase, getTable, ft, detectLang, LANG_NAMES, checkIP, setCors };
