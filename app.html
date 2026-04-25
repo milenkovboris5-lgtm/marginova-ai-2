@@ -657,7 +657,11 @@ function initApp(){
 async function loadUserProfile(){
   if(!currentUser)return;
   try{
-    const {data}=await db.from('profiles').select('plan,daily_msgs,last_msg_date,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country').eq('user_id',currentUser.id).single();
+    const {data,error}=await db.from('profiles')
+      .select('plan,daily_msgs,last_msg_date,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country')
+      .eq('user_id',currentUser.id)
+      .maybeSingle();
+    if(error){console.log('[PROFILE]',error.message);return}
     const plan=data?.plan||'free';
     const limits={free:20,starter:500,pro:2000,business:-1};
     const limit=limits[plan]??20;
@@ -675,7 +679,7 @@ async function loadUserProfile(){
     document.getElementById('profile-country').textContent=data?.country||data?.detected_country||'Country not set';
     document.getElementById('profile-sector').textContent=data?.sector||data?.detected_sector||'Sector not set';
     document.getElementById('profile-budget').textContent='Budget: '+(data?.goals||'not set');
-  }catch(e){}
+  }catch(e){console.log('[PROFILE ERROR]',e.message)}
 }
 async function doSignOut(){
   await db.auth.signOut();currentUser=null;chatHistory=[];
@@ -703,7 +707,8 @@ async function openProfileModal(){
   }
   if(!currentUser)return;
   try{
-    const {data}=await db.from('profiles').select('plan,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country').eq('user_id',currentUser.id).single();
+    const {data,error}=await db.from('profiles').select('plan,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country').eq('user_id',currentUser.id).maybeSingle();
+    if(error){console.log('[PM]',error.message);return}
     if(data){
       document.getElementById('pm-orgtype').value=data.organization_type||data.detected_org_type||'';
       document.getElementById('pm-sector').value=data.sector||data.detected_sector||'';
@@ -815,14 +820,15 @@ async function openAnalysis(){
   statsEl.innerHTML='<div style="text-align:center;color:var(--muted);font-size:.82rem;grid-column:1/-1">Loading...</div>';
   try{
     const today=new Date().toISOString().split('T')[0];
-    const [{data:opps},{data:profile},{data:cache}]=await Promise.all([
+    const [{data:opps,error:oppsErr},{data:profileData},{data:cache}]=await Promise.all([
       db.from('funding_opportunities').select('focus_areas,country,status,application_deadline').eq('status','Open'),
-      currentUser?db.from('profiles').select('sector,country,organization_type,goals,daily_msgs,plan').eq('user_id',currentUser.id).single():{data:null},
+      currentUser?db.from('profiles').select('sector,country,organization_type,goals,daily_msgs,plan').eq('user_id',currentUser.id).maybeSingle():{data:null},
       db.from('search_cache').select('id').limit(100)
     ]);
+    if(oppsErr)console.log('[ANALYSIS OPPS]',oppsErr.message);
     const active=(opps||[]).filter(g=>!g.application_deadline||g.application_deadline>=today);
-    const plan=profile?.data?.plan||'free';
-    const msgs=profile?.data?.daily_msgs||0;
+    const plan=profileData?.plan||'free';
+    const msgs=profileData?.daily_msgs||0;
     statsEl.innerHTML=`
       <div class="an-stat-card"><div class="an-num">${active.length}</div><div class="an-lbl">Active Programs</div></div>
       <div class="an-stat-card"><div class="an-num">${cache?.length||0}</div><div class="an-lbl">Cached Searches</div></div>
@@ -842,8 +848,8 @@ async function openAnalysis(){
         <div class="an-bar-track"><div class="an-bar-fill" style="width:${Math.round(c/max*100)}%"></div></div>
         <div class="an-bar-val">${c}</div>
       </div>`).join('');
-    const userSector=profile?.data?.sector||profile?.data?.detected_sector||'your sector';
-    tipEl.innerHTML=`💡 <strong>Tip:</strong> Your profile is set to <strong>${userSector}</strong>. The more specific your profile, the better your grant matches. <span style="color:var(--gold);cursor:pointer" onclick="closeModal('analysis-modal');openProfileModal()">Update profile →</span>`;
+    const userSector=profileData?.sector||profileData?.detected_sector||'your sector';
+    tipEl.innerHTML=`💡 <strong>Tip:</strong> Your profile is set to <strong>${userSector}</strong>. The more specific your profile, the better your matches. <span style="color:var(--gold);cursor:pointer" onclick="closeModal('analysis-modal');openProfileModal()">Update profile →</span>`;
   }catch(e){statsEl.innerHTML='<div style="color:var(--muted);font-size:.82rem;grid-column:1/-1">Error loading analysis.</div>'}
 }
 
