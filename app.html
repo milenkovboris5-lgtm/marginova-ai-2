@@ -751,7 +751,7 @@ async function openOpportunities(){
       const today=new Date().toISOString().split('T')[0];
       const {data}=await db.from('funding_opportunities')
         .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,source_url,status')
-        .eq('status','Open').order('title').limit(200);
+        .eq('status','Open').limit(200);
       allOpportunities=(data||[]).filter(g=>!g.application_deadline||g.application_deadline>=today);
     }catch(e){list.innerHTML='<div class="op-loading">Error loading programs.</div>';return}
   }
