@@ -347,7 +347,7 @@ a{color:var(--gold);text-decoration:none}
   <header class="header">
     <div>
       <div class="header-title"><div class="live-dot"></div>Funding Workspace</div>
-      <div class="header-sub">AI-powered · Real-time · Verified</div>
+      <div class="header-sub">Decision system · Real-time · Verified</div>
     </div>
     <div class="header-actions">
       <div class="h-badge" id="tok-badge">Free</div>
@@ -361,13 +361,13 @@ a{color:var(--gold);text-decoration:none}
       <div class="welcome-card">
         <div class="welcome-text">
           <h2>Hello, I'm <em>Marginova.</em></h2>
-          <p>Your AI funding intelligence layer — grants, eligibility, applications.</p>
+          <p>Your funding decision system — TOP 3 opportunities, YES/NO/CONDITIONAL decisions, probability scores.</p>
         </div>
       </div>
       <div class="quick-chips">
-        <div class="chip" onclick="quickStart('Find funding opportunities matched to my organization profile.')">🔍 Find funding</div>
-        <div class="chip" onclick="quickStart('Check my eligibility for the most relevant grants and highlight the main risks.')">✅ Check eligibility</div>
-        <div class="chip" onclick="quickStart('Analyze my project idea and suggest the best funding path.')">💡 Analyze idea</div>
+        <div class="chip" onclick="quickStart('Find the top 3 funding opportunities matched to my profile and give me a decision for each.')">🎯 Get my top 3</div>
+        <div class="chip" onclick="quickStart('Check my eligibility and give me a YES/NO/CONDITIONAL decision with probability for each option.')">📊 Decision analysis</div>
+        <div class="chip" onclick="quickStart('I am looking for a scholarship. Analyze my profile and give me the best options with probability of success.')">🎓 Scholarships</div>
         <div class="chip chip-premium" onclick="openPremium()">🧩 Build application ✦</div>
       </div>
     </div>
@@ -376,8 +376,8 @@ a{color:var(--gold);text-decoration:none}
         <div class="msg-row">
           <div class="msg-av ai">M</div>
           <div class="bubble ai">
-            <p>Hi! I can help you discover funding opportunities, check eligibility, analyze your project, and guide you to the best next steps.</p>
-            <p style="margin-top:.4rem">What would you like to explore today?</p>
+            <p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p>
+            <p style="margin-top:.4rem">Tell me about your project or organization to get started.</p>
           </div>
         </div>
       </div>
@@ -391,7 +391,7 @@ a{color:var(--gold);text-decoration:none}
     </div>
     <div class="composer-inner">
       <div class="composer-top">
-        <textarea class="msg-input" id="msg-input" placeholder="Describe your project, ask about grants, eligibility or funding paths..." rows="1"
+        <textarea class="msg-input" id="msg-input" placeholder="Describe your project, org type, country and budget — get your TOP 3 decision..." rows="1"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"
           oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
         <button class="send-btn" id="send-btn" onclick="sendMsg()">➤</button>
@@ -421,11 +421,11 @@ a{color:var(--gold);text-decoration:none}
     </div>
     <div class="p-card">
       <div class="p-card-title">
-        <h3>Recent Matches</h3>
+        <h3>Top 3 Decisions</h3>
         <button class="p-edit-btn" onclick="openOpportunities()">View all</button>
       </div>
       <div class="opp-list" id="recent-opps">
-        <div class="opp-item"><strong style="color:var(--muted)">No matches yet</strong><div>Start a conversation to see matched programs here.</div></div>
+        <div class="opp-item"><strong style="color:var(--muted)">No decisions yet</strong><div>Describe your project to get your TOP 3 with YES/CONDITIONAL/BACKUP decisions.</div></div>
       </div>
     </div>
     <div class="p-card" style="background:var(--navy);border-color:rgba(201,168,76,.15)">
@@ -454,7 +454,7 @@ a{color:var(--gold);text-decoration:none}
     <div class="d-sep"></div>
     <button class="drawer-btn danger" onclick="doSignOut()">→ Sign out</button>
   </div>
-  <div class="drawer-foot"><div class="d-version">Marginova.AI Workspace v3</div></div>
+  <div class="drawer-foot"><div class="d-version">Marginova — Funding Decision System v3</div></div>
 </div>
 
 <!-- UPGRADE MODAL -->
@@ -871,7 +871,7 @@ function addMsg(role,text,intent,actions=[]){
   row.className='msg-row'+(role==='user'?' user':'');
   if(role==='ai'){const av=document.createElement('div');av.className='msg-av ai';av.textContent='M';row.appendChild(av)}
   const b=document.createElement('div');b.className='bubble '+role;
-  if(role==='ai'&&intent&&intent!=='general'){b.innerHTML=`<span class="itag ${intent}">${intent==='grant'?'Grant Match':'General'}</span><br>`}
+  if(role==='ai'&&intent&&intent!=='general'){b.innerHTML=`<span class="itag ${intent}">${intent==='grant'?'Decision' :'General'}</span><br>`}
   const span=document.createElement('span');span.innerHTML='<p>'+parseMarkdown(text)+'</p>';b.appendChild(span);
   if(role==='ai'){
     const wrap=document.createElement('div');wrap.className='msg-actions';
@@ -928,7 +928,20 @@ async function sendMsg(){
     chatHistory.push({role:'assistant',content:reply});
     const actions=[];
     if(data?.top_matches?.length){
-      document.getElementById('recent-opps').innerHTML=data.top_matches.slice(0,3).map(x=>`<div class="opp-item"><strong>${x.title}</strong><div>${x.snippet||''}</div><span class="opp-match">Match ${x.score||0}%</span></div>`).join('');
+      document.getElementById('recent-opps').innerHTML=data.top_matches.slice(0,3).map((x,i)=>{
+        const roles=['APPLY','CONDITIONAL','BACKUP'];
+        const roleColors=['#1fa94b','#BA7517','#378ADD'];
+        const role=roles[i]||'APPLY';
+        const color=roleColors[i]||roleColors[0];
+        return `<div class="opp-item">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+            <span style="font-size:.62rem;font-weight:600;letter-spacing:.07em;color:${color};background:${color}18;border:1px solid ${color}33;padding:.15rem .5rem;border-radius:999px">${role}</span>
+            <span style="font-size:.65rem;font-weight:600;color:${color}">${x.score||0}%</span>
+          </div>
+          <strong>${x.title}</strong>
+          <div>${x.snippet||''}</div>
+        </div>`;
+      }).join('');
       actions.push({label:'Build application',onClick:()=>openPremium()});
     }
     addMsg('ai',reply,intent,actions);
