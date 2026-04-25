@@ -1,7 +1,6 @@
 // ═════════════════════════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// v19 — Hybrid: Supabase DB + Serper live web search
-// No invented results — Serper fills gaps when DB is thin
+// v20 — Scholarship/student support + limit 150 + improved scoring
 // ═════════════════════════════════════════════════════════════
 
 const { supabase, getTable, ft, detectLang, LANG_NAMES, checkIP, setCors } = require('./_lib/utils');
@@ -9,8 +8,8 @@ const { supabase, getTable, ft, detectLang, LANG_NAMES, checkIP, setCors } = req
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const SERPER_KEY = process.env.SERPER_API_KEY;
 
-console.log('[chat.js v19] SUPABASE:', supabase ? 'OK' : 'MISSING');
-console.log('[chat.js v19] SERPER:', SERPER_KEY ? 'OK' : 'MISSING');
+console.log('[chat.js v20] SUPABASE:', supabase ? 'OK' : 'MISSING');
+console.log('[chat.js v20] SERPER:', SERPER_KEY ? 'OK' : 'MISSING');
 
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
 const CACHE_TTL_HOURS = 24;
@@ -39,8 +38,8 @@ async function searchFundingDB(profile) {
 
     const { data: allRows, error } = await getTable('funding_opportunities')
       .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
-      .eq('status', 'Open')
-      .limit(100);
+      .in('status', ['Open'])
+      .limit(150);
 
     if (error) { console.log('[DB SEARCH] error:', error.message); return []; }
 
@@ -58,13 +57,14 @@ async function searchFundingDB(profile) {
       const sectorMap = {
         'IT / Technology':        ['ai','technology','digital','software','startup','innovation','ict','tech'],
         'Agriculture':            ['agriculture','farmer','rural','food','farm','ipard'],
-        'Education':              ['education','school','learning','training','youth'],
+        'Education':              ['education','school','learning','training','youth','student','scholarship','fellowship','mobility','erasmus','study','academic'],
         'Environment / Energy':   ['climate','environment','green','energy','renewable'],
         'Civil Society':          ['ngo','civil society','community','rights','nonprofit','social'],
         'Health / Social':        ['health','social','welfare','care','women','gender','single parent','family'],
-        'Research / Innovation':  ['research','science','innovation','academic','university'],
-        'SME / Business':         ['business','enterprise','sme','company','entrepreneur'],
-        'Tourism / Culture':      ['tourism','culture','heritage','creative','art']
+        'Research / Innovation':  ['research','science','innovation','academic','university','phd','postgraduate'],
+        'SME / Business':         ['business','enterprise','sme','company','entrepreneur','startup','digital','technology'],
+        'Tourism / Culture':      ['tourism','culture','heritage','creative','art'],
+        'Student / Youth':        ['student','scholarship','fellowship','youth','young','study','mobility','erasmus','fulbright','daad','chevening','stipend','postgraduate','phd','exchange']
       };
 
       if (profile.sector) {
@@ -119,6 +119,13 @@ async function searchFundingDB(profile) {
       }
 
       if (g.application_deadline) score += 5;
+
+      // Bonus for scholarship/fellowship type matching student queries
+      if (g.opportunity_type === 'scholarship' || g.opportunity_type === 'fellowship') {
+        if (profile.keywords?.some(k => ['student','scholarship','stipend','study','fellowship','erasmus','fulbright','daad','youth','young','university','phd'].includes(k))) {
+          score += 25;
+        }
+      }
 
       return {
         ...g,
@@ -334,7 +341,7 @@ function needsSearch(messages) {
     .join(' ')
     .toLowerCase();
 
-  return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support money|invest|subvenc|finansi|podrsk|grant/.test(recentUserMessages);
+  return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support money|invest|subvenc|finansi|podrsk|stipend|student|youth|erasmus|fulbright|daad|chevening|stud|mlad/.test(recentUserMessages);
 }
 
 function detectProfile(text, supaProfile) {
@@ -343,12 +350,13 @@ function detectProfile(text, supaProfile) {
   const sector =
     /\bit\b|tech|software|digital|technology|ai|veshtacka/.test(t)    ? 'IT / Technology' :
     /agri|farm|rural|crop|livestock|hektar|ipard|zemjo/.test(t)        ? 'Agriculture' :
+    /student|stipend|scholarship|fellowship|erasmus|fulbright|daad|chevening|mlad|youth|exchange|study abroad/.test(t) ? 'Student / Youth' :
     /educat|school|youth|training|learning|obrazov/.test(t)            ? 'Education' :
     /environment|climate|green|energy|renewable|solar/.test(t)         ? 'Environment / Energy' :
     /civil|ngo|nonprofit|association|society|zdruzen/.test(t)          ? 'Civil Society' :
     /tourism|culture|heritage|creative|art/.test(t)                    ? 'Tourism / Culture' :
     /health|medical|social|welfare|majki|semejst|gender|women/.test(t) ? 'Health / Social' :
-    /research|science|innovation|university|academic/.test(t)          ? 'Research / Innovation' :
+    /research|science|innovation|university|academic|phd/.test(t)      ? 'Research / Innovation' :
     /sme|small business|company|enterprise|startup/.test(t)            ? 'SME / Business' :
     supaProfile?.sector || null;
 
@@ -576,7 +584,7 @@ module.exports = async function handler(req, res) {
         results   = cached.results;
         cachedAt  = cached.created_at;
         fromCache = true;
-        console.log('[v19] cache hit');
+        console.log('[v20] cache hit');
       } else {
         const hybrid = await hybridSearch(userText, profile);
         results  = hybrid.results;
@@ -587,7 +595,7 @@ module.exports = async function handler(req, res) {
             console.log('[CACHE SAVE FAIL]', e.message)
           );
         }
-        console.log(`[v19] db:${sources.db} serper:${sources.serper} total:${results.length}`);
+        console.log(`[v20] db:${sources.db} serper:${sources.serper} total:${results.length}`);
       }
     }
 
