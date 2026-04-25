@@ -15,7 +15,7 @@ console.log('[chat.js v21] SERPER:', SERPER_KEY ? 'OK' : 'MISSING');
 const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
 const CACHE_TTL_HOURS = 24;
 const DB_MIN_RESULTS = 3;      // if DB returns fewer than this → trigger Serper
-const DB_MIN_SCORE   = 30;     // if top score is below this → trigger Serper
+const DB_MIN_SCORE   = 55;     // if top score is below this → trigger Serper
 
 // ═══ HASH ═══
 
@@ -405,7 +405,8 @@ function detectProfile(text, supaProfile) {
 // Calculates success probability based on match score + risk factors
 
 function calcProbability(score, result, profile) {
-  let prob = Math.round(score * 0.75); // base: 75% of match score
+  // Base: 55% of match score — keeps max realistic
+  let prob = Math.round(score * 0.55);
 
   const elig    = String(result.eligibility  || '').toLowerCase();
   const country = String(result.country      || '').toLowerCase();
@@ -413,30 +414,33 @@ function calcProbability(score, result, profile) {
 
   // Eligibility alignment bonus/penalty
   if (profile.orgType) {
-    const orgLower = profile.orgType.toLowerCase();
-    if (elig.includes(orgLower.split('/')[0].trim().toLowerCase())) prob += 12;
-    else if (elig.includes('ngo') && orgLower.includes('ngo'))      prob += 12;
-    else if (elig.includes('sme') && orgLower.includes('sme'))      prob += 12;
-    else                                                             prob -= 8;
+    const orgLower = profile.orgType.toLowerCase().split('/')[0].trim();
+    if (elig.includes(orgLower))      prob += 8;
+    else if (elig.includes('ngo') && profile.orgType.toLowerCase().includes('ngo')) prob += 8;
+    else if (elig.includes('sme') && profile.orgType.toLowerCase().includes('sme')) prob += 8;
+    else                              prob -= 10;
   }
 
   // Country alignment
   if (profile.country) {
     const pc = profile.country.toLowerCase();
-    if (country.includes(pc) || country.includes('global') || country.includes('europe')) prob += 10;
-    else prob -= 12;
+    if (country.includes(pc))                                     prob += 8;
+    else if (country.includes('global') || country.includes('europe')) prob += 4;
+    else                                                           prob -= 8;
   }
 
-  // Competition penalty based on known high-competition programs
-  if (desc.includes('horizon') || desc.includes('eic') || desc.includes('google')) prob -= 10;
+  // Competition penalty
+  if (desc.includes('horizon') || desc.includes('eic') || desc.includes('google')) prob -= 12;
+  else if (desc.includes('open') || desc.includes('all'))                           prob -= 4;
 
-  // Deadline urgency bonus — closer deadline = less competition remaining
+  // Deadline bonus
   if (result.application_deadline) {
     const daysLeft = Math.round((new Date(result.application_deadline) - new Date()) / 86400000);
-    if (daysLeft > 0 && daysLeft < 45) prob += 5;
+    if (daysLeft > 0 && daysLeft < 45) prob += 4;
   }
 
-  return Math.max(10, Math.min(92, prob));
+  // Hard cap — max 76%, realistic for AI-based matching
+  return Math.max(10, Math.min(76, prob));
 }
 
 function getDecision(prob, result, profile) {
