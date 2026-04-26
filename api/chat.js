@@ -38,123 +38,98 @@ async function searchFundingDB(profile) {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    // Sector-aware query: if sector known, prioritize matching records
+    // SQL-first approach: separate sector query + general query
+    // Sector query: strict ilike filter on focus_areas — only relevant records
+    // General query: fills remaining slots for country/budget matching
+
     const sectorKeywords = {
-      'Environment / Energy':   'environment,climate,renewable,green,energy,biodiversity,ecosystem,conservation,nature,pollution,air,water,forest,sustainability,clean energy',
-      'Civil Society':          'civil society,NGO,nonprofit,advocacy,democracy,community,grassroots',
-      'Agriculture':            'agriculture,farmer,rural,food,farm,ipard',
-      'Education':              'education,school,learning,training,youth,student,scholarship',
-      'IT / Technology':        'technology,digital,software,ai,innovation,ict,startup',
-      'Health / Social':        'health,social,welfare,care,women,gender',
-      'Research / Innovation':  'research,science,innovation,university,academic',
-      'SME / Business':         'business,enterprise,sme,company,entrepreneur',
-      'Tourism / Culture':      'tourism,culture,heritage,creative,art',
-      'Student / Youth':        'student,scholarship,fellowship,youth,erasmus,fulbright,daad'
+      'Environment / Energy':   ['environment','climate','renewable','green energy','biodiversity','ecosystem','conservation','clean energy','pollution','nature','wildlife','forest','water','sustainability','pont','gef','geff','wwf','envsec','life programme'],
+      'Civil Society':          ['civil society','ngo','nonprofit','advocacy','democracy','community','grassroots','rights','governance'],
+      'Agriculture':            ['agriculture','farmer','rural','food','farm','ipard','agri'],
+      'Education':              ['education','school','learning','training','youth','student','scholarship','fellowship','erasmus'],
+      'IT / Technology':        ['technology','digital','software','ai','innovation','ict','startup','tech'],
+      'Health / Social':        ['health','social','welfare','care','women','gender'],
+      'Research / Innovation':  ['research','science','innovation','university','academic','phd'],
+      'SME / Business':         ['business','enterprise','sme','company','entrepreneur'],
+      'Tourism / Culture':      ['tourism','culture','heritage','creative','art'],
+      'Student / Youth':        ['student','scholarship','fellowship','youth','erasmus','fulbright','daad','stipend'],
+      'Individual / Entrepreneur': ['individual','entrepreneur','founder','creator','freelance','startup']
     };
 
-    let query = getTable('funding_opportunities')
-      .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
-      .in('status', ['Open']);
+    const kwList = profile.sector ? (sectorKeywords[profile.sector] || []) : [];
 
-    // If sector detected, use ilike to pre-filter relevant records
-    // This ensures environment programs appear when sector=Environment
-    const sectorKw = profile.sector ? (sectorKeywords[profile.sector] || '').split(',')[0].trim() : null;
-    if (sectorKw && sectorKw.length > 3) {
-      // Fetch sector-matched first (up to 80), then fill with general (up to 80)
-      const [sectorRows, generalRows] = await Promise.all([
-        getTable('funding_opportunities')
-          .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
-          .in('status', ['Open'])
-          .ilike('focus_areas', `%${sectorKw}%`)
-          .limit(80),
-        getTable('funding_opportunities')
-          .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
-          .in('status', ['Open'])
-          .limit(80)
-      ]);
-      // Merge: sector-matched first, then deduplicate
-      const sectorIds = new Set((sectorRows.data || []).map(r => r.id));
-      const merged = [
-        ...(sectorRows.data || []),
-        ...(generalRows.data || []).filter(r => !sectorIds.has(r.id))
-      ];
-      var allRows = merged;
-      var error = sectorRows.error || generalRows.error;
-    } else {
-      const { data: allRows, error } = await query.limit(150);
+    let sectorData = [];
+    let generalData = [];
+
+    if (kwList.length > 0) {
+      // Try first 3 keywords with OR filter
+      const kw1 = kwList[0];
+      const kw2 = kwList[1] || kwList[0];
+      const kw3 = kwList[2] || kwList[0];
+
+      const { data: sr } = await getTable('funding_opportunities')
+        .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
+        .in('status', ['Open'])
+        .or(`focus_areas.ilike.%${kw1}%,focus_areas.ilike.%${kw2}%,focus_areas.ilike.%${kw3}%,description.ilike.%${kw1}%`)
+        .gte('application_deadline', today)
+        .limit(60);
+
+      sectorData = sr || [];
+      console.log(`[DB] sector query (${profile.sector}): ${sectorData.length} records`);
     }
 
-    const { data: allRowsFallback, error: errorFallback } = !allRows
-      ? await query.limit(150)
-      : { data: allRows, error };
+    // General query: country + all open (for budget/country matching)
+    const countryKw = profile.country || '';
+    const { data: gr } = await getTable('funding_opportunities')
+      .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
+      .in('status', ['Open'])
+      .or(`country.ilike.%${countryKw || 'Balkans'}%,country.ilike.%global%,country.ilike.%Western Balkans%`)
+      .limit(60);
 
-    const finalError = error || errorFallback;
-    const finalRows = allRows || allRowsFallback;
-    if (finalError) { console.log('[DB SEARCH] error:', finalError.message); return []; }
+    generalData = gr || [];
 
-    const rows = (finalRows || []).filter(g => !g.application_deadline || g.application_deadline >= today);
-    if (!rows.length) return [];
+    // Merge: sector records first (they are pre-filtered as relevant)
+    const sectorIds = new Set(sectorData.map(r => r.id));
+    const merged = [
+      ...sectorData,
+      ...(generalData).filter(r => !sectorIds.has(r.id))
+    ].filter(g => !g.application_deadline || g.application_deadline >= today);
 
-    const scored = rows.map(g => {
+    if (!merged.length) return [];
+
+    // Scoring
+    const kwsForScore = kwList;
+
+    const scored = merged.map(g => {
       let score = 0;
       const focus   = String(g.focus_areas   || '').toLowerCase();
       const desc    = String(g.description   || '').toLowerCase();
       const elig    = String(g.eligibility   || '').toLowerCase();
-      const type    = String(g.opportunity_type || '').toLowerCase();
       const country = String(g.country       || '').toLowerCase();
 
-      const sectorMap = {
-        'IT / Technology':        ['ai','technology','digital','software','startup','innovation','ict','tech'],
-        'Agriculture':            ['agriculture','farmer','rural','food','farm','ipard'],
-        'Education':              ['education','school','learning','training','youth','student','scholarship','fellowship','mobility','erasmus','study','academic'],
-        'Environment / Energy':   ['climate','environment','green','energy','renewable','solar','wind','biodiversity','ecosystem','conservation','nature','pollution','air','water','forest','wildlife','sustainability','sustainable','clean energy','clean-energy','agri-environment','life programme','geff','green agenda','envsec','bankwatch','wwf','pont','gef','eko'],
-        'Civil Society':          ['ngo','civil society','community','rights','nonprofit','social','advocacy','democracy','governance','watchdog','transparency','civic','citizen','foundation','association','zdruzen','civil','grassroots','balkan trust','btd','milieukontakt','oak foundation','heinrich','boell','erste','rockefeller'],
-        'Health / Social':        ['health','social','welfare','care','women','gender','single parent','family'],
-        'Research / Innovation':  ['research','science','innovation','academic','university','phd','postgraduate'],
-        'SME / Business':         ['business','enterprise','sme','company','entrepreneur','startup','digital','technology'],
-        'Tourism / Culture':      ['tourism','culture','heritage','creative','art'],
-        'Student / Youth':        ['student','scholarship','fellowship','youth','young','study','mobility','erasmus','fulbright','daad','chevening','stipend','postgraduate','phd','exchange'],
-        'Individual / Entrepreneur':['startup','innovation','digital','technology','ai','software','platform','app','website','web','tool','saas','product','creator','freelance','individual']
-      };
-
-      if (profile.sector) {
-        const kws  = sectorMap[profile.sector] || [];
+      // Sector score — primary driver
+      if (kwsForScore.length > 0) {
         const hay  = `${focus} ${desc}`;
-        const hits = kws.filter(k => hay.includes(k)).length;
-        if (hits > 0) score += Math.min(35, hits * 12);
+        const hits = kwsForScore.filter(k => hay.includes(k)).length;
+        if (hits > 0) score += Math.min(50, hits * 15); // boosted weight
       }
 
+      // Keywords from conversation
       if (profile.keywords?.length) {
         const hay  = `${focus} ${desc} ${elig}`;
         const hits = profile.keywords.filter(k => hay.includes(k)).length;
-        if (hits > 0) score += Math.min(20, hits * 7);
+        if (hits > 0) score += Math.min(15, hits * 5);
       }
 
+      // Country score
       if (profile.country) {
         const pc = profile.country.toLowerCase();
-        if (!country || country.includes('global') || country.includes('europe') ||
-            country.includes(pc) ||
-            (pc.includes('north macedonia') && country.includes('western balkans'))) {
-          score += 25;
-        }
+        if (country.includes(pc)) score += 20;
+        else if (country.includes('global') || country.includes('europe') || country.includes('western balkans')) score += 12;
+        else score -= 5;
       }
 
-      if (profile.orgType) {
-        const orgMap = {
-          'NGO / Association':         ['ngo','nonprofit','association','civil society','foundation'],
-          'Startup':                   ['startup','early stage','venture','founder'],
-          'Agricultural holding':      ['farmer','agricultural','holding','ipard'],
-          'SME':                       ['sme','enterprise','company','business'],
-          'Municipality / Public body':['municipality','local government','public body'],
-          'University / Research':     ['university','research','academic','institute'],
-          'Individual / Entrepreneur': ['individual','entrepreneur','founder','self-employed','freelance','creator','person','applicant','citizen','professional','researcher','artist','innovator','startup','early']
-        };
-        const kws  = orgMap[profile.orgType] || [];
-        const hay  = `${elig} ${desc} ${type}`;
-        const hits = kws.filter(k => hay.includes(k)).length;
-        if (hits > 0) score += Math.min(20, hits * 10);
-      }
-
+      // Budget match
       if (profile.budget && g.award_amount != null) {
         const amt = Number(g.award_amount);
         const budgetRanges = {
@@ -167,15 +142,26 @@ async function searchFundingDB(profile) {
         if (amt >= minB && amt <= maxB) score += 15;
       }
 
-      if (g.application_deadline) score += 5;
-
-      if (g.opportunity_type === 'scholarship' || g.opportunity_type === 'fellowship') {
-        if (profile.keywords?.some(k =>
-          ['student','scholarship','stipend','study','fellowship','erasmus','fulbright','daad','youth','young','university','phd'].includes(k)
-        )) {
-          score += 25;
-        }
+      // Org type match
+      if (profile.orgType) {
+        const orgMap = {
+          'NGO / Association':         ['ngo','nonprofit','association','civil society','foundation'],
+          'Startup':                   ['startup','early stage','venture','founder'],
+          'Agricultural holding':      ['farmer','agricultural','holding','ipard'],
+          'SME':                       ['sme','enterprise','company','business'],
+          'Municipality / Public body':['municipality','local government','public body'],
+          'University / Research':     ['university','research','academic','institute'],
+          'Individual / Entrepreneur': ['individual','entrepreneur','founder','self-employed','freelance','creator','person','applicant']
+        };
+        const kws  = orgMap[profile.orgType] || [];
+        const hay  = `${elig} ${desc}`;
+        const hits = kws.filter(k => hay.includes(k)).length;
+        if (hits > 0) score += Math.min(15, hits * 8);
+        else score -= 5;
       }
+
+      // Deadline bonus
+      if (g.application_deadline) score += 5;
 
       return {
         ...g,
@@ -198,6 +184,9 @@ async function searchFundingDB(profile) {
       .slice(0, 6);
 
     console.log('[DB] matched:', ranked.length, 'top score:', ranked[0]?.score ?? 0);
+    if (ranked.length > 0) {
+      console.log('[DB] top 3:', ranked.slice(0,3).map(r => `${r.title?.slice(0,30)} (${r.score})`).join(' | '));
+    }
     return ranked;
   } catch (e) {
     console.log('[DB SEARCH] error:', e.message);
