@@ -300,14 +300,36 @@ async function loadProfile(userId) {
 // ═══ INTENT DETECTION ═══
 
 function needsSearch(messages) {
+  // Look at last 4 user messages (not just 2) to catch multi-turn profile setup
   const recentUserMessages = messages
     .filter(m => m.role === 'user')
-    .slice(-2)
+    .slice(-4)
     .map(m => m.content || '')
     .join(' ')
     .toLowerCase();
 
-  return /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support money|invest|subvenc|finansi|podrsk|stipend|student|youth|erasmus|fulbright|daad|chevening|stud|mlad/.test(recentUserMessages);
+  // FIX: Trigger search when:
+  // 1. Explicit grant/fund keywords (original)
+  // 2. User describes org type + sector + budget (profile-style query = they want matches)
+  // 3. User asks "which", "what", "find", "show" without explicit grant word
+  // 4. Macedonian/Serbian profile keywords
+
+  const hasGrantKeyword = /grant|fund|financ|subsid|fellowship|scholarship|award|donor|ngo|program|open call|call for proposal|support money|invest|subvenc|finansi|podrsk|stipend|student|youth|erasmus|fulbright|daad|chevening|stud|mlad|grant|fond|subvencij|stipendij/.test(recentUserMessages);
+
+  const hasProfileKeyword = /nvo|ngo|zdruzen|asocijacij|organizacij|sektor|budzet|budget|okolina|ekolog|environment|civil|nevladin|opstina|firma|startup|pretprijatie|makedonija|srbija|kosovo|bosna|hrvatska|albanija/.test(recentUserMessages);
+
+  const hasSearchIntent = /koja|koi|najdi|pokazi|ima li|postoi|which|what|find|show|give|look|search|дали|кои|која|најди|покажи|има/.test(recentUserMessages);
+
+  const hasBudget = /€|\$|eur|usd|mkd|000|budzet|budget|iznos|amount/.test(recentUserMessages);
+
+  // Profile query: has org/sector info + budget = user wants funding matches
+  const isProfileQuery = hasProfileKeyword && hasBudget;
+
+  // Multi-turn: last AI message asked a clarifying question (kraj/country/sector)
+  const lastAiMsg = (messages.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '').toLowerCase();
+  const aiAskedClarification = /земја|country|сектор|sector|организација|organization|буџет|budget|тип/.test(lastAiMsg);
+
+  return hasGrantKeyword || isProfileQuery || (hasSearchIntent && hasProfileKeyword) || (aiAskedClarification && recentUserMessages.length > 5);
 }
 
 function detectProfile(text, supaProfile) {
@@ -578,7 +600,10 @@ module.exports = async function handler(req, res) {
       cleanExpiredCache().catch(e => console.log('[CACHE CLEAN BG]', e.message));
     }
 
-    const shouldSearch = needsSearch(messages) || !!imageData;
+    // FIX: Also trigger search when user has a profile with sector+country
+    // (they logged in with profile = they want funding matches, not general chat)
+    const hasCompleteProfile = !!(profile.sector && profile.country);
+    const shouldSearch = needsSearch(messages) || !!imageData || hasCompleteProfile;
     let results   = [];
     let sources   = { db: 0, serper: 0 };
     let fromCache = false;
