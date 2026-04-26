@@ -231,7 +231,6 @@ a{color:var(--gold);text-decoration:none}
 .op-card:hover{border-color:rgba(201,168,76,.3);transform:translateY(-1px)}
 .op-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.4rem}
 .op-card-title{font-size:.88rem;font-weight:600;color:var(--navy);line-height:1.35}
-.op-card-score{background:rgba(31,169,75,.1);color:#167a36;padding:.2rem .5rem;border-radius:999px;font-size:.65rem;font-weight:600;white-space:nowrap;flex-shrink:0}
 .op-card-org{font-size:.75rem;color:var(--muted);margin-bottom:.3rem}
 .op-card-meta{display:flex;gap:.6rem;flex-wrap:wrap}
 .op-tag{font-size:.68rem;padding:.15rem .45rem;border-radius:999px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.15);color:var(--gold)}
@@ -249,10 +248,10 @@ a{color:var(--gold);text-decoration:none}
 .sv-card div{font-size:.75rem;color:var(--muted)}
 .sv-date{font-size:.68rem;color:rgba(0,0,0,.25);margin-top:.3rem}
 
-/* ANALYSIS PANEL */
+/* ANALYSIS MODAL */
 .analysis-panel-box{background:var(--white);border:1px solid var(--border);border-radius:24px;width:min(560px,96vw);max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 40px 80px rgba(0,0,0,.16)}
 .an-head{background:var(--navy);padding:1.5rem 1.75rem;border-radius:24px 24px 0 0}
-.an-head h2{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--white)}
+.an-head h2{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--white);margin-bottom:.2rem}
 .an-body{padding:1.25rem 1.75rem 1.75rem;display:flex;flex-direction:column;gap:1rem}
 .an-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
 .an-stat-card{background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center}
@@ -272,19 +271,13 @@ a{color:var(--gold);text-decoration:none}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
 /* RESPONSIVE */
-@media(max-width:1200px){
-  .app{grid-template-columns:230px 1fr 280px}
-}
+@media(max-width:1200px){.app{grid-template-columns:230px 1fr 280px}}
 @media(max-width:1024px){
   .app{grid-template-columns:200px 1fr;grid-template-areas:'sidebar header' 'sidebar main' 'sidebar composer'}
   .panel{display:none}
 }
 @media(max-width:768px){
-  .app{
-    grid-template-columns:1fr;
-    grid-template-rows:56px 1fr auto;
-    grid-template-areas:'header' 'main' 'composer'
-  }
+  .app{grid-template-columns:1fr;grid-template-rows:56px 1fr auto;grid-template-areas:'header' 'main' 'composer'}
   .sidebar,.panel{display:none}
   .header{padding:0 1rem}
   .chat-welcome{padding:1rem 1rem .5rem}
@@ -416,7 +409,9 @@ a{color:var(--gold);text-decoration:none}
     </div>
     <div class="composer-inner">
       <div class="composer-top">
-        <textarea class="msg-input" id="msg-input" placeholder="Describe your project, org type, country and budget — get your TOP 3 decision..." rows="1"
+        <textarea class="msg-input" id="msg-input"
+          placeholder="Describe your project, org type, country and budget — get your TOP 3 decision..."
+          rows="1"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"
           oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
         <button class="send-btn" id="send-btn" onclick="sendMsg()">➤</button>
@@ -467,7 +462,10 @@ a{color:var(--gold);text-decoration:none}
   <div class="drawer-body">
     <div class="d-email" id="drawer-email">—</div>
     <div class="d-plan"><span class="d-plan-label">Plan</span><span class="d-plan-val" id="drawer-plan">Free</span></div>
-    <div class="d-quota" id="drawer-quota" style="display:none"><span id="quota-text">0 / 20 messages</span><div class="d-quota-bar"><div class="d-quota-fill" id="quota-fill" style="width:0%"></div></div></div>
+    <div class="d-quota" id="drawer-quota" style="display:none">
+      <span id="quota-text">0 / 20 messages</span>
+      <div class="d-quota-bar"><div class="d-quota-fill" id="quota-fill" style="width:0%"></div></div>
+    </div>
     <div class="d-sep"></div>
     <div class="d-section">Chat</div>
     <button class="drawer-btn" onclick="clearChat();closeDrawer()">🗑 Clear history</button>
@@ -490,7 +488,7 @@ a{color:var(--gold);text-decoration:none}
     <p>Unlock the application builder — generate LFM, budget drafts, risk matrices and full proposal structure from any matched opportunity.</p>
     <div class="modal-btns">
       <button class="mbtn" onclick="closeModal('upgrade-modal')">Later</button>
-      <button class="mbtn navy" onclick="window.location.href='/premium-application.html'">Open Builder →</button>
+      <button class="mbtn navy" onclick="window.location.href='/index.html#pricing'">See Plans →</button>
     </div>
   </div>
 </div>
@@ -607,7 +605,7 @@ a{color:var(--gold);text-decoration:none}
       <button onclick="closeModal('saved-modal')" style="background:transparent;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:1.1rem">✕</button>
     </div>
     <div class="sv-body" id="sv-body">
-      <div class="sv-empty">Your saved searches will appear here.<br>After a funding search, use the Save button to keep results.</div>
+      <div class="sv-empty">Your saved searches will appear here.</div>
     </div>
   </div>
 </div>
@@ -636,336 +634,553 @@ a{color:var(--gold);text-decoration:none}
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPA_URL='https://yidalveetwkcrjkvzbsn.supabase.co';
-const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
-const {createClient}=supabase;
-const db=createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'marginova_auth'}});
+// ── SUPABASE INIT ──
+// Anon key is public by design (Supabase RLS controls access).
+// Service key stays server-side only (utils.js via env var).
+const {createClient} = supabase;
 
-let currentUser=null,authMode='login',lang=localStorage.getItem('mlang')||'en';
-let chatHistory=[],currentFile=null;
-let allOpportunities=[];
+const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
+
+const db = createClient(SUPA_URL, SUPA_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'marginova_auth' }
+});
+
+// NOTE: When /api/config.js is deployed on server, switch to:
+// async function initSupabase() {
+//   const cfg = await fetch('/api/config').then(r => r.json());
+//   db = createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: {...} });
+// }
+
+async function initSupabase() { /* db already initialized above */ }
+
+let currentUser = null, authMode = 'login', lang = localStorage.getItem('mlang') || 'en';
+let chatHistory = [], currentFile = null;
+let allOpportunities = [];
+let currentUserPlan = 'free'; // track plan for openPremium gate
 
 // ── AUTH ──
-function setAuthMode(m){
-  authMode=m;
-  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&m==='login')||(i===1&&m==='signup')));
-  document.getElementById('auth-pw').placeholder=m==='signup'?'Choose a password (min 6 chars)':'Password';
+function setAuthMode(m) {
+  authMode = m;
+  document.querySelectorAll('.auth-tab').forEach((t,i) =>
+    t.classList.toggle('active', (i===0&&m==='login')||(i===1&&m==='signup')));
+  document.getElementById('auth-pw').placeholder =
+    m === 'signup' ? 'Choose a password (min 6 chars)' : 'Password';
 }
-async function doAuth(){
-  const email=document.getElementById('auth-email').value.trim();
-  const pw=document.getElementById('auth-pw').value;
-  const err=document.getElementById('auth-err');
-  err.style.display='none';
-  if(!email||!pw){showAuthErr('Please fill all fields.');return}
-  try{
+
+async function doAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pw    = document.getElementById('auth-pw').value;
+  const err   = document.getElementById('auth-err');
+  err.style.display = 'none';
+  if (!email || !pw) { showAuthErr('Please fill all fields.'); return; }
+  try {
     let res;
-    if(authMode==='signup'){
-      res=await db.auth.signUp({email,password:pw});
-      if(!res.error){showAuthErr('Check your email to confirm your account.',true);return}
-    }else{
-      res=await db.auth.signInWithPassword({email,password:pw});
+    if (authMode === 'signup') {
+      res = await db.auth.signUp({ email, password: pw });
+      if (!res.error) { showAuthErr('Check your email to confirm your account.', true); return; }
+    } else {
+      res = await db.auth.signInWithPassword({ email, password: pw });
     }
-    if(res.error){showAuthErr(res.error.message);return}
-    currentUser=res.data.user;initApp();
-  }catch(e){showAuthErr(e.message)}
+    if (res.error) { showAuthErr(res.error.message); return; }
+    currentUser = res.data.user;
+    initApp();
+  } catch(e) { showAuthErr(e.message); }
 }
-function showAuthErr(msg,ok=false){
-  const err=document.getElementById('auth-err');
-  err.style.color=ok?'#1fa94b':'#e74c3c';
-  err.textContent=msg;err.style.display='block';
+
+function showAuthErr(msg, ok = false) {
+  const err = document.getElementById('auth-err');
+  err.style.color = ok ? '#1fa94b' : '#e74c3c';
+  err.textContent = msg;
+  err.style.display = 'block';
 }
-function initApp(){
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('app').style.display='grid';
-  if(currentUser){document.getElementById('drawer-email').textContent=currentUser.email;loadUserProfile();}
+
+function initApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'grid';
+  if (currentUser) {
+    document.getElementById('drawer-email').textContent = currentUser.email;
+    loadUserProfile();
+  }
 }
-async function loadUserProfile(){
-  if(!currentUser)return;
-  try{
-    const {data,error}=await db.from('profiles')
+
+async function loadUserProfile() {
+  if (!currentUser) return;
+  try {
+    const { data, error } = await db.from('profiles')
       .select('plan,daily_msgs,last_msg_date,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country')
-      .eq('user_id',currentUser.id)
+      .eq('user_id', currentUser.id)
       .maybeSingle();
-    if(error){console.log('[PROFILE]',error.message);return}
-    const plan=data?.plan||'free';
-    const limits={free:20,starter:500,pro:2000,business:-1};
-    const limit=limits[plan]??20;
-    const today=new Date().toISOString().split('T')[0];
-    const used=data?.last_msg_date===today?(data?.daily_msgs||0):0;
-    document.getElementById('drawer-plan').textContent=plan.charAt(0).toUpperCase()+plan.slice(1);
-    document.getElementById('tok-badge').textContent=plan.charAt(0).toUpperCase()+plan.slice(1);
-    if(limit!==-1){
-      const pct=Math.min(100,Math.round((used/limit)*100));
-      document.getElementById('drawer-quota').style.display='block';
-      document.getElementById('quota-text').textContent=`${used} / ${limit} messages today`;
-      document.getElementById('quota-fill').style.width=pct+'%';
+
+    if (error) { console.log('[PROFILE]', error.message); return; }
+
+    const plan = data?.plan || 'free';
+    currentUserPlan = plan; // ← store for openPremium gate
+
+    const limits  = { free:20, starter:500, pro:2000, business:-1 };
+    const limit   = limits[plan] ?? 20;
+    const today   = new Date().toISOString().split('T')[0];
+    const used    = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
+
+    document.getElementById('drawer-plan').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+    document.getElementById('tok-badge').textContent   = plan.charAt(0).toUpperCase() + plan.slice(1);
+
+    if (limit !== -1) {
+      const pct = Math.min(100, Math.round((used / limit) * 100));
+      document.getElementById('drawer-quota').style.display = 'block';
+      document.getElementById('quota-text').textContent     = `${used} / ${limit} messages today`;
+      document.getElementById('quota-fill').style.width     = pct + '%';
     }
-    document.getElementById('profile-org').textContent=data?.organization_type||data?.detected_org_type||'Not set';
-    document.getElementById('profile-country').textContent=data?.country||data?.detected_country||'Country not set';
-    document.getElementById('profile-sector').textContent=data?.sector||data?.detected_sector||'Sector not set';
-    document.getElementById('profile-budget').textContent='Budget: '+(data?.goals||'not set');
-  }catch(e){console.log('[PROFILE ERROR]',e.message)}
+
+    document.getElementById('profile-org').textContent    = data?.organization_type || data?.detected_org_type || 'Not set';
+    document.getElementById('profile-country').textContent = data?.country || data?.detected_country || 'Country not set';
+    document.getElementById('profile-sector').textContent  = data?.sector || data?.detected_sector || 'Sector not set';
+    document.getElementById('profile-budget').textContent  = 'Budget: ' + (data?.goals || 'not set');
+  } catch(e) {
+    console.log('[PROFILE ERROR]', e.message);
+    showToast('Could not load profile — using defaults');
+  }
 }
-async function doSignOut(){
-  await db.auth.signOut();currentUser=null;chatHistory=[];
-  document.getElementById('app').style.display='none';
-  document.getElementById('auth-screen').style.display='flex';
+
+// ── SIGN OUT — FIX: clear ALL state before signing out ──
+async function doSignOut() {
+  // 1. Clear sensitive state first
+  chatHistory      = [];
+  currentFile      = null;
+  allOpportunities = [];
+  currentUser      = null;
+  currentUserPlan  = 'free';
+
+  // 2. Sign out from Supabase
+  await db.auth.signOut();
+
+  // 3. Reset UI
   closeDrawer();
+  document.getElementById('app').style.display        = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+
+  // 4. Reset chat to pristine state
+  document.getElementById('messages').innerHTML = `
+    <div class="msg-row">
+      <div class="msg-av ai">M</div>
+      <div class="bubble ai">
+        <p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p>
+        <p style="margin-top:.4rem">Tell me about your project or organization to get started.</p>
+      </div>
+    </div>`;
+
+  const wb = document.getElementById('welcome-block');
+  if (wb) wb.style.display = 'block';
+
+  // 5. Reset profile panel
+  document.getElementById('profile-org').textContent     = '—';
+  document.getElementById('profile-country').textContent = '—';
+  document.getElementById('profile-sector').textContent  = 'Not set';
+  document.getElementById('profile-budget').textContent  = 'Budget: not set';
+  document.getElementById('recent-opps').innerHTML = `
+    <div class="opp-item">
+      <strong style="color:var(--muted)">No decisions yet</strong>
+      <div>Describe your project to get your TOP 3 with YES/CONDITIONAL/BACKUP decisions.</div>
+    </div>`;
+
+  document.getElementById('drawer-quota').style.display = 'none';
+  document.getElementById('tok-badge').textContent       = 'Free';
+  document.getElementById('drawer-plan').textContent     = 'Free';
+  document.getElementById('drawer-email').textContent    = '—';
 }
 
 // ── UI ──
-function setNav(n){document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));document.getElementById('nav-'+n)?.classList.add('active')}
-function openDrawer(){document.getElementById('drawer').classList.add('open')}
-function closeDrawer(){document.getElementById('drawer').classList.remove('open')}
-function openModal(id){document.getElementById(id).classList.add('open')}
-function closeModal(id){document.getElementById(id).classList.remove('open')}
-function openPremium(){openModal('upgrade-modal')}
-function setLang(l){lang=l;localStorage.setItem('mlang',l);showToast('Language: '+l.toUpperCase())}
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
+function setNav(n) {
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('nav-' + n)?.classList.add('active');
+}
+function openDrawer()  { document.getElementById('drawer').classList.add('open'); }
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function setLang(l)    { lang = l; localStorage.setItem('mlang', l); showToast('Language: ' + l.toUpperCase()); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── OPEN PREMIUM — FIX: plan gate ──
+function openPremium() {
+  const isPro = currentUserPlan === 'pro' || currentUserPlan === 'business';
+  if (isPro) {
+    window.location.href = '/premium-application.html';
+  } else {
+    openModal('upgrade-modal');
+  }
+}
 
 // ── PROFILE MODAL ──
-async function openProfileModal(){
+async function openProfileModal() {
   openModal('profile-modal');
-  if(currentUser){
-    document.getElementById('pm-email-txt').textContent=currentUser.email;
-    document.getElementById('pm-av').textContent=currentUser.email.charAt(0).toUpperCase();
+  if (currentUser) {
+    document.getElementById('pm-email-txt').textContent = currentUser.email;
+    document.getElementById('pm-av').textContent = currentUser.email.charAt(0).toUpperCase();
   }
-  if(!currentUser)return;
-  try{
-    const {data,error}=await db.from('profiles').select('plan,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country').eq('user_id',currentUser.id).maybeSingle();
-    if(error){console.log('[PM]',error.message);return}
-    if(data){
-      document.getElementById('pm-orgtype').value=data.organization_type||data.detected_org_type||'';
-      document.getElementById('pm-sector').value=data.sector||data.detected_sector||'';
-      document.getElementById('pm-country').value=data.country||data.detected_country||'';
-      document.getElementById('pm-budget').value=data.goals||'';
-      document.getElementById('pm-goals').value='';
-      document.getElementById('pm-plan-tag').textContent=(data.plan||'free').charAt(0).toUpperCase()+(data.plan||'free').slice(1);
+  if (!currentUser) return;
+  try {
+    const { data, error } = await db.from('profiles')
+      .select('plan,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+
+    if (error) { console.log('[PM]', error.message); return; }
+    if (data) {
+      document.getElementById('pm-orgtype').value  = data.organization_type || data.detected_org_type || '';
+      document.getElementById('pm-sector').value   = data.sector || data.detected_sector || '';
+      document.getElementById('pm-country').value  = data.country || data.detected_country || '';
+      document.getElementById('pm-budget').value   = data.goals || '';
+      document.getElementById('pm-goals').value    = '';
+      document.getElementById('pm-plan-tag').textContent =
+        (data.plan || 'free').charAt(0).toUpperCase() + (data.plan || 'free').slice(1);
     }
-  }catch(e){}
+  } catch(e) {}
 }
-async function saveProfile(){
-  if(!currentUser)return;
-  const orgType=document.getElementById('pm-orgtype').value;
-  const sector=document.getElementById('pm-sector').value;
-  const country=document.getElementById('pm-country').value;
-  const budget=document.getElementById('pm-budget').value;
-  const goals=document.getElementById('pm-goals').value.trim();
-  const st=document.getElementById('pm-status');
-  st.className='pm-status';st.textContent='Saving...';
-  try{
-    const {error}=await db.from('profiles').upsert({
-      user_id:currentUser.id,
-      organization_type:orgType||null,sector:sector||null,
-      country:country||null,goals:budget||null,
-      detected_org_type:orgType||null,detected_sector:sector||null,detected_country:country||null
-    },{onConflict:'user_id'});
-    if(error)throw error;
-    document.getElementById('profile-org').textContent=orgType||'Not set';
-    document.getElementById('profile-country').textContent=country||'Not set';
-    document.getElementById('profile-sector').textContent=sector||'Not set';
-    document.getElementById('profile-budget').textContent='Budget: '+(budget||'not set');
-    st.className='pm-status ok';st.textContent='✓ Profile saved!';
-    setTimeout(()=>closeModal('profile-modal'),1200);
+
+async function saveProfile() {
+  if (!currentUser) return;
+  const orgType = document.getElementById('pm-orgtype').value;
+  const sector  = document.getElementById('pm-sector').value;
+  const country = document.getElementById('pm-country').value;
+  const budget  = document.getElementById('pm-budget').value;
+  const st      = document.getElementById('pm-status');
+  st.className = 'pm-status'; st.textContent = 'Saving...';
+  try {
+    const { error } = await db.from('profiles').upsert({
+      user_id: currentUser.id,
+      organization_type: orgType || null, sector: sector || null,
+      country: country || null, goals: budget || null,
+      detected_org_type: orgType || null, detected_sector: sector || null,
+      detected_country: country || null
+    }, { onConflict: 'user_id' });
+
+    if (error) throw error;
+    document.getElementById('profile-org').textContent     = orgType || 'Not set';
+    document.getElementById('profile-country').textContent = country || 'Not set';
+    document.getElementById('profile-sector').textContent  = sector || 'Not set';
+    document.getElementById('profile-budget').textContent  = 'Budget: ' + (budget || 'not set');
+    st.className = 'pm-status ok'; st.textContent = '✓ Profile saved!';
+    setTimeout(() => closeModal('profile-modal'), 1200);
     showToast('Profile updated — matching improved!');
-  }catch(e){st.className='pm-status err';st.textContent='Error saving. Try again.'}
+  } catch(e) { st.className = 'pm-status err'; st.textContent = 'Error saving. Try again.'; }
 }
 
 // ── OPPORTUNITIES ──
-async function openOpportunities(){
+async function openOpportunities() {
   openModal('opps-modal');
-  const list=document.getElementById('op-list');
-  if(allOpportunities.length===0){
-    list.innerHTML='<div class="op-loading">Loading programs...</div>';
-    try{
-      const today=new Date().toISOString().split('T')[0];
-      const {data}=await db.from('funding_opportunities')
+  const list = document.getElementById('op-list');
+  if (allOpportunities.length === 0) {
+    list.innerHTML = '<div class="op-loading">Loading programs...</div>';
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await db.from('funding_opportunities')
         .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,source_url,status')
-        .eq('status','Open').limit(200);
-      allOpportunities=(data||[]).filter(g=>!g.application_deadline||g.application_deadline>=today);
-    }catch(e){list.innerHTML='<div class="op-loading">Error loading programs.</div>';return}
+        .eq('status', 'Open').limit(200);
+      allOpportunities = (data || []).filter(g => !g.application_deadline || g.application_deadline >= today);
+    } catch(e) { list.innerHTML = '<div class="op-loading">Error loading programs.</div>'; return; }
   }
-  document.getElementById('op-count').textContent=allOpportunities.length+' programs';
+  document.getElementById('op-count').textContent = allOpportunities.length + ' programs';
   renderOpps(allOpportunities);
 }
-function renderOpps(opps){
-  const list=document.getElementById('op-list');
-  if(!opps.length){list.innerHTML='<div class="op-loading">No programs found for this filter.</div>';return}
-  list.innerHTML=opps.map(g=>`
+
+function renderOpps(opps) {
+  const list = document.getElementById('op-list');
+  if (!opps.length) { list.innerHTML = '<div class="op-loading">No programs found for this filter.</div>'; return; }
+  list.innerHTML = opps.map(g => `
     <div class="op-card">
-      <div class="op-card-top">
-        <div class="op-card-title">${g.title}</div>
-      </div>
-      <div class="op-card-org">${g.organization_name||''}</div>
+      <div class="op-card-top"><div class="op-card-title">${g.title}</div></div>
+      <div class="op-card-org">${g.organization_name || ''}</div>
       <div class="op-card-meta">
-        ${g.award_amount?`<span class="op-tag">€${Number(g.award_amount).toLocaleString()} ${g.currency||''}</span>`:(g.funding_range?`<span class="op-tag">${g.funding_range}</span>`:'')}
-        ${g.country?`<span class="op-tag">${g.country}</span>`:''}
-        ${g.application_deadline?`<span class="op-tag">⏰ ${g.application_deadline}</span>`:''}
+        ${g.award_amount ? `<span class="op-tag">€${Number(g.award_amount).toLocaleString()} ${g.currency||''}</span>` : (g.funding_range ? `<span class="op-tag">${g.funding_range}</span>` : '')}
+        ${g.country ? `<span class="op-tag">${g.country}</span>` : ''}
+        ${g.application_deadline ? `<span class="op-tag">⏰ ${g.application_deadline}</span>` : ''}
       </div>
-      ${g.eligibility?`<div style="font-size:.72rem;color:var(--muted);margin-top:.4rem;line-height:1.4">${g.eligibility.slice(0,120)}${g.eligibility.length>120?'...':''}</div>`:''}
-      ${g.source_url?`<a class="op-card-link" href="${g.source_url}" target="_blank" rel="noopener">View program →</a>`:''}
+      ${g.eligibility ? `<div style="font-size:.72rem;color:var(--muted);margin-top:.4rem;line-height:1.4">${g.eligibility.slice(0,120)}${g.eligibility.length>120?'...':''}</div>` : ''}
+      ${g.source_url ? `<a class="op-card-link" href="${g.source_url}" target="_blank" rel="noopener">View program →</a>` : ''}
     </div>`).join('');
 }
-function filterOpps(sector,btn){
-  document.querySelectorAll('.op-filter').forEach(b=>b.classList.remove('active'));
+
+function filterOpps(sector, btn) {
+  document.querySelectorAll('.op-filter').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if(sector==='all'){renderOpps(allOpportunities);return}
-  const filtered=allOpportunities.filter(g=>{
-    const hay=(g.focus_areas||'').toLowerCase()+(g.title||'').toLowerCase();
-    const sectorMap={'IT / Technology':['ai','tech','digital','software','innovation','ict'],'Agriculture':['agri','farm','rural','food','ipard'],'Civil Society':['ngo','civil','nonprofit','rights','community'],'Environment / Energy':['climate','environment','green','energy','renewable'],'Education':['education','school','youth','training','learning'],'Health / Social':['health','social','welfare','care','women','gender']};
-    const kws=sectorMap[sector]||[sector.toLowerCase()];
-    return kws.some(k=>hay.includes(k));
+  if (sector === 'all') { renderOpps(allOpportunities); return; }
+  const sectorMap = {
+    'IT / Technology':      ['ai','tech','digital','software','innovation','ict'],
+    'Agriculture':          ['agri','farm','rural','food','ipard'],
+    'Civil Society':        ['ngo','civil','nonprofit','rights','community'],
+    'Environment / Energy': ['climate','environment','green','energy','renewable'],
+    'Education':            ['education','school','youth','training','learning'],
+    'Health / Social':      ['health','social','welfare','care','women','gender']
+  };
+  const kws = sectorMap[sector] || [sector.toLowerCase()];
+  const filtered = allOpportunities.filter(g => {
+    const hay = (g.focus_areas||'').toLowerCase() + (g.title||'').toLowerCase();
+    return kws.some(k => hay.includes(k));
   });
   renderOpps(filtered);
 }
 
 // ── SAVED ──
-async function openSaved(){
+async function openSaved() {
   openModal('saved-modal');
-  const body=document.getElementById('sv-body');
-  try{
-    if(!currentUser){body.innerHTML='<div class="sv-empty">Sign in to see saved searches.</div>';return}
-    const {data}=await db.from('search_cache').select('query_text,created_at,results').order('created_at',{ascending:false}).limit(20);
-    if(!data||!data.length){body.innerHTML='<div class="sv-empty">No saved searches yet.<br>After a funding search, your results are cached here automatically.</div>';return}
-    body.innerHTML=data.map(s=>`
+  const body = document.getElementById('sv-body');
+  try {
+    if (!currentUser) { body.innerHTML = '<div class="sv-empty">Sign in to see saved searches.</div>'; return; }
+    const { data } = await db.from('search_cache')
+      .select('query_text,created_at,results')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (!data || !data.length) {
+      body.innerHTML = '<div class="sv-empty">No saved searches yet.<br>After a funding search, your results are cached here automatically.</div>';
+      return;
+    }
+    body.innerHTML = data.map(s => `
       <div class="sv-card">
-        <strong>${s.query_text||'Funding search'}</strong>
-        <div>${Array.isArray(s.results)?s.results.length+' results cached':''}</div>
+        <strong>${s.query_text || 'Funding search'}</strong>
+        <div>${Array.isArray(s.results) ? s.results.length + ' results cached' : ''}</div>
         <div class="sv-date">${new Date(s.created_at).toLocaleDateString('en-GB')}</div>
       </div>`).join('');
-  }catch(e){body.innerHTML='<div class="sv-empty">Error loading saved searches.</div>'}
+  } catch(e) { body.innerHTML = '<div class="sv-empty">Error loading saved searches.</div>'; }
 }
 
 // ── ANALYSIS ──
-async function openAnalysis(){
+async function openAnalysis() {
   openModal('analysis-modal');
-  const statsEl=document.getElementById('an-stats');
-  const barsEl=document.getElementById('an-bars');
-  const tipEl=document.getElementById('an-tip');
-  statsEl.innerHTML='<div style="text-align:center;color:var(--muted);font-size:.82rem;grid-column:1/-1">Loading...</div>';
-  try{
-    const today=new Date().toISOString().split('T')[0];
-    const [{data:opps,error:oppsErr},{data:profileData},{data:cache}]=await Promise.all([
+  const statsEl = document.getElementById('an-stats');
+  const barsEl  = document.getElementById('an-bars');
+  const tipEl   = document.getElementById('an-tip');
+  statsEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.82rem;grid-column:1/-1">Loading...</div>';
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const [{ data: opps, error: oppsErr }, { data: profileData }, { data: cache }] = await Promise.all([
       db.from('funding_opportunities').select('focus_areas,country,status,application_deadline').eq('status','Open'),
-      currentUser?db.from('profiles').select('sector,country,organization_type,goals,daily_msgs,plan').eq('user_id',currentUser.id).maybeSingle():{data:null},
+      currentUser ? db.from('profiles').select('sector,country,organization_type,goals,daily_msgs,plan').eq('user_id', currentUser.id).maybeSingle() : { data: null },
       db.from('search_cache').select('id').limit(100)
     ]);
-    if(oppsErr)console.log('[ANALYSIS OPPS]',oppsErr.message);
-    const active=(opps||[]).filter(g=>!g.application_deadline||g.application_deadline>=today);
-    const plan=profileData?.plan||'free';
-    const msgs=profileData?.daily_msgs||0;
-    statsEl.innerHTML=`
+
+    if (oppsErr) console.log('[ANALYSIS]', oppsErr.message);
+    const active = (opps || []).filter(g => !g.application_deadline || g.application_deadline >= today);
+    const plan   = profileData?.plan || 'free';
+    const msgs   = profileData?.daily_msgs || 0;
+
+    statsEl.innerHTML = `
       <div class="an-stat-card"><div class="an-num">${active.length}</div><div class="an-lbl">Active Programs</div></div>
-      <div class="an-stat-card"><div class="an-num">${cache?.length||0}</div><div class="an-lbl">Cached Searches</div></div>
+      <div class="an-stat-card"><div class="an-num">${cache?.length || 0}</div><div class="an-lbl">Cached Searches</div></div>
       <div class="an-stat-card"><div class="an-num">${msgs}</div><div class="an-lbl">Messages Today</div></div>
       <div class="an-stat-card"><div class="an-num">${plan.charAt(0).toUpperCase()+plan.slice(1)}</div><div class="an-lbl">Current Plan</div></div>`;
-    const sectorCounts={};
-    (opps||[]).forEach(g=>{
-      const f=(g.focus_areas||'').toLowerCase();
-      [['IT / Technology',['tech','digital','ai','software']],['Agriculture',['agri','farm','rural']],['Civil Society',['ngo','civil','nonprofit']],['Environment',['climate','green','energy']],['Education',['education','youth','school']],['Health',['health','social','welfare']]].forEach(([s,kws])=>{
-        if(kws.some(k=>f.includes(k)))sectorCounts[s]=(sectorCounts[s]||0)+1;
+
+    const sectorCounts = {};
+    (opps || []).forEach(g => {
+      const f = (g.focus_areas || '').toLowerCase();
+      [['IT / Technology',['tech','digital','ai','software']],['Agriculture',['agri','farm','rural']],
+       ['Civil Society',['ngo','civil','nonprofit']],['Environment',['climate','green','energy']],
+       ['Education',['education','youth','school']],['Health',['health','social','welfare']]
+      ].forEach(([s, kws]) => {
+        if (kws.some(k => f.includes(k))) sectorCounts[s] = (sectorCounts[s] || 0) + 1;
       });
     });
-    const max=Math.max(...Object.values(sectorCounts),1);
-    barsEl.innerHTML=Object.entries(sectorCounts).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([s,c])=>`
+
+    const max = Math.max(...Object.values(sectorCounts), 1);
+    barsEl.innerHTML = Object.entries(sectorCounts).sort((a,b) => b[1]-a[1]).slice(0,6).map(([s,c]) => `
       <div class="an-bar-row">
         <div class="an-bar-label">${s}</div>
         <div class="an-bar-track"><div class="an-bar-fill" style="width:${Math.round(c/max*100)}%"></div></div>
         <div class="an-bar-val">${c}</div>
       </div>`).join('');
-    const userSector=profileData?.sector||profileData?.detected_sector||'your sector';
-    tipEl.innerHTML=`💡 <strong>Tip:</strong> Your profile is set to <strong>${userSector}</strong>. The more specific your profile, the better your matches. <span style="color:var(--gold);cursor:pointer" onclick="closeModal('analysis-modal');openProfileModal()">Update profile →</span>`;
-  }catch(e){statsEl.innerHTML='<div style="color:var(--muted);font-size:.82rem;grid-column:1/-1">Error loading analysis.</div>'}
+
+    const userSector = profileData?.sector || profileData?.detected_sector || 'your sector';
+    tipEl.innerHTML = `💡 <strong>Tip:</strong> Your profile is set to <strong>${userSector}</strong>. The more specific your profile, the better your matches. <span style="color:var(--gold);cursor:pointer" onclick="closeModal('analysis-modal');openProfileModal()">Update profile →</span>`;
+  } catch(e) {
+    statsEl.innerHTML = '<div style="color:var(--muted);font-size:.82rem;grid-column:1/-1">Error loading analysis.</div>';
+  }
 }
 
 // ── MARKDOWN ──
-function parseMarkdown(text){
-  const links=[];let i=0;
-  text=text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,(_,t,u)=>{links.push(`<a href="${u}" target="_blank" rel="noopener">${t}</a>`);return`\x00LINK${i++}\x00`});
-  text=text.replace(/(https?:\/\/[^\s<>")\x00]+)/g,(_,u)=>{links.push(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);return`\x00LINK${i++}\x00`});
-  text=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  text=text.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*\n]+)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h3>$1</h3>').replace(/^[-•]\s+(.+)$/gm,'<li>$1</li>').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
-  text=text.replace(/\x00LINK(\d+)\x00/g,(_,n)=>links[+n]);
+function parseMarkdown(text) {
+  const links = []; let i = 0;
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (_, t, u) => {
+    links.push(`<a href="${u}" target="_blank" rel="noopener">${t}</a>`);
+    return `\x00LINK${i++}\x00`;
+  });
+  text = text.replace(/(https?:\/\/[^\s<>")\x00]+)/g, (_, u) => {
+    links.push(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+    return `\x00LINK${i++}\x00`;
+  });
+  text = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  text = text
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+  text = text.replace(/\x00LINK(\d+)\x00/g, (_, n) => links[+n]);
   return text;
 }
 
 // ── MESSAGES ──
-function clearChat(){
-  chatHistory=[];
-  document.getElementById('messages').innerHTML=`<div class="msg-row"><div class="msg-av ai">M</div><div class="bubble ai"><p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p><p style="margin-top:.4rem">Tell me about your project or organization to get started.</p></div></div>`;
-  const wb=document.getElementById('welcome-block');
-  if(wb){wb.style.display='block'}
+const INITIAL_MSG = `
+  <div class="msg-row">
+    <div class="msg-av ai">M</div>
+    <div class="bubble ai">
+      <p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p>
+      <p style="margin-top:.4rem">Tell me about your project or organization to get started.</p>
+    </div>
+  </div>`;
+
+function clearChat() {
+  chatHistory = [];
+  document.getElementById('messages').innerHTML = INITIAL_MSG;
+  const wb = document.getElementById('welcome-block');
+  if (wb) wb.style.display = 'block';
   showToast('Chat cleared');
 }
-function addMsg(role,text,intent,actions=[]){
-  const msgs=document.getElementById('messages');
-  const row=document.createElement('div');
-  row.className='msg-row'+(role==='user'?' user':'');
-  if(role==='ai'){const av=document.createElement('div');av.className='msg-av ai';av.textContent='M';row.appendChild(av)}
-  const b=document.createElement('div');b.className='bubble '+role;
-  if(role==='ai'&&intent&&intent!=='general'){b.innerHTML=`<span class="itag ${intent}">${intent==='grant'?'Decision' :'General'}</span><br>`}
-  const span=document.createElement('span');span.innerHTML='<p>'+parseMarkdown(text)+'</p>';b.appendChild(span);
-  if(role==='ai'){
-    const wrap=document.createElement('div');wrap.className='msg-actions';
-    const cp=document.createElement('button');cp.className='msg-btn';cp.textContent='Copy';
-    cp.onclick=()=>navigator.clipboard.writeText(text).then(()=>{cp.textContent='✓ Copied';cp.classList.add('copied');setTimeout(()=>{cp.textContent='Copy';cp.classList.remove('copied')},1500)});
-    wrap.appendChild(cp);
-    actions.forEach(a=>{const btn=document.createElement('button');btn.className='msg-btn';btn.textContent=a.label;btn.onclick=a.onClick;wrap.appendChild(btn)});
-    b.appendChild(wrap);
-  }else{
-    const av=document.createElement('div');av.className='msg-av user';av.textContent='You';
-    row.appendChild(b);row.appendChild(av);msgs.appendChild(row);document.getElementById('chat-scroll').scrollTop=99999;return;
+
+function addMsg(role, text, intent, actions = []) {
+  const msgs = document.getElementById('messages');
+  const row  = document.createElement('div');
+  row.className = 'msg-row' + (role === 'user' ? ' user' : '');
+
+  if (role === 'ai') {
+    const av = document.createElement('div');
+    av.className = 'msg-av ai'; av.textContent = 'M';
+    row.appendChild(av);
   }
-  row.appendChild(b);msgs.appendChild(row);document.getElementById('chat-scroll').scrollTop=99999;
+
+  const b = document.createElement('div');
+  b.className = 'bubble ' + role;
+
+  if (role === 'ai' && intent && intent !== 'general') {
+    b.innerHTML = `<span class="itag ${intent}">${intent === 'grant' ? 'Decision' : 'General'}</span><br>`;
+  }
+
+  const span = document.createElement('span');
+  span.innerHTML = '<p>' + parseMarkdown(text) + '</p>';
+  b.appendChild(span);
+
+  if (role === 'ai') {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-actions';
+    const cp = document.createElement('button');
+    cp.className = 'msg-btn'; cp.textContent = 'Copy';
+    cp.onclick = () => navigator.clipboard.writeText(text).then(() => {
+      cp.textContent = '✓ Copied'; cp.classList.add('copied');
+      setTimeout(() => { cp.textContent = 'Copy'; cp.classList.remove('copied'); }, 1500);
+    });
+    wrap.appendChild(cp);
+    actions.forEach(a => {
+      const btn = document.createElement('button');
+      btn.className = 'msg-btn'; btn.textContent = a.label;
+      btn.onclick = a.onClick;
+      wrap.appendChild(btn);
+    });
+    b.appendChild(wrap);
+  } else {
+    const av = document.createElement('div');
+    av.className = 'msg-av user'; av.textContent = 'You';
+    row.appendChild(b); row.appendChild(av);
+    msgs.appendChild(row);
+    document.getElementById('chat-scroll').scrollTop = 99999;
+    return;
+  }
+
+  row.appendChild(b);
+  msgs.appendChild(row);
+  document.getElementById('chat-scroll').scrollTop = 99999;
 }
-function addTyping(){
-  const msgs=document.getElementById('messages');
-  const row=document.createElement('div');row.className='msg-row';row.id='typing';
-  row.innerHTML='<div class="msg-av ai">M</div><div class="bubble ai typing-bubble"><div class="td"></div><div class="td"></div><div class="td"></div></div>';
-  msgs.appendChild(row);document.getElementById('chat-scroll').scrollTop=99999;
+
+function addTyping() {
+  const msgs = document.getElementById('messages');
+  const row  = document.createElement('div');
+  row.className = 'msg-row'; row.id = 'typing';
+  row.innerHTML = '<div class="msg-av ai">M</div><div class="bubble ai typing-bubble"><div class="td"></div><div class="td"></div><div class="td"></div></div>';
+  msgs.appendChild(row);
+  document.getElementById('chat-scroll').scrollTop = 99999;
 }
-function removeTyping(){const t=document.getElementById('typing');if(t)t.remove()}
+function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
 
 // ── FILES ──
-function handleFile(e){const f=e.target.files[0];if(f)readFile(f)}
-function handlePhoto(e){const f=e.target.files[0];if(f)readFile(f)}
-function readFile(file){
-  const r=new FileReader();
-  r.onload=ev=>{currentFile={data:ev.target.result.split(',')[1],type:file.type,name:file.name};document.getElementById('file-name').textContent=file.name;document.getElementById('file-preview').style.display='flex';showToast('File attached: '+file.name)};
+function handleFile(e)  { const f = e.target.files[0]; if (f) readFile(f); }
+function handlePhoto(e) { const f = e.target.files[0]; if (f) readFile(f); }
+function readFile(file) {
+  const r = new FileReader();
+  r.onload = ev => {
+    currentFile = { data: ev.target.result.split(',')[1], type: file.type, name: file.name };
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-preview').style.display = 'flex';
+    showToast('File attached: ' + file.name);
+  };
   r.readAsDataURL(file);
 }
-function removeFile(){currentFile=null;document.getElementById('file-preview').style.display='none';document.getElementById('file-input').value=''}
+function removeFile() {
+  currentFile = null;
+  document.getElementById('file-preview').style.display = 'none';
+  document.getElementById('file-input').value = '';
+}
 
 // ── SEND ──
-async function sendMsg(){
-  const inp=document.getElementById('msg-input');
-  const text=inp.value.trim();
-  if(!text&&!currentFile)return;
-  inp.value='';inp.style.height='auto';
-  const btn=document.getElementById('send-btn');btn.disabled=true;btn.classList.add('loading');
-  if(text)addMsg('user',text);
-  if(currentFile)addMsg('user','📎 '+currentFile.name);
-  chatHistory.push({role:'user',content:text||'[Document attached]'});
-  const wb=document.getElementById('welcome-block');
-  if(wb)wb.style.display='none';
+async function sendMsg() {
+  const inp  = document.getElementById('msg-input');
+  const text = inp.value.trim();
+  if (!text && !currentFile) return;
+  inp.value = ''; inp.style.height = 'auto';
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true; btn.classList.add('loading');
+
+  if (text)        addMsg('user', text);
+  if (currentFile) addMsg('user', '📎 ' + currentFile.name);
+  chatHistory.push({ role: 'user', content: text || '[Document attached]' });
+
+  const wb = document.getElementById('welcome-block');
+  if (wb) wb.style.display = 'none';
   addTyping();
-  try{
-    const payload={messages:chatHistory.slice(-8),lang,userId:currentUser?.id||null,image:currentFile?.data||null,imageType:currentFile?.type||null};
-    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    const data=await res.json();
-    removeTyping();removeFile();
-    if(res.status===429&&data?.quota_exceeded){openPremium();btn.disabled=false;btn.classList.remove('loading');return}
-    if(!res.ok)throw new Error(data?.error?.message||'Request failed');
-    const reply=data?.content?.[0]?.text||'No response received.';
-    const intent=data?.intent||'general';
-    chatHistory.push({role:'assistant',content:reply});
-    const actions=[];
-    if(data?.top_matches?.length){
-      document.getElementById('recent-opps').innerHTML=data.top_matches.slice(0,3).map((x,i)=>{
-        const roles=['APPLY','CONDITIONAL','BACKUP'];
-        const roleColors=['#1fa94b','#BA7517','#378ADD'];
-        const role=roles[i]||'APPLY';
-        const color=roleColors[i]||roleColors[0];
+
+  try {
+    const payload = {
+      messages:  chatHistory.slice(-8),
+      lang,
+      userId:    currentUser?.id || null,
+      image:     currentFile?.data || null,
+      imageType: currentFile?.type || null
+    };
+
+    const res  = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    removeTyping(); removeFile();
+
+    if (res.status === 429 && data?.quota_exceeded) {
+      openPremium();
+      btn.disabled = false; btn.classList.remove('loading');
+      return;
+    }
+    if (!res.ok) throw new Error(data?.error?.message || 'Request failed');
+
+    const reply  = data?.content?.[0]?.text || 'No response received.';
+    const intent = data?.intent || 'general';
+    chatHistory.push({ role: 'assistant', content: reply });
+
+    const actions = [];
+    if (data?.top_matches?.length) {
+      document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0,3).map((x,i) => {
+        const roles      = ['APPLY','CONDITIONAL','BACKUP'];
+        const roleColors = ['#1fa94b','#BA7517','#378ADD'];
+        const role  = roles[i] || 'APPLY';
+        const color = roleColors[i] || roleColors[0];
         return `<div class="opp-item">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
             <span style="font-size:.62rem;font-weight:600;letter-spacing:.07em;color:${color};background:${color}18;border:1px solid ${color}33;padding:.15rem .5rem;border-radius:999px">${role}</span>
@@ -975,19 +1190,43 @@ async function sendMsg(){
           <div>${x.snippet||''}</div>
         </div>`;
       }).join('');
-      actions.push({label:'Build application',onClick:()=>openPremium()});
+      actions.push({ label: 'Build application', onClick: () => openPremium() });
     }
-    addMsg('ai',reply,intent,actions);
+
+    addMsg('ai', reply, intent, actions);
     loadUserProfile();
-  }catch(e){removeTyping();addMsg('ai','⚠️ '+(e.message||'Connection error. Please try again.'))}
-  btn.disabled=false;btn.classList.remove('loading');inp.focus();
+  } catch(e) {
+    removeTyping();
+    addMsg('ai', '⚠️ ' + (e.message || 'Connection error. Please try again.'));
+  }
+
+  btn.disabled = false; btn.classList.remove('loading');
+  document.getElementById('msg-input').focus();
 }
-function quickStart(text){document.getElementById('msg-input').value=text;sendMsg()}
+
+function quickStart(text) {
+  document.getElementById('msg-input').value = text;
+  sendMsg();
+}
 
 // ── AUTH STATE ──
-db.auth.onAuthStateChange((event,session)=>{if(session){currentUser=session.user;initApp()}});
-db.auth.getSession().then(({data:{session}})=>{if(session){currentUser=session.user;initApp()}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawer();document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'))}});
+(async () => {
+  await initSupabase();
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (session) { currentUser = session.user; initApp(); }
+  });
+
+  const { data: { session } } = await db.auth.getSession();
+  if (session) { currentUser = session.user; initApp(); }
+})();
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeDrawer();
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
+});
 </script>
 </body>
 </html>
