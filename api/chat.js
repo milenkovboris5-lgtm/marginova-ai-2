@@ -38,14 +38,61 @@ async function searchFundingDB(profile) {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    const { data: allRows, error } = await getTable('funding_opportunities')
+    // Sector-aware query: if sector known, prioritize matching records
+    const sectorKeywords = {
+      'Environment / Energy':   'environment,climate,renewable,green,energy,biodiversity,ecosystem,conservation,nature,pollution,air,water,forest,sustainability,clean energy',
+      'Civil Society':          'civil society,NGO,nonprofit,advocacy,democracy,community,grassroots',
+      'Agriculture':            'agriculture,farmer,rural,food,farm,ipard',
+      'Education':              'education,school,learning,training,youth,student,scholarship',
+      'IT / Technology':        'technology,digital,software,ai,innovation,ict,startup',
+      'Health / Social':        'health,social,welfare,care,women,gender',
+      'Research / Innovation':  'research,science,innovation,university,academic',
+      'SME / Business':         'business,enterprise,sme,company,entrepreneur',
+      'Tourism / Culture':      'tourism,culture,heritage,creative,art',
+      'Student / Youth':        'student,scholarship,fellowship,youth,erasmus,fulbright,daad'
+    };
+
+    let query = getTable('funding_opportunities')
       .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
-      .in('status', ['Open'])
-      .limit(150);
+      .in('status', ['Open']);
 
-    if (error) { console.log('[DB SEARCH] error:', error.message); return []; }
+    // If sector detected, use ilike to pre-filter relevant records
+    // This ensures environment programs appear when sector=Environment
+    const sectorKw = profile.sector ? (sectorKeywords[profile.sector] || '').split(',')[0].trim() : null;
+    if (sectorKw && sectorKw.length > 3) {
+      // Fetch sector-matched first (up to 80), then fill with general (up to 80)
+      const [sectorRows, generalRows] = await Promise.all([
+        getTable('funding_opportunities')
+          .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
+          .in('status', ['Open'])
+          .ilike('focus_areas', `%${sectorKw}%`)
+          .limit(80),
+        getTable('funding_opportunities')
+          .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status')
+          .in('status', ['Open'])
+          .limit(80)
+      ]);
+      // Merge: sector-matched first, then deduplicate
+      const sectorIds = new Set((sectorRows.data || []).map(r => r.id));
+      const merged = [
+        ...(sectorRows.data || []),
+        ...(generalRows.data || []).filter(r => !sectorIds.has(r.id))
+      ];
+      var allRows = merged;
+      var error = sectorRows.error || generalRows.error;
+    } else {
+      const { data: allRows, error } = await query.limit(150);
+    }
 
-    const rows = (allRows || []).filter(g => !g.application_deadline || g.application_deadline >= today);
+    const { data: allRowsFallback, error: errorFallback } = !allRows
+      ? await query.limit(150)
+      : { data: allRows, error };
+
+    const finalError = error || errorFallback;
+    const finalRows = allRows || allRowsFallback;
+    if (finalError) { console.log('[DB SEARCH] error:', finalError.message); return []; }
+
+    const rows = (finalRows || []).filter(g => !g.application_deadline || g.application_deadline >= today);
     if (!rows.length) return [];
 
     const scored = rows.map(g => {
