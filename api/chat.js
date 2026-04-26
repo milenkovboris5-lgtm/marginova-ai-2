@@ -66,7 +66,8 @@ async function searchFundingDB(profile) {
         'Research / Innovation':  ['research','science','innovation','academic','university','phd','postgraduate'],
         'SME / Business':         ['business','enterprise','sme','company','entrepreneur','startup','digital','technology'],
         'Tourism / Culture':      ['tourism','culture','heritage','creative','art'],
-        'Student / Youth':        ['student','scholarship','fellowship','youth','young','study','mobility','erasmus','fulbright','daad','chevening','stipend','postgraduate','phd','exchange']
+        'Student / Youth':        ['student','scholarship','fellowship','youth','young','study','mobility','erasmus','fulbright','daad','chevening','stipend','postgraduate','phd','exchange'],
+        'Individual / Entrepreneur':['startup','innovation','digital','technology','ai','software','platform','app','website','web','tool','saas','product','creator','freelance','individual']
       };
 
       if (profile.sector) {
@@ -99,7 +100,7 @@ async function searchFundingDB(profile) {
           'SME':                       ['sme','enterprise','company','business'],
           'Municipality / Public body':['municipality','local government','public body'],
           'University / Research':     ['university','research','academic','institute'],
-          'Individual / Entrepreneur': ['individual','entrepreneur','founder','self-employed','freelance','creator']
+          'Individual / Entrepreneur': ['individual','entrepreneur','founder','self-employed','freelance','creator','person','applicant','citizen','professional','researcher','artist','innovator','startup','early']
         };
         const kws  = orgMap[profile.orgType] || [];
         const hay  = `${elig} ${desc} ${type}`;
@@ -329,7 +330,7 @@ function detectProfile(text, supaProfile) {
     /startup/.test(t)                                                          ? 'Startup' :
     /\bngo\b|nonprofit|association|foundation|civil society|zdruzen/.test(t)  ? 'NGO / Association' :
     /farmer|farm|agricultural|holding|ipard/.test(t)                          ? 'Agricultural holding' :
-    /individual|freelance|self.employed|poedinec|creator|samostoen/.test(t)   ? 'Individual / Entrepreneur' :
+    /individual|freelance|self.employed|poedinec|creator|samostoen|poedinecen|физичко|fizicko/.test(t)   ? 'Individual / Entrepreneur' :
     /\bsme\b|\bltd\b|\bdoo\b|small business/.test(t)                          ? 'SME' :
     /municipality|local government|public body/.test(t)                       ? 'Municipality / Public body' :
     /university|research institute|academic/.test(t)                          ? 'University / Research' :
