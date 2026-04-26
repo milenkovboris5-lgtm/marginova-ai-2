@@ -132,7 +132,8 @@ async function checkIP(req) {
   }
 }
 
-// Fallback until RPC is deployed — original logic
+// Fallback until RPC is deployed
+// FIX: normalize date - Supabase DATE cols may return '2026-04-26' or ISO string
 async function checkIPFallback(ip, today) {
   try {
     const { data: row, error } = await getTable('ip_limits')
@@ -142,7 +143,10 @@ async function checkIPFallback(ip, today) {
 
     if (error) { console.error('[IP GET]', error.message); return true; }
 
-    if (!row || row.reset_date !== today) {
+    // slice(0,10) handles both '2026-04-26' and '2026-04-26T00:00:00.000Z'
+    const rowDate = row?.reset_date ? String(row.reset_date).slice(0, 10) : null;
+
+    if (!row || rowDate !== today) {
       await getTable('ip_limits').upsert(
         { ip, count: 1, reset_date: today },
         { onConflict: 'ip' }
@@ -220,7 +224,9 @@ async function checkAndDeductQuota(userId) {
     const limit = PLANS[p.plan] ?? 20;
     if (limit === -1) return { allowed: true };
 
-    const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
+    // FIX: normalize DATE col same as IP fallback
+    const lastDate = p.last_msg_date ? String(p.last_msg_date).slice(0, 10) : null;
+    const used = lastDate === today ? (p.daily_msgs || 0) : 0;
     if (used >= limit) return { allowed: false, used, limit, plan: p.plan };
 
     await getTable('profiles')
