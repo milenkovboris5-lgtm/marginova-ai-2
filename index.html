@@ -2,778 +2,1037 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" href="/favicon.png" type="image/png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Marginova — Funding Decision System</title>
-<meta name="description" content="Stop guessing. Get a YES, CONDITIONAL or BACKUP decision for every funding opportunity — with probability score and a complete application draft.">
+<title>Marginova — Funding Evaluation System</title>
+<meta name="description" content="The intelligence layer between you and your next grant. Marginova evaluates your eligibility, scores your chances, and tells you exactly what to do next.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --gold:#C9A84C;--gold-l:#E8C97A;--gold-d:#9A7421;
-  --navy:#080E1A;--navy-2:#0F1623;--navy-3:#162032;
-  --white:#FAFAF8;--muted:rgba(250,250,248,.42);
-  --border:rgba(201,168,76,.13);--border-s:rgba(201,168,76,.07);
-  --yes:#1B9E5A;--cond:#C07A1A;--back:#2563C4;
+  --gold:#C9A84C;
+  --gold-l:#E8C97A;
+  --gold-d:#9A7421;
+  --gold-pale:#FDF8EE;
+  --gold-dim:rgba(201,168,76,.10);
+  --navy:#0D1B2E;
+  --navy-mid:#1A2E4A;
+  --blue:#1B4F8A;
+  --blue-l:#2563C4;
+  --blue-pale:#EBF2FB;
+  --white:#FFFFFF;
+  --cream:#FAFAF7;
+  --text:#111827;
+  --muted:#6B7280;
+  --border:rgba(201,168,76,.15);
+  --border-blue:rgba(27,79,138,.12);
 }
 html{scroll-behavior:smooth}
-body{
-  font-family:'DM Sans',sans-serif;
-  background:var(--navy);color:var(--white);
-  overflow-x:hidden;
-  cursor:default;
-}
-::selection{background:rgba(201,168,76,.25);color:var(--white)}
+body{font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);overflow-x:hidden}
 a{color:inherit;text-decoration:none}
 button{font:inherit;cursor:pointer}
+::selection{background:rgba(201,168,76,.2);color:var(--navy)}
 
 /* ── GRAIN OVERLAY ── */
-body::before{
-  content:'';position:fixed;inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events:none;z-index:0;opacity:.6;
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  opacity:.5;
 }
 
 /* ── NAV ── */
 nav{
   position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:1.1rem 2.5rem;
   display:flex;align-items:center;justify-content:space-between;
-  padding:1.1rem 3rem;
-  background:rgba(8,14,26,.82);
-  backdrop-filter:blur(24px);
-  border-bottom:1px solid var(--border-s);
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  transition:all .3s;
 }
-.nav-logo{display:flex;align-items:center;gap:.7rem}
-.nav-mark{
-  width:34px;height:34px;border-radius:9px;
-  background:linear-gradient(135deg,var(--gold),var(--gold-l));
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:600;color:var(--navy-2);
-}
-.nav-word{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:600;letter-spacing:.01em}
-.nav-word span{color:var(--gold)}
-.nav-links{display:flex;gap:2rem}
-.nav-links a{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);transition:color .2s}
+.nav-logo{display:flex;align-items:center;gap:.75rem}
+.nav-logo img{width:36px;height:36px;object-fit:contain}
+.nav-wordmark{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;color:var(--navy)}
+.nav-wordmark em{font-style:normal;color:var(--gold)}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);transition:color .2s}
 .nav-links a:hover{color:var(--gold)}
-.nav-cta{display:flex;gap:.65rem}
-.btn-ghost{
-  padding:.48rem 1rem;border-radius:7px;
+.nav-cta{display:flex;gap:.65rem;align-items:center}
+.btn-ghost-nav{
+  padding:.48rem 1rem;border-radius:6px;
   border:1px solid var(--border);background:transparent;
-  color:rgba(250,250,248,.6);font-size:.78rem;transition:.2s;
+  color:var(--navy);font-size:.78rem;transition:.2s;
 }
-.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
-.btn-cta{
-  padding:.52rem 1.25rem;border-radius:7px;border:none;
-  background:linear-gradient(135deg,var(--gold),var(--gold-l));
-  color:var(--navy-2);font-size:.78rem;font-weight:600;
-  transition:.2s;box-shadow:0 4px 20px rgba(201,168,76,.22);
+.btn-ghost-nav:hover{border-color:var(--gold);color:var(--gold)}
+.btn-cta-nav{
+  padding:.52rem 1.25rem;border-radius:6px;border:none;
+  background:var(--navy);color:var(--gold);
+  font-size:.78rem;font-weight:500;transition:.2s;
+  box-shadow:0 2px 12px rgba(13,27,46,.18);
 }
-.btn-cta:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(201,168,76,.34)}
+.btn-cta-nav:hover{background:var(--navy-mid);transform:translateY(-1px)}
 
 /* ── HERO ── */
 .hero{
   min-height:100vh;
-  display:grid;grid-template-columns:1fr 1fr;
-  align-items:center;gap:5rem;
-  padding:9rem 3rem 5rem;
+  padding:9rem 2.5rem 5rem;
   position:relative;overflow:hidden;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:4rem;align-items:center;
+  max-width:1280px;margin:0 auto;
 }
-.hero-orb-1{
-  position:absolute;top:-20%;left:-10%;
-  width:600px;height:600px;border-radius:50%;
+.hero-bg{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;
+  background:var(--white);
+}
+.hero-bg::before{
+  content:'';position:absolute;
+  top:-20%;right:-10%;
+  width:800px;height:800px;border-radius:50%;
   background:radial-gradient(circle,rgba(201,168,76,.07) 0%,transparent 65%);
-  pointer-events:none;
 }
-.hero-orb-2{
-  position:absolute;bottom:-15%;right:-5%;
-  width:500px;height:500px;border-radius:50%;
-  background:radial-gradient(circle,rgba(37,99,196,.06) 0%,transparent 65%);
-  pointer-events:none;
+.hero-bg::after{
+  content:'';position:absolute;
+  bottom:-10%;left:-5%;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(27,79,138,.05) 0%,transparent 65%);
 }
-.hero-grid-bg{
-  position:absolute;inset:0;
+.hero-grid-lines{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
   background-image:
-    linear-gradient(rgba(201,168,76,.025) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(201,168,76,.025) 1px,transparent 1px);
-  background-size:80px 80px;
-  pointer-events:none;
-  mask-image:radial-gradient(ellipse at 30% 40%,black 30%,transparent 75%);
+    linear-gradient(rgba(201,168,76,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,168,76,.04) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse at 30% 40%,black 20%,transparent 70%);
 }
+
 .hero-left{position:relative;z-index:1}
+
 .hero-eyebrow{
-  display:inline-flex;align-items:center;gap:.55rem;
-  border:1px solid var(--border);border-radius:999px;
-  padding:.35rem .95rem;margin-bottom:2rem;
-  font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);
+  display:inline-flex;align-items:center;gap:.6rem;
+  border:1px solid rgba(201,168,76,.3);border-radius:999px;
+  padding:.35rem 1rem;margin-bottom:2rem;
+  font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold-d);background:var(--gold-dim);
   animation:fadeUp .6s ease both;
 }
-.hero-eyebrow-dot{
+.eyebrow-dot{
   width:5px;height:5px;border-radius:50%;background:var(--gold);
   animation:dotPulse 2.4s infinite;
 }
-@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.25}}
+
 .hero-title{
-  font-family:'Cormorant Garamond',serif;
-  font-size:clamp(3rem,5.5vw,5rem);
-  font-weight:300;line-height:1.04;
-  letter-spacing:-.02em;
+  font-family:'Playfair Display',serif;
+  font-size:clamp(3rem,5.5vw,5.2rem);
+  font-weight:900;line-height:1.02;
+  letter-spacing:-.03em;
   margin-bottom:1.5rem;
   animation:fadeUp .7s .1s ease both;
 }
-.hero-title em{font-style:italic;color:var(--gold)}
-.hero-title strong{font-weight:600;display:block;margin-top:.1em}
+.hero-title .line-gold{color:var(--gold);font-style:italic}
+.hero-title .line-blue{color:var(--blue)}
+
 .hero-sub{
-  font-size:1rem;font-weight:300;
-  color:var(--muted);line-height:1.78;
+  font-size:1.05rem;font-weight:300;
+  color:var(--muted);line-height:1.8;
   max-width:460px;margin-bottom:2.5rem;
   animation:fadeUp .7s .2s ease both;
 }
+.hero-sub strong{color:var(--text);font-weight:500}
+
 .hero-actions{
   display:flex;gap:1rem;flex-wrap:wrap;
   animation:fadeUp .7s .3s ease both;
 }
 .btn-primary{
-  padding:.9rem 2rem;border-radius:9px;border:none;
-  background:linear-gradient(135deg,var(--gold),var(--gold-l));
-  color:var(--navy-2);font-weight:600;font-size:.9rem;
-  box-shadow:0 8px 28px rgba(201,168,76,.28);transition:.2s;
+  padding:.95rem 2.2rem;border-radius:8px;border:none;
+  background:var(--navy);color:var(--gold);
+  font-weight:500;font-size:.9rem;
+  box-shadow:0 8px 28px rgba(13,27,46,.22);transition:.25s;
+  display:inline-flex;align-items:center;gap:.6rem;
 }
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(201,168,76,.38)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(13,27,46,.3);background:var(--navy-mid)}
 .btn-outline{
-  padding:.9rem 2rem;border-radius:9px;
+  padding:.95rem 2rem;border-radius:8px;
   border:1px solid var(--border);background:transparent;
-  color:rgba(250,250,248,.75);font-size:.9rem;transition:.2s;
+  color:var(--navy);font-size:.9rem;transition:.25s;
 }
 .btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+
 .hero-proof{
   display:flex;gap:2.5rem;margin-top:3.5rem;
-  padding-top:2.5rem;border-top:1px solid var(--border-s);
-  animation:fadeUp .7s .4s ease both;
-  flex-wrap:wrap;
+  padding-top:2.5rem;border-top:1px solid var(--border);
+  animation:fadeUp .7s .4s ease both;flex-wrap:wrap;
 }
 .hero-proof-item strong{
   display:block;
-  font-family:'Cormorant Garamond',serif;
-  font-size:1.9rem;font-weight:600;color:var(--gold);
+  font-family:'Playfair Display',serif;
+  font-size:2rem;font-weight:700;color:var(--navy);
 }
-.hero-proof-item span{font-size:.7rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.hero-proof-item span{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── HERO MOCKUP ── */
-.hero-right{position:relative;z-index:1;animation:fadeUp .8s .25s ease both}
-.mockup{
-  background:rgba(15,22,35,.92);
-  border:1px solid rgba(201,168,76,.18);
-  border-radius:20px;
+/* ── HERO MOCKUP (right side) ── */
+.hero-right{
+  position:relative;z-index:1;
+  animation:fadeUp .8s .25s ease both;
+  display:flex;justify-content:center;
+}
+.mockup-wrap{
+  position:relative;width:340px;
+}
+.mockup-phone{
+  width:260px;
+  background:var(--white);
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:36px;
   overflow:hidden;
-  box-shadow:0 40px 80px rgba(0,0,0,.5),0 0 0 1px rgba(201,168,76,.06);
+  box-shadow:0 32px 64px rgba(13,27,46,.12),0 8px 24px rgba(13,27,46,.08);
+  position:relative;z-index:2;
+  margin:0 auto;
 }
-.mockup-bar{
-  background:rgba(8,14,26,.8);
-  padding:.85rem 1.1rem;
-  display:flex;align-items:center;gap:.85rem;
-  border-bottom:1px solid rgba(201,168,76,.08);
+.phone-notch{
+  width:80px;height:20px;background:var(--navy);
+  border-radius:0 0 14px 14px;margin:0 auto;
 }
-.mockup-dots{display:flex;gap:.35rem}
-.mockup-dot{width:9px;height:9px;border-radius:50%}
-.mockup-dot:nth-child(1){background:#FF5F57}
-.mockup-dot:nth-child(2){background:#FEBC2E}
-.mockup-dot:nth-child(3){background:#28C840}
-.mockup-url{font-family:'DM Mono',monospace;font-size:.68rem;color:rgba(250,250,248,.25);letter-spacing:.02em}
-.mockup-body{padding:1.1rem}
-.mockup-prompt{
-  background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.12);
-  border-radius:10px;padding:.75rem .9rem;
-  font-size:.72rem;color:rgba(250,250,248,.6);
-  margin-bottom:1rem;line-height:1.5;
+.phone-screen{background:var(--navy);padding:1rem .85rem 1.25rem;}
+.phone-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:.85rem;
 }
-.decision-card{
-  border-radius:12px;padding:.9rem 1rem;
-  margin-bottom:.65rem;
-  border:1px solid;
+.phone-logo{
+  font-family:'Playfair Display',serif;font-size:.85rem;
+  font-weight:700;color:var(--white);
 }
-.decision-card.yes{background:rgba(27,158,90,.08);border-color:rgba(27,158,90,.25)}
-.decision-card.cond{background:rgba(192,122,26,.08);border-color:rgba(192,122,26,.25)}
-.decision-card.back{background:rgba(37,99,196,.08);border-color:rgba(37,99,196,.25)}
-.dc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
-.dc-role{font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .55rem;border-radius:999px}
-.yes .dc-role{color:var(--yes);background:rgba(27,158,90,.12)}
-.cond .dc-role{color:var(--cond);background:rgba(192,122,26,.12)}
-.back .dc-role{color:var(--back);background:rgba(37,99,196,.12)}
-.dc-prob{font-family:'DM Mono',monospace;font-size:.75rem;font-weight:400}
-.yes .dc-prob{color:var(--yes)}
-.cond .dc-prob{color:var(--cond)}
-.back .dc-prob{color:var(--back)}
-.dc-title{font-size:.78rem;font-weight:500;color:var(--white);margin-bottom:.3rem}
-.dc-risk{font-size:.67rem;color:rgba(250,250,248,.4);line-height:1.45}
-.mockup-step{
-  display:flex;align-items:center;gap:.55rem;
-  padding:.55rem .7rem;background:rgba(201,168,76,.06);
-  border:1px solid rgba(201,168,76,.1);border-radius:8px;
-  font-size:.68rem;color:var(--gold);
+.phone-logo em{font-style:normal;color:var(--gold)}
+.phone-badge{
+  font-size:.55rem;padding:.2rem .5rem;border-radius:999px;
+  background:rgba(201,168,76,.15);color:var(--gold);
+  border:1px solid rgba(201,168,76,.25);
 }
+.phone-card{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(201,168,76,.15);
+  border-radius:14px;padding:.75rem;
+  margin-bottom:.6rem;
+}
+.pc-role{
+  font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  padding:.15rem .45rem;border-radius:999px;display:inline-block;margin-bottom:.4rem;
+}
+.pc-role.apply{background:rgba(31,169,75,.12);color:#1fa94b}
+.pc-role.cond{background:rgba(201,168,76,.15);color:var(--gold)}
+.pc-role.back{background:rgba(37,99,196,.12);color:#3B7BE8}
+.pc-title{font-size:.72rem;font-weight:500;color:var(--white);margin-bottom:.25rem;line-height:1.35}
+.pc-meta{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.6rem;color:rgba(255,255,255,.4);
+}
+.pc-prob{font-weight:600;font-family:'DM Mono',monospace}
+.pc-prob.apply{color:#1fa94b}
+.pc-prob.cond{color:var(--gold)}
+.pc-prob.back{color:#3B7BE8}
+.phone-next{
+  margin-top:.6rem;padding:.6rem .75rem;
+  background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.12);
+  border-radius:10px;
+  font-size:.58rem;color:rgba(255,255,255,.6);line-height:1.5;
+}
+.phone-next strong{color:var(--gold)}
 
-/* ── HOW IT WORKS ── */
-.how{
-  padding:7rem 3rem;
-  background:var(--navy-2);
+/* floating cards around phone */
+.float-card{
+  position:absolute;background:var(--white);
+  border:1px solid var(--border);border-radius:12px;
+  padding:.65rem .85rem;
+  box-shadow:0 12px 32px rgba(13,27,46,.1);
+  font-size:.72rem;
+  animation:floatCard 4s ease-in-out infinite;
+}
+.float-card:nth-child(2){animation-delay:1.2s}
+.float-card:nth-child(3){animation-delay:2.4s}
+@keyframes floatCard{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+.fc-1{top:10%;left:-18%;width:140px}
+.fc-2{top:55%;right:-16%;width:130px}
+.fc-3{bottom:8%;left:-14%;width:125px}
+.fc-label{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem}
+.fc-value{font-weight:600;color:var(--navy)}
+.fc-value.gold{color:var(--gold-d)}
+.fc-value.blue{color:var(--blue)}
+.fc-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+/* ── FULL-WIDTH SECTIONS ── */
+.full-wrap{max-width:1200px;margin:0 auto;padding:0 2.5rem}
+
+/* ── EVALUATION SYSTEM SECTION ── */
+.eval-section{
+  padding:7rem 0;
+  background:var(--white);
   position:relative;overflow:hidden;
 }
-.how::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 80% 50%,rgba(201,168,76,.04) 0%,transparent 60%);
-  pointer-events:none;
+.eval-section::before{
+  content:'EVALUATION';
+  position:absolute;bottom:-2rem;right:-2rem;
+  font-family:'Playfair Display',serif;
+  font-size:clamp(6rem,12vw,10rem);
+  font-weight:900;color:rgba(201,168,76,.04);
+  white-space:nowrap;pointer-events:none;
+  letter-spacing:-.03em;
 }
-.section-wrap{max-width:1100px;margin:0 auto}
+
 .section-eyebrow{
   font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;
   color:var(--gold);margin-bottom:.85rem;
+  display:flex;align-items:center;gap:.6rem;
 }
+.section-eyebrow::before{content:'';display:block;width:24px;height:1px;background:var(--gold)}
+
 .section-title{
-  font-family:'Cormorant Garamond',serif;
-  font-size:clamp(2rem,3.5vw,2.8rem);
-  font-weight:300;line-height:1.15;
-  margin-bottom:3.5rem;
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2.2rem,4vw,3.2rem);
+  font-weight:700;line-height:1.12;
+  margin-bottom:1.25rem;
+  color:var(--navy);
 }
 .section-title em{font-style:italic;color:var(--gold)}
-.flow-steps{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  gap:1.5rem;position:relative;
-}
-.flow-steps::before{
-  content:'';position:absolute;top:28px;
-  left:calc(12.5% + 18px);right:calc(12.5% + 18px);
-  height:1px;
-  background:linear-gradient(90deg,transparent,rgba(201,168,76,.25),transparent);
-}
-.flow-step{text-align:center;position:relative}
-.flow-num{
-  width:56px;height:56px;border-radius:14px;
-  background:var(--navy-3);border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;
-  margin:0 auto 1.25rem;
-  font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;color:var(--gold);
-  position:relative;z-index:1;
-  transition:.3s;
-}
-.flow-step:hover .flow-num{border-color:var(--gold);box-shadow:0 0 0 4px rgba(201,168,76,.08)}
-.flow-step h4{
-  font-family:'Cormorant Garamond',serif;
-  font-size:1rem;font-weight:600;margin-bottom:.4rem;
-}
-.flow-step p{font-size:.78rem;color:var(--muted);line-height:1.6}
+.section-title .blue{color:var(--blue)}
 
-/* ── DECISION SECTION ── */
-.decision-section{padding:7rem 3rem;background:var(--navy)}
-.decision-demo{
+.eval-grid{
   display:grid;grid-template-columns:1fr 1fr;
-  gap:2rem;margin-top:3rem;align-items:start;
+  gap:3rem;align-items:center;margin-top:4rem;
 }
-.decision-demo-left p{
-  font-size:.88rem;color:var(--muted);line-height:1.75;margin-bottom:1.5rem;
+.eval-steps{display:flex;flex-direction:column;gap:0}
+.eval-step{
+  display:flex;gap:1.25rem;padding:1.5rem 0;
+  border-bottom:1px solid var(--border);
+  cursor:default;
+  transition:all .2s;
 }
-.decision-demo-left .highlight{
-  display:flex;gap:.75rem;align-items:flex-start;
-  padding:1rem 1.1rem;
-  background:rgba(201,168,76,.06);
-  border:1px solid var(--border);border-radius:12px;
-  margin-bottom:.65rem;font-size:.82rem;color:rgba(250,250,248,.7);line-height:1.5;
+.eval-step:last-child{border-bottom:none}
+.eval-step:hover .step-num{background:var(--navy);color:var(--gold)}
+.step-num{
+  width:42px;height:42px;border-radius:12px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:.78rem;font-weight:400;
+  color:var(--muted);flex-shrink:0;
+  transition:all .2s;
 }
-.decision-demo-left .highlight .icon{flex-shrink:0;font-size:1rem}
-.decision-cards-stack{display:flex;flex-direction:column;gap:.75rem}
-.full-decision-card{
-  border-radius:14px;padding:1.1rem 1.25rem;
-  border:1px solid;transition:.2s;
-}
-.full-decision-card:hover{transform:translateX(4px)}
-.full-decision-card.yes{background:rgba(27,158,90,.06);border-color:rgba(27,158,90,.2)}
-.full-decision-card.cond{background:rgba(192,122,26,.06);border-color:rgba(192,122,26,.2)}
-.full-decision-card.back{background:rgba(37,99,196,.06);border-color:rgba(37,99,196,.2)}
-.fdc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
-.fdc-role{font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border-radius:999px}
-.yes .fdc-role{color:var(--yes);background:rgba(27,158,90,.1)}
-.cond .fdc-role{color:var(--cond);background:rgba(192,122,26,.1)}
-.back .fdc-role{color:var(--back);background:rgba(37,99,196,.1)}
-.fdc-decision{font-size:.72rem;font-weight:500}
-.yes .fdc-decision{color:var(--yes)}
-.cond .fdc-decision{color:var(--cond)}
-.back .fdc-decision{color:var(--back)}
-.fdc-title{font-size:.88rem;font-weight:500;margin-bottom:.3rem}
-.fdc-prob{
-  font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:400;
-  margin-bottom:.5rem;
-}
-.yes .fdc-prob{color:var(--yes)}
-.cond .fdc-prob{color:var(--cond)}
-.back .fdc-prob{color:var(--back)}
-.fdc-risks{font-size:.72rem;color:var(--muted);line-height:1.55}
-.fdc-risks span{display:block;padding:2px 0}
+.step-content h3{font-size:1rem;font-weight:500;color:var(--navy);margin-bottom:.35rem}
+.step-content p{font-size:.85rem;color:var(--muted);line-height:1.6}
 
-/* ── PRICING ── */
-.pricing{padding:7rem 3rem;background:var(--navy-2)}
-.billing-row{display:flex;align-items:center;gap:.75rem;margin-top:1.5rem;font-size:.8rem;color:var(--muted)}
-.toggle{width:42px;height:23px;border-radius:999px;background:var(--navy-3);border:1px solid var(--border);cursor:pointer;position:relative;transition:.3s}
-.toggle.on{background:var(--gold)}
-.toggle-knob{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:var(--white);transition:.3s;pointer-events:none}
-.toggle.on .toggle-knob{left:21px}
-.save-tag{background:rgba(201,168,76,.12);border:1px solid var(--border);color:var(--gold);border-radius:999px;padding:.18rem .65rem;font-size:.67rem;font-weight:500}
-.plans{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2.5rem}
-.plan{
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.07);
-  border-radius:18px;padding:1.5rem;
-  display:flex;flex-direction:column;
-  transition:.25s;position:relative;overflow:hidden;
-}
-.plan::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(201,168,76,.3),transparent);
-  opacity:0;transition:.3s;
-}
-.plan:hover{border-color:rgba(201,168,76,.15);transform:translateY(-2px)}
-.plan:hover::before{opacity:1}
-.plan.featured{
-  border-color:var(--gold);
-  background:linear-gradient(160deg,rgba(201,168,76,.08) 0%,rgba(255,255,255,.03) 60%);
-}
-.plan.featured::before{opacity:1}
-.plan-popular{
-  display:inline-block;
-  background:var(--gold);color:var(--navy-2);
-  font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-  padding:.22rem .65rem;border-radius:999px;margin-bottom:.85rem;
-}
-.plan-name{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:600;margin-bottom:.2rem}
-.plan-desc{font-size:.73rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.45}
-.plan-price{font-size:2.4rem;font-weight:400;line-height:1}
-.plan-price sup{font-size:.95rem;vertical-align:top;margin-top:.55rem;font-weight:300}
-.plan-price sub{font-size:.72rem;font-weight:300;color:var(--muted)}
-.plan-cycle{font-size:.68rem;color:var(--muted);margin-top:.3rem;margin-bottom:1.25rem;min-height:1.1em}
-.plan-div{height:1px;background:rgba(255,255,255,.06);margin:.9rem 0}
-.pf{font-size:.73rem;color:rgba(250,250,248,.55);padding:4px 0;display:flex;gap:7px;align-items:flex-start;line-height:1.45}
-.pf .y{color:var(--gold);flex-shrink:0}
-.pf .n{color:rgba(255,255,255,.2);flex-shrink:0}
-.plan-btn{margin-top:auto;padding-top:1.25rem}
-.plan-btn button{width:100%;padding:.72rem;border-radius:9px;font-size:.8rem;font-weight:500;transition:.2s}
-.b-line{background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(250,250,248,.6)}
-.b-line:hover{border-color:var(--gold);color:var(--gold)}
-.b-gold{background:linear-gradient(135deg,var(--gold),var(--gold-l));border:none;color:var(--navy-2);font-weight:600}
-.b-gold:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,.28)}
-.b-white{background:var(--white);border:none;color:var(--navy-2);font-weight:600}
-
-/* ── PAY PER USE ── */
-.ppu{padding:5rem 3rem;background:var(--navy)}
-.ppu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2.5rem}
-.ppu-card{
-  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
-  border-radius:16px;padding:1.4rem;transition:.25s;
-}
-.ppu-card:hover{border-color:rgba(201,168,76,.2);transform:translateY(-2px)}
-.ppu-icon{width:38px;height:38px;border-radius:9px;background:rgba(201,168,76,.08);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.95rem;margin-bottom:.9rem}
-.ppu-price{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:600;color:var(--gold);line-height:1;margin-bottom:.3rem}
-.ppu-price sup{font-size:.85rem;vertical-align:top;margin-top:.4rem}
-.ppu-name{font-size:.82rem;font-weight:500;margin-bottom:.3rem}
-.ppu-desc{font-size:.72rem;color:var(--muted);line-height:1.5}
-.ppu-btn{margin-top:1rem;width:100%;padding:.55rem;border-radius:8px;background:rgba(201,168,76,.08);border:1px solid var(--border);color:var(--gold);font-size:.72rem;font-weight:500;transition:.2s}
-.ppu-btn:hover{background:rgba(201,168,76,.16)}
-.ppu-note{text-align:center;margin-top:1.5rem;font-size:.75rem;color:var(--muted)}
-
-/* ── TESTIMONIAL ── */
-.testimonial{
-  padding:6rem 3rem;background:var(--navy-2);text-align:center;
+.eval-visual{
+  background:var(--gold-pale);
+  border:1px solid rgba(201,168,76,.2);
+  border-radius:24px;padding:2rem;
   position:relative;overflow:hidden;
 }
-.testimonial::before{
-  content:'❝';
-  position:absolute;top:-1rem;left:50%;transform:translateX(-50%);
-  font-family:'Cormorant Garamond',serif;font-size:14rem;font-weight:600;
-  color:rgba(201,168,76,.04);line-height:1;pointer-events:none;
+.eval-visual::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle,rgba(201,168,76,.15) 0%,transparent 70%);
 }
-.testimonial blockquote{
-  font-family:'Cormorant Garamond',serif;
+.ev-label{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-d);margin-bottom:1.25rem}
+.ev-score{
+  display:flex;align-items:baseline;gap:.5rem;margin-bottom:.5rem;
+}
+.ev-score .big{font-family:'Playfair Display',serif;font-size:4rem;font-weight:900;color:var(--navy);line-height:1}
+.ev-score .unit{font-size:1.25rem;color:var(--muted)}
+.ev-title{font-size:1rem;font-weight:500;color:var(--navy);margin-bottom:1.5rem}
+.ev-bars{display:flex;flex-direction:column;gap:.65rem}
+.ev-bar-row{display:flex;flex-direction:column;gap:.3rem}
+.ev-bar-label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted)}
+.ev-bar-track{height:6px;background:rgba(0,0,0,.07);border-radius:999px;overflow:hidden}
+.ev-bar-fill{height:100%;border-radius:999px;transition:width .8s ease}
+.ev-bar-fill.gold{background:linear-gradient(90deg,var(--gold),var(--gold-l))}
+.ev-bar-fill.blue{background:linear-gradient(90deg,var(--blue),var(--blue-l))}
+.ev-bar-fill.navy{background:var(--navy)}
+
+.ev-decision{
+  margin-top:1.5rem;display:flex;gap:.75rem;
+}
+.ev-dec-btn{
+  flex:1;padding:.65rem;border-radius:10px;
+  border:none;font-size:.78rem;font-weight:500;
+  cursor:default;
+}
+.ev-dec-btn.apply{background:var(--navy);color:var(--gold)}
+.ev-dec-btn.no{background:rgba(0,0,0,.06);color:var(--muted)}
+
+/* ── FUND TYPES SECTION ── */
+.types-section{
+  padding:7rem 0;
+  background:var(--navy);
+  position:relative;overflow:hidden;
+}
+.types-section::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 70% 50%,rgba(201,168,76,.05) 0%,transparent 60%);
+}
+.types-section .section-title{color:var(--white)}
+.types-section .section-title em{color:var(--gold)}
+.types-section .section-eyebrow{color:rgba(201,168,76,.7)}
+.types-section .section-eyebrow::before{background:rgba(201,168,76,.5)}
+
+.types-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1rem;margin-top:3.5rem;
+}
+.type-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:18px;padding:1.5rem 1.25rem;
+  transition:.25s;
+  position:relative;overflow:hidden;
+}
+.type-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(201,168,76,.5),transparent);
+  opacity:0;transition:.3s;
+}
+.type-card:hover{
+  border-color:rgba(201,168,76,.2);
+  background:rgba(255,255,255,.07);
+  transform:translateY(-3px);
+}
+.type-card:hover::before{opacity:1}
+.type-icon{
+  width:48px;height:48px;border-radius:14px;
+  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.25rem;margin-bottom:1.1rem;
+}
+.type-card h3{
+  font-family:'Playfair Display',serif;
+  font-size:1.1rem;font-weight:600;color:var(--white);
+  margin-bottom:.5rem;line-height:1.2;
+}
+.type-card p{font-size:.78rem;color:rgba(255,255,255,.45);line-height:1.65}
+.type-tag{
+  display:inline-block;margin-top:.85rem;
+  font-size:.62rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+  padding:.22rem .65rem;border-radius:999px;
+  background:rgba(201,168,76,.1);color:var(--gold);
+  border:1px solid rgba(201,168,76,.2);
+}
+
+/* ── INTELLIGENCE SECTION ── */
+.intel-section{padding:7rem 0;background:var(--white)}
+.intel-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:5rem;align-items:center;margin-top:4rem;
+}
+.intel-points{display:flex;flex-direction:column;gap:1.5rem}
+.intel-point{
+  display:flex;gap:1.1rem;align-items:flex-start;
+  padding:1.25rem;border-radius:16px;border:1px solid transparent;
+  transition:.2s;
+}
+.intel-point:hover{background:var(--gold-pale);border-color:var(--border)}
+.ip-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:var(--navy);display:flex;align-items:center;justify-content:center;
+  color:var(--gold);font-size:1rem;flex-shrink:0;
+}
+.ip-title{font-size:.95rem;font-weight:500;color:var(--navy);margin-bottom:.3rem}
+.ip-desc{font-size:.82rem;color:var(--muted);line-height:1.6}
+
+.intel-showcase{
+  background:var(--blue-pale);
+  border:1px solid var(--border-blue);
+  border-radius:24px;padding:2rem;
+}
+.is-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.is-title{font-size:.75rem;font-weight:500;color:var(--blue);text-transform:uppercase;letter-spacing:.08em}
+.is-live{display:flex;align-items:center;gap:.5rem;font-size:.68rem;color:var(--muted)}
+.is-dot{width:6px;height:6px;border-radius:50%;background:#1fa94b;box-shadow:0 0 0 3px rgba(31,169,75,.15)}
+
+.is-result{
+  background:var(--white);border:1px solid var(--border-blue);
+  border-radius:14px;padding:1rem 1.1rem;margin-bottom:.75rem;
+}
+.isr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+.isr-role{
+  font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  padding:.18rem .55rem;border-radius:999px;
+}
+.isr-role.apply{background:rgba(31,169,75,.1);color:#167a36}
+.isr-role.cond{background:rgba(201,168,76,.1);color:var(--gold-d)}
+.isr-role.back{background:rgba(27,79,138,.1);color:var(--blue)}
+.isr-prob{font-family:'DM Mono',monospace;font-size:.75rem;font-weight:400}
+.isr-title{font-size:.85rem;font-weight:500;color:var(--navy);margin-bottom:.3rem}
+.isr-risk{font-size:.72rem;color:var(--muted)}
+.isr-bar{height:3px;background:rgba(0,0,0,.06);border-radius:999px;margin-top:.5rem;overflow:hidden}
+.isr-bar-fill{height:100%;border-radius:999px}
+
+.is-next{
+  padding:.75rem 1rem;background:rgba(27,79,138,.06);
+  border:1px solid rgba(27,79,138,.1);border-radius:10px;
+  font-size:.75rem;color:var(--blue);line-height:1.5;
+}
+
+/* ── APP SECTION ── */
+.app-section{
+  padding:7rem 0;
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%);
+  position:relative;overflow:hidden;
+}
+.app-section::before{
+  content:'';position:absolute;top:-200px;right:-200px;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(201,168,76,.08) 0%,transparent 70%);
+}
+.app-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:5rem;align-items:center;
+}
+.app-section .section-title{color:var(--white)}
+.app-section .section-eyebrow{color:rgba(201,168,76,.7)}
+.app-section .section-eyebrow::before{background:rgba(201,168,76,.5)}
+
+.app-desc{font-size:.92rem;color:rgba(255,255,255,.55);line-height:1.8;margin-bottom:2rem;max-width:420px}
+
+.app-badges{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem}
+.app-badge{
+  display:flex;align-items:center;gap:.65rem;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;padding:.65rem 1rem;
+  font-size:.78rem;color:rgba(255,255,255,.8);
+  transition:.2s;
+}
+.app-badge:hover{background:rgba(255,255,255,.1);border-color:rgba(201,168,76,.3)}
+.app-badge-icon{font-size:1.1rem}
+.app-badge strong{display:block;font-weight:500}
+.app-badge span{font-size:.65rem;color:rgba(255,255,255,.4)}
+
+.app-features{display:flex;flex-direction:column;gap:.85rem}
+.af-item{
+  display:flex;align-items:center;gap:.75rem;
+  font-size:.85rem;color:rgba(255,255,255,.6);
+}
+.af-check{
+  width:22px;height:22px;border-radius:6px;
+  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--gold);font-size:.75rem;flex-shrink:0;
+}
+
+/* phone mockups */
+.phones-wrap{
+  display:flex;gap:-1rem;justify-content:center;align-items:flex-end;
+  position:relative;
+}
+.app-phone{
+  background:var(--white);border-radius:32px;overflow:hidden;
+  box-shadow:0 32px 64px rgba(0,0,0,.4);
+  border:1px solid rgba(255,255,255,.1);
+}
+.ap-1{width:200px;transform:rotate(-6deg) translateX(20px);z-index:1}
+.ap-2{width:220px;z-index:2;transform:translateY(-20px)}
+.ap-screen{background:var(--navy);padding:.75rem .65rem 1rem}
+.ap-notch{width:60px;height:14px;background:rgba(0,0,0,.5);border-radius:0 0 10px 10px;margin:0 auto .75rem}
+.ap-card-mini{
+  background:rgba(255,255,255,.05);border:1px solid rgba(201,168,76,.12);
+  border-radius:10px;padding:.55rem;margin-bottom:.45rem;
+}
+.acm-role{font-size:.45rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:.25rem}
+.acm-title{font-size:.58rem;color:rgba(255,255,255,.8);line-height:1.3}
+.acm-prob{font-size:.52rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,.4);margin-top:.2rem}
+
+/* ── TESTIMONIAL ── */
+.testimonial-section{
+  padding:6rem 0;background:var(--gold-pale);
+  text-align:center;position:relative;
+}
+.testimonial-section::before{
+  content:'"';
+  position:absolute;top:-2rem;left:50%;transform:translateX(-50%);
+  font-family:'Playfair Display',serif;
+  font-size:clamp(8rem,16vw,14rem);
+  color:rgba(201,168,76,.1);line-height:1;
+  pointer-events:none;
+}
+blockquote{
+  font-family:'Playfair Display',serif;
   font-size:clamp(1.4rem,2.5vw,2rem);
-  font-weight:300;font-style:italic;
-  line-height:1.5;color:var(--white);
-  max-width:680px;margin:0 auto 1.25rem;
+  font-weight:400;font-style:italic;
+  line-height:1.55;color:var(--navy);
+  max-width:700px;margin:0 auto 1.25rem;
   position:relative;z-index:1;
 }
-.testimonial blockquote em{color:var(--gold);font-style:italic}
-.testimonial cite{font-size:.75rem;color:var(--muted)}
-
-/* ── LANGS ── */
-.langs{padding:4rem 3rem;background:var(--navy);text-align:center}
-.langs-cloud{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center;margin-top:1.75rem;max-width:860px;margin-left:auto;margin-right:auto}
-.lang-tag{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:999px;padding:.28rem .8rem;font-size:.72rem;color:var(--muted)}
+blockquote em{color:var(--gold);font-style:italic}
+cite{font-size:.75rem;color:var(--muted)}
 
 /* ── CTA ── */
-.cta{
-  padding:8rem 3rem;text-align:center;
-  background:var(--navy-2);position:relative;overflow:hidden;
+.cta-section{
+  padding:8rem 0;
+  background:var(--white);text-align:center;
+  position:relative;
 }
-.cta::before{
-  content:'DECISION';
-  position:absolute;bottom:-2rem;left:50%;transform:translateX(-50%);
-  font-family:'Cormorant Garamond',serif;font-size:clamp(5rem,12vw,11rem);
-  font-weight:600;color:rgba(201,168,76,.04);white-space:nowrap;
-  letter-spacing:.1em;pointer-events:none;
+.cta-section::after{
+  content:'DECIDE';
+  position:absolute;bottom:-1rem;left:50%;transform:translateX(-50%);
+  font-family:'Playfair Display',serif;
+  font-size:clamp(6rem,14vw,12rem);
+  font-weight:900;color:rgba(13,27,46,.03);
+  white-space:nowrap;letter-spacing:.08em;
+  pointer-events:none;
 }
-.cta .section-title{margin-bottom:1rem;max-width:600px;margin-left:auto;margin-right:auto}
-.cta p{font-size:.9rem;color:var(--muted);margin-bottom:2.5rem;line-height:1.7}
+.cta-section .section-title{max-width:600px;margin:0 auto 1rem;text-align:center}
+.cta-section .section-eyebrow{justify-content:center}
+.cta-section .section-eyebrow::before{display:none}
+.cta-section p{font-size:.92rem;color:var(--muted);margin-bottom:2.5rem;line-height:1.7}
 .cta-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
 
 /* ── FOOTER ── */
 footer{
-  background:var(--navy);border-top:1px solid var(--border-s);
-  padding:2rem 3rem;
+  background:var(--navy);padding:2.5rem 2.5rem;
+  border-top:1px solid rgba(201,168,76,.08);
 }
 .footer-inner{
-  max-width:1100px;margin:0 auto;
+  max-width:1200px;margin:0 auto;
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;
 }
-.footer-logo{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:rgba(250,250,248,.4)}
-.footer-logo span{color:var(--gold)}
+.footer-logo{
+  display:flex;align-items:center;gap:.6rem;
+}
+.footer-logo img{width:28px;height:28px;object-fit:contain;filter:brightness(0) invert(1);opacity:.6}
+.footer-wordmark{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:600;color:rgba(255,255,255,.4)}
+.footer-wordmark em{font-style:normal;color:var(--gold);opacity:.7}
 .footer-links{display:flex;gap:1.75rem;flex-wrap:wrap}
-.footer-links a{font-size:.7rem;color:rgba(250,250,248,.28);transition:color .2s}
+.footer-links a{font-size:.7rem;color:rgba(255,255,255,.25);transition:.2s}
 .footer-links a:hover{color:var(--gold)}
-.footer-copy{font-size:.68rem;color:rgba(250,250,248,.18)}
+.footer-copy{font-size:.68rem;color:rgba(255,255,255,.18)}
 
 /* ── RESPONSIVE ── */
 @media(max-width:1024px){
   .hero{grid-template-columns:1fr;padding:8rem 2rem 4rem;gap:3rem}
   .hero-right{display:none}
-  .decision-demo{grid-template-columns:1fr}
-  .plans{grid-template-columns:1fr 1fr}
-  .ppu-grid{grid-template-columns:1fr 1fr}
-  .flow-steps{grid-template-columns:1fr 1fr;gap:2rem}
-  .flow-steps::before{display:none}
+  .eval-grid,.intel-grid,.app-grid{grid-template-columns:1fr}
+  .types-grid{grid-template-columns:1fr 1fr}
   nav{padding:1rem 1.5rem}.nav-links{display:none}
-  .how,.decision-section,.pricing,.ppu,.testimonial,.langs,.cta{padding:4.5rem 1.5rem}
 }
 @media(max-width:640px){
-  .plans{grid-template-columns:1fr}
-  .ppu-grid{grid-template-columns:1fr}
+  .types-grid{grid-template-columns:1fr}
   .hero-proof{gap:1.75rem}
-  footer{padding:1.75rem 1.5rem}
-  .footer-inner{flex-direction:column;align-items:flex-start}
+  footer{padding:2rem 1.25rem}
 }
 </style>
 </head>
 <body>
 
+<div class="hero-bg">
+  <div class="hero-grid-lines"></div>
+</div>
+
 <!-- NAV -->
 <nav>
   <div class="nav-logo">
-    <div class="nav-mark">M</div>
-    <div class="nav-word">Marginova<span>.AI</span></div>
+    <img src="ChatGPT_Image_Apr_24__2026__09_44_09_AM.png" alt="Marginova logo" onerror="this.style.display='none'">
+    <div class="nav-wordmark">Margi<em>nova</em></div>
   </div>
   <div class="nav-links">
     <a href="#how">How it works</a>
-    <a href="#decision">Decision</a>
-    <a href="#pricing">Pricing</a>
+    <a href="#types">Fund types</a>
+    <a href="#app">Mobile app</a>
   </div>
   <div class="nav-cta">
-    <button class="btn-ghost" onclick="window.location.href='/app.html'">Sign In</button>
-    <button class="btn-cta" onclick="window.location.href='/app.html'">Start Free</button>
+    <button class="btn-ghost-nav" onclick="window.location.href='/app.html'">Sign in</button>
+    <button class="btn-cta-nav" onclick="window.location.href='/app.html'">Start free →</button>
   </div>
 </nav>
 
 <!-- HERO -->
-<section class="hero">
-  <div class="hero-orb-1"></div>
-  <div class="hero-orb-2"></div>
-  <div class="hero-grid-bg"></div>
-
+<section style="position:relative">
+<div class="hero">
   <div class="hero-left">
     <div class="hero-eyebrow">
-      <div class="hero-eyebrow-dot"></div>
-      Funding Decision System
+      <div class="eyebrow-dot"></div>
+      Funding Evaluation System
     </div>
     <h1 class="hero-title">
-      Stop guessing.<br>
-      <em>Get a decision.</em><br>
-      <strong>Then apply.</strong>
+      Know your<br>
+      <span class="line-gold">exact chances</span><br>
+      before you apply.
     </h1>
     <p class="hero-sub">
-      Marginova analyzes your profile, finds the right opportunities, and tells you exactly what to do — YES, CONDITIONAL, or BACKUP — with a probability score and a complete application draft.
+      Marginova evaluates your eligibility for <strong>grants, funds, subsidies and scholarships</strong> — and gives you a YES, CONDITIONAL, or BACKUP decision with a probability score. No guessing.
     </p>
     <div class="hero-actions">
-      <button class="btn-primary" onclick="window.location.href='/app.html'">Get Your Decision — Free</button>
-      <button class="btn-outline" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See how it works →</button>
+      <button class="btn-primary" onclick="window.location.href='/app.html'">
+        Get your evaluation free
+        <span>→</span>
+      </button>
+      <button class="btn-outline" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See how it works</button>
     </div>
     <div class="hero-proof">
+      <div class="hero-proof-item"><strong>200+</strong><span>Active programs</span></div>
       <div class="hero-proof-item"><strong>40+</strong><span>Languages</span></div>
+      <div class="hero-proof-item"><strong>15 min</strong><span>To a decision</span></div>
       <div class="hero-proof-item"><strong>24/7</strong><span>Live intelligence</span></div>
-      <div class="hero-proof-item"><strong>15 min</strong><span>From question to draft</span></div>
     </div>
   </div>
 
   <div class="hero-right">
-    <div class="mockup">
-      <div class="mockup-bar">
-        <div class="mockup-dots">
-          <div class="mockup-dot"></div>
-          <div class="mockup-dot"></div>
-          <div class="mockup-dot"></div>
-        </div>
-        <div class="mockup-url">marginova.tech/app</div>
+    <div class="mockup-wrap">
+      <!-- Floating context cards -->
+      <div class="float-card fc-1">
+        <div class="fc-label">Match score</div>
+        <div class="fc-value gold">97 / 100</div>
       </div>
-      <div class="mockup-body">
-        <div class="mockup-prompt">
-          "NGO, North Macedonia, environment sector, budget up to €50k, project on clean energy access in rural areas."
-        </div>
-        <div class="decision-card yes">
-          <div class="dc-top">
-            <span class="dc-role">APPLY</span>
-            <span class="dc-prob">71%</span>
+      <div class="float-card fc-2">
+        <div class="fc-label">Live programs</div>
+        <div class="fc-value blue">218 open</div>
+      </div>
+      <div class="float-card fc-3">
+        <div class="fc-label">Decision</div>
+        <div class="fc-value"><span class="fc-dot" style="background:#1fa94b"></span>APPLY</div>
+      </div>
+
+      <!-- Phone -->
+      <div class="mockup-phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-header">
+            <div class="phone-logo">Margi<em>nova</em></div>
+            <div class="phone-badge">Decision</div>
           </div>
-          <div class="dc-title">Green Agenda for Western Balkans</div>
-          <div class="dc-risk">Decision: YES · Deadline: 2026-06-30 · €150,000 EUR</div>
-        </div>
-        <div class="decision-card cond">
-          <div class="dc-top">
-            <span class="dc-role">CONDITIONAL</span>
-            <span class="dc-prob">48%</span>
+
+          <div class="phone-card">
+            <div class="pc-role apply">APPLY</div>
+            <div class="pc-title">MIT Solve — Global Challenge</div>
+            <div class="pc-meta">
+              <span>150,000 USD · 2026-05-21</span>
+              <span class="pc-prob apply">71%</span>
+            </div>
           </div>
-          <div class="dc-title">EEA & Norway Grants — Blue Growth</div>
-          <div class="dc-risk">Decision: CONDITIONAL · register as legal entity first</div>
-        </div>
-        <div class="decision-card back">
-          <div class="dc-top">
-            <span class="dc-role">BACKUP</span>
-            <span class="dc-prob">31%</span>
+
+          <div class="phone-card">
+            <div class="pc-role cond">CONDITIONAL</div>
+            <div class="pc-title">GIZ — Western Balkans Digital</div>
+            <div class="pc-meta">
+              <span>75,000 EUR · 2026-08-31</span>
+              <span class="pc-prob cond">50%</span>
+            </div>
           </div>
-          <div class="dc-title">EBRD — Small Business Support</div>
-          <div class="dc-risk">Decision: BACKUP · use if first option is rejected</div>
+
+          <div class="phone-card">
+            <div class="pc-role back">BACKUP</div>
+            <div class="pc-title">UNDP — SDG Innovation</div>
+            <div class="pc-meta">
+              <span>50,000 USD · 2026-06-30</span>
+              <span class="pc-prob back">31%</span>
+            </div>
+          </div>
+
+          <div class="phone-next">
+            <strong>▶ Next step:</strong> Review MIT Solve eligibility today and prepare your org registration documents.
+          </div>
         </div>
-        <div class="mockup-step">
-          ▶ NEXT STEP: Review Green Agenda eligibility today and prepare your org registration documents.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- EVALUATION SYSTEM -->
+<section class="eval-section" id="how">
+  <div class="full-wrap">
+    <div class="section-eyebrow">How it works</div>
+    <h2 class="section-title">
+      The evaluation engine<br>
+      that <em>tells you the truth.</em>
+    </h2>
+
+    <div class="eval-grid">
+      <div class="eval-steps">
+        <div class="eval-step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <h3>Describe your project and organization</h3>
+            <p>Tell Marginova your sector, country, org type and what you're trying to fund. In any of 40+ languages.</p>
+          </div>
+        </div>
+        <div class="eval-step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <h3>The system evaluates your eligibility</h3>
+            <p>Real-time matching against 200+ verified programs. Scores are calculated against eligibility criteria, regional fit, competition level and deadline proximity.</p>
+          </div>
+        </div>
+        <div class="eval-step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <h3>You receive a clear decision</h3>
+            <p>TOP 3 results — each labeled APPLY, CONDITIONAL, or BACKUP — with a probability of success, specific risks, and one concrete action you can take today.</p>
+          </div>
+        </div>
+        <div class="eval-step">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <h3>Build the application draft</h3>
+            <p>Select a program. Marginova generates Abstract, LFM, Budget Draft, Risk Matrix and Submission Checklist. Export as PDF.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="eval-visual">
+        <div class="ev-label">Evaluation result · Live</div>
+        <div class="ev-score">
+          <span class="big">71</span>
+          <span class="unit">%</span>
+        </div>
+        <div class="ev-title">Probability of success — MIT Solve</div>
+        <div class="ev-bars">
+          <div class="ev-bar-row">
+            <div class="ev-bar-label"><span>Sector alignment</span><span>95%</span></div>
+            <div class="ev-bar-track"><div class="ev-bar-fill gold" style="width:95%"></div></div>
+          </div>
+          <div class="ev-bar-row">
+            <div class="ev-bar-label"><span>Eligibility match</span><span>88%</span></div>
+            <div class="ev-bar-track"><div class="ev-bar-fill gold" style="width:88%"></div></div>
+          </div>
+          <div class="ev-bar-row">
+            <div class="ev-bar-label"><span>Regional fit</span><span>76%</span></div>
+            <div class="ev-bar-track"><div class="ev-bar-fill blue" style="width:76%"></div></div>
+          </div>
+          <div class="ev-bar-row">
+            <div class="ev-bar-label"><span>Competition level</span><span>Medium</span></div>
+            <div class="ev-bar-track"><div class="ev-bar-fill navy" style="width:55%"></div></div>
+          </div>
+        </div>
+        <div class="ev-decision">
+          <button class="ev-dec-btn apply">✓ APPLY NOW</button>
+          <button class="ev-dec-btn no">Skip</button>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
-<section class="how" id="how">
-  <div class="section-wrap">
-    <div class="section-eyebrow">Process</div>
-    <h2 class="section-title">From profile to<br><em>funded project.</em></h2>
-    <div class="flow-steps">
-      <div class="flow-step">
-        <div class="flow-num">1</div>
-        <h4>Describe your project</h4>
-        <p>Tell Marginova your sector, country, org type and budget — in any of 40+ languages.</p>
+<!-- FUND TYPES -->
+<section class="types-section" id="types">
+  <div class="full-wrap">
+    <div class="section-eyebrow">What we evaluate</div>
+    <h2 class="section-title">
+      Every type of<br>
+      <em>financial support.</em>
+    </h2>
+    <div class="types-grid">
+      <div class="type-card">
+        <div class="type-icon">🏛️</div>
+        <h3>Grants</h3>
+        <p>EU structural funds, bilateral donors, foundation grants, open calls. Non-repayable funding for projects with measurable impact.</p>
+        <div class="type-tag">Non-repayable</div>
       </div>
-      <div class="flow-step">
-        <div class="flow-num">2</div>
-        <h4>Get TOP 3 decisions</h4>
-        <p>APPLY, CONDITIONAL and BACKUP — each with a probability score and specific risks.</p>
+      <div class="type-card">
+        <div class="type-icon">💼</div>
+        <h3>Funds & Subsidies</h3>
+        <p>Government co-financing, national investment funds, IPARD, startup funds, SME support schemes and sector-specific subsidies.</p>
+        <div class="type-tag">Government backed</div>
       </div>
-      <div class="flow-step">
-        <div class="flow-num">3</div>
-        <h4>Build your application</h4>
-        <p>Select a program. Marginova generates Abstract, LFM, Budget Draft and Submission Checklist.</p>
+      <div class="type-card">
+        <div class="type-icon">🎓</div>
+        <h3>Scholarships</h3>
+        <p>Erasmus+, Fulbright, DAAD, Chevening and bilateral exchange programs. For students, researchers and young professionals.</p>
+        <div class="type-tag">For individuals</div>
       </div>
-      <div class="flow-step">
-        <div class="flow-num">4</div>
-        <h4>Export and submit</h4>
-        <p>Download as PDF or Word. Send to your team, partner or funder — ready to submit.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- DECISION SECTION -->
-<section class="decision-section" id="decision">
-  <div class="section-wrap">
-    <div class="section-eyebrow">The Decision Engine</div>
-    <h2 class="section-title">Not a list.<br><em>A decision.</em></h2>
-    <div class="decision-demo">
-      <div class="decision-demo-left">
-        <p>Every result comes with a clear decision, a probability of success, and the exact risks standing between you and funding. No vague advice. No long lists to sort through.</p>
-        <div class="highlight"><span class="icon">📊</span>Probability of success calculated from eligibility alignment, regional fit, competition level and deadline proximity.</div>
-        <div class="highlight"><span class="icon">⚠️</span>Risks are specific — not "check eligibility" but "must register as legal entity before applying."</div>
-        <div class="highlight"><span class="icon">▶</span>Every response ends with one concrete action you can take today — not next week.</div>
-      </div>
-      <div class="decision-cards-stack">
-        <div class="full-decision-card yes">
-          <div class="fdc-header">
-            <span class="fdc-role">APPLY</span>
-            <span class="fdc-decision">Decision: YES</span>
-          </div>
-          <div class="fdc-title">MIT Solve — Global Challenge</div>
-          <div class="fdc-prob">71%</div>
-          <div class="fdc-risks">
-            <span>✅ Strong sector and org type match</span>
-            <span>⚠️ competition level: medium — global applicants</span>
-            <span>📅 Deadline: 2026-05-21</span>
-          </div>
-        </div>
-        <div class="full-decision-card cond">
-          <div class="fdc-header">
-            <span class="fdc-role">CONDITIONAL</span>
-            <span class="fdc-decision">Decision: CONDITIONAL</span>
-          </div>
-          <div class="fdc-title">GIZ — Western Balkans Digital Agenda</div>
-          <div class="fdc-prob">48%</div>
-          <div class="fdc-risks">
-            <span>⚠️ eligibility mismatch — verify org type</span>
-            <span>⚠️ region limitation — check country list</span>
-            <span>📅 Deadline: 2026-08-31</span>
-          </div>
-        </div>
-        <div class="full-decision-card back">
-          <div class="fdc-header">
-            <span class="fdc-role">BACKUP</span>
-            <span class="fdc-decision">Decision: BACKUP</span>
-          </div>
-          <div class="fdc-title">UNDP — SDG Innovation Challenge</div>
-          <div class="fdc-prob">31%</div>
-          <div class="fdc-risks">
-            <span>⚠️ competition level: high</span>
-            <span>⚠️ not primary target org type</span>
-            <span>📅 Deadline: 2026-06-30</span>
-          </div>
-        </div>
+      <div class="type-card">
+        <div class="type-icon">🌍</div>
+        <h3>International Programs</h3>
+        <p>World Bank, UNDP, GIZ, USAID and regional development programs. Cross-border initiatives for NGOs and public bodies.</p>
+        <div class="type-tag">Regional & global</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- PRICING -->
-<section class="pricing" id="pricing">
-  <div class="section-wrap">
-    <div class="section-eyebrow">Pricing</div>
-    <h2 class="section-title">Simple pricing.<br><em>No surprises.</em></h2>
-    <div class="billing-row">
-      <span>Monthly</span>
-      <div class="toggle" id="toggle" onclick="toggleBilling()"><div class="toggle-knob"></div></div>
-      <span>Annual</span>
-      <span class="save-tag">Save up to 30%</span>
-    </div>
-    <div class="plans">
-      <div class="plan">
-        <div class="plan-name">Free</div>
-        <div class="plan-desc">Explore the decision system</div>
-        <div class="plan-price"><sup>€</sup>0<sub>/mo</sub></div>
-        <div class="plan-cycle">Forever free</div>
-        <div class="plan-div"></div>
-        <div class="pf"><span class="y">✓</span> 20 decisions / day</div>
-        <div class="pf"><span class="y">✓</span> YES/NO/CONDITIONAL output</div>
-        <div class="pf"><span class="y">✓</span> All 40+ languages</div>
-        <div class="pf"><span class="n">✗</span> No application builder</div>
-        <div class="pf"><span class="n">✗</span> No export</div>
-        <div class="plan-btn"><button class="b-line" onclick="window.location.href='/app.html'">Start Free</button></div>
+<!-- INTELLIGENCE -->
+<section class="intel-section">
+  <div class="full-wrap">
+    <div class="section-eyebrow">The intelligence layer</div>
+    <h2 class="section-title">
+      Not a list.<br>
+      A <em>decision.</em>
+    </h2>
+    <div class="intel-grid">
+      <div class="intel-points">
+        <div class="intel-point">
+          <div class="ip-icon">📊</div>
+          <div>
+            <div class="ip-title">Probability scoring</div>
+            <div class="ip-desc">Every result comes with a calculated probability of success — based on eligibility alignment, regional fit, competition level and deadline proximity. Not a guess. A score.</div>
+          </div>
+        </div>
+        <div class="intel-point">
+          <div class="ip-icon">⚠️</div>
+          <div>
+            <div class="ip-title">Specific risk identification</div>
+            <div class="ip-desc">Not "check eligibility" — but "must register as legal entity before applying" or "competition level: high — strong global applicants expected." Risks that actually matter.</div>
+          </div>
+        </div>
+        <div class="intel-point">
+          <div class="ip-icon">▶</div>
+          <div>
+            <div class="ip-title">One concrete next step</div>
+            <div class="ip-desc">Every evaluation ends with one action you can take today. Not a list of suggestions. One clear step that moves your application forward.</div>
+          </div>
+        </div>
+        <div class="intel-point">
+          <div class="ip-icon">🔄</div>
+          <div>
+            <div class="ip-title">Live database + web intelligence</div>
+            <div class="ip-desc">200+ verified programs updated continuously. When the database needs enriching, real-time web search fills the gaps automatically.</div>
+          </div>
+        </div>
       </div>
-      <div class="plan">
-        <div class="plan-name">Starter</div>
-        <div class="plan-desc">Individuals and small organizations</div>
-        <div class="plan-price" id="pp-s"><sup>€</sup>19<sub>/mo</sub></div>
-        <div class="plan-cycle" id="pc-s">or €159/year — save €69</div>
-        <div class="plan-div"></div>
-        <div class="pf"><span class="y">✓</span> 200 decisions / day</div>
-        <div class="pf"><span class="y">✓</span> Live web intelligence</div>
-        <div class="pf"><span class="y">✓</span> 5 application drafts / mo</div>
-        <div class="pf"><span class="y">✓</span> PDF export</div>
-        <div class="pf"><span class="n">✗</span> No LFM + budget builder</div>
-        <div class="plan-btn"><button class="b-line" onclick="window.location.href='/app.html'">Get Starter</button></div>
-      </div>
-      <div class="plan featured">
-        <div class="plan-popular">Most Popular</div>
-        <div class="plan-name">Pro</div>
-        <div class="plan-desc">NGOs, SMEs, consultants</div>
-        <div class="plan-price" id="pp-p"><sup>€</sup>49<sub>/mo</sub></div>
-        <div class="plan-cycle" id="pc-p">or €399/year — save €189</div>
-        <div class="plan-div"></div>
-        <div class="pf"><span class="y">✓</span> Unlimited decisions</div>
-        <div class="pf"><span class="y">✓</span> Unlimited applications</div>
-        <div class="pf"><span class="y">✓</span> LFM + budget + checklist</div>
-        <div class="pf"><span class="y">✓</span> PDF + Word export</div>
-        <div class="pf"><span class="y">✓</span> Priority support</div>
-        <div class="plan-btn"><button class="b-gold" onclick="window.location.href='/app.html'">Get Pro</button></div>
-      </div>
-      <div class="plan">
-        <div class="plan-name">Agency</div>
-        <div class="plan-desc">Consulting firms and agencies</div>
-        <div class="plan-price">By agreement</div>
-        <div class="plan-cycle">Custom terms</div>
-        <div class="plan-div"></div>
-        <div class="pf"><span class="y">✓</span> Everything in Pro</div>
-        <div class="pf"><span class="y">✓</span> Up to 10 users</div>
-        <div class="pf"><span class="y">✓</span> White-label branding</div>
-        <div class="pf"><span class="y">✓</span> API access</div>
-        <div class="pf"><span class="y">✓</span> Dedicated account manager</div>
-        <div class="plan-btn"><button class="b-white" onclick="window.location.href='mailto:hello@marginova.tech'">Contact Us</button></div>
+
+      <div class="intel-showcase">
+        <div class="is-header">
+          <div class="is-title">TOP 3 Decisions</div>
+          <div class="is-live"><div class="is-dot"></div> Live results</div>
+        </div>
+
+        <div class="is-result">
+          <div class="isr-top">
+            <span class="isr-role apply">APPLY</span>
+            <span class="isr-prob" style="color:#1fa94b">71%</span>
+          </div>
+          <div class="isr-title">MIT Solve — 10th Anniversary Global Challenge</div>
+          <div class="isr-risk">⚠ competition: medium · deadline in 25 days</div>
+          <div class="isr-bar"><div class="isr-bar-fill" style="width:71%;background:linear-gradient(90deg,#1fa94b,#4ed07e)"></div></div>
+        </div>
+
+        <div class="is-result">
+          <div class="isr-top">
+            <span class="isr-role cond">CONDITIONAL</span>
+            <span class="isr-prob" style="color:var(--gold-d)">50%</span>
+          </div>
+          <div class="isr-title">GIZ — Western Balkans Digital Agenda</div>
+          <div class="isr-risk">⚠ verify country eligibility · registration required</div>
+          <div class="isr-bar"><div class="isr-bar-fill" style="width:50%;background:linear-gradient(90deg,var(--gold),var(--gold-l))"></div></div>
+        </div>
+
+        <div class="is-result">
+          <div class="isr-top">
+            <span class="isr-role back">BACKUP</span>
+            <span class="isr-prob" style="color:var(--blue)">31%</span>
+          </div>
+          <div class="isr-title">UNDP — SDG Innovation Challenge</div>
+          <div class="isr-risk">⚠ competition: high · use if first option rejected</div>
+          <div class="isr-bar"><div class="isr-bar-fill" style="width:31%;background:linear-gradient(90deg,var(--blue),var(--blue-l))"></div></div>
+        </div>
+
+        <div class="is-next">
+          ▶ <strong>Next step today:</strong> Open MIT Solve application portal and review eligibility requirements against your organization profile.
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- PAY PER USE -->
-<section class="ppu">
-  <div class="section-wrap">
-    <div class="section-eyebrow">Pay-per-use</div>
-    <h2 class="section-title">No subscription.<br><em>Pay only for what you need.</em></h2>
-    <div class="ppu-grid">
-      <div class="ppu-card">
-        <div class="ppu-icon">📊</div>
-        <div class="ppu-price"><sup>€</sup>4.90</div>
-        <div class="ppu-name">Eligibility Decision</div>
-        <div class="ppu-desc">Full YES/NO/CONDITIONAL analysis with probability score and risk breakdown.</div>
-        <button class="ppu-btn" onclick="window.location.href='/app.html'">Buy now →</button>
+<!-- MOBILE APP -->
+<section class="app-section" id="app">
+  <div class="full-wrap">
+    <div class="app-grid">
+      <div>
+        <div class="section-eyebrow">Mobile app</div>
+        <h2 class="section-title">Your funding<br><em>intelligence</em><br>in your pocket.</h2>
+        <p class="app-desc">The full Marginova evaluation system — available on iOS and Android. Get decisions, track deadlines, and build applications from anywhere.</p>
+        <div class="app-badges">
+          <div class="app-badge">
+            <div class="app-badge-icon">🍎</div>
+            <div>
+              <strong>App Store</strong>
+              <span>iOS — Coming soon</span>
+            </div>
+          </div>
+          <div class="app-badge">
+            <div class="app-badge-icon">🤖</div>
+            <div>
+              <strong>Google Play</strong>
+              <span>Android — Coming soon</span>
+            </div>
+          </div>
+        </div>
+        <div class="app-features">
+          <div class="af-item"><div class="af-check">✓</div>Full evaluation system on mobile</div>
+          <div class="af-item"><div class="af-check">✓</div>Deadline notifications and reminders</div>
+          <div class="af-item"><div class="af-check">✓</div>PDF export and sharing</div>
+          <div class="af-item"><div class="af-check">✓</div>40+ languages including Macedonian</div>
+          <div class="af-item"><div class="af-check">✓</div>Offline access to saved decisions</div>
+        </div>
       </div>
-      <div class="ppu-card">
-        <div class="ppu-icon">📝</div>
-        <div class="ppu-price"><sup>€</sup>7.90</div>
-        <div class="ppu-name">Application Draft</div>
-        <div class="ppu-desc">Abstract, objectives, activities and timeline — structured and submission-ready.</div>
-        <button class="ppu-btn" onclick="window.location.href='/app.html'">Buy now →</button>
-      </div>
-      <div class="ppu-card">
-        <div class="ppu-icon">🧩</div>
-        <div class="ppu-price"><sup>€</sup>14.90</div>
-        <div class="ppu-name">Full Proposal Package</div>
-        <div class="ppu-desc">Complete draft with LFM, Risk Matrix, Budget and Submission Checklist. PDF + Word.</div>
-        <button class="ppu-btn" onclick="window.location.href='/app.html'">Buy now →</button>
-      </div>
-      <div class="ppu-card">
-        <div class="ppu-icon">🏢</div>
-        <div class="ppu-price"><sup>€</sup>29.90</div>
-        <div class="ppu-name">Client Package</div>
-        <div class="ppu-desc">Full branded proposal for a client — polished, decision-ready, exportable.</div>
-        <button class="ppu-btn" onclick="window.location.href='/app.html'">Buy now →</button>
+
+      <div class="phones-wrap">
+        <div class="app-phone ap-1">
+          <div class="ap-screen">
+            <div class="ap-notch"></div>
+            <div class="ap-card-mini">
+              <div class="acm-role">APPLY</div>
+              <div class="acm-title">MIT Solve Global</div>
+              <div class="acm-prob">71% · $150k</div>
+            </div>
+            <div class="ap-card-mini">
+              <div class="acm-role" style="color:var(--gold)">CONDITIONAL</div>
+              <div class="acm-title">GIZ Balkans Digital</div>
+              <div class="acm-prob">50% · €75k</div>
+            </div>
+            <div class="ap-card-mini">
+              <div class="acm-role" style="color:#3B7BE8">BACKUP</div>
+              <div class="acm-title">UNDP Innovation</div>
+              <div class="acm-prob">31% · $50k</div>
+            </div>
+          </div>
+        </div>
+        <div class="app-phone ap-2">
+          <div class="ap-screen">
+            <div class="ap-notch"></div>
+            <div style="padding:.25rem 0">
+              <div style="font-size:.55rem;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem">Application builder</div>
+              <div class="ap-card-mini">
+                <div class="acm-title" style="font-size:.62rem">📋 Abstract — done</div>
+              </div>
+              <div class="ap-card-mini">
+                <div class="acm-title" style="font-size:.62rem">🧩 LFM — generating...</div>
+              </div>
+              <div class="ap-card-mini">
+                <div class="acm-title" style="font-size:.62rem">💰 Budget draft — pending</div>
+              </div>
+              <div style="margin-top:.6rem;padding:.5rem;background:rgba(201,168,76,.08);border-radius:8px;border:1px solid rgba(201,168,76,.12)">
+                <div style="font-size:.52rem;color:var(--gold)">Export PDF ready</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="ppu-note">Credits never expire · No subscription required · Secure payment</div>
   </div>
 </section>
 
 <!-- TESTIMONIAL -->
-<div class="testimonial">
-  <blockquote>"We had a decision, a probability score and a complete draft in <em>under 20 minutes.</em> We submitted. We got funded."</blockquote>
-  <cite>— Early access user, NGO · North Macedonia</cite>
-</div>
-
-<!-- LANGUAGES -->
-<div class="langs">
-  <div class="section-eyebrow">Global reach</div>
-  <h2 class="section-title" style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,3vw,2.5rem);font-weight:300;margin-bottom:.5rem">Works in <em style="font-style:italic;color:var(--gold)">40+ languages.</em></h2>
-  <p style="font-size:.85rem;color:var(--muted);margin-bottom:0">Describe your project in your language. Get decisions in your language.</p>
-  <div class="langs-cloud">
-    <span class="lang-tag">🇬🇧 English</span><span class="lang-tag">🇲🇰 Macedonian</span><span class="lang-tag">🇷🇸 Serbian</span><span class="lang-tag">🇩🇪 German</span><span class="lang-tag">🇫🇷 French</span><span class="lang-tag">🇪🇸 Spanish</span><span class="lang-tag">🇮🇹 Italian</span><span class="lang-tag">🇵🇱 Polish</span><span class="lang-tag">🇹🇷 Turkish</span><span class="lang-tag">🇷🇴 Romanian</span><span class="lang-tag">🇧🇬 Bulgarian</span><span class="lang-tag">🇭🇷 Croatian</span><span class="lang-tag">🇦🇱 Albanian</span><span class="lang-tag">🇸🇮 Slovenian</span><span class="lang-tag">🇵🇹 Portuguese</span><span class="lang-tag">🇳🇱 Dutch</span><span class="lang-tag">+ 24 more</span>
+<section class="testimonial-section">
+  <div class="full-wrap">
+    <blockquote>"We had a decision, a probability score and a complete draft in <em>under 20 minutes.</em> We submitted. We got funded."</blockquote>
+    <cite>— Early access user, NGO · North Macedonia</cite>
   </div>
-</div>
+</section>
 
 <!-- CTA -->
-<section class="cta">
-  <div class="section-wrap">
+<section class="cta-section">
+  <div class="full-wrap">
     <div class="section-eyebrow">Start today</div>
-    <h2 class="section-title">Ready for your<br><em>first decision?</em></h2>
-    <p>Free. No credit card. No bureaucracy.<br>Just tell us about your project.</p>
+    <h2 class="section-title">
+      Ready for your<br>
+      <em>first evaluation?</em>
+    </h2>
+    <p>Free. No credit card. No bureaucracy.<br>Just describe your project and get a decision.</p>
     <div class="cta-btns">
-      <button class="btn-primary" onclick="window.location.href='/app.html'">Get My Decision — Free</button>
-      <button class="btn-outline" onclick="window.location.href='mailto:hello@marginova.tech'">Talk to us →</button>
+      <button class="btn-primary" onclick="window.location.href='/app.html'">Get my evaluation — free →</button>
+      <button class="btn-outline" onclick="window.location.href='mailto:hello@marginova.tech'">Talk to us</button>
     </div>
   </div>
 </section>
@@ -781,11 +1040,14 @@ footer{
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <div class="footer-logo">Marginova<span>.AI</span></div>
+    <div class="footer-logo">
+      <img src="ChatGPT_Image_Apr_24__2026__09_44_09_AM.png" alt="Marginova" onerror="this.style.display='none'">
+      <div class="footer-wordmark">Margi<em>nova</em></div>
+    </div>
     <div class="footer-links">
-      <a href="/terms.html">Terms of Service</a>
-      <a href="/privacy.html">Privacy Policy</a>
-      <a href="/refund.html">Refund Policy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/refund.html">Refund</a>
       <a href="mailto:hello@marginova.tech">Contact</a>
     </div>
     <div class="footer-copy">© 2026 Marginova. All rights reserved.</div>
@@ -793,15 +1055,30 @@ footer{
 </footer>
 
 <script>
-let annual=false;
-function toggleBilling(){
-  annual=!annual;
-  document.getElementById('toggle').classList.toggle('on',annual);
-  document.getElementById('pp-s').innerHTML=annual?'<sup>€</sup>13<sub>/mo</sub>':'<sup>€</sup>19<sub>/mo</sub>';
-  document.getElementById('pp-p').innerHTML=annual?'<sup>€</sup>33<sub>/mo</sub>':'<sup>€</sup>49<sub>/mo</sub>';
-  document.getElementById('pc-s').textContent=annual?'billed €159/year':'or €159/year — save €69';
-  document.getElementById('pc-p').textContent=annual?'billed €399/year':'or €399/year — save €189';
-}
+// Animate bars on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.querySelectorAll('.ev-bar-fill, .isr-bar-fill').forEach(bar => {
+        const w = bar.style.width;
+        bar.style.width = '0';
+        setTimeout(() => { bar.style.width = w; }, 100);
+      });
+    }
+  });
+}, { threshold: .3 });
+
+document.querySelectorAll('.eval-visual, .intel-showcase').forEach(el => observer.observe(el));
+
+// Nav scroll effect
+window.addEventListener('scroll', () => {
+  const nav = document.querySelector('nav');
+  if (window.scrollY > 50) {
+    nav.style.boxShadow = '0 2px 24px rgba(13,27,46,.08)';
+  } else {
+    nav.style.boxShadow = 'none';
+  }
+});
 </script>
 </body>
 </html>
