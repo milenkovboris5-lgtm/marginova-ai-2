@@ -6,6 +6,9 @@
 <title>Marginova — Application Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<!-- pdfmake — client-side PDF generation, no server needed -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -21,7 +24,6 @@ html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
 button,input,textarea,select{font:inherit}
 
-/* ── NAV ── */
 nav{background:var(--navy);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(201,168,76,.1)}
 .nav-logo{display:flex;align-items:center;gap:.7rem;text-decoration:none}
 .nav-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-l));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;color:var(--navy)}
@@ -30,7 +32,6 @@ nav{background:var(--navy);padding:1rem 2rem;display:flex;align-items:center;jus
 .nav-back{padding:.45rem .9rem;border-radius:8px;border:1px solid rgba(201,168,76,.2);background:transparent;color:rgba(255,255,255,.6);font-size:.78rem;cursor:pointer;text-decoration:none;transition:.2s}
 .nav-back:hover{border-color:var(--gold);color:var(--gold)}
 
-/* ── HERO ── */
 .hero{background:var(--navy);padding:3rem 2rem 2.5rem;text-align:center;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.06) 0%,transparent 70%);pointer-events:none}
 .hero-badge{display:inline-flex;align-items:center;gap:.4rem;border:1px solid var(--border);border-radius:999px;padding:.3rem .85rem;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem}
@@ -40,18 +41,15 @@ nav{background:var(--navy);padding:1rem 2rem;display:flex;align-items:center;jus
 .hero h1 em{font-style:italic;color:var(--gold)}
 .hero p{font-size:.92rem;color:rgba(255,255,255,.45);max-width:540px;margin:0 auto;line-height:1.7}
 
-/* ── LAYOUT ── */
 .wrap{max-width:1200px;margin:0 auto;padding:2rem}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
 
-/* ── CARDS ── */
 .card{background:var(--white);border:1px solid var(--border-s);border-radius:20px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.05)}
 .card-head{background:var(--navy);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
 .card-head h2{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:var(--white)}
 .card-head span{font-size:.72rem;color:rgba(255,255,255,.35)}
 .card-body{padding:1.5rem}
 
-/* ── FORM ── */
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .field{margin-bottom:1rem}
 label{display:block;font-size:.75rem;font-weight:500;color:var(--text);margin-bottom:.4rem}
@@ -64,7 +62,7 @@ textarea{min-height:110px;resize:vertical;line-height:1.55}
 .divider{height:1px;background:rgba(0,0,0,.06);margin:1.25rem 0}
 .section-label{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.85rem}
 
-/* ── BUTTONS ── */
+/* BUTTONS */
 .actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem}
 .btn-primary{padding:.8rem 1.5rem;border:none;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-l));color:var(--navy);font-weight:600;font-size:.85rem;cursor:pointer;transition:.2s;box-shadow:0 6px 18px rgba(201,168,76,.22)}
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(201,168,76,.32)}
@@ -72,26 +70,40 @@ textarea{min-height:110px;resize:vertical;line-height:1.55}
 .btn-ghost{padding:.8rem 1.2rem;border:1px solid rgba(0,0,0,.1);border-radius:10px;background:transparent;color:var(--muted);font-size:.85rem;cursor:pointer;transition:.2s}
 .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
 
-/* ── STATUS ── */
+/* PDF BUTTON */
+.btn-pdf{
+  display:none;
+  padding:.8rem 1.4rem;border:none;border-radius:10px;
+  background:var(--navy);color:var(--gold);
+  font-weight:600;font-size:.85rem;cursor:pointer;
+  transition:.2s;gap:.5rem;align-items:center;
+  box-shadow:0 6px 18px rgba(15,22,35,.2);
+}
+.btn-pdf.show{display:inline-flex}
+.btn-pdf:hover{background:var(--navy-2);transform:translateY(-1px)}
+.btn-pdf:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-pdf svg{width:16px;height:16px;flex-shrink:0}
+
+/* PDF PROGRESS */
+.pdf-progress{display:none;margin-top:.75rem;padding:.6rem 1rem;background:rgba(201,168,76,.06);border:1px solid var(--border);border-radius:8px;font-size:.78rem;color:var(--muted)}
+.pdf-progress.show{display:block}
+
+/* STATUS */
 .status{display:none;margin-top:1rem;border-radius:12px;padding:.85rem 1rem;font-size:.82rem;font-weight:500;line-height:1.5}
 .status.ok{display:block;background:var(--ok-bg);color:var(--ok);border:1px solid #abefc6}
 .status.warn{display:block;background:var(--warn-bg);color:var(--warn);border:1px solid #fedf89}
 .status.err{display:block;background:var(--err-bg);color:var(--err);border:1px solid #fecdca}
 
-/* ── META GRID ── */
 .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem}
 .meta-box{border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:.85rem 1rem;background:var(--cream)}
 .meta-box .mk{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;font-weight:500}
 .meta-box .mv{font-size:.82rem;color:var(--text);line-height:1.4;word-break:break-word}
 
-/* ── OUTPUT ── */
-.output-dark{min-height:480px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:#0D1526;color:#E5EEFC;padding:1.25rem 1.5rem;white-space:pre-wrap;line-height:1.7;font-size:.82rem;overflow:auto;font-family:'DM Mono',monospace}
+/* OUTPUT */
+.output-dark{min-height:480px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:#0D1526;color:#E5EEFC;padding:1.25rem 1.5rem;white-space:pre-wrap;line-height:1.7;font-size:.82rem;overflow:auto;font-family:monospace}
 .output-preview{min-height:80px;border:1px solid rgba(0,0,0,.07);border-radius:12px;background:var(--cream);padding:1rem;white-space:pre-wrap;line-height:1.55;font-size:.78rem;color:var(--text);overflow:auto;word-break:break-all}
-.copy-btn{margin-top:.75rem;padding:.6rem 1.1rem;border:1px solid rgba(0,0,0,.1);border-radius:8px;background:var(--white);color:var(--muted);font-size:.75rem;cursor:pointer;transition:.2s;display:none}
-.copy-btn:hover{border-color:var(--gold);color:var(--gold)}
-.copy-btn.show{display:inline-block}
 
-/* ── PROGRESS ── */
+/* PROGRESS */
 .progress-wrap{display:none;margin-top:1rem}
 .progress-wrap.show{display:block}
 .progress-bar{height:3px;background:rgba(0,0,0,.06);border-radius:999px;overflow:hidden;margin-bottom:.5rem}
@@ -99,10 +111,12 @@ textarea{min-height:110px;resize:vertical;line-height:1.55}
 @keyframes progress{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
 .progress-text{font-size:.72rem;color:var(--muted);text-align:center}
 
-/* ── STICKY OUTPUT ── */
 .sticky-output{position:sticky;top:1.5rem}
 
-/* ── RESPONSIVE ── */
+/* PDF PREVIEW BADGE */
+.pdf-info{display:none;margin-top:.5rem;font-size:.72rem;color:var(--muted);padding:.4rem .8rem;background:rgba(201,168,76,.05);border:1px solid var(--border);border-radius:6px}
+.pdf-info.show{display:block}
+
 @media(max-width:900px){.grid{grid-template-columns:1fr}.row2{grid-template-columns:1fr}.sticky-output{position:static}.wrap{padding:1rem}}
 @media(max-width:600px){nav{padding:.85rem 1rem}.hero{padding:2rem 1rem 1.5rem}}
 </style>
@@ -120,7 +134,7 @@ textarea{min-height:110px;resize:vertical;line-height:1.55}
 <div class="hero">
   <div class="hero-badge">Premium Feature</div>
   <h1>Application <em>Builder</em></h1>
-  <p>Select a funding opportunity, enter your project data, and Marginova generates a complete structured draft — Abstract, LFM, Risk Matrix, Budget and Submission Checklist.</p>
+  <p>Select a funding opportunity, enter your project data — Marginova generates a complete structured draft with Abstract, LFM, Risk Matrix, Budget and Checklist. Export as PDF.</p>
 </div>
 
 <div class="wrap">
@@ -130,7 +144,7 @@ textarea{min-height:110px;resize:vertical;line-height:1.55}
     <div class="card">
       <div class="card-head">
         <h2>Project Input</h2>
-        <span>All fields marked * are required</span>
+        <span>Fields marked * are required</span>
       </div>
       <div class="card-body">
 
@@ -273,7 +287,21 @@ textarea{min-height:110px;resize:vertical;line-height:1.55}
           <div class="section-label">Application draft</div>
           <div class="output-dark" id="outputBox">Your generated application draft will appear here after you click Generate.</div>
 
-          <button class="copy-btn" id="copyBtn" onclick="copyOutput()">Copy output</button>
+          <!-- EXPORT ACTIONS -->
+          <div class="actions" style="margin-top:1rem">
+            <button class="btn-pdf" id="pdfBtn" onclick="exportPDF()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+              Export PDF
+            </button>
+            <button class="btn-ghost" id="copyBtn" onclick="copyOutput()" style="display:none">Copy text</button>
+          </div>
+
+          <div class="pdf-progress" id="pdfProgress">⏳ Generating PDF — please wait...</div>
+          <div class="pdf-info" id="pdfInfo"></div>
 
         </div>
       </div>
@@ -283,33 +311,54 @@ textarea{min-height:110px;resize:vertical;line-height:1.55}
 </div>
 
 <script>
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
 const API_URL = '/api/application';
+
+let lastGeneratedText = null;
+let lastMeta          = null;
+let lastApiData       = null;
 
 const statusBox    = document.getElementById('status');
 const outputBox    = document.getElementById('outputBox');
 const rawBox       = document.getElementById('rawResponse');
 const generateBtn  = document.getElementById('generateBtn');
 const copyBtn      = document.getElementById('copyBtn');
+const pdfBtn       = document.getElementById('pdfBtn');
 const progressWrap = document.getElementById('progressWrap');
+const pdfProgress  = document.getElementById('pdfProgress');
+const pdfInfo      = document.getElementById('pdfInfo');
 
-function setStatus(type, msg){
+// ════════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════════
+
+function setStatus(type, msg) {
   statusBox.className = 'status ' + type;
   statusBox.textContent = msg;
 }
-function clearStatus(){statusBox.className='status';statusBox.textContent=''}
-function clearOutput(){
-  outputBox.textContent='Your generated application draft will appear here after you click Generate.';
-  rawBox.textContent='Response preview will appear here.';
-  document.getElementById('metaMode').textContent='—';
-  document.getElementById('metaConfig').textContent='—';
-  document.getElementById('metaOpportunity').textContent='—';
-  document.getElementById('metaSaved').textContent='—';
-  document.getElementById('output-status').textContent='—';
-  copyBtn.classList.remove('show');
+function clearStatus() { statusBox.className = 'status'; statusBox.textContent = ''; }
+
+function clearOutput() {
+  outputBox.textContent = 'Your generated application draft will appear here after you click Generate.';
+  rawBox.textContent    = 'Response preview will appear here.';
+  ['metaMode','metaConfig','metaOpportunity','metaSaved','output-status'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+  pdfBtn.classList.remove('show');
+  copyBtn.style.display = 'none';
+  pdfInfo.classList.remove('show');
+  lastGeneratedText = null;
+  lastMeta = null;
 }
 
-function getPayload(){
-  const rawId = document.getElementById('opportunityId').value.trim();
+// ════════════════════════════════════════════════
+// FORM HELPERS
+// ════════════════════════════════════════════════
+
+function getPayload() {
+  const rawId    = document.getElementById('opportunityId').value.trim();
   const parsedId = rawId ? parseInt(rawId, 10) : null;
   return {
     userId:            document.getElementById('userId').value.trim() || null,
@@ -330,103 +379,461 @@ function getPayload(){
   };
 }
 
-function validate(p){
-  if(!p.opportunityId) return 'Opportunity ID is required and must be a positive number.';
-  if(!p.project_title) return 'Project title is required.';
-  if(!p.project_idea)  return 'Project idea is required.';
+function validate(p) {
+  if (!p.opportunityId) return 'Opportunity ID is required and must be a positive number.';
+  if (!p.project_title) return 'Project title is required.';
+  if (!p.project_idea)  return 'Project idea is required.';
   return null;
 }
 
-async function generate(){
+// ════════════════════════════════════════════════
+// GENERATE
+// ════════════════════════════════════════════════
+
+async function generate() {
   clearStatus();
   const payload = getPayload();
-  const err = validate(payload);
-  if(err){ setStatus('warn', err); return; }
+  const err     = validate(payload);
+  if (err) { setStatus('warn', err); return; }
 
   generateBtn.disabled = true;
   progressWrap.classList.add('show');
   setStatus('warn', 'Generating application draft...');
   outputBox.textContent = 'Generating...';
-  rawBox.textContent = 'Loading...';
-  copyBtn.classList.remove('show');
+  rawBox.textContent    = 'Loading...';
+  pdfBtn.classList.remove('show');
+  copyBtn.style.display = 'none';
+  pdfInfo.classList.remove('show');
   document.getElementById('output-status').textContent = 'Processing...';
 
-  try{
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
+  try {
+    const res  = await fetch(API_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
     });
     const data = await res.json();
 
     const rawStr = JSON.stringify(data, null, 2);
-    rawBox.textContent = rawStr.length > 2000 ? rawStr.slice(0,2000) + '\n...[truncated]' : rawStr;
+    rawBox.textContent = rawStr.length > 2000 ? rawStr.slice(0, 2000) + '\n...[truncated]' : rawStr;
 
-    if(!res.ok) throw new Error(data?.error?.message || 'Request failed');
+    if (!res.ok) throw new Error(data?.error?.message || 'Request failed');
 
     const text = data?.content?.[0]?.text || 'No output returned.';
     outputBox.textContent = text;
 
-    document.getElementById('metaMode').textContent = data.mode || 'application';
-    document.getElementById('metaConfig').textContent = data.config_key || payload.configKey;
+    // Store for PDF export
+    lastGeneratedText = text;
+    lastApiData       = data;
+
+    // Build meta for PDF
+    lastMeta = {
+      projectTitle: payload.project_title,
+      opportunity:  data?.opportunity?.title || '',
+      orgName:      payload.project_title,   // best we have client-side
+      country:      payload.location || '',
+      sector:       '',                        // enriched if profile loaded
+      orgType:      '',
+      budget:       payload.budget_amount
+                    ? `${payload.budget_amount} ${payload.budget_currency}`
+                    : '',
+      deadline:     data?.opportunity?.deadline || '',
+      sourceUrl:    data?.opportunity?.source_url || '',
+      date:         new Date().toLocaleDateString('en-GB')
+    };
+
+    // Update meta display
+    document.getElementById('metaMode').textContent        = data.mode || 'application';
+    document.getElementById('metaConfig').textContent      = data.config_key || payload.configKey;
     document.getElementById('metaOpportunity').textContent = data?.opportunity?.title
       ? `${data.opportunity.title}${data.opportunity.deadline ? ' · ' + data.opportunity.deadline : ''}`
       : '—';
-    document.getElementById('metaSaved').textContent = data?.saved_session?.id
+    document.getElementById('metaSaved').textContent       = data?.saved_session?.id
       ? `ID: ${data.saved_session.id} · ${data.saved_session.status || 'draft'}`
       : 'Not saved';
-    document.getElementById('output-status').textContent = '✓ Generated';
+    document.getElementById('output-status').textContent   = '✓ Generated';
 
-    copyBtn.classList.add('show');
-    setStatus('ok', '✓ Application draft generated successfully.');
+    // Show export buttons
+    pdfBtn.classList.add('show');
+    copyBtn.style.display = 'inline-block';
 
-  }catch(e){
+    const charCount = text.length;
+    const estPages  = Math.max(1, Math.round(charCount / 2800));
+    pdfInfo.textContent = `Ready to export · ~${estPages} page${estPages > 1 ? 's' : ''} · ${charCount.toLocaleString()} characters`;
+    pdfInfo.classList.add('show');
+
+    setStatus('ok', '✓ Application draft generated successfully. Click "Export PDF" to download.');
+
+  } catch(e) {
     outputBox.textContent = 'Error generating output.';
     document.getElementById('output-status').textContent = 'Error';
     setStatus('err', 'Error: ' + e.message);
-  }finally{
+  } finally {
     generateBtn.disabled = false;
     progressWrap.classList.remove('show');
   }
 }
 
-function copyOutput(){
-  navigator.clipboard.writeText(outputBox.textContent).then(()=>{
+// ════════════════════════════════════════════════
+// PDF EXPORT
+// ════════════════════════════════════════════════
+
+function exportPDF() {
+  if (!lastGeneratedText || !lastMeta) {
+    setStatus('warn', 'No content to export. Generate a draft first.');
+    return;
+  }
+
+  if (typeof pdfMake === 'undefined') {
+    setStatus('err', 'PDF library not loaded. Please refresh the page.');
+    return;
+  }
+
+  pdfBtn.disabled = true;
+  pdfProgress.classList.add('show');
+  pdfProgress.textContent = '⏳ Building PDF — please wait...';
+
+  // Small timeout to let UI update before heavy PDF work
+  setTimeout(() => {
+    try {
+      const docDef  = buildPdfDefinition(lastGeneratedText, lastMeta);
+      const safeTitle = (lastMeta.projectTitle || 'application')
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .trim()
+        .replace(/\s+/g, '_')
+        .slice(0, 40);
+      const filename = `marginova_${safeTitle}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      pdfMake.createPdf(docDef).download(filename, () => {
+        pdfProgress.textContent = '✓ PDF downloaded: ' + filename;
+        setTimeout(() => pdfProgress.classList.remove('show'), 3000);
+        pdfBtn.disabled = false;
+      });
+    } catch(e) {
+      pdfProgress.textContent = '✗ PDF error: ' + e.message;
+      pdfBtn.disabled = false;
+      console.error('[PDF]', e);
+    }
+  }, 80);
+}
+
+// ════════════════════════════════════════════════
+// PDF BUILDER — inline (no external file needed)
+// ════════════════════════════════════════════════
+
+function parseInline(text) {
+  if (!text) return [{ text: '' }];
+  const result = [];
+  const regex  = /\*\*([^*]+)\*\*|\*([^*\n]+)\*|`([^`]+)`/g;
+  let last = 0, m;
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) result.push({ text: text.slice(last, m.index), fontSize: 10, color: '#111111' });
+    if (m[1] !== undefined) result.push({ text: m[1], bold: true, fontSize: 10, color: '#000000' });
+    if (m[2] !== undefined) result.push({ text: m[2], italics: true, fontSize: 10, color: '#333333' });
+    if (m[3] !== undefined) result.push({ text: m[3], fontSize: 9, color: '#222222' });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) result.push({ text: text.slice(last), fontSize: 10, color: '#111111' });
+  return result.length ? result : [{ text: text, fontSize: 10, color: '#111111' }];
+}
+
+function parseMarkdownTable(lines) {
+  if (lines.length < 2) return null;
+  const parseRow = (line) =>
+    line.split('|').map(c => c.trim()).filter((_, i, a) => i !== 0 && i !== a.length - 1);
+  const dataLines = lines.filter(l => !/^\|[-:\s|]+\|$/.test(l));
+  if (dataLines.length < 1) return null;
+  const headers = parseRow(dataLines[0]);
+  const rows    = dataLines.slice(1).map(parseRow);
+  const headerRow = headers.map(h => ({
+    text: h, fontSize: 9, bold: true, color: '#FFFFFF',
+    fillColor: '#111111', margin: [4, 5, 4, 5],
+    border: [false, false, false, false]
+  }));
+  const bodyRows = rows.map((row, ri) =>
+    row.map(cell => ({
+      text: cell, fontSize: 9, color: '#111111',
+      margin: [4, 4, 4, 4],
+      fillColor: ri % 2 === 0 ? '#FFFFFF' : '#F5F5F5',
+      border: [false, false, false, true],
+      borderColor: ['', '', '', '#DDDDDD']
+    }))
+  );
+  const padded = bodyRows.map(row => {
+    while (row.length < headers.length) row.push({ text: '', fontSize: 9, color: '#111111', margin: [4,4,4,4] });
+    return row;
+  });
+  return {
+    table: { headerRows: 1, widths: Array(headers.length).fill('*'), body: [headerRow, ...padded] },
+    layout: {
+      hLineWidth: (i, node) => i === 0 || i === node.table.body.length ? 1 : 0.5,
+      vLineWidth: () => 0,
+      hLineColor: (i) => i === 0 ? '#111111' : '#DDDDDD',
+    },
+    margin: [0, 8, 0, 12]
+  };
+}
+
+function parseTextToContent(rawText) {
+  if (!rawText) return [];
+  const content = [];
+  const lines = rawText.split('\n');
+  let i = 0;
+
+  while (i < lines.length) {
+    const line     = lines[i].trimEnd();
+    const stripped = line.trim();
+
+    if (!stripped) { content.push({ text: '', margin: [0, 3, 0, 0] }); i++; continue; }
+
+    // Markdown headings
+    if (/^#{1,3}\s/.test(stripped)) {
+      const level = stripped.match(/^(#+)/)[1].length;
+      const title = stripped.replace(/^#+\s*/, '');
+      content.push(buildSectionHeader(title, level));
+      i++; continue;
+    }
+
+    // Numbered section heading (short line starting with capital)
+    if (/^\d{1,2}\.\s+[A-ZÁÉА-Ш]/.test(stripped) && stripped.length < 70) {
+      const title = stripped.replace(/^\d+\.\s+/, '');
+      content.push(buildSectionHeader(title, 2));
+      i++; continue;
+    }
+
+    // Separator lines
+    if (/^[-─═━]{5,}$/.test(stripped)) {
+      content.push({
+        canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 0.5, lineColor: '#BBBBBB' }],
+        margin: [0, 6, 0, 6]
+      });
+      i++; continue;
+    }
+
+    // Markdown tables
+    if (/^\|.+\|/.test(stripped)) {
+      const tableLines = [];
+      while (i < lines.length && /^\|.+\|/.test(lines[i].trim())) { tableLines.push(lines[i].trim()); i++; }
+      const tbl = parseMarkdownTable(tableLines);
+      if (tbl) content.push(tbl);
+      continue;
+    }
+
+    // Bullet lists
+    if (/^[-•*▶➤✓✗☐☑]\s+/.test(stripped)) {
+      const bullets = [];
+      while (i < lines.length && /^[-•*▶➤✓✗☐☑]\s+/.test(lines[i].trim())) {
+        bullets.push({ text: parseInline(lines[i].trim().replace(/^[-•*▶➤✓✗☐☑]\s+/, '')), margin: [0, 1, 0, 1] });
+        i++;
+      }
+      content.push({ ul: bullets, margin: [8, 4, 0, 4], fontSize: 10 });
+      continue;
+    }
+
+    // Numbered lists (longer items)
+    if (/^\d+\.\s+/.test(stripped) && stripped.length > 70) {
+      const items = [];
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i].trim())) {
+        items.push({ text: parseInline(lines[i].trim().replace(/^\d+\.\s+/, '')), margin: [0, 1, 0, 1] });
+        i++;
+      }
+      content.push({ ol: items, margin: [8, 4, 0, 4], fontSize: 10 });
+      continue;
+    }
+
+    // Key: Value pattern
+    if (/^[A-ZА-ШA-Za-z][^:]{0,35}:\s+\S/.test(stripped) && !stripped.startsWith('http') && stripped.length < 200) {
+      const ci  = stripped.indexOf(':');
+      const key = stripped.slice(0, ci).trim();
+      const val = stripped.slice(ci + 1).trim();
+      content.push({
+        columns: [
+          { text: key + ':', bold: true, fontSize: 9, color: '#555555', width: 130 },
+          { text: val, fontSize: 10, color: '#111111' }
+        ],
+        margin: [0, 2, 0, 2]
+      });
+      i++; continue;
+    }
+
+    // URL lines
+    if (/^https?:\/\//.test(stripped)) {
+      content.push({ text: stripped, fontSize: 9, color: '#333333', decoration: 'underline', margin: [0, 2, 0, 4] });
+      i++; continue;
+    }
+
+    // Default: body paragraph
+    content.push({ text: parseInline(stripped), margin: [0, 2, 0, 2], lineHeight: 1.45 });
+    i++;
+  }
+  return content;
+}
+
+function buildSectionHeader(title, level) {
+  if (level === 1) {
+    return {
+      columns: [{
+        canvas: [{ type: 'rect', x: 0, y: 0, w: 5, h: 20, r: 0, color: '#000000' }],
+        width: 12, margin: [0, 14, 0, 0]
+      }, {
+        text: title, fontSize: 14, bold: true, color: '#000000', margin: [0, 14, 0, 6]
+      }]
+    };
+  }
+  if (level === 2) {
+    return {
+      stack: [
+        { text: title, fontSize: 12, bold: true, color: '#000000', margin: [0, 14, 0, 4] },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 1, lineColor: '#000000' }], margin: [0, 0, 0, 6] }
+      ]
+    };
+  }
+  return { text: title, fontSize: 11, bold: true, color: '#111111', margin: [0, 8, 0, 3] };
+}
+
+function buildCoverPage(meta) {
+  const { projectTitle, opportunity, country, budget, deadline, date } = meta;
+  const refId = 'MGN-' + Date.now().toString(36).toUpperCase();
+  return {
+    refId,
+    cover: [
+      { canvas: [{ type: 'rect', x: 0, y: 0, w: 480, h: 5, r: 0, color: '#000000' }] },
+      { text: '', margin: [0, 70, 0, 0] },
+      { text: 'MARGINOVA.AI', fontSize: 8, bold: true, color: '#999999', margin: [0, 0, 0, 16] },
+      { text: projectTitle || 'Grant Application Draft', fontSize: 28, bold: true, color: '#000000', lineHeight: 1.15, margin: [0, 0, 0, 10] },
+      { text: opportunity || '', fontSize: 13, color: '#333333', margin: [0, 0, 0, 50] },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 1, lineColor: '#000000' }], margin: [0, 0, 0, 22] },
+      {
+        columns: [
+          { stack: [{ text: 'COUNTRY', fontSize: 7, bold: true, color: '#888888', margin: [0,0,0,4] }, { text: country || '—', fontSize: 11, color: '#000000' }], width: '*' },
+          { stack: [{ text: 'BUDGET', fontSize: 7, bold: true, color: '#888888', margin: [0,0,0,4] }, { text: budget || '—', fontSize: 11, color: '#000000' }], width: '*' },
+          { stack: [{ text: 'DEADLINE', fontSize: 7, bold: true, color: '#888888', margin: [0,0,0,4] }, { text: deadline || '—', fontSize: 11, color: '#000000' }], width: '*' },
+          { stack: [{ text: 'DATE', fontSize: 7, bold: true, color: '#888888', margin: [0,0,0,4] }, { text: date || new Date().toLocaleDateString('en-GB'), fontSize: 11, color: '#000000' }], width: '*' }
+        ],
+        margin: [0, 0, 0, 22]
+      },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 0.5, lineColor: '#CCCCCC' }], margin: [0, 0, 0, 16] },
+      { text: `Reference: ${refId}`, fontSize: 8, color: '#BBBBBB' },
+      { text: '', pageBreak: 'after' }
+    ]
+  };
+}
+
+function buildPdfDefinition(rawText, meta) {
+  const coverResult = buildCoverPage(meta);
+  const refId       = coverResult.refId;
+  const bodyContent = parseTextToContent(rawText);
+
+  return {
+    pageSize:    'A4',
+    pageMargins: [56, 60, 56, 50],
+
+    header: (page) => {
+      if (page === 1) return null;
+      return {
+        columns: [
+          { text: (meta.projectTitle || 'Application Draft').slice(0, 55), fontSize: 8, color: '#AAAAAA', margin: [56, 20, 0, 0] },
+          { text: 'Marginova.AI', fontSize: 8, color: '#CCCCCC', alignment: 'right', margin: [0, 20, 56, 0] }
+        ]
+      };
+    },
+
+    footer: (page, pageCount) => ({
+      columns: [
+        { text: refId, fontSize: 7, color: '#BBBBBB', margin: [56, 0, 0, 0] },
+        { text: `${page} / ${pageCount}`, fontSize: 7, color: '#AAAAAA', alignment: 'right', margin: [0, 0, 56, 0] }
+      ],
+      margin: [0, 10, 0, 0]
+    }),
+
+    content: [
+      // Cover
+      ...coverResult.cover,
+
+      // Opportunity info box
+      {
+        table: {
+          widths: ['*', '*'],
+          body: [
+            [
+              { stack: [{ text: 'FUNDING PROGRAM', fontSize: 7, bold: true, color: '#888888', margin:[0,0,0,3] }, { text: meta.opportunity || '—', fontSize: 10, bold: true, color: '#000000' }], border:[false,false,false,false], fillColor:'#F5F5F5', margin:[10,10,10,10] },
+              { stack: [{ text: 'DEADLINE', fontSize: 7, bold: true, color: '#888888', margin:[0,0,0,3] }, { text: meta.deadline || 'Verify on source', fontSize: 10, color: '#000000' }], border:[false,false,false,false], fillColor:'#F5F5F5', margin:[10,10,10,10] }
+            ],
+            [
+              { stack: [{ text: 'BUDGET', fontSize: 7, bold: true, color: '#888888', margin:[0,0,0,3] }, { text: meta.budget || '—', fontSize: 10, color: '#000000' }], border:[false,false,false,false], fillColor:'#FAFAFA', margin:[10,8,10,10] },
+              { stack: [{ text: 'SOURCE', fontSize: 7, bold: true, color: '#888888', margin:[0,0,0,3] }, { text: meta.sourceUrl || '—', fontSize: 9, color: '#333333', decoration: meta.sourceUrl ? 'underline' : 'none' }], border:[false,false,false,false], fillColor:'#FAFAFA', margin:[10,8,10,10] }
+            ]
+          ]
+        },
+        layout: { hLineWidth:()=>0.5, vLineWidth:()=>0.5, hLineColor:()=>'#DDDDDD', vLineColor:()=>'#DDDDDD' },
+        margin: [0, 0, 0, 24]
+      },
+
+      // Main body
+      ...bodyContent,
+
+      // Disclaimer
+      {
+        stack: [
+          { text: '', margin: [0, 20, 0, 0] },
+          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 0.5, lineColor: '#CCCCCC' }], margin: [0, 0, 0, 10] },
+          { text: 'DISCLAIMER', fontSize: 7, bold: true, color: '#AAAAAA', margin: [0, 0, 0, 5] },
+          { text: 'This is an AI-generated application draft by Marginova.AI — a structured starting point for grant preparation. All funding opportunity details (deadlines, amounts, eligibility) must be verified directly with the donor. Marginova.AI does not guarantee accuracy of third-party program information. Review and complete with a qualified professional before submission.', fontSize: 8, color: '#AAAAAA', lineHeight: 1.5 }
+        ]
+      }
+    ],
+
+    defaultStyle: { font: 'Roboto', fontSize: 10, color: '#111111', lineHeight: 1.4 }
+  };
+}
+
+// ════════════════════════════════════════════════
+// COPY
+// ════════════════════════════════════════════════
+
+function copyOutput() {
+  if (!lastGeneratedText) return;
+  navigator.clipboard.writeText(lastGeneratedText).then(() => {
     copyBtn.textContent = '✓ Copied!';
-    setTimeout(()=>{copyBtn.textContent='Copy output'},1500);
+    setTimeout(() => { copyBtn.textContent = 'Copy text'; }, 1500);
   });
 }
 
-function fillDemo(){
-  document.getElementById('userId').value          = '';
-  document.getElementById('opportunityId').value   = '1';
-  document.getElementById('configKey').value       = 'premium_application_system';
-  document.getElementById('lang').value            = 'en';
-  document.getElementById('projectTitle').value    = 'Digital Support Platform for Small Farmers';
-  document.getElementById('projectIdea').value     = 'The project establishes a practical digital support platform for small farmers through training, planning tools and improved access to market information and financial opportunities.';
-  document.getElementById('targetGroup').value     = 'Small farmers and young agricultural producers';
-  document.getElementById('location').value        = 'North Macedonia — Pelagonia region';
-  document.getElementById('durationMonths').value  = '12';
-  document.getElementById('budgetAmount').value    = '45000';
-  document.getElementById('budgetCurrency').value  = 'EUR';
-  document.getElementById('partners').value        = 'Local agricultural association and advisory organization';
+// ════════════════════════════════════════════════
+// DEMO + CLEAR
+// ════════════════════════════════════════════════
+
+function fillDemo() {
+  document.getElementById('userId').value           = '';
+  document.getElementById('opportunityId').value    = '1';
+  document.getElementById('configKey').value        = 'premium_application_system';
+  document.getElementById('lang').value             = 'en';
+  document.getElementById('projectTitle').value     = 'Digital Support Platform for Small Farmers';
+  document.getElementById('projectIdea').value      = 'The project establishes a practical digital support platform for small farmers through training, planning tools and improved access to market information and financial opportunities.';
+  document.getElementById('targetGroup').value      = 'Small farmers and young agricultural producers';
+  document.getElementById('location').value         = 'North Macedonia — Pelagonia region';
+  document.getElementById('durationMonths').value   = '12';
+  document.getElementById('budgetAmount').value     = '45000';
+  document.getElementById('budgetCurrency').value   = 'EUR';
+  document.getElementById('partners').value         = 'Local agricultural association and advisory organization';
   document.getElementById('problemStatement').value = 'Small farmers have poor access to organized information, digital tools and structured support for improving productivity and preparing for financing.';
   document.getElementById('expectedResults').value  = 'Improved capacity for at least 60 farmers, practical planning tools and better readiness for future funding calls.';
-  document.getElementById('notes').value           = 'Emphasize practical approach, clear indicators and realistic budget.';
+  document.getElementById('notes').value            = 'Emphasize practical approach, clear indicators and realistic budget.';
   clearStatus();
 }
 
-function clearForm(){
-  document.querySelectorAll('input,textarea').forEach(el=>{
-    if(el.id!=='configKey') el.value='';
+function clearForm() {
+  document.querySelectorAll('input,textarea').forEach(el => {
+    if (el.id !== 'configKey') el.value = '';
   });
-  document.getElementById('configKey').value='premium_application_system';
-  document.getElementById('lang').value='en';
-  document.getElementById('budgetCurrency').value='EUR';
+  document.getElementById('configKey').value    = 'premium_application_system';
+  document.getElementById('lang').value         = 'en';
+  document.getElementById('budgetCurrency').value = 'EUR';
   clearStatus();
   clearOutput();
 }
 
+// Init
 clearOutput();
 </script>
 </body>
