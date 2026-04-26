@@ -7,15 +7,25 @@
     "api/application.js": {
       "maxDuration": 30,
       "memory": 512
+    },
+    "api/cron/update-opportunities.js": {
+      "maxDuration": 60,
+      "memory": 256
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/update-opportunities",
+      "schedule": "0 8 * * 1"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        { "key": "X-Content-Type-Options",  "value": "nosniff" },
+        { "key": "X-Frame-Options",         "value": "DENY" },
+        { "key": "Referrer-Policy",         "value": "strict-origin-when-cross-origin" }
       ]
     }
   ]
