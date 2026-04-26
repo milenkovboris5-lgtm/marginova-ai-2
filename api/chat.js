@@ -1,21 +1,22 @@
 // ═════════════════════════════════════════════════════════════
 // MARGINOVA.AI — api/chat.js
-// v21 — Decision Engine: YES/NO/CONDITIONAL + Probability score
-// Top 3 only — APPLY / CONDITIONAL / BACKUP
+// v22 — Cleaned: gemini/quota from utils, cache key fixed,
+//        profile patch only on change, sanitizeField on input
 // ═════════════════════════════════════════════════════════════
 
-const { supabase, getTable, ft, detectLang, LANG_NAMES, checkIP, setCors } = require('./_lib/utils');
+const {
+  supabase, getTable, ft, detectLang, LANG_NAMES,
+  sanitizeField, checkIP, checkAndDeductQuota, gemini, setCors
+} = require('./_lib/utils');
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const SERPER_KEY = process.env.SERPER_API_KEY;
 
-console.log('[chat.js v21] SUPABASE:', supabase ? 'OK' : 'MISSING');
-console.log('[chat.js v21] SERPER:', SERPER_KEY ? 'OK' : 'MISSING');
+console.log('[chat.js v22] SUPABASE:', supabase ? 'OK' : 'MISSING');
+console.log('[chat.js v22] SERPER:', SERPER_KEY ? 'OK' : 'MISSING');
 
-const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
 const CACHE_TTL_HOURS = 24;
-const DB_MIN_RESULTS = 3;      // if DB returns fewer than this → trigger Serper
-const DB_MIN_SCORE   = 55;     // if top score is below this → trigger Serper
+const DB_MIN_RESULTS  = 3;
+const DB_MIN_SCORE    = 55;
 
 // ═══ HASH ═══
 
@@ -75,7 +76,6 @@ async function searchFundingDB(profile) {
         if (hits > 0) score += Math.min(35, hits * 12);
       }
 
-      // Also check raw conversation keywords regardless of sector
       if (profile.keywords?.length) {
         const hay  = `${focus} ${desc} ${elig}`;
         const hits = profile.keywords.filter(k => hay.includes(k)).length;
@@ -93,13 +93,13 @@ async function searchFundingDB(profile) {
 
       if (profile.orgType) {
         const orgMap = {
-          'NGO / Association':        ['ngo','nonprofit','association','civil society','foundation'],
-          'Startup':                  ['startup','early stage','venture','founder'],
-          'Agricultural holding':     ['farmer','agricultural','holding','ipard'],
-          'SME':                      ['sme','enterprise','company','business'],
+          'NGO / Association':         ['ngo','nonprofit','association','civil society','foundation'],
+          'Startup':                   ['startup','early stage','venture','founder'],
+          'Agricultural holding':      ['farmer','agricultural','holding','ipard'],
+          'SME':                       ['sme','enterprise','company','business'],
           'Municipality / Public body':['municipality','local government','public body'],
-          'University / Research':    ['university','research','academic','institute'],
-          'Individual / Entrepreneur':['individual','entrepreneur','founder','self-employed','freelance','creator']
+          'University / Research':     ['university','research','academic','institute'],
+          'Individual / Entrepreneur': ['individual','entrepreneur','founder','self-employed','freelance','creator']
         };
         const kws  = orgMap[profile.orgType] || [];
         const hay  = `${elig} ${desc} ${type}`;
@@ -110,10 +110,10 @@ async function searchFundingDB(profile) {
       if (profile.budget && g.award_amount != null) {
         const amt = Number(g.award_amount);
         const budgetRanges = {
-          'up to €30k':    [0, 30000],
-          '€30k–€150k':    [30000, 150000],
-          '€150k–€500k':   [150000, 500000],
-          'above €500k':   [500000, Infinity]
+          'up to €30k':   [0, 30000],
+          '€30k–€150k':   [30000, 150000],
+          '€150k–€500k':  [150000, 500000],
+          'above €500k':  [500000, Infinity]
         };
         const [minB, maxB] = budgetRanges[profile.budget] || [0, Infinity];
         if (amt >= minB && amt <= maxB) score += 15;
@@ -121,9 +121,10 @@ async function searchFundingDB(profile) {
 
       if (g.application_deadline) score += 5;
 
-      // Bonus for scholarship/fellowship type matching student queries
       if (g.opportunity_type === 'scholarship' || g.opportunity_type === 'fellowship') {
-        if (profile.keywords?.some(k => ['student','scholarship','stipend','study','fellowship','erasmus','fulbright','daad','youth','young','university','phd'].includes(k))) {
+        if (profile.keywords?.some(k =>
+          ['student','scholarship','stipend','study','fellowship','erasmus','fulbright','daad','youth','young','university','phd'].includes(k)
+        )) {
           score += 25;
         }
       }
@@ -159,10 +160,7 @@ async function searchFundingDB(profile) {
 // ═══ SERPER LIVE SEARCH ═══
 
 async function searchSerper(query) {
-  if (!SERPER_KEY) {
-    console.log('[SERPER] No API key — skipping');
-    return [];
-  }
+  if (!SERPER_KEY) { console.log('[SERPER] No API key'); return []; }
 
   try {
     const r = await ft('https://google.serper.dev/search', {
@@ -171,23 +169,14 @@ async function searchSerper(query) {
       body: JSON.stringify({ q: query, num: 8, gl: 'us', hl: 'en' })
     }, 8000);
 
-    if (!r.ok) {
-      console.log('[SERPER] error:', r.status);
-      return [];
-    }
+    if (!r.ok) { console.log('[SERPER] error:', r.status); return []; }
 
     const data = await r.json();
-    const items = data.organic || [];
-
-    const results = items
+    const results = (data.organic || [])
       .filter(item => item.title && item.link)
       .map(item => ({
-        title:      item.title,
-        snippet:    item.snippet || '',
-        link:       item.link,
-        score:      40,
-        score_type: 'web',
-        source:     'serper'
+        title: item.title, snippet: item.snippet || '',
+        link: item.link, score: 40, score_type: 'web', source: 'serper'
       }))
       .slice(0, 5);
 
@@ -207,7 +196,6 @@ function buildSerperQuery(userText, profile) {
   if (profile.country) parts.push(profile.country);
   if (profile.orgType) parts.push(profile.orgType.split('/')[0].trim());
 
-  // Add key terms from user message
   const keywords = userText.toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
@@ -219,10 +207,8 @@ function buildSerperQuery(userText, profile) {
 }
 
 async function hybridSearch(userText, profile) {
-  // Always try DB first
   const dbResults = await searchFundingDB(profile);
-
-  const topScore    = dbResults[0]?.score ?? 0;
+  const topScore  = dbResults[0]?.score ?? 0;
   const needsSerper = dbResults.length < DB_MIN_RESULTS || topScore < DB_MIN_SCORE;
 
   console.log(`[HYBRID] db:${dbResults.length} topScore:${topScore} needsSerper:${needsSerper}`);
@@ -231,86 +217,64 @@ async function hybridSearch(userText, profile) {
     return { results: dbResults, sources: { db: dbResults.length, serper: 0 } };
   }
 
-  // DB is thin or low confidence — enrich with Serper
-  const query       = buildSerperQuery(userText, profile);
-  const webResults  = await searchSerper(query);
+  const query      = buildSerperQuery(userText, profile);
+  const webResults = await searchSerper(query);
+  const merged     = [...dbResults, ...webResults].slice(0, 8);
 
-  // Merge: DB results first (higher trust), then Serper fills gaps
-  const merged = [...dbResults, ...webResults].slice(0, 8);
-
-  return {
-    results: merged,
-    sources: { db: dbResults.length, serper: webResults.length }
-  };
+  return { results: merged, sources: { db: dbResults.length, serper: webResults.length } };
 }
 
 // ═══ CACHE ═══
+// FIX: cache key excludes volatile keywords[] — uses only stable profile fields
 
-async function getCached(queryHash) {
+function buildCacheKey(userText, profile) {
+  return hashQuery(JSON.stringify({
+    q:       userText.toLowerCase().trim(),
+    sector:  profile.sector  || '',
+    country: profile.country || '',
+    orgType: profile.orgType || '',
+    budget:  profile.budget  || ''
+  }));
+}
+
+async function getCached(cacheKey) {
   if (!supabase) return null;
   try {
     const { data, error } = await getTable('search_cache')
       .select('results,created_at,expires_at')
-      .eq('query_hash', queryHash)
+      .eq('query_hash', cacheKey)
       .gt('expires_at', new Date().toISOString())
       .limit(1);
 
     if (error) { console.log('[CACHE] get error:', error.message); return null; }
-    if (data?.length > 0) { console.log('[CACHE] hit:', queryHash); return { results: data[0].results, created_at: data[0].created_at }; }
+    if (data?.length > 0) { console.log('[CACHE] hit:', cacheKey); return { results: data[0].results, created_at: data[0].created_at }; }
     return null;
   } catch (e) { console.log('[CACHE] get error:', e.message); return null; }
 }
 
-async function saveCache(queryHash, queryText, results) {
+async function saveCache(cacheKey, queryText, results) {
   if (!supabase) return;
   try {
     const now     = new Date();
     const expires = new Date(now.getTime() + CACHE_TTL_HOURS * 3600000);
-    await getTable('search_cache').delete().eq('query_hash', queryHash);
+    await getTable('search_cache').delete().eq('query_hash', cacheKey);
     const { error } = await getTable('search_cache').insert({
-      query_hash: queryHash, query_text: queryText, results,
+      query_hash: cacheKey, query_text: queryText, results,
       created_at: now.toISOString(), expires_at: expires.toISOString()
     });
     if (error) console.log('[CACHE] save error:', error.message);
-    else console.log('[CACHE] saved:', queryHash);
+    else console.log('[CACHE] saved:', cacheKey);
   } catch (e) { console.log('[CACHE] save error:', e.message); }
 }
 
 async function cleanExpiredCache() {
   if (!supabase) return;
   try {
-    const { error } = await getTable('search_cache').delete().lt('expires_at', new Date().toISOString());
-    if (error) console.log('[CACHE CLEAN]', error.message);
+    await getTable('search_cache').delete().lt('expires_at', new Date().toISOString());
   } catch (e) { console.log('[CACHE CLEAN]', e.message); }
 }
 
-// ═══ QUOTA ═══
-
-async function checkAndDeductQuota(userId) {
-  if (!userId || !supabase) return { allowed: true };
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const { data: p, error } = await getTable('profiles')
-      .select('plan,daily_msgs,last_msg_date')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) { console.log('[QUOTA]', error.message); return { allowed: true }; }
-    if (!p) return { allowed: true };
-
-    const limit = PLANS[p.plan] ?? 20;
-    if (limit === -1) return { allowed: true };
-
-    const used = p.last_msg_date === today ? (p.daily_msgs || 0) : 0;
-    if (used >= limit) return { allowed: false, used, limit, plan: p.plan };
-
-    await getTable('profiles')
-      .update({ daily_msgs: used + 1, last_msg_date: today })
-      .eq('user_id', userId);
-
-    return { allowed: true, used: used + 1, limit, plan: p.plan };
-  } catch (e) { console.log('[QUOTA]', e.message); return { allowed: true }; }
-}
+// ═══ PROFILE LOADER ═══
 
 async function loadProfile(userId) {
   if (!userId || !supabase) return null;
@@ -362,13 +326,13 @@ function detectProfile(text, supaProfile) {
     supaProfile?.sector || null;
 
   const orgType =
-    /startup/.test(t)                                                           ? 'Startup' :
-    /\bngo\b|nonprofit|association|foundation|civil society|zdruzen/.test(t)   ? 'NGO / Association' :
-    /farmer|farm|agricultural|holding|ipard/.test(t)                           ? 'Agricultural holding' :
-    /individual|freelance|self.employed|poedinec|creator|samostoen/.test(t)    ? 'Individual / Entrepreneur' :
-    /\bsme\b|\bltd\b|\bdoo\b|small business/.test(t)                           ? 'SME' :
-    /municipality|local government|public body/.test(t)                        ? 'Municipality / Public body' :
-    /university|research institute|academic/.test(t)                           ? 'University / Research' :
+    /startup/.test(t)                                                          ? 'Startup' :
+    /\bngo\b|nonprofit|association|foundation|civil society|zdruzen/.test(t)  ? 'NGO / Association' :
+    /farmer|farm|agricultural|holding|ipard/.test(t)                          ? 'Agricultural holding' :
+    /individual|freelance|self.employed|poedinec|creator|samostoen/.test(t)   ? 'Individual / Entrepreneur' :
+    /\bsme\b|\bltd\b|\bdoo\b|small business/.test(t)                          ? 'SME' :
+    /municipality|local government|public body/.test(t)                       ? 'Municipality / Public body' :
+    /university|research institute|academic/.test(t)                          ? 'University / Research' :
     supaProfile?.organization_type || null;
 
   const country =
@@ -389,98 +353,75 @@ function detectProfile(text, supaProfile) {
     /[1-4]\d[\s,.]?000/.test(t)                  ? 'up to €30k'   :
     supaProfile?.goals || null;
 
-  // Extract raw keywords from conversation for DB scoring bonus
   const keywords = t
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
-    .filter(w => w.length > 4 && !['about','where','which','would','could','their','there','what','sакате','дали'].includes(w))
+    .filter(w => w.length > 4 && !['about','where','which','would','could','their','there','what'].includes(w))
     .slice(0, 10);
 
   return { sector, orgType, country, budget, keywords };
 }
 
-// ═══ SYSTEM PROMPT ═══
-
-// ═══ PROBABILITY ENGINE ═══
-// Calculates success probability based on match score + risk factors
+// ═══ PROBABILITY + DECISION ENGINE ═══
 
 function calcProbability(score, result, profile) {
-  // Base: 55% of match score — keeps max realistic
   let prob = Math.round(score * 0.55);
-
   const elig    = String(result.eligibility  || '').toLowerCase();
   const country = String(result.country      || '').toLowerCase();
   const desc    = String(result.description  || '').toLowerCase();
 
-  // Eligibility alignment bonus/penalty
   if (profile.orgType) {
     const orgLower = profile.orgType.toLowerCase().split('/')[0].trim();
-    if (elig.includes(orgLower))      prob += 8;
+    if (elig.includes(orgLower))                                              prob += 8;
     else if (elig.includes('ngo') && profile.orgType.toLowerCase().includes('ngo')) prob += 8;
     else if (elig.includes('sme') && profile.orgType.toLowerCase().includes('sme')) prob += 8;
-    else                              prob -= 10;
+    else                                                                      prob -= 10;
   }
 
-  // Country alignment
   if (profile.country) {
     const pc = profile.country.toLowerCase();
-    if (country.includes(pc))                                     prob += 8;
-    else if (country.includes('global') || country.includes('europe')) prob += 4;
-    else                                                           prob -= 8;
+    if (country.includes(pc))                                            prob += 8;
+    else if (country.includes('global') || country.includes('europe'))  prob += 4;
+    else                                                                 prob -= 8;
   }
 
-  // Competition penalty
   if (desc.includes('horizon') || desc.includes('eic') || desc.includes('google')) prob -= 12;
   else if (desc.includes('open') || desc.includes('all'))                           prob -= 4;
 
-  // Deadline bonus
   if (result.application_deadline) {
     const daysLeft = Math.round((new Date(result.application_deadline) - new Date()) / 86400000);
     if (daysLeft > 0 && daysLeft < 45) prob += 4;
   }
 
-  // Hard cap — max 76%, realistic for AI-based matching
   return Math.max(10, Math.min(76, prob));
 }
 
-function getDecision(prob, result, profile) {
-  const elig    = String(result.eligibility || '').toLowerCase();
-  const orgLower = (profile.orgType || '').toLowerCase().split('/')[0].trim().toLowerCase();
-
-  // Hard NO conditions
-  const eligMismatch = elig.length > 0 && !elig.includes(orgLower) &&
-    !elig.includes('global') && !elig.includes('all') && !elig.includes('any');
-
-  if (prob >= 60 && !eligMismatch) return 'APPLY';
-  if (prob >= 35)                  return 'CONDITIONAL';
-  return 'BACKUP';
-}
-
 function getRisks(result, profile) {
-  const risks = [];
+  const risks   = [];
   const elig    = String(result.eligibility  || '').toLowerCase();
   const country = String(result.country      || '').toLowerCase();
   const desc    = String(result.description  || '').toLowerCase();
   const orgLower = (profile.orgType || '').toLowerCase();
 
-  if (elig.length > 0 && !elig.includes(orgLower.split('/')[0].trim())) {
+  if (elig.length > 0 && !elig.includes(orgLower.split('/')[0].trim()))
     risks.push('eligibility mismatch — verify org type requirement');
-  }
-  if (profile.country && !country.includes('global') && !country.includes(profile.country.toLowerCase())) {
+
+  if (profile.country && !country.includes('global') && !country.includes(profile.country.toLowerCase()))
     risks.push('region limitation — check country eligibility');
-  }
-  if (desc.includes('horizon') || desc.includes('eic') || desc.includes('google')) {
+
+  if (desc.includes('horizon') || desc.includes('eic') || desc.includes('google'))
     risks.push('competition level: high — strong global applicants');
-  } else if (desc.includes('open') || desc.includes('all')) {
+  else if (desc.includes('open') || desc.includes('all'))
     risks.push('competition level: medium');
-  }
-  if (!result.application_deadline) {
+
+  if (!result.application_deadline)
     risks.push('deadline not confirmed — verify on source');
-  }
 
   if (risks.length === 0) risks.push('no major risks identified — strong match');
   return risks;
 }
+
+// ═══ SYSTEM PROMPT ═══
 
 function buildSystemPrompt(lang, today, profile, results, sources) {
   const L = LANG_NAMES[lang] || 'English';
@@ -492,7 +433,6 @@ Country: ${profile.country || 'not specified'}
 Budget range: ${profile.budget || 'not specified'}`
     : '\nProfile not yet collected — ask one targeted question.';
 
-  // Build decision-enriched results — TOP 3 only with YES/NO/CONDITIONAL
   let decisionsText = '';
   if (results.length > 0) {
     const top3 = results.slice(0, 3);
@@ -501,7 +441,7 @@ Budget range: ${profile.budget || 'not specified'}`
     decisionsText = '\n\nDECISION RESULTS (TOP 3 ONLY):\n';
     top3.forEach((r, i) => {
       const prob     = calcProbability(r.score ?? 0, r, profile);
-      const decision = i === 0 ? roles[0] : i === 1 ? roles[1] : roles[2];
+      const decision = roles[i];
       const risks    = getRisks(r, profile);
       const src      = r.source === 'serper' ? '[WEB — verify directly]' : '[VERIFIED]';
 
@@ -532,19 +472,11 @@ URL: ${r.link}
 
 You are MARGINOVA — a funding decision and application system.
 You turn funding discovery into executable decisions.
-You have access to a verified funding database and real-time web intelligence.
 NEVER reveal technical details. NEVER invent programs, URLs, amounts or deadlines.
 NEVER mention other tools or platforms by name.
 
 Today: ${today}
 USER PROFILE:${profileText}
-
-CORE PHILOSOPHY:
-- Clarity over quantity — TOP 3 only, never more
-- Every result gets a DECISION: YES / CONDITIONAL / BACKUP
-- Every result gets a Probability of success: X%
-- Every result gets specific Risks — not vague warnings
-- The user must know exactly what to do next
 
 FORMAT — use exactly this structure for each of the 3 results:
 
@@ -562,67 +494,16 @@ FORMAT — use exactly this structure for each of the 3 results:
 🔗 [URL]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-After the 3 results, close with:
-▶ NEXT STEP: One concrete action the user can take TODAY — specific, not generic.
+After the 3 results:
+▶ NEXT STEP: One concrete action the user can take TODAY.
 
 RULES:
-- Present exactly 3 results — no more, no less (unless fewer results exist)
-- First result = highest probability = APPLY
-- Second result = medium probability = CONDITIONAL
-- Third result = lowest or backup path = BACKUP
-- If profile is incomplete — ask exactly ONE question before showing results
+- Present exactly 3 results — no more, no less
+- First = highest probability = APPLY
+- Second = medium = CONDITIONAL
+- Third = lowest = BACKUP
+- If profile incomplete — ask exactly ONE question before results
 - If ZERO results — say clearly, do not invent${sourceNote}${decisionsText}`;
-}
-
-// ═══ GEMINI ═══
-
-async function geminiCall(systemPrompt, messages, imageData, imageType) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
-
-  const contents = messages.map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: String(m.content || '') }]
-  }));
-
-  if (imageData && imageType && contents.length > 0) {
-    contents[contents.length - 1].parts.push({
-      inline_data: { mime_type: imageType, data: imageData }
-    });
-  }
-
-  if (!contents.length) contents.push({ role: 'user', parts: [{ text: 'Hello' }] });
-
-  const r = await ft(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents,
-      generationConfig: { maxOutputTokens: 4096, temperature: 0.35 }
-    })
-  }, 30000);
-
-  if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`);
-  const d = await r.json();
-  if (d.error) throw new Error(d.error.message);
-  const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if (!text) throw new Error('Gemini returned empty response');
-  return text;
-}
-
-async function gemini(systemPrompt, messages, imageData, imageType) {
-  try {
-    return await geminiCall(systemPrompt, messages, imageData, imageType);
-  } catch (e) {
-    console.log('[GEMINI] retry:', e.message);
-    await new Promise(r => setTimeout(r, 1500));
-    try {
-      return await geminiCall(systemPrompt, messages, imageData, imageType);
-    } catch (e2) {
-      console.log('[GEMINI] retry failed:', e2.message);
-      throw new Error('Service temporarily unavailable. Please try again in a moment.');
-    }
-  }
 }
 
 // ═══ MAIN HANDLER ═══
@@ -632,22 +513,25 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: { message: 'Method Not Allowed' } });
-  if (!GEMINI_KEY)             return res.status(500).json({ error: { message: 'Missing GEMINI_API_KEY.' } });
+
+  if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: { message: 'Missing GEMINI_API_KEY.' } });
 
   if (!(await checkIP(req))) {
     return res.status(429).json({ error: { message: 'Daily limit reached. Try again tomorrow.' } });
   }
 
   try {
-    const body      = req.body || {};
-    const userId    = body.userId || null;
-    const userText  = body.messages?.[body.messages.length - 1]?.content || '';
-    const imageData = body.image     || null;
-    const imageType = body.imageType || null;
+    const body     = req.body || {};
+    const userId   = body.userId || null;
+    // Sanitize user message before processing
+    const userText = sanitizeField(body.messages?.[body.messages.length - 1]?.content || '', 2000);
 
     if (userText.length > 2000) {
       return res.status(400).json({ error: { message: 'Message too long. Max 2000 characters.' } });
     }
+
+    const imageData = body.image     || null;
+    const imageType = body.imageType || null;
 
     const quotaResult = await checkAndDeductQuota(userId);
     if (!quotaResult.allowed) {
@@ -662,20 +546,31 @@ module.exports = async function handler(req, res) {
     const today   = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const messages = (body.messages || []).slice(-8).map(m => ({
       role:    m.role,
-      content: String(m.content || '')
+      content: sanitizeField(String(m.content || ''), 2000)
     }));
 
     const conversationText = messages.map(m => m.content).join(' ');
     const supaProfile      = userId ? await loadProfile(userId) : null;
     const profile          = detectProfile(conversationText, supaProfile);
 
-    // Async profile patch
-    if (userId && (profile.sector || profile.orgType || profile.country) && supabase) {
-      getTable('profiles')
-        .update({ detected_sector: profile.sector, detected_org_type: profile.orgType, detected_country: profile.country })
-        .eq('user_id', userId)
-        .then(({ error }) => { if (error) console.log('[PROFILE PATCH]', error.message); })
-        .catch(() => {});
+    // FIX: Only patch profile when something actually changed
+    if (userId && supabase) {
+      const changed =
+        (profile.sector  && profile.sector  !== supaProfile?.sector)  ||
+        (profile.country && profile.country !== supaProfile?.country) ||
+        (profile.orgType && profile.orgType !== supaProfile?.organization_type);
+
+      if (changed) {
+        getTable('profiles')
+          .update({
+            detected_sector:   profile.sector,
+            detected_org_type: profile.orgType,
+            detected_country:  profile.country
+          })
+          .eq('user_id', userId)
+          .then(({ error }) => { if (error) console.log('[PROFILE PATCH]', error.message); })
+          .catch(() => {});
+      }
     }
 
     if (Math.random() < 0.05) {
@@ -683,20 +578,21 @@ module.exports = async function handler(req, res) {
     }
 
     const shouldSearch = needsSearch(messages) || !!imageData;
-    let results  = [];
-    let sources  = { db: 0, serper: 0 };
+    let results   = [];
+    let sources   = { db: 0, serper: 0 };
     let fromCache = false;
     let cachedAt  = null;
 
     if (shouldSearch && !imageData) {
-      const cacheKey = hashQuery(JSON.stringify({ userText, profile }));
+      // FIX: stable cache key — no volatile keywords[]
+      const cacheKey = buildCacheKey(userText, profile);
       const cached   = await getCached(cacheKey);
 
       if (cached?.results?.length) {
         results   = cached.results;
         cachedAt  = cached.created_at;
         fromCache = true;
-        console.log('[v21] cache hit');
+        console.log('[v22] cache hit');
       } else {
         const hybrid = await hybridSearch(userText, profile);
         results  = hybrid.results;
@@ -707,12 +603,27 @@ module.exports = async function handler(req, res) {
             console.log('[CACHE SAVE FAIL]', e.message)
           );
         }
-        console.log(`[v21] db:${sources.db} serper:${sources.serper} total:${results.length}`);
+        console.log(`[v22] db:${sources.db} serper:${sources.serper} total:${results.length}`);
       }
     }
 
     const systemPrompt = buildSystemPrompt(lang, today, profile, results, sources);
-    const text         = await gemini(systemPrompt, messages, imageData, imageType);
+
+    // Build Gemini contents array
+    const contents = messages.map(m => ({
+      role:  m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: String(m.content || '') }]
+    }));
+
+    if (imageData && imageType && contents.length > 0) {
+      contents[contents.length - 1].parts.push({
+        inline_data: { mime_type: imageType, data: imageData }
+      });
+    }
+
+    if (!contents.length) contents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+
+    const text = await gemini(systemPrompt, contents);
 
     return res.status(200).json({
       content:      [{ type: 'text', text }],
