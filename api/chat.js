@@ -60,8 +60,8 @@ async function searchFundingDB(profile) {
         'IT / Technology':        ['ai','technology','digital','software','startup','innovation','ict','tech'],
         'Agriculture':            ['agriculture','farmer','rural','food','farm','ipard'],
         'Education':              ['education','school','learning','training','youth','student','scholarship','fellowship','mobility','erasmus','study','academic'],
-        'Environment / Energy':   ['climate','environment','green','energy','renewable'],
-        'Civil Society':          ['ngo','civil society','community','rights','nonprofit','social'],
+        'Environment / Energy':   ['climate','environment','green','energy','renewable','solar','wind','biodiversity','ecosystem','conservation','nature','pollution','air','water','forest','wildlife','sustainability','sustainable','clean energy','clean-energy','agri-environment','life programme','geff','green agenda','envsec','bankwatch','wwf','pont','gef','eko'],
+        'Civil Society':          ['ngo','civil society','community','rights','nonprofit','social','advocacy','democracy','governance','watchdog','transparency','civic','citizen','foundation','association','zdruzen','civil','grassroots','balkan trust','btd','milieukontakt','oak foundation','heinrich','boell','erste','rockefeller'],
         'Health / Social':        ['health','social','welfare','care','women','gender','single parent','family'],
         'Research / Innovation':  ['research','science','innovation','academic','university','phd','postgraduate'],
         'SME / Business':         ['business','enterprise','sme','company','entrepreneur','startup','digital','technology'],
@@ -340,7 +340,7 @@ function detectProfile(text, supaProfile) {
     /agri|farm|rural|crop|livestock|hektar|ipard|zemjo/.test(t)        ? 'Agriculture' :
     /student|stipend|scholarship|fellowship|erasmus|fulbright|daad|chevening|mlad|youth|exchange|study abroad/.test(t) ? 'Student / Youth' :
     /educat|school|youth|training|learning|obrazov/.test(t)            ? 'Education' :
-    /environment|climate|green|energy|renewable|solar/.test(t)         ? 'Environment / Energy' :
+    /environment|climate|green|energy|renewable|solar|biodiversity|ecosystem|conservation|pollution|nature|wildlife|forest|water|sustainability|животна средина|klimatski|obnovlivi|зелена/.test(t) ? 'Environment / Energy' :
     /civil|ngo|nonprofit|association|society|zdruzen/.test(t)          ? 'Civil Society' :
     /tourism|culture|heritage|creative|art/.test(t)                    ? 'Tourism / Culture' :
     /health|medical|social|welfare|majki|semejst|gender|women/.test(t) ? 'Health / Social' :
