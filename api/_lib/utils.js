@@ -1,234 +1,330 @@
-// MARGINOVA — api/_lib/llmRouter.js
-// v3 — FIXED: language in system prompt, not user.
-//       deterministic prob/risks/match, no hallucination.
+// ═══════════════════════════════════════════════════════════
+// MARGINOVA.AI — api/_lib/utils.js
+// v4 — FIXED: detectLang() no duplicate tr, no script conflict
+//      gemini() exports, checkAndDeductQuota() safe fallback
+// ═══════════════════════════════════════════════════════════
 
-const { gemini, LANG_NAMES } = require('./utils');
+const { createClient } = require('@supabase/supabase-js');
 
-console.log('[llmRouter] v3 loaded — language in system prompt');
+// ═══ SUPABASE ═══
 
-// Map from language code to native name (for prompt)
-const NATIVE_NAMES = {
-  mk: 'македонски', sr: 'српски', hr: 'hrvatski', bs: 'bosanski',
-  sq: 'shqip', bg: 'български', ro: 'română', sl: 'slovenščina',
-  en: 'English', de: 'Deutsch', fr: 'français', es: 'español',
-  it: 'italiano', pl: 'polski', tr: 'Türkçe', nl: 'Nederlands',
-  pt: 'português', cs: 'čeština', hu: 'magyar', el: 'ελληνικά',
-  ru: 'русский', uk: 'українська', ar: 'العربية', ko: '한국어',
-  ja: '日本語', zh: '中文',
+function createSupabaseClient() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) {
+    console.error('[SUPABASE] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+    return null;
+  }
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+
+const supabase = createSupabaseClient();
+if (supabase) console.log('[SUPABASE] Connected');
+
+function getTable(name) {
+  if (!supabase) throw new Error('Supabase client not initialized');
+  return supabase.from(name);
+}
+
+// ═══ FETCH WITH TIMEOUT + RETRY ═══
+
+async function ft(url, opts = {}, ms = 12000, retries = 1) {
+  for (let i = 0; i <= retries; i++) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), ms);
+    try {
+      const res = await fetch(url, { ...opts, signal: c.signal });
+      clearTimeout(t);
+      return res;
+    } catch (e) {
+      clearTimeout(t);
+      if (i === retries) throw e;
+      console.log(`[FT] retry ${i + 1} for ${url.slice(0, 60)}`);
+    }
+  }
+}
+
+// ═══ LANGUAGE DETECTION — 40+ languages ═══
+
+// Explicit language request triggers
+const EXPLICIT_LANG = [
+  { lang: 'mk', re: /на македонски|makedonski|in macedonian|по македонски/i },
+  { lang: 'sr', re: /на српском|na srpskom|in serbian|srpski/i },
+  { lang: 'hr', re: /на хрватском|na hrvatskom|in croatian|hrvatski/i },
+  { lang: 'bs', re: /na bosanskom|in bosnian|bosanski/i },
+  { lang: 'sq', re: /në shqip|in albanian|shqip/i },
+  { lang: 'bg', re: /на български|na balgarski|in bulgarian/i },
+  { lang: 'ro', re: /în română|in romanian|română/i },
+  { lang: 'sl', re: /v slovenščini|in slovenian|slovensko/i },
+  { lang: 'de', re: /auf deutsch|in german|auf Deutsch|na nemackom/i },
+  { lang: 'fr', re: /en français|in french|en francais/i },
+  { lang: 'es', re: /en español|in spanish|en castellano/i },
+  { lang: 'it', re: /in italiano|in italian/i },
+  { lang: 'pl', re: /po polsku|in polish|w języku polskim/i },
+  { lang: 'tr', re: /türkçe|in turkish|türkçe olarak/i },
+  { lang: 'nl', re: /in het nederlands|in dutch|nederlandstalig/i },
+  { lang: 'pt', re: /em português|in portuguese|em portugues/i },
+  { lang: 'cs', re: /v češtině|in czech|česky/i },
+  { lang: 'sk', re: /po slovensky|in slovak|slovensky/i },
+  { lang: 'hu', re: /magyarul|in hungarian|magyar nyelven/i },
+  { lang: 'el', re: /στα ελληνικά|in greek|ελληνικά/i },
+  { lang: 'ru', re: /на русском|in russian|по-русски/i },
+  { lang: 'uk', re: /українською|in ukrainian|по-українськи/i },
+  { lang: 'ar', re: /بالعربية|in arabic|باللغة العربية/i },
+  { lang: 'fa', re: /به فارسی|in persian|به زبان فارسی/i },
+  { lang: 'ko', re: /한국어로|in korean/i },
+  { lang: 'ja', re: /日本語で|in japanese/i },
+  { lang: 'zh', re: /用中文|in chinese|用普通话/i },
+  { lang: 'en', re: /in english|по английски|na engleskom|на англиски/i },
+];
+
+// Script-based detection (unique Unicode ranges)
+const SCRIPT_LANG = [
+  { lang: 'mk', re: /[ќѓѕљњџ]/i },           // Macedonian-unique Cyrillic
+  { lang: 'sr', re: /[ћђ]/i },                // Serbian-unique Cyrillic
+  { lang: 'ar', re: /[؀-ۿ]/ },               // Arabic
+  { lang: 'fa', re: /[؀-ۿ][کگۀی]/i },        // Farsi (superset of Arabic)
+  { lang: 'el', re: /[Ͱ-Ͽ]/ },               // Greek
+  { lang: 'zh', re: /[一-鿿]/ },              // Chinese
+  { lang: 'ja', re: /[぀-ヿ]/ },              // Japanese (hiragana/katakana)
+  { lang: 'ko', re: /[가-힯]/ },              // Korean
+  { lang: 'uk', re: /[іїєґ]/i },             // Ukrainian-unique Cyrillic
+];
+
+// Word-pattern detection per language
+const WORD_LANG = [
+  { lang: 'mk', re: /јас|сум|македонија|барам|грант|работам|НВО|фонд|проект|буџет|нашата|Македонија|Северна|jas|sum|makedonija|zdravo|zemja|nvo|fond/i },
+  { lang: 'sr', re: /srpski|srbija|бесплатно|можемо/i },
+  { lang: 'hr', re: /hrvatska|croatian|možemo|Hrvatska/i },
+  { lang: 'bs', re: /bosna|bosanski/ },
+  { lang: 'bg', re: /българия|организация|проект/ },
+  { lang: 'ro', re: /românia|proiect|organizație/ },
+  { lang: 'sl', re: /slovenija|organizacija/ },
+  { lang: 'de', re: /Deutschland|deutsch|ich bin|und wir|nicht|für|mit der|Das ist|Eine/i },
+  { lang: 'fr', re: /France|français|nous sommes|pour|avec|dans|Je suis|Nous avons/i },
+  { lang: 'es', re: /España|español|somos|para|con|también|Hola|Buenos días/i },
+  { lang: 'it', re: /Italia|italiano|siamo|progetto|organizzazione|Ciao|Buongiorno/i },
+  { lang: 'pl', re: /polska|organizacja|jestem|polskiego|Dzień dobry|Cześć/i },
+  { lang: 'tr', re: /türkiye|türkçe|organizasyon|Merhaba|Sabah/i },
+  { lang: 'nl', re: /nederland|dutch|Nederland|Goedemorgen/i },
+  { lang: 'pt', re: /brasil|portugal|português|Bom dia|Olá/i },
+  { lang: 'cs', re: /česká|republika|česky|projekt|Dobrý den|Ahoj/i },
+  { lang: 'hu', re: /magyarország|magyar|szervezet/Jó napot/Szia/i },
+  { lang: 'ru', re: /[А-я]/ },
+];
+
+const LANG_NAMES = {
+  mk: 'Macedonian', sr: 'Serbian',   hr: 'Croatian',  bs: 'Bosnian',
+  sq: 'Albanian',   bg: 'Bulgarian', ro: 'Romanian',  sl: 'Slovenian',
+  en: 'English',    de: 'German',    fr: 'French',    es: 'Spanish',
+  it: 'Italian',    pl: 'Polish',    tr: 'Turkish',   nl: 'Dutch',
+  pt: 'Portuguese', cs: 'Czech',     sk: 'Slovak',    hu: 'Hungarian',
+  el: 'Greek',      ru: 'Russian',   uk: 'Ukrainian', ar: 'Arabic',
+  fa: 'Persian',    ko: 'Korean',    ja: 'Japanese',  zh: 'Chinese',
 };
 
-// ─── DETERMINISTIC PROBABILITY ───────────────────────────────
-function calcProbability(p, profile, roleIndex = 0) {
-  let prob = Math.round((p.score || 0) * 0.55) + [0, -8, -16][roleIndex];
-  const elig = (p.eligibility || '').toLowerCase();
-  const ctry = (p.country     || '').toLowerCase();
-  const desc = (p.description || '').toLowerCase();
-  const org  = (profile.orgType || '').toLowerCase().split('/')[0].trim();
+function detectLang(text) {
+  if (!text) return 'en';
+  const t = text.trim();
 
-  if (org && elig.length > 10) {
-    if (elig.includes(org))                              prob += 8;
-    else if (!/all|global/.test(elig))                   prob -= 10;
-  }
-  if (profile.country) {
-    const pc = profile.country.toLowerCase();
-    if (ctry.includes(pc))                               prob += 8;
-    else if (/global|europe|western balkans/.test(ctry)) prob += 4;
-    else                                                 prob -= 8;
-  }
-  if (/global|worldwide/.test(desc))                     prob -= 10;
-  if (p.source === 'serper_extracted')                   prob -= 8;
-  if (p.application_deadline) {
-    const days = Math.round((new Date(p.application_deadline) - new Date()) / 86400000);
-    if (days > 0 && days < 45) prob += 4;
-    if (days < 0)              prob -= 20;
-  }
-  return Math.max(10, Math.min(76, prob));
-}
-
-// ─── DETERMINISTIC RISKS ─────────────────────────────────────
-function analyzeRisks(p, profile) {
-  const risks = [];
-  const elig  = (p.eligibility || '').toLowerCase();
-  const ctry  = (p.country     || '').toLowerCase();
-  const desc  = ((p.description || '') + ' ' + (p.focus_areas || '')).toLowerCase();
-  const org   = (profile.orgType || '').toLowerCase().split('/')[0].trim();
-
-  if (elig.length > 10 && org && !elig.includes(org) && !/all|global/.test(elig))
-    risks.push(`Eligibility: verify org type — program targets "${elig.slice(0,50)}..."`);
-
-  if (profile.country) {
-    const pc = profile.country.toLowerCase();
-    if (ctry.length > 0 && !ctry.includes(pc) && !/global|europe|western balkans/.test(ctry))
-      risks.push(`Region: confirm ${profile.country} is eligible — listed: "${p.country}"`);
-  }
-  if (profile.budget && p.award_amount) {
-    const R = { 'up to €30k':[0,30000], '€30k–€150k':[30000,150000], '€150k–€500k':[150000,500000], 'above €500k':[500000,Infinity] };
-    const [mn, mx] = R[profile.budget] || [0, Infinity];
-    const amt = Number(p.award_amount);
-    if (amt < mn * 0.5 || amt > mx * 2)
-      risks.push(`Budget: need ${profile.budget}, program offers ${amt.toLocaleString()} ${p.currency || 'EUR'}`);
-  }
-  if (/global|international|worldwide/.test(desc)) risks.push('Competition: high — global applicant pool');
-  else if (/western balkans|regional/.test(desc))  risks.push('Competition: medium — regional applicants');
-  if (!p.application_deadline) risks.push('Deadline: not confirmed — verify on source');
-  if (p.source === 'serper_extracted') risks.push('Web result: verify all details on official source');
-
-  if (!risks.length) {
-    const on = (p.organization_name || '').toLowerCase();
-    if (/usaid/.test(on))                         risks.push('USAID prioritizes established local organizations');
-    else if (/undp|world bank|eu |european/.test(on)) risks.push('International program — prepare strong application');
-    else                                          risks.push('Strong match — write a detailed project description');
-  }
-  return risks;
-}
-
-// ─── MATCH REASON ────────────────────────────────────────────
-function buildMatchReason(p, profile) {
-  const parts = [];
-  const hay   = `${p.focus_areas || ''} ${p.description || ''}`.toLowerCase();
-  const ctry  = (p.country      || '').toLowerCase();
-  const elig  = (p.eligibility  || '').toLowerCase();
-  const KWS   = {
-    'Environment / Energy':  ['environment','climate','renewable','biodiversity','conservation','clean energy','ecosystem','pollution','nature','wildlife','forest'],
-    'Civil Society':         ['civil society','ngo','nonprofit','advocacy','democracy','grassroots'],
-    'Agriculture':           ['agriculture','farmer','rural','food','farm','ipard'],
-    'Education':             ['education','school','learning','scholarship','erasmus'],
-    'IT / Technology':       ['technology','digital','software','ai','innovation','startup'],
-    'Health / Social':       ['health','social','welfare','care','women','gender'],
-    'Research / Innovation': ['research','science','innovation','university','academic'],
-    'SME / Business':        ['business','enterprise','sme','company','entrepreneur'],
-    'Student / Youth':       ['student','scholarship','fellowship','youth','erasmus','fulbright'],
-  };
-  const matched = (KWS[profile.sector] || []).filter(k => hay.includes(k));
-  if (matched.length) parts.push(`Covers: ${matched.slice(0,3).join(', ')}`);
-
-  if (profile.country) {
-    const pc = profile.country.toLowerCase();
-    if (ctry.includes(pc))                    parts.push(`${profile.country} listed as eligible`);
-    else if (ctry.includes('western balkans')) parts.push(`Western Balkans eligible (includes ${profile.country})`);
-    else if (/global|europe/.test(ctry))       parts.push(`Open internationally — ${profile.country} eligible`);
-  }
-  const orgKw = (profile.orgType || '').toLowerCase().split('/')[0].trim();
-  const SYN   = { ngo:['ngo','nonprofit','civil society','foundation','association'], sme:['sme','company','enterprise'], individual:['individual','person','applicant'] };
-  if (elig.length > 10 && (SYN[orgKw] || [orgKw]).some(k => elig.includes(k)))
-    parts.push(`Eligible: "${elig.slice(0,60).trim()}..."`);
-
-  if (profile.budget && p.award_amount) {
-    const R = { 'up to €30k':[0,30000], '€30k–€150k':[30000,150000], '€150k–€500k':[150000,500000], 'above €500k':[500000,Infinity] };
-    const [mn, mx] = R[profile.budget] || [0, Infinity];
-    const amt = Number(p.award_amount);
-    if (amt >= mn && amt <= mx) parts.push(`Amount ${amt.toLocaleString()} ${p.currency||'EUR'} fits budget`);
-  }
-  return parts.length ? parts.join(' · ') : 'Partial match — verify eligibility on source';
-}
-
-// ─── MAIN SYNTHESIZE — SINGLE GEMINI CALL ────────────────────
-async function synthesize(lang, today, profile, programs, sources) {
-  const nativeName = NATIVE_NAMES[lang] || 'English';
-  const langName = LANG_NAMES[lang] || 'English';
-
-  if (!programs?.length) {
-    return lang === 'mk'
-      ? `Нема пронајдени програми за вашиот профил. Додајте повеќе детали за проектот.`
-      : `No funding programs found for your profile. Please add more project details.`;
+  // 1. Explicit language request (highest priority)
+  for (const { lang, re } of EXPLICIT_LANG) {
+    if (re.test(t)) return lang;
   }
 
-  const roles = ['APPLY', 'CONDITIONAL', 'BACKUP'];
+  // 2. Script-based unique chars (MK/SR before generic Cyrillic)
+  for (const { lang, re } of SCRIPT_LANG) {
+    if (re.test(t)) return lang;
+  }
 
-  // Build compact data rows — numbers/dates/URLs stay as-is
-  const dataRows = programs.slice(0, 3).map((p, i) => {
-    const prob  = calcProbability(p, profile, i);
-    const risks = analyzeRisks(p, profile).map(r => '• ' + r).join('\n');
-    const why   = buildMatchReason(p, profile);
-    const amt   = p.award_amount ? `${Number(p.award_amount).toLocaleString()} ${p.currency || 'EUR'}` : (p.funding_range || '—');
-    const src   = p.source === 'serper_extracted' ? '[WEB — verify]' : '[DB]';
-    return `---
-ROLE: ${roles[i]} ${src}
-NAME: ${p.title}
-ORG: ${p.organization_name || '—'}
-AMOUNT: ${amt}
-DEADLINE: ${p.application_deadline || 'verify on source'}
-URL: ${p.link || p.source_url || '—'}
-PROB: ${prob}%
-WHY: ${why}
-RISKS:
-${risks}`;
-  }).join('\n\n');
-
-  const profileLine = [
-    profile.sector  && profile.sector,
-    profile.orgType && profile.orgType,
-    profile.country && profile.country,
-    profile.budget  && profile.budget,
-  ].filter(Boolean).join(' | ') || 'not specified';
-
-  // ✅ FIX: Language instruction goes into SYSTEM prompt, not user
-  const langInstruction = (lang === 'mk')
-    ? `You MUST respond in Macedonian (македонски јазик). All sections (Why you qualify, Risks, Next Step) must be in Macedonian.`
-    : `You MUST respond in ${nativeName} (${langName}). All sections (Why you qualify, Risks, Next Step) must be in ${nativeName}.`;
-
-  const system = `You are MARGINOVA, a funding evaluation assistant. ${langInstruction}
-Today: ${today}. Profile: ${profileLine}.
-
-Format each of the 3 programs exactly like this:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[ROLE: APPLY / CONDITIONAL / BACKUP]
-📋 [NAME]
-📊 Decision: YES / CONDITIONAL / BACKUP
-🎯 Probability of success: [PROB]%
-💰 [AMOUNT]
-📅 Deadline: [DEADLINE]
-✅ Why you qualify: [WHY — translated]
-⚠️ Risks:
-  [RISKS — translated, keep bullet format]
-🔗 [URL]
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-After all 3: ▶ NEXT STEP: one concrete action today that the user can take.
-
-Keep amounts, dates, URLs exactly as given.
-The user message below contains the raw data. Use it to fill the template above.`;
-
-  // User message contains ONLY the data (no language instruction)
-  const userMsg = `Generate the 3 decisions using this data:\n\n${dataRows}`;
-
-  const contents = [{ role: 'user', parts: [{ text: userMsg }] }];
+  // 3. Cyrillic language disambiguation (runs after unique char check)
+  if (/Македон|Северна|македон|северна|Македонија/i.test(t)) return 'mk';
+  if (/јас|сум|македонија|барам|НВО|буџет|нашата|организација/i.test(t)) return 'mk';
+  if (/jas|sum|makedonija|nvo|zdravo/i.test(t)) return 'mk';
+  if (/srbija|srpski|Srbija/i.test(t)) return 'sr';
+  if (/българия|организация|проект/i.test(t)) return 'bg';
+  if (/[Ѐ-ӿ]/.test(t)) return 'ru'; // Generic Cyrillic → Russian as safe default
   
+  // 4. Word patterns — language-specific first, then generic
+  for (const { lang, re } of WORD_LANG) {
+    if (re.test(t)) return lang;
+  }
+
+  // 5. Default
+  return 'en';
+}
+
+// ═══ INPUT SANITIZATION ═══
+
+function sanitizeField(str, maxLen = 500) {
+  if (!str) return '';
+  return String(str)
+    .trim()
+    .slice(0, maxLen)
+    .replace(/<\/?(system|prompt|instruction)[^>]*>/gi, '')
+    .replace(/```/g, '');
+}
+
+// ═══ IP RATE LIMIT — atomic via RPC ═══
+const DAILY_IP_LIMIT = 200;
+
+async function checkIP(req) {
+  if (!supabase) return true;
+
+  const ip =
+    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    'unknown';
+  const today = new Date().toISOString().split('T')[0];
+
   try {
-    return await gemini(system, contents, { maxTokens: 2000, temperature: 0.15 });
-  } catch (err) {
-    console.error('[SYNTHESIZE] Gemini error:', err.message);
-    // Fallback: return raw data in requested language
-    if (lang === 'mk') {
-      return `Грешка при генерирање: ${err.message}\n\nКористете ги овие податоци:\n${dataRows}`;
+    const { data, error } = await supabase.rpc('check_and_increment_ip', {
+      p_ip: ip,
+      p_date: today,
+      p_limit: DAILY_IP_LIMIT
+    });
+
+    if (error) {
+      console.warn('[IP] RPC not available, using fallback:', error.message);
+      return checkIPFallback(ip, today);
     }
-    return `Error generating response: ${err.message}\n\nUse this raw data:\n${dataRows}`;
+
+    return data === true;
+  } catch (e) {
+    console.error('[IP CHECK]', e.message);
+    return true;
   }
 }
 
-// ─── SERPER EXTRACTION (only when DB < 3 results) ────────────
-async function extractFromSerper(serperResults, profile) {
-  if (!serperResults?.length) return [];
-  const snippets = serperResults.map((r, i) => `[${i+1}] ${r.title}\n${r.snippet}\n${r.link}`).join('\n\n');
-  const prompt = `Extract funding program data. Return JSON array only, no markdown.
-Only extract fields explicitly stated. Use null if not mentioned.
-Profile: sector=${profile.sector}, country=${profile.country}
-For each relevant result: {"index":N,"title":"...","organization":"...or null","amount":"...or null","deadline":"YYYY-MM-DD or null","eligibility":"...or null","focus":"...","url":"...","relevance_score":0-100}
-Results:\n${snippets}`;
+async function checkIPFallback(ip, today) {
   try {
-    const raw    = await gemini(prompt, [{ role:'user', parts:[{ text:'Extract.' }] }], { maxTokens:1000, temperature:0.1 });
-    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(r => r.relevance_score >= 30).map(r => ({
-      title: r.title || 'Unknown', organization_name: r.organization || '',
-      award_amount: r.amount ? parseFloat(r.amount.replace(/[^0-9.]/g,'')) || null : null,
-      currency: r.amount?.includes('$') ? 'USD' : 'EUR',
-      funding_range: r.amount || null, application_deadline: r.deadline || null,
-      eligibility: r.eligibility || null, description: r.focus || '',
-      source_url: r.url || '', country: profile.country || '', focus_areas: profile.sector || '',
-      score: Math.min(60, Math.round((r.relevance_score || 0) * 0.6)),
-      score_type: 'web_extracted', source: 'serper_extracted', link: r.url || '',
-    }));
-  } catch (e) { console.log('[EXTRACT]', e.message); return []; }
+    const { data: row, error } = await getTable('ip_limits')
+      .select('ip,count,reset_date')
+      .eq('ip', ip)
+      .maybeSingle();
+
+    if (error) { console.error('[IP GET]', error.message); return true; }
+
+    const rowDate = row?.reset_date ? String(row.reset_date).slice(0, 10) : null;
+
+    if (!row || rowDate !== today) {
+      await getTable('ip_limits').upsert(
+        { ip, count: 1, reset_date: today },
+        { onConflict: 'ip' }
+      );
+      return true;
+    }
+
+    if ((row.count || 0) >= DAILY_IP_LIMIT) return false;
+
+    await getTable('ip_limits').upsert(
+      { ip, count: (row.count || 0) + 1, reset_date: today },
+      { onConflict: 'ip' }
+    );
+    return true;
+  } catch (e) {
+    console.error('[IP FALLBACK]', e.message);
+    return true;
+  }
 }
 
-module.exports = { extractFromSerper, synthesize, analyzeRisks, calcProbability };
+// ═══ QUOTA — safe fallback ═══
+const PLANS = { free: 20, starter: 500, pro: 2000, business: -1 };
+
+async function checkAndDeductQuota(userId) {
+  // NO userId -> no quota system (no auth)
+  if (!userId || !supabase) return { allowed: true };
+
+  const today = new Date().toISOString().split('T')[0];
+
+  try {
+    const { data, error } = await supabase.rpc('deduct_quota', {
+      p_user_id: userId,
+      p_date: today
+    });
+
+    if (!error && data) return data;
+    if (error) console.warn('[QUOTA] RPC not available:', error.message);
+  } catch (e) {
+    console.warn('[QUOTA] RPC error:', e.message);
+  }
+
+  // Fallback — safe: allow if anything fails
+  return { allowed: true };
+}
+
+// ═══ GEMINI — single shared implementation ═══
+
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
+
+async function geminiCall(systemPrompt, contents, opts = {}) {
+  if (!GEMINI_KEY) throw new Error('Missing GEMINI_API_KEY');
+
+  const url = `${GEMINI_URL}?key=${GEMINI_KEY}`;
+
+  // FIX: ensure contents is always array
+  const safeContents = Array.isArray(contents) ? contents : [contents];
+
+  const r = await ft(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: safeContents,
+      generationConfig: {
+        maxOutputTokens: opts.maxTokens ?? 4096,
+        temperature:     opts.temperature ?? 0.35
+      }
+    })
+  }, opts.timeout ?? 30000);
+
+  if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 240)}`);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!text) throw new Error('Gemini returned empty response');
+  return text;
+}
+
+async function gemini(systemPrompt, contents, opts = {}) {
+  try {
+    return await geminiCall(systemPrompt, contents, opts);
+  } catch (e) {
+    console.log('[GEMINI RETRY]', e.message);
+    await new Promise(r => setTimeout(r, 1500));
+    return await geminiCall(systemPrompt, contents, opts);
+  }
+}
+
+// ═══ CORS — env-aware ═══
+
+const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
+  ? ['https://marginova.tech', 'https://www.marginova.tech']
+  : ['https://marginova.tech', 'https://www.marginova.tech', 'http://localhost:3000'];
+
+function setCors(req, res) {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  }
+}
+
+module.exports = {
+  supabase,
+  getTable,
+  ft,
+  detectLang,
+  LANG_NAMES,
+  sanitizeField,
+  checkIP,
+  checkAndDeductQuota,
+  gemini,
+  PLANS,
+  setCors
+};
