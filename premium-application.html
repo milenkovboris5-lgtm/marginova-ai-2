@@ -332,6 +332,10 @@ async function generate() {
   startProg();
 
   try {
+    // Refresh session — may not be ready on direct URL load
+    const { data: { session: freshSess } } = await db.auth.getSession();
+    if (freshSess) sess = freshSess;
+
     const headers = {'Content-Type':'application/json'};
     if (sess?.access_token) headers['Authorization'] = 'Bearer '+sess.access_token;
 
