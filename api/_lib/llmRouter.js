@@ -1,15 +1,20 @@
 // MARGINOVA — api/_lib/llmRouter.js
-// Single Gemini call. Deterministic prob/risks/match. No hallucination.
+// v3 — FIXED: language in system prompt, not user.
+//       deterministic prob/risks/match, no hallucination.
 
-const { gemini } = require('./utils');
-console.log('[llmRouter] v2 loaded — single call, lang-in-user-turn');
+const { gemini, LANG_NAMES } = require('./utils');
 
-const LANG_NAMES = {
-  mk:'Macedonian', sr:'Serbian', hr:'Croatian', bs:'Bosnian', sq:'Albanian',
-  bg:'Bulgarian',  ro:'Romanian', sl:'Slovenian', en:'English', de:'German',
-  fr:'French',     es:'Spanish', it:'Italian',   pl:'Polish',  tr:'Turkish',
-  nl:'Dutch',      pt:'Portuguese', cs:'Czech',  hu:'Hungarian', el:'Greek',
-  ru:'Russian',    uk:'Ukrainian', ar:'Arabic',  ko:'Korean',  ja:'Japanese', zh:'Chinese',
+console.log('[llmRouter] v3 loaded — language in system prompt');
+
+// Map from language code to native name (for prompt)
+const NATIVE_NAMES = {
+  mk: 'македонски', sr: 'српски', hr: 'hrvatski', bs: 'bosanski',
+  sq: 'shqip', bg: 'български', ro: 'română', sl: 'slovenščina',
+  en: 'English', de: 'Deutsch', fr: 'français', es: 'español',
+  it: 'italiano', pl: 'polski', tr: 'Türkçe', nl: 'Nederlands',
+  pt: 'português', cs: 'čeština', hu: 'magyar', el: 'ελληνικά',
+  ru: 'русский', uk: 'українська', ar: 'العربية', ko: '한국어',
+  ja: '日本語', zh: '中文',
 };
 
 // ─── DETERMINISTIC PROBABILITY ───────────────────────────────
@@ -119,7 +124,8 @@ function buildMatchReason(p, profile) {
 
 // ─── MAIN SYNTHESIZE — SINGLE GEMINI CALL ────────────────────
 async function synthesize(lang, today, profile, programs, sources) {
-  const L = LANG_NAMES[lang] || 'English';
+  const nativeName = NATIVE_NAMES[lang] || 'English';
+  const langName = LANG_NAMES[lang] || 'English';
 
   if (!programs?.length) {
     return lang === 'mk'
@@ -129,7 +135,7 @@ async function synthesize(lang, today, profile, programs, sources) {
 
   const roles = ['APPLY', 'CONDITIONAL', 'BACKUP'];
 
-  // Build compact data rows — numbers/dates/URLs stay as-is, text is minimal
+  // Build compact data rows — numbers/dates/URLs stay as-is
   const dataRows = programs.slice(0, 3).map((p, i) => {
     const prob  = calcProbability(p, profile, i);
     const risks = analyzeRisks(p, profile).map(r => '• ' + r).join('\n');
@@ -156,14 +162,20 @@ ${risks}`;
     profile.budget  && profile.budget,
   ].filter(Boolean).join(' | ') || 'not specified';
 
-  // Minimal system prompt — just role + format + language rule
-  const system = `You are MARGINOVA, a funding evaluation assistant. Today: ${today}. Profile: ${profileLine}.
+  // ✅ FIX: Language instruction goes into SYSTEM prompt, not user
+  const langInstruction = (lang === 'mk')
+    ? `You MUST respond in Macedonian (македонски јазик). All sections (Why you qualify, Risks, Next Step) must be in Macedonian.`
+    : `You MUST respond in ${nativeName} (${langName}). All sections (Why you qualify, Risks, Next Step) must be in ${nativeName}.`;
+
+  const system = `You are MARGINOVA, a funding evaluation assistant. ${langInstruction}
+Today: ${today}. Profile: ${profileLine}.
+
 Format each of the 3 programs exactly like this:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [ROLE: APPLY / CONDITIONAL / BACKUP]
 📋 [NAME]
 📊 Decision: YES / CONDITIONAL / BACKUP
-🎯 Probability of success: [PROB]
+🎯 Probability of success: [PROB]%
 💰 [AMOUNT]
 📅 Deadline: [DEADLINE]
 ✅ Why you qualify: [WHY — translated]
@@ -171,30 +183,26 @@ Format each of the 3 programs exactly like this:
   [RISKS — translated, keep bullet format]
 🔗 [URL]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-After all 3: ▶ NEXT STEP: one concrete action today.
-Keep amounts, dates, URLs exactly as given. Translate WHY and RISKS only.`;
+After all 3: ▶ NEXT STEP: one concrete action today that the user can take.
 
-  // User message carries the data + native language instruction
-  // Gemini follows the language of the user turn
-  const USER_MSG = {
-    mk: `Прикажи ги 3-те одлуки НА МАКЕДОНСКИ ЈАЗИК користејќи ги овие податоци:\n\n${dataRows}`,
-    sr: `Prikaži 3 odluke NA SRPSKOM JEZIKU koristeći ove podatke:\n\n${dataRows}`,
-    hr: `Prikaži 3 odluke NA HRVATSKOM JEZIKU koristeći ove podatke:\n\n${dataRows}`,
-    bg: `Покажи 3 решения НА БЪЛГАРСКИ, използвайки тези данни:\n\n${dataRows}`,
-    de: `Zeige die 3 Entscheidungen AUF DEUTSCH mit diesen Daten:\n\n${dataRows}`,
-    fr: `Présente les 3 décisions EN FRANÇAIS avec ces données:\n\n${dataRows}`,
-    es: `Presenta las 3 decisiones EN ESPAÑOL con estos datos:\n\n${dataRows}`,
-    it: `Presenta le 3 decisioni IN ITALIANO con questi dati:\n\n${dataRows}`,
-    pl: `Przedstaw 3 decyzje PO POLSKU używając tych danych:\n\n${dataRows}`,
-    tr: `3 kararı TÜRKÇE olarak bu verileri kullanarak sun:\n\n${dataRows}`,
-    ar: `قدم القرارات الثلاثة باللغة العربية باستخدام هذه البيانات:\n\n${dataRows}`,
-    ru: `Покажи 3 решения НА РУССКОМ используя эти данные:\n\n${dataRows}`,
-    uk: `Покажи 3 рішення УКРАЇНСЬКОЮ використовуючи ці дані:\n\n${dataRows}`,
-  };
-  const userMsg = USER_MSG[lang] || `Present the 3 decisions in ${L} using this data:\n\n${dataRows}`;
+Keep amounts, dates, URLs exactly as given.
+The user message below contains the raw data. Use it to fill the template above.`;
+
+  // User message contains ONLY the data (no language instruction)
+  const userMsg = `Generate the 3 decisions using this data:\n\n${dataRows}`;
 
   const contents = [{ role: 'user', parts: [{ text: userMsg }] }];
-  return await gemini(system, contents, { maxTokens: 2000, temperature: 0.15 });
+  
+  try {
+    return await gemini(system, contents, { maxTokens: 2000, temperature: 0.15 });
+  } catch (err) {
+    console.error('[SYNTHESIZE] Gemini error:', err.message);
+    // Fallback: return raw data in requested language
+    if (lang === 'mk') {
+      return `Грешка при генерирање: ${err.message}\n\nКористете ги овие податоци:\n${dataRows}`;
+    }
+    return `Error generating response: ${err.message}\n\nUse this raw data:\n${dataRows}`;
+  }
 }
 
 // ─── SERPER EXTRACTION (only when DB < 3 results) ────────────
