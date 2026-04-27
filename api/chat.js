@@ -170,7 +170,7 @@ module.exports = async function handler(req, res) {
     let cachedAt  = null;
 
     if (shouldSearch && !imageData) {
-      const cacheKey = buildCacheKey(userText, profile);
+      const cacheKey = buildCacheKey(userText, profile) + '_' + lang;
       const cached   = await getCached(cacheKey);
 
       if (cached?.results?.length) {
