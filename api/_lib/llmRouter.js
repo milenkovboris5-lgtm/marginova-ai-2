@@ -1,257 +1,290 @@
+// ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/_lib/llmRouter.js
-// v4 — FIXED: safe deadline parsing, safe sector fallback, amount parsing
-// deterministic prob/risks/match, no hallucination.
+// v5 — REPLACE THE ENTIRE FILE WITH THIS
+// No TOP3. No score. No YES/NO. Gemini formats, user chooses.
+// Serper only when DB < 3. Safe error handling throughout.
+// ═══════════════════════════════════════════════════════════
 
 const { gemini, LANG_NAMES } = require('./utils');
 
-console.log('[llmRouter] v4 loaded — safe parsing, language in system prompt');
+console.log('[llmRouter] v5 loaded — no score, user chooses, safe parsing');
 
 const NATIVE_NAMES = {
-  mk: 'македонски', sr: 'српски', hr: 'hrvatski', bs: 'bosanski',
-  sq: 'shqip', bg: 'български', ro: 'română', sl: 'slovenščina',
-  en: 'English', de: 'Deutsch', fr: 'français', es: 'español',
-  it: 'italiano', pl: 'polski', tr: 'Türkçe', nl: 'Nederlands',
-  pt: 'português', cs: 'čeština', hu: 'magyar', el: 'ελληνικά',
-  ru: 'русский', uk: 'українська', ar: 'العربية', ko: '한국어',
-  ja: '日本語', zh: '中文',
+  mk:'македонски', sr:'српски',   hr:'hrvatski',  bs:'bosanski',
+  sq:'shqip',      bg:'български', ro:'română',    sl:'slovenščina',
+  en:'English',    de:'Deutsch',   fr:'français',  es:'español',
+  it:'italiano',   pl:'polski',    tr:'Türkçe',    nl:'Nederlands',
+  pt:'português',  cs:'čeština',   hu:'magyar',    el:'ελληνικά',
+  ru:'русский',    uk:'українська', ar:'العربية',  ko:'한국어',
+  ja:'日本語',     zh:'中文',
 };
 
-// ─── HELPER: parse amount string ─────────────────────────────
-function parseAmount(amountStr) {
-  if (!amountStr || typeof amountStr !== 'string') return null;
-  const cleaned = amountStr.replace(/[^0-9.,]/g, '').replace(/,/g, '.');
-  const num = parseFloat(cleaned);
-  return isNaN(num) ? null : num;
+// ─── SAFE AMOUNT PARSER ─────────────────────────────────────
+function parseAmount(val) {
+  if (!val) return null;
+  const n = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+  return isNaN(n) ? null : n;
 }
 
-// ─── DETERMINISTIC PROBABILITY ───────────────────────────────
-function calcProbability(p, profile, roleIndex = 0) {
-  let prob = Math.round((p.score || 0) * 0.55) + [0, -8, -16][roleIndex];
-  const elig = (p.eligibility || '').toLowerCase();
-  const ctry = (p.country     || '').toLowerCase();
-  const desc = (p.description || '').toLowerCase();
-  const org  = (profile.orgType || '').toLowerCase().split('/')[0].trim();
-
-  if (org && elig.length > 10) {
-    if (elig.includes(org))                              prob += 8;
-    else if (!/all|global/.test(elig))                   prob -= 10;
+// ─── MATCH SIGNAL TEXT ──────────────────────────────────────
+function buildMatchText(p, profile) {
+  // Use pre-computed signals from fundingScorer if available
+  if (Array.isArray(p.matchSignals) && p.matchSignals.length > 0) {
+    return p.matchSignals.slice(0, 4).map(s => `• ${s}`).join('\n');
   }
-  if (profile.country) {
-    const pc = profile.country.toLowerCase();
-    if (ctry.includes(pc))                               prob += 8;
-    else if (/global|europe|western balkans/.test(ctry)) prob += 4;
-    else                                                 prob -= 8;
-  }
-  if (/global|worldwide/.test(desc))                     prob -= 10;
-  if (p.source === 'serper_extracted')                   prob -= 8;
-  
-  // ✅ FIX: safe deadline parsing
-  if (p.application_deadline && typeof p.application_deadline === 'string') {
-    const deadlineDate = new Date(p.application_deadline);
-    if (!isNaN(deadlineDate)) {
-      const days = Math.round((deadlineDate - new Date()) / 86400000);
-      if (days > 0 && days < 45) prob += 4;
-      if (days < 0)              prob -= 20;
-    }
-  }
-  
-  return Math.max(10, Math.min(76, prob));
-}
 
-// ─── DETERMINISTIC RISKS ─────────────────────────────────────
-function analyzeRisks(p, profile) {
-  const risks = [];
-  const elig  = (p.eligibility || '').toLowerCase();
-  const ctry  = (p.country     || '').toLowerCase();
-  const desc  = ((p.description || '') + ' ' + (p.focus_areas || '')).toLowerCase();
-  const org   = (profile.orgType || '').toLowerCase().split('/')[0].trim();
-
-  if (elig.length > 10 && org && !elig.includes(org) && !/all|global/.test(elig))
-    risks.push(`Eligibility: verify org type — program targets "${elig.slice(0,50)}..."`);
-
-  if (profile.country) {
-    const pc = profile.country.toLowerCase();
-    if (ctry.length > 0 && !ctry.includes(pc) && !/global|europe|western balkans/.test(ctry))
-      risks.push(`Region: confirm ${profile.country} is eligible — listed: "${p.country}"`);
-  }
-  
-  // ✅ FIX: safe amount comparison
-  const amountNum = parseAmount(p.award_amount);
-  if (profile.budget && amountNum) {
-    const R = { 'up to €30k':[0,30000], '€30k–€150k':[30000,150000], '€150k–€500k':[150000,500000], 'above €500k':[500000,Infinity] };
-    const [mn, mx] = R[profile.budget] || [0, Infinity];
-    if (amountNum < mn * 0.5 || amountNum > mx * 2)
-      risks.push(`Budget: need ${profile.budget}, program offers ${Math.round(amountNum).toLocaleString()} ${p.currency || 'EUR'}`);
-  }
-  
-  if (/global|international|worldwide/.test(desc)) risks.push('Competition: high — global applicant pool');
-  else if (/western balkans|regional/.test(desc))  risks.push('Competition: medium — regional applicants');
-  if (!p.application_deadline) risks.push('Deadline: not confirmed — verify on source');
-  if (p.source === 'serper_extracted') risks.push('Web result: verify all details on official source');
-
-  if (!risks.length) {
-    const on = (p.organization_name || '').toLowerCase();
-    if (/usaid/.test(on))                         risks.push('USAID prioritizes established local organizations');
-    else if (/undp|world bank|eu |european/.test(on)) risks.push('International program — prepare strong application');
-    else                                          risks.push('Strong match — write a detailed project description');
-  }
-  return risks;
-}
-
-// ─── MATCH REASON (FIXED) ────────────────────────────────────
-function buildMatchReason(p, profile) {
+  // Fallback: derive from raw fields
   const parts = [];
   const hay   = `${p.focus_areas || ''} ${p.description || ''}`.toLowerCase();
-  const ctry  = (p.country      || '').toLowerCase();
-  const elig  = (p.eligibility  || '').toLowerCase();
-  
-  // ✅ FIX: safe sector access
-  const safeSector = profile?.sector || 'General';
+  const ctry  = (p.country || '').toLowerCase();
+
   const KWS = {
-    'Environment / Energy':  ['environment','climate','renewable','biodiversity','conservation','clean energy','ecosystem','pollution','nature','wildlife','forest'],
-    'Civil Society':         ['civil society','ngo','nonprofit','advocacy','democracy','grassroots'],
+    'Environment / Energy':  ['environment','climate','renewable','biodiversity','conservation','clean energy'],
+    'Civil Society':         ['civil society','ngo','nonprofit','advocacy','democracy'],
     'Agriculture':           ['agriculture','farmer','rural','food','farm','ipard'],
     'Education':             ['education','school','learning','scholarship','erasmus'],
-    'IT / Technology':       ['technology','digital','software','ai','innovation','startup','website','platform','system'],
-    'Health / Social':       ['health','social','welfare','care','women','gender'],
+    'IT / Technology':       ['technology','digital','software','ai','innovation','startup'],
+    'Health / Social':       ['health','social','welfare','care','gender'],
     'Research / Innovation': ['research','science','innovation','university','academic'],
-    'SME / Business':        ['business','enterprise','sme','company','entrepreneur'],
-    'Student / Youth':       ['student','scholarship','fellowship','youth','erasmus','fulbright'],
-    'General':               ['funding','grant','support','program','project','opportunity'],
+    'SME / Business':        ['business','enterprise','sme','entrepreneur'],
+    'Student / Youth':       ['student','scholarship','fellowship','youth','erasmus'],
   };
-  const matched = (KWS[safeSector] || KWS['General']).filter(k => hay.includes(k));
-  if (matched.length) parts.push(`Covers: ${matched.slice(0,3).join(', ')}`);
 
-  if (profile.country) {
+  const sector  = profile?.sector || 'General';
+  const kwList  = KWS[sector] || ['funding','grant','support'];
+  const matched = kwList.filter(k => hay.includes(k));
+  if (matched.length) parts.push(`Sector topics found: ${matched.slice(0, 3).join(', ')}`);
+
+  if (profile?.country) {
     const pc = profile.country.toLowerCase();
-    if (ctry.includes(pc))                    parts.push(`${profile.country} listed as eligible`);
-    else if (ctry.includes('western balkans')) parts.push(`Western Balkans eligible (includes ${profile.country})`);
-    else if (/global|europe/.test(ctry))       parts.push(`Open internationally — ${profile.country} eligible`);
+    if (ctry.includes(pc))                       parts.push(`${profile.country} explicitly listed`);
+    else if (ctry.includes('western balkans'))    parts.push('Western Balkans region eligible');
+    else if (/global|europe/.test(ctry))          parts.push('Open internationally');
   }
-  
-  const orgKw = (profile.orgType || '').toLowerCase().split('/')[0].trim();
-  const SYN   = { ngo:['ngo','nonprofit','civil society','foundation','association'], sme:['sme','company','enterprise'], individual:['individual','person','applicant'] };
-  if (elig.length > 10 && (SYN[orgKw] || [orgKw]).some(k => elig.includes(k)))
-    parts.push(`Eligible: "${elig.slice(0,60).trim()}..."`);
 
-  // ✅ FIX: safe amount comparison
-  const amountNum = parseAmount(p.award_amount);
-  if (profile.budget && amountNum) {
-    const R = { 'up to €30k':[0,30000], '€30k–€150k':[30000,150000], '€150k–€500k':[150000,500000], 'above €500k':[500000,Infinity] };
-    const [mn, mx] = R[profile.budget] || [0, Infinity];
-    if (amountNum >= mn && amountNum <= mx) parts.push(`Amount ${Math.round(amountNum).toLocaleString()} ${p.currency || 'EUR'} fits budget`);
-  }
-  
-  return parts.length ? parts.join(' · ') : 'Partial match — verify eligibility on source';
+  return parts.length
+    ? parts.map(s => `• ${s}`).join('\n')
+    : '• Check eligibility on official source';
 }
 
-// ─── MAIN SYNTHESIZE — SINGLE GEMINI CALL ────────────────────
-async function synthesize(lang, today, profile, programs, sources) {
-  const nativeName = NATIVE_NAMES[lang] || 'English';
-  const langName = LANG_NAMES[lang] || 'English';
-
-  if (!programs?.length) {
-    return lang === 'mk'
-      ? `Нема пронајдени програми за вашиот профил. Додајте повеќе детали за проектот.`
-      : `No funding programs found for your profile. Please add more project details.`;
+// ─── RISK FACTOR TEXT ───────────────────────────────────────
+function buildRiskText(p, profile) {
+  // Use pre-computed risks from fundingScorer if available
+  if (Array.isArray(p.riskFactors) && p.riskFactors.length > 0) {
+    return p.riskFactors.slice(0, 4).map(r => `• ${r}`).join('\n');
   }
 
-  const roles = ['APPLY', 'CONDITIONAL', 'BACKUP'];
+  // Fallback
+  const risks = [];
+  const ctry  = (p.country || '').toLowerCase();
+  const desc  = `${p.description || ''} ${p.focus_areas || ''}`.toLowerCase();
 
-  // Build compact data rows — numbers/dates/URLs stay as-is
-  const dataRows = programs.slice(0, 3).map((p, i) => {
-    const prob  = calcProbability(p, profile, i);
-    const risks = analyzeRisks(p, profile).map(r => '• ' + r).join('\n');
-    const why   = buildMatchReason(p, profile);
-    const amt   = p.award_amount ? `${Number(p.award_amount).toLocaleString()} ${p.currency || 'EUR'}` : (p.funding_range || '—');
-    const src   = p.source === 'serper_extracted' ? '[WEB — verify]' : '[DB]';
+  if (profile?.country) {
+    const pc = profile.country.toLowerCase();
+    if (ctry.length > 0 && !ctry.includes(pc) && !/global|europe|western balkans/.test(ctry)) {
+      risks.push(`Confirm ${profile.country} is eligible — listed: "${p.country}"`);
+    }
+  }
+
+  if (!p.application_deadline) {
+    risks.push('Deadline not confirmed — verify on official source');
+  } else {
+    const days = Math.round((new Date(p.application_deadline) - new Date()) / 86400000);
+    if (days < 14) risks.push(`Deadline soon — ${days} days remaining`);
+  }
+
+  if (/global|international|worldwide/.test(desc)) risks.push('Global competition — many applicants expected');
+  if (p.source === 'serper_extracted')              risks.push('Web result — verify ALL details on official source');
+  if (!risks.length)                                risks.push('Review full eligibility criteria before applying');
+
+  return risks.map(r => `• ${r}`).join('\n');
+}
+
+// ─── BUILD DATA ROWS FOR GEMINI ─────────────────────────────
+function buildDataRows(programs, profile) {
+  return programs.map((p, i) => {
+    const amtNum = parseAmount(p.award_amount);
+    const amt    = amtNum
+      ? `${Math.round(amtNum).toLocaleString()} ${p.currency || 'EUR'}`
+      : (p.funding_range || '—');
+
+    const src = p.source === 'serper_extracted' ? '[WEB — verify]' : '[DB]';
+
     return `---
-ROLE: ${roles[i]} ${src}
-NAME: ${p.title}
+[${i + 1}] ${src}
+NAME: ${p.title || 'Unknown'}
 ORG: ${p.organization_name || '—'}
 AMOUNT: ${amt}
 DEADLINE: ${p.application_deadline || 'verify on source'}
+COUNTRY: ${p.country || '—'}
+ELIGIBILITY: ${(p.eligibility || '—').slice(0, 150)}
 URL: ${p.link || p.source_url || '—'}
-PROB: ${prob}%
-WHY: ${why}
-RISKS:
-${risks}`;
+MATCH SIGNALS:
+${buildMatchText(p, profile)}
+RISK FACTORS:
+${buildRiskText(p, profile)}`;
   }).join('\n\n');
+}
 
-  const profileLine = [
-    profile.sector  && profile.sector,
-    profile.orgType && profile.orgType,
-    profile.country && profile.country,
-    profile.budget  && profile.budget,
-  ].filter(Boolean).join(' | ') || 'not specified';
+// ─── MAIN SYNTHESIZE ────────────────────────────────────────
+/**
+ * synthesize(lang, today, profile, programs, sources)
+ *
+ * Gemini presents all programs (up to 6).
+ * NO probability %. NO YES/NO/APPLY labels. NO score.
+ * User reads and picks what suits them.
+ */
+async function synthesize(lang, today, profile, programs, sources) {
+  // Safe type coercion
+  const safeLang     = typeof lang === 'string' ? lang : 'en';
+  const safeToday    = typeof today === 'string' ? today : new Date().toLocaleDateString('en-GB');
+  const safePrograms = Array.isArray(programs) ? programs : [];
+  const safeSources  = sources && typeof sources === 'object' ? sources : { db: 0, serper: 0 };
 
-  // Language instruction goes into SYSTEM prompt
-  const langInstruction = (lang === 'mk')
-    ? `You MUST respond in Macedonian (македонски јазик). All sections (Why you qualify, Risks, Next Step) must be in Macedonian.`
-    : `You MUST respond in ${nativeName} (${langName}). All sections (Why you qualify, Risks, Next Step) must be in ${nativeName}.`;
+  const nativeName = NATIVE_NAMES[safeLang] || 'English';
+  const langName   = LANG_NAMES[safeLang]   || 'English';
 
-  const system = `You are MARGINOVA, a funding evaluation assistant. ${langInstruction}
-Today: ${today}. Profile: ${profileLine}.
+  // No results case
+  if (safePrograms.length === 0) {
+    return safeLang === 'mk'
+      ? 'Нема пронајдени програми за вашиот профил. Додадете повеќе детали — сектор, земја, тип на организација.'
+      : 'No funding programs found. Please add more details — sector, country, organization type.';
+  }
 
-Format each of the 3 programs exactly like this:
+  const profileLine = [profile?.sector, profile?.orgType, profile?.country, profile?.budget]
+    .filter(Boolean).join(' | ') || 'not specified';
+
+  const dataRows = buildDataRows(safePrograms, profile || {});
+
+  const langInstruction = safeLang === 'mk'
+    ? 'Задолжително одговори САМО на македонски јазик. Сите секции мора да бидат на македонски.'
+    : `You MUST respond entirely in ${nativeName} (${langName}).`;
+
+  const systemPrompt = `You are MARGINOVA, a funding opportunities assistant. ${langInstruction}
+Today: ${safeToday}. User profile: ${profileLine}.
+DB results: ${safeSources.db}. Web results: ${safeSources.serper}.
+
+STRICT RULES — follow exactly:
+1. You are NOT a decision-maker. The donor/funder decides eligibility — not you.
+2. Do NOT assign probability %, scores, or rankings of any kind.
+3. Do NOT label programs YES / NO / CONDITIONAL / APPLY / BACKUP or any similar label.
+4. Show ALL programs. The user makes their own choice.
+5. Translate the match signals and risk factors into the user's language.
+6. Keep amounts, dates, and URLs character-for-character as given in the data.
+7. [WEB — verify] tagged results: add a short note that the user must verify details on the official website.
+
+Format EACH program exactly like this (no deviations):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[ROLE: APPLY / CONDITIONAL / BACKUP]
-📋 [NAME]
-📊 Decision: YES / CONDITIONAL / BACKUP
-🎯 Probability of success: [PROB]%
+[N]. [PROGRAM NAME]
+🏛 [ORGANIZATION]
 💰 [AMOUNT]
 📅 Deadline: [DEADLINE]
-✅ Why you qualify: [WHY — translated]
-⚠️ Risks:
-  [RISKS — translated, keep bullet format]
+🌍 [COUNTRY / REGION]
+
+✅ Why this may be relevant to you:
+[MATCH SIGNALS — translated, keep bullet format]
+
+⚠️ What to verify before applying:
+[RISK FACTORS — translated, keep bullet format]
+
 🔗 [URL]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-After all 3: ▶ NEXT STEP: one concrete action today that the user can take.
 
-Keep amounts, dates, URLs exactly as given.
-The user message below contains the raw data. Use it to fill the template above.`;
+After ALL programs add exactly one line:
+▶ NEXT STEP: [one concrete action today — e.g. "Open link 1 and check if your organization type appears in the official eligibility section"]`;
 
-  // User message contains ONLY the data (no language instruction)
-  const userMsg = `Generate the 3 decisions using this data:\n\n${dataRows}`;
-
+  const userMsg  = `Present these ${safePrograms.length} funding opportunities to the user:\n\n${dataRows}`;
   const contents = [{ role: 'user', parts: [{ text: userMsg }] }];
-  
+
   try {
-    return await gemini(system, contents, { maxTokens: 2000, temperature: 0.15 });
-  } catch (err) {
-    console.error('[SYNTHESIZE] Gemini error:', err.message);
-    // Fallback: return raw data in requested language
-    if (lang === 'mk') {
-      return `Грешка при генерирање: ${err.message}\n\nКористете ги овие податоци:\n${dataRows}`;
+    const result = await gemini(systemPrompt, contents, { maxTokens: 3500, temperature: 0.1 });
+    if (!result || typeof result !== 'string') {
+      throw new Error('Gemini returned empty or non-string result');
     }
-    return `Error generating response: ${err.message}\n\nUse this raw data:\n${dataRows}`;
+    return result;
+  } catch (err) {
+    console.error('[SYNTHESIZE] Gemini call failed:', err.message);
+
+    // Safe fallback — still useful to the user
+    const fallback = safePrograms.map((p, i) => {
+      const amtNum = parseAmount(p.award_amount);
+      const amt    = amtNum ? `${Math.round(amtNum).toLocaleString()} ${p.currency || 'EUR'}` : (p.funding_range || '—');
+      return `${i + 1}. ${p.title || 'Unknown'}\n   ${p.organization_name || ''} | ${amt} | ${p.application_deadline || 'TBD'}\n   ${p.link || p.source_url || ''}`;
+    }).join('\n\n');
+
+    return safeLang === 'mk'
+      ? `Грешка при генерирање на одговор: ${err.message}\n\nПронајдени програми:\n${fallback}`
+      : `Error generating formatted response: ${err.message}\n\nPrograms found:\n${fallback}`;
   }
 }
 
-// ─── SERPER EXTRACTION (only when DB < 3 results) ────────────
+// ─── SERPER EXTRACTION ──────────────────────────────────────
+/**
+ * extractFromSerper(serperResults, profile)
+ * Called ONLY when DB returns fewer than MIN_RESULTS (3).
+ * Gemini extracts structured data from raw Serper snippets.
+ */
 async function extractFromSerper(serperResults, profile) {
-  if (!serperResults?.length) return [];
-  const snippets = serperResults.map((r, i) => `[${i+1}] ${r.title}\n${r.snippet}\n${r.link}`).join('\n\n');
-  const prompt = `Extract funding program data. Return JSON array only, no markdown.
-Only extract fields explicitly stated. Use null if not mentioned.
-Profile: sector=${profile.sector}, country=${profile.country}
-For each relevant result: {"index":N,"title":"...","organization":"...or null","amount":"...or null","deadline":"YYYY-MM-DD or null","eligibility":"...or null","focus":"...","url":"...","relevance_score":0-100}
-Results:\n${snippets}`;
+  if (!Array.isArray(serperResults) || serperResults.length === 0) return [];
+
+  const snippets = serperResults
+    .slice(0, 8)
+    .map((r, i) => `[${i + 1}] ${r.title || ''}\n${r.snippet || ''}\n${r.link || ''}`)
+    .join('\n\n');
+
+  const safeProfile = profile || {};
+  const prompt = `Extract funding program data from web search results.
+Return a JSON array ONLY — no markdown fences, no explanation, no preamble.
+Only extract fields that are explicitly stated. Use null for anything not mentioned.
+User profile: sector=${safeProfile.sector || 'unknown'}, country=${safeProfile.country || 'unknown'}
+
+Return exactly this shape for each relevant result:
+[{"index":1,"title":"...","organization":"...or null","amount":"...or null","deadline":"YYYY-MM-DD or null","eligibility":"...or null","focus":"...","url":"...","relevance_notes":"brief note or null"}]
+
+Web search results:
+${snippets}`;
+
   try {
-    const raw    = await gemini(prompt, [{ role:'user', parts:[{ text:'Extract.' }] }], { maxTokens:1000, temperature:0.1 });
-    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(r => r.relevance_score >= 30).map(r => ({
-      title: r.title || 'Unknown', organization_name: r.organization || '',
-      award_amount: r.amount ? parseFloat(r.amount.replace(/[^0-9.]/g,'')) || null : null,
-      currency: r.amount?.includes('$') ? 'USD' : 'EUR',
-      funding_range: r.amount || null, application_deadline: r.deadline || null,
-      eligibility: r.eligibility || null, description: r.focus || '',
-      source_url: r.url || '', country: profile.country || '', focus_areas: profile.sector || '',
-      score: Math.min(60, Math.round((r.relevance_score || 0) * 0.6)),
-      score_type: 'web_extracted', source: 'serper_extracted', link: r.url || '',
-    }));
-  } catch (e) { console.log('[EXTRACT]', e.message); return []; }
+    const raw = await gemini(
+      'Extract structured data from web results. Return JSON array only.',
+      [{ role: 'user', parts: [{ text: prompt }] }],
+      { maxTokens: 1400, temperature: 0.05 }
+    );
+
+    if (!raw || typeof raw !== 'string') return [];
+
+    const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const parsed  = JSON.parse(cleaned);
+
+    if (!Array.isArray(parsed)) {
+      console.warn('[EXTRACT] Gemini returned non-array:', typeof parsed);
+      return [];
+    }
+
+    return parsed
+      .filter(r => r && r.title && r.url)
+      .map(r => ({
+        title:                String(r.title),
+        organization_name:    r.organization ? String(r.organization) : '',
+        award_amount:         r.amount ? parseAmount(r.amount) : null,
+        currency:             r.amount && String(r.amount).includes('$') ? 'USD' : 'EUR',
+        funding_range:        r.amount ? String(r.amount) : null,
+        application_deadline: r.deadline || null,
+        eligibility:          r.eligibility || null,
+        description:          r.focus ? String(r.focus) : '',
+        source_url:           String(r.url),
+        country:              safeProfile.country || '',
+        focus_areas:          safeProfile.sector  || '',
+        matchSignals:         r.relevance_notes ? [`Web: ${r.relevance_notes}`] : [],
+        riskFactors:          ['Web result — verify ALL details on official source before applying'],
+        _matchCount:          0,
+        source:               'serper_extracted',
+        link:                 String(r.url),
+      }));
+  } catch (e) {
+    console.error('[EXTRACT] Failed to parse Gemini response:', e.message);
+    return [];
+  }
 }
 
-module.exports = { extractFromSerper, synthesize, analyzeRisks, calcProbability };
+module.exports = { extractFromSerper, synthesize };
