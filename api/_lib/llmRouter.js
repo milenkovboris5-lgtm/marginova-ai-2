@@ -1,12 +1,11 @@
 // MARGINOVA — api/_lib/llmRouter.js
-// v3 — FIXED: language in system prompt, not user.
-//       deterministic prob/risks/match, no hallucination.
+// v4 — FIXED: safe deadline parsing, safe sector fallback, amount parsing
+// deterministic prob/risks/match, no hallucination.
 
 const { gemini, LANG_NAMES } = require('./utils');
 
-console.log('[llmRouter] v3 loaded — language in system prompt');
+console.log('[llmRouter] v4 loaded — safe parsing, language in system prompt');
 
-// Map from language code to native name (for prompt)
 const NATIVE_NAMES = {
   mk: 'македонски', sr: 'српски', hr: 'hrvatski', bs: 'bosanski',
   sq: 'shqip', bg: 'български', ro: 'română', sl: 'slovenščina',
@@ -16,6 +15,14 @@ const NATIVE_NAMES = {
   ru: 'русский', uk: 'українська', ar: 'العربية', ko: '한국어',
   ja: '日本語', zh: '中文',
 };
+
+// ─── HELPER: parse amount string ─────────────────────────────
+function parseAmount(amountStr) {
+  if (!amountStr || typeof amountStr !== 'string') return null;
+  const cleaned = amountStr.replace(/[^0-9.,]/g, '').replace(/,/g, '.');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
+}
 
 // ─── DETERMINISTIC PROBABILITY ───────────────────────────────
 function calcProbability(p, profile, roleIndex = 0) {
@@ -37,11 +44,17 @@ function calcProbability(p, profile, roleIndex = 0) {
   }
   if (/global|worldwide/.test(desc))                     prob -= 10;
   if (p.source === 'serper_extracted')                   prob -= 8;
-  if (p.application_deadline) {
-    const days = Math.round((new Date(p.application_deadline) - new Date()) / 86400000);
-    if (days > 0 && days < 45) prob += 4;
-    if (days < 0)              prob -= 20;
+  
+  // ✅ FIX: safe deadline parsing
+  if (p.application_deadline && typeof p.application_deadline === 'string') {
+    const deadlineDate = new Date(p.application_deadline);
+    if (!isNaN(deadlineDate)) {
+      const days = Math.round((deadlineDate - new Date()) / 86400000);
+      if (days > 0 && days < 45) prob += 4;
+      if (days < 0)              prob -= 20;
+    }
   }
+  
   return Math.max(10, Math.min(76, prob));
 }
 
@@ -61,13 +74,16 @@ function analyzeRisks(p, profile) {
     if (ctry.length > 0 && !ctry.includes(pc) && !/global|europe|western balkans/.test(ctry))
       risks.push(`Region: confirm ${profile.country} is eligible — listed: "${p.country}"`);
   }
-  if (profile.budget && p.award_amount) {
+  
+  // ✅ FIX: safe amount comparison
+  const amountNum = parseAmount(p.award_amount);
+  if (profile.budget && amountNum) {
     const R = { 'up to €30k':[0,30000], '€30k–€150k':[30000,150000], '€150k–€500k':[150000,500000], 'above €500k':[500000,Infinity] };
     const [mn, mx] = R[profile.budget] || [0, Infinity];
-    const amt = Number(p.award_amount);
-    if (amt < mn * 0.5 || amt > mx * 2)
-      risks.push(`Budget: need ${profile.budget}, program offers ${amt.toLocaleString()} ${p.currency || 'EUR'}`);
+    if (amountNum < mn * 0.5 || amountNum > mx * 2)
+      risks.push(`Budget: need ${profile.budget}, program offers ${Math.round(amountNum).toLocaleString()} ${p.currency || 'EUR'}`);
   }
+  
   if (/global|international|worldwide/.test(desc)) risks.push('Competition: high — global applicant pool');
   else if (/western balkans|regional/.test(desc))  risks.push('Competition: medium — regional applicants');
   if (!p.application_deadline) risks.push('Deadline: not confirmed — verify on source');
@@ -82,24 +98,28 @@ function analyzeRisks(p, profile) {
   return risks;
 }
 
-// ─── MATCH REASON ────────────────────────────────────────────
+// ─── MATCH REASON (FIXED) ────────────────────────────────────
 function buildMatchReason(p, profile) {
   const parts = [];
   const hay   = `${p.focus_areas || ''} ${p.description || ''}`.toLowerCase();
   const ctry  = (p.country      || '').toLowerCase();
   const elig  = (p.eligibility  || '').toLowerCase();
-  const KWS   = {
+  
+  // ✅ FIX: safe sector access
+  const safeSector = profile?.sector || 'General';
+  const KWS = {
     'Environment / Energy':  ['environment','climate','renewable','biodiversity','conservation','clean energy','ecosystem','pollution','nature','wildlife','forest'],
     'Civil Society':         ['civil society','ngo','nonprofit','advocacy','democracy','grassroots'],
     'Agriculture':           ['agriculture','farmer','rural','food','farm','ipard'],
     'Education':             ['education','school','learning','scholarship','erasmus'],
-    'IT / Technology':       ['technology','digital','software','ai','innovation','startup'],
+    'IT / Technology':       ['technology','digital','software','ai','innovation','startup','website','platform','system'],
     'Health / Social':       ['health','social','welfare','care','women','gender'],
     'Research / Innovation': ['research','science','innovation','university','academic'],
     'SME / Business':        ['business','enterprise','sme','company','entrepreneur'],
     'Student / Youth':       ['student','scholarship','fellowship','youth','erasmus','fulbright'],
+    'General':               ['funding','grant','support','program','project','opportunity'],
   };
-  const matched = (KWS[profile.sector] || []).filter(k => hay.includes(k));
+  const matched = (KWS[safeSector] || KWS['General']).filter(k => hay.includes(k));
   if (matched.length) parts.push(`Covers: ${matched.slice(0,3).join(', ')}`);
 
   if (profile.country) {
@@ -108,17 +128,20 @@ function buildMatchReason(p, profile) {
     else if (ctry.includes('western balkans')) parts.push(`Western Balkans eligible (includes ${profile.country})`);
     else if (/global|europe/.test(ctry))       parts.push(`Open internationally — ${profile.country} eligible`);
   }
+  
   const orgKw = (profile.orgType || '').toLowerCase().split('/')[0].trim();
   const SYN   = { ngo:['ngo','nonprofit','civil society','foundation','association'], sme:['sme','company','enterprise'], individual:['individual','person','applicant'] };
   if (elig.length > 10 && (SYN[orgKw] || [orgKw]).some(k => elig.includes(k)))
     parts.push(`Eligible: "${elig.slice(0,60).trim()}..."`);
 
-  if (profile.budget && p.award_amount) {
+  // ✅ FIX: safe amount comparison
+  const amountNum = parseAmount(p.award_amount);
+  if (profile.budget && amountNum) {
     const R = { 'up to €30k':[0,30000], '€30k–€150k':[30000,150000], '€150k–€500k':[150000,500000], 'above €500k':[500000,Infinity] };
     const [mn, mx] = R[profile.budget] || [0, Infinity];
-    const amt = Number(p.award_amount);
-    if (amt >= mn && amt <= mx) parts.push(`Amount ${amt.toLocaleString()} ${p.currency||'EUR'} fits budget`);
+    if (amountNum >= mn && amountNum <= mx) parts.push(`Amount ${Math.round(amountNum).toLocaleString()} ${p.currency || 'EUR'} fits budget`);
   }
+  
   return parts.length ? parts.join(' · ') : 'Partial match — verify eligibility on source';
 }
 
@@ -162,7 +185,7 @@ ${risks}`;
     profile.budget  && profile.budget,
   ].filter(Boolean).join(' | ') || 'not specified';
 
-  // ✅ FIX: Language instruction goes into SYSTEM prompt, not user
+  // Language instruction goes into SYSTEM prompt
   const langInstruction = (lang === 'mk')
     ? `You MUST respond in Macedonian (македонски јазик). All sections (Why you qualify, Risks, Next Step) must be in Macedonian.`
     : `You MUST respond in ${nativeName} (${langName}). All sections (Why you qualify, Risks, Next Step) must be in ${nativeName}.`;
