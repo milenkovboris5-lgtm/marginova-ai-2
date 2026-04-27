@@ -2,6 +2,7 @@
 // Single Gemini call. Deterministic prob/risks/match. No hallucination.
 
 const { gemini } = require('./utils');
+console.log('[llmRouter] v2 loaded — single call, lang-in-user-turn');
 
 const LANG_NAMES = {
   mk:'Macedonian', sr:'Serbian', hr:'Croatian', bs:'Bosnian', sq:'Albanian',
