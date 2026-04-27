@@ -130,7 +130,7 @@ async function synthesize(lang, today, profile, programs, sources) {
   // Build verified program data blocks for Gemini
   const programBlocks = top3.map((p, i) => {
     const role = roles[i];
-    const prob = calcProbability(p, profile);
+    const prob = calcProbability(p, profile, i); // i=0→APPLY, 1→CONDITIONAL, 2→BACKUP
     const risks = analyzeRisks(p, profile);
 
     return `
@@ -269,15 +269,31 @@ function analyzeRisks(program, profile) {
     risks.push('Web result — verify all details (amount, deadline, eligibility) on the official source');
   }
 
-  if (!risks.length) risks.push('No major risks identified — strong match based on available data');
+  // If no structural risks, add competition context
+  if (!risks.length) {
+    const org_name = (program.organization_name || '').toLowerCase();
+    if (org_name.includes('undp') || org_name.includes('eu') || org_name.includes('world bank')) {
+      risks.push('High applicant volume — international program with many applicants globally');
+    } else if (org_name.includes('usaid')) {
+      risks.push('Requires strong local track record — USAID prioritizes established organizations');
+    } else {
+      risks.push('Strong match — prepare a detailed project description to stand out');
+    }
+  }
   return risks;
 }
 
 // ═══ PROBABILITY CALCULATOR ═══
 // Deterministic — no AI, pure math
 
-function calcProbability(program, profile) {
+function calcProbability(program, profile, roleIndex = 0) {
+  // Base: 55% of match score
   let prob = Math.round((program.score || 0) * 0.55);
+  
+  // Role-based differentiation (APPLY > CONDITIONAL > BACKUP)
+  // Even with identical scores, roles imply different confidence levels
+  const rolePenalty = [0, -8, -16];
+  prob += rolePenalty[roleIndex] || 0;
 
   const elig    = (program.eligibility  || '').toLowerCase();
   const country = (program.country      || '').toLowerCase();
