@@ -89,7 +89,7 @@ async function generateGrant(profile, program, lang, langName) {
   const org     = profile.organization  || profile.name       || 'Our Organization';
   const sector  = profile.sector        || 'Education / IT';
   const country = profile.country       || 'North Macedonia';
-  const budget  = program.amount        || program.award_amount || '€60,000';
+  const budgetAmt = program.amount        || program.award_amount || '€60,000';
   const donor   = program.donor         || program.organization_name || 'Funding Organization';
   const title   = program.title         || 'Funding Program';
 
@@ -102,7 +102,7 @@ Sector: ${sector}
 Country: ${country}
 Program: ${title}
 Donor: ${donor}
-Budget requested: ${budget}
+Budget requested: ${budgetAmt}
 
 Return ONLY valid JSON (no markdown, no explanation):
 {
@@ -121,7 +121,7 @@ ALL text must be in ${langName}.
 
 Project: ${profile.sector || 'Digital Education'} in ${country}
 Duration: 18 months
-Budget: ${budget}
+Budget: ${budgetAmt}
 
 Return ONLY valid JSON:
 {
@@ -152,7 +152,7 @@ Return ONLY valid JSON:
   const budgetPrompt = `You are a senior EU grant accountant. Write in ${langName}.
 ALL labels must be in ${langName}.
 
-Total budget: ${budget}
+Total budget: ${budgetAmt}
 Duration: 18 months
 Sector: ${sector}
 Country: ${country}
