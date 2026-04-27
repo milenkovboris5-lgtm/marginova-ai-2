@@ -1,840 +1,684 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><link rel="icon" href="/favicon.png" type="image/png">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Marginova — Application Builder</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" href="/favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<!-- pdfmake — client-side PDF generation, no server needed -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --gold:#C9A84C;--gold-l:#E8C97A;--gold-d:#9E7724;
-  --navy:#0F1623;--navy-2:#1A2235;--navy-3:#243047;
-  --cream:#FAF8F3;--cream-2:#F2EDE2;
-  --white:#fff;--text:#171717;--muted:#6B6560;
-  --border:rgba(201,168,76,.15);--border-s:rgba(0,0,0,.07);
-  --ok:#1fa94b;--warn:#B54708;--err:#B42318;
-  --ok-bg:#ecfdf3;--warn-bg:#fffaeb;--err-bg:#fef3f2;
+  --gold:#C9A84C;--gold-light:#E8C97A;--gold-pale:#F6EFD9;
+  --navy:#0F1623;--navy-mid:#1A2235;--cream:#FAF8F3;
+  --text:#171717;--muted:#6B6560;--white:#fff;
+  --border:rgba(201,168,76,.14);--success:#1fa94b;--danger:#C0392B;
 }
-html{scroll-behavior:smooth}
-body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text)}
 button,input,textarea,select{font:inherit}
 
-nav{background:var(--navy);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(201,168,76,.1)}
-.nav-logo{display:flex;align-items:center;gap:.7rem;text-decoration:none}
-.nav-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-l));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;color:var(--navy)}
-.nav-word{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;color:var(--white)}
-.nav-word span{color:var(--gold)}
-.nav-back{padding:.45rem .9rem;border-radius:8px;border:1px solid rgba(201,168,76,.2);background:transparent;color:rgba(255,255,255,.6);font-size:.78rem;cursor:pointer;text-decoration:none;transition:.2s}
-.nav-back:hover{border-color:var(--gold);color:var(--gold)}
+/* TOP BAR */
+.topbar{height:60px;background:var(--navy);border-bottom:1px solid rgba(201,168,76,.15);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:100}
+.topbar-brand{display:flex;align-items:center;gap:.65rem}
+.topbar-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:var(--navy)}
+.topbar-name{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;color:var(--white)}
+.topbar-name span{color:var(--gold)}
+.topbar-sub{font-size:.7rem;color:rgba(255,255,255,.35);letter-spacing:.1em;text-transform:uppercase;margin-left:.3rem}
+.topbar-actions{display:flex;gap:.6rem}
+.tb-btn{padding:.4rem .9rem;border-radius:8px;font-size:.78rem;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:.4rem}
+.tb-btn.outline{background:transparent;border:1px solid rgba(201,168,76,.25);color:rgba(255,255,255,.6)}
+.tb-btn.outline:hover{border-color:var(--gold);color:var(--gold)}
+.tb-btn.gold{background:linear-gradient(135deg,var(--gold),var(--gold-light));border:none;color:var(--navy);font-weight:600}
+.tb-btn.gold:disabled{opacity:.4;cursor:not-allowed}
 
-.hero{background:var(--navy);padding:3rem 2rem 2.5rem;text-align:center;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.06) 0%,transparent 70%);pointer-events:none}
-.hero-badge{display:inline-flex;align-items:center;gap:.4rem;border:1px solid var(--border);border-radius:999px;padding:.3rem .85rem;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem}
-.hero-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.hero h1{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3rem);font-weight:300;color:var(--white);margin-bottom:.75rem;line-height:1.15}
-.hero h1 em{font-style:italic;color:var(--gold)}
-.hero p{font-size:.92rem;color:rgba(255,255,255,.45);max-width:540px;margin:0 auto;line-height:1.7}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:300px 1fr;height:calc(100vh - 60px);overflow:hidden}
+.sidebar{background:var(--white);border-right:1px solid var(--border);overflow-y:auto;padding:1rem}
+.main-area{overflow-y:auto;padding:1.5rem}
 
-.wrap{max-width:1200px;margin:0 auto;padding:2rem}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
+/* FORM SIDEBAR */
+.form-section{margin-bottom:1.25rem}
+.form-label{font-size:.7rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;display:block}
+.form-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:var(--navy);margin-bottom:.75rem}
+.form-input,.form-select,.form-textarea{width:100%;padding:.65rem .8rem;border:1px solid rgba(201,168,76,.18);border-radius:8px;background:var(--cream);color:var(--text);font-size:.85rem;outline:none;transition:.2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:rgba(201,168,76,.4);background:var(--white)}
+.form-textarea{min-height:70px;resize:vertical;line-height:1.5}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem}
+.form-group{margin-bottom:.6rem}
+.generate-btn{width:100%;padding:.85rem;border:none;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);font-weight:600;font-size:.9rem;cursor:pointer;box-shadow:0 8px 20px rgba(201,168,76,.25);transition:.2s;margin-top:.5rem}
+.generate-btn:hover:not(:disabled){transform:translateY(-1px)}
+.generate-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.type-tabs{display:flex;gap:3px;background:rgba(0,0,0,.05);padding:3px;border-radius:8px;margin-bottom:.85rem}
+.type-tab{flex:1;padding:.5rem;border:none;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:.78rem;transition:.2s;text-align:center}
+.type-tab.active{background:var(--navy);color:var(--gold);font-weight:500}
 
-.card{background:var(--white);border:1px solid var(--border-s);border-radius:20px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.05)}
-.card-head{background:var(--navy);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
-.card-head h2{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:var(--white)}
-.card-head span{font-size:.72rem;color:rgba(255,255,255,.35)}
-.card-body{padding:1.5rem}
+/* MAIN CONTENT */
+.doc-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;color:var(--muted);gap:1rem}
+.doc-placeholder .icon{font-size:3rem;opacity:.3}
+.doc-placeholder h3{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--navy);font-weight:300}
+.doc-placeholder p{font-size:.85rem;max-width:340px;line-height:1.6}
 
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-.field{margin-bottom:1rem}
-label{display:block;font-size:.75rem;font-weight:500;color:var(--text);margin-bottom:.4rem}
-.hint{font-size:.68rem;color:var(--muted);margin-top:.25rem;line-height:1.4}
-.req{color:var(--err);margin-left:2px}
-input,textarea,select{width:100%;padding:.72rem .9rem;border:1px solid rgba(201,168,76,.18);border-radius:10px;background:var(--cream);color:var(--text);font-size:.85rem;outline:none;transition:.2s;appearance:none}
-input:focus,textarea:focus,select:focus{border-color:rgba(201,168,76,.45);background:var(--white);box-shadow:0 0 0 3px rgba(201,168,76,.07)}
-textarea{min-height:110px;resize:vertical;line-height:1.55}
-.textarea-lg{min-height:150px}
-.divider{height:1px;background:rgba(0,0,0,.06);margin:1.25rem 0}
-.section-label{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.85rem}
-
-/* BUTTONS */
-.actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem}
-.btn-primary{padding:.8rem 1.5rem;border:none;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-l));color:var(--navy);font-weight:600;font-size:.85rem;cursor:pointer;transition:.2s;box-shadow:0 6px 18px rgba(201,168,76,.22)}
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(201,168,76,.32)}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.btn-ghost{padding:.8rem 1.2rem;border:1px solid rgba(0,0,0,.1);border-radius:10px;background:transparent;color:var(--muted);font-size:.85rem;cursor:pointer;transition:.2s}
-.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
-
-/* PDF BUTTON */
-.btn-pdf{
-  display:none;
-  padding:.8rem 1.4rem;border:none;border-radius:10px;
-  background:var(--navy);color:var(--gold);
-  font-weight:600;font-size:.85rem;cursor:pointer;
-  transition:.2s;gap:.5rem;align-items:center;
-  box-shadow:0 6px 18px rgba(15,22,35,.2);
-}
-.btn-pdf.show{display:inline-flex}
-.btn-pdf:hover{background:var(--navy-2);transform:translateY(-1px)}
-.btn-pdf:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.btn-pdf svg{width:16px;height:16px;flex-shrink:0}
-
-/* PDF PROGRESS */
-.pdf-progress{display:none;margin-top:.75rem;padding:.6rem 1rem;background:rgba(201,168,76,.06);border:1px solid var(--border);border-radius:8px;font-size:.78rem;color:var(--muted)}
-.pdf-progress.show{display:block}
-
-/* STATUS */
-.status{display:none;margin-top:1rem;border-radius:12px;padding:.85rem 1rem;font-size:.82rem;font-weight:500;line-height:1.5}
-.status.ok{display:block;background:var(--ok-bg);color:var(--ok);border:1px solid #abefc6}
-.status.warn{display:block;background:var(--warn-bg);color:var(--warn);border:1px solid #fedf89}
-.status.err{display:block;background:var(--err-bg);color:var(--err);border:1px solid #fecdca}
-
-.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem}
-.meta-box{border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:.85rem 1rem;background:var(--cream)}
-.meta-box .mk{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;font-weight:500}
-.meta-box .mv{font-size:.82rem;color:var(--text);line-height:1.4;word-break:break-word}
-
-/* OUTPUT */
-.output-dark{min-height:480px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:#0D1526;color:#E5EEFC;padding:1.25rem 1.5rem;white-space:pre-wrap;line-height:1.7;font-size:.82rem;overflow:auto;font-family:monospace}
-.output-preview{min-height:80px;border:1px solid rgba(0,0,0,.07);border-radius:12px;background:var(--cream);padding:1rem;white-space:pre-wrap;line-height:1.55;font-size:.78rem;color:var(--text);overflow:auto;word-break:break-all}
+/* GENERATED DOCUMENT */
+.doc-wrapper{max-width:860px;margin:0 auto}
+.doc-header{background:var(--navy);border-radius:16px;padding:2rem;margin-bottom:1rem;color:var(--white)}
+.doc-header h1{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;margin-bottom:.5rem}
+.doc-header h1 em{color:var(--gold);font-style:italic}
+.doc-meta{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem}
+.doc-meta-item{font-size:.75rem;color:rgba(255,255,255,.5)}
+.doc-meta-item strong{color:rgba(255,255,255,.85);display:block;margin-bottom:.1rem}
+.doc-section{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:.85rem}
+.doc-section-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:var(--navy);margin-bottom:.85rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid var(--border);padding-bottom:.6rem}
+.doc-text{font-size:.88rem;line-height:1.75;color:var(--text)}
+.doc-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.doc-table th{background:var(--gold-pale);padding:.55rem .75rem;text-align:left;font-weight:500;color:var(--navy);border:1px solid rgba(201,168,76,.2)}
+.doc-table td{padding:.5rem .75rem;border:1px solid rgba(0,0,0,.06);vertical-align:top}
+.doc-table tr:nth-child(even) td{background:rgba(250,248,243,.5)}
+.doc-table tfoot td{background:var(--gold-pale);font-weight:600}
+.result-card{border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;margin-bottom:.65rem}
+.result-card h4{font-size:.88rem;font-weight:600;color:var(--navy);margin-bottom:.4rem}
+.result-card p{font-size:.8rem;color:var(--muted);margin-bottom:.4rem}
+.indicator-tag{display:inline-block;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);color:#9A7421;padding:.15rem .5rem;border-radius:999px;font-size:.68rem;margin:.15rem .1rem}
+.risk-badge{display:inline-block;padding:.15rem .45rem;border-radius:4px;font-size:.65rem;font-weight:500}
+.risk-low{background:#EAF3DE;color:#27500A}
+.risk-med{background:#FAEEDA;color:#633806}
+.risk-high{background:#FCEBEB;color:#791F1F}
+.gantt-wrap{overflow-x:auto}
+.gantt-table{font-size:.72rem;border-collapse:collapse;min-width:700px;width:100%}
+.gantt-table th,.gantt-table td{padding:.35rem .45rem;border:.5px solid rgba(0,0,0,.08)}
+.gantt-table th{background:var(--navy);color:rgba(255,255,255,.7);text-align:center;font-weight:400}
+.gantt-table th:first-child{text-align:left;width:200px}
+.gantt-bar{background:var(--gold);border-radius:3px;height:14px;width:100%}
+.lfm-table{font-size:.78rem}
+.lfm-table th{background:var(--navy);color:rgba(255,255,255,.8);text-align:left}
+.budget-total{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:var(--white);border-radius:8px;padding:.85rem 1rem;display:flex;gap:1.5rem;margin-bottom:.75rem;flex-wrap:wrap}
+.budget-total-item{text-align:center}
+.budget-total-item strong{display:block;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold)}
+.budget-total-item span{font-size:.68rem;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.06em}
 
 /* PROGRESS */
-.progress-wrap{display:none;margin-top:1rem}
-.progress-wrap.show{display:block}
-.progress-bar{height:3px;background:rgba(0,0,0,.06);border-radius:999px;overflow:hidden;margin-bottom:.5rem}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:999px;animation:progress 2s ease infinite;width:60%}
-@keyframes progress{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
-.progress-text{font-size:.72rem;color:var(--muted);text-align:center}
+.progress-overlay{position:fixed;inset:0;background:rgba(15,22,35,.85);z-index:500;display:none;align-items:center;justify-content:center}
+.progress-overlay.show{display:flex}
+.progress-box{background:var(--white);border-radius:20px;padding:2rem;width:min(380px,88vw);text-align:center}
+.progress-box h3{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--navy);margin-bottom:.5rem}
+.progress-box p{font-size:.82rem;color:var(--muted);margin-bottom:1.25rem}
+.progress-track{height:6px;background:rgba(0,0,0,.08);border-radius:999px;overflow:hidden;margin-bottom:.65rem}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:999px;transition:width .4s}
+.progress-step{font-size:.72rem;color:var(--muted)}
 
-.sticky-output{position:sticky;top:1.5rem}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.5rem 1.25rem;font-size:.78rem;color:rgba(255,255,255,.85);opacity:0;transition:.3s;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
 
-/* PDF PREVIEW BADGE */
-.pdf-info{display:none;margin-top:.5rem;font-size:.72rem;color:var(--muted);padding:.4rem .8rem;background:rgba(201,168,76,.05);border:1px solid var(--border);border-radius:6px}
-.pdf-info.show{display:block}
-
-@media(max-width:900px){.grid{grid-template-columns:1fr}.row2{grid-template-columns:1fr}.sticky-output{position:static}.wrap{padding:1rem}}
-@media(max-width:600px){nav{padding:.85rem 1rem}.hero{padding:2rem 1rem 1.5rem}}
+@media(max-width:768px){.layout{grid-template-columns:1fr;height:auto}.sidebar{max-height:50vh}}
 </style>
 </head>
 <body>
 
-<nav>
-  <a class="nav-logo" href="/app.html">
-    <div class="nav-mark">M</div>
-    <div class="nav-word">Marginova<span>.AI</span></div>
-  </a>
-  <a class="nav-back" href="/app.html">← Back to workspace</a>
-</nav>
-
-<div class="hero">
-  <div class="hero-badge">Premium Feature</div>
-  <h1>Application <em>Builder</em></h1>
-  <p>Select a funding opportunity, enter your project data — Marginova generates a complete structured draft with Abstract, LFM, Risk Matrix, Budget and Checklist. Export as PDF.</p>
-</div>
-
-<div class="wrap">
-  <div class="grid">
-
-    <!-- LEFT: INPUT -->
-    <div class="card">
-      <div class="card-head">
-        <h2>Project Input</h2>
-        <span>Fields marked * are required</span>
-      </div>
-      <div class="card-body">
-
-        <div class="section-label">Identity</div>
-        <div class="row2">
-          <div class="field">
-            <label>User ID</label>
-            <input id="userId" placeholder="your user uuid" />
-            <div class="hint">Leave blank to test without login.</div>
-          </div>
-          <div class="field">
-            <label>Opportunity ID <span class="req">*</span></label>
-            <input id="opportunityId" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 1" />
-            <div class="hint">ID from your funding_opportunities table.</div>
-          </div>
-        </div>
-
-        <div class="row2">
-          <div class="field">
-            <label>Config key</label>
-            <input id="configKey" value="premium_application_system" />
-          </div>
-          <div class="field">
-            <label>Language</label>
-            <select id="lang">
-              <option value="en">English</option>
-              <option value="mk">Macedonian</option>
-              <option value="sr">Serbian</option>
-              <option value="de">German</option>
-              <option value="fr">French</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-        <div class="section-label">Project details</div>
-
-        <div class="field">
-          <label>Project title <span class="req">*</span></label>
-          <input id="projectTitle" placeholder="e.g. Digital Transition for Small Farmers" />
-        </div>
-
-        <div class="field">
-          <label>Project idea <span class="req">*</span></label>
-          <textarea id="projectIdea" class="textarea-lg" placeholder="Describe the core of your project — what problem it solves and how."></textarea>
-        </div>
-
-        <div class="row2">
-          <div class="field">
-            <label>Target group</label>
-            <input id="targetGroup" placeholder="e.g. young farmers, NGOs, SMEs" />
-          </div>
-          <div class="field">
-            <label>Location</label>
-            <input id="location" placeholder="e.g. North Macedonia / Veles" />
-          </div>
-        </div>
-
-        <div class="row2">
-          <div class="field">
-            <label>Duration (months)</label>
-            <input id="durationMonths" type="number" min="1" placeholder="e.g. 12" />
-          </div>
-          <div class="field">
-            <label>Budget amount</label>
-            <input id="budgetAmount" type="number" min="0" step="0.01" placeholder="e.g. 30000" />
-          </div>
-        </div>
-
-        <div class="row2">
-          <div class="field">
-            <label>Currency</label>
-            <select id="budgetCurrency">
-              <option value="EUR">EUR</option>
-              <option value="USD">USD</option>
-              <option value="GBP">GBP</option>
-              <option value="MKD">MKD</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Partners</label>
-            <input id="partners" placeholder="e.g. municipality, NGO, university" />
-          </div>
-        </div>
-
-        <div class="divider"></div>
-        <div class="section-label">Analysis</div>
-
-        <div class="field">
-          <label>Problem statement</label>
-          <textarea id="problemStatement" placeholder="What problem are you solving and why does it exist?"></textarea>
-        </div>
-
-        <div class="field">
-          <label>Expected results</label>
-          <textarea id="expectedResults" placeholder="What specific change do you want to achieve by the end of the project?"></textarea>
-        </div>
-
-        <div class="field">
-          <label>Additional notes</label>
-          <textarea id="notes" placeholder="Experience, partners, equipment, constraints — anything relevant..." style="min-height:80px"></textarea>
-        </div>
-
-        <div class="actions">
-          <button class="btn-primary" id="generateBtn" onclick="generate()">Generate application draft</button>
-          <button class="btn-ghost" onclick="fillDemo()">Fill demo</button>
-          <button class="btn-ghost" onclick="clearForm()">Clear</button>
-        </div>
-
-        <div id="status" class="status"></div>
-        <div class="progress-wrap" id="progressWrap">
-          <div class="progress-bar"><div class="progress-fill"></div></div>
-          <div class="progress-text">Generating your application draft — this may take 20–40 seconds...</div>
-        </div>
-
-      </div>
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-mark">M</div>
+    <div>
+      <div class="topbar-name">Marginova<span>.AI</span> <span class="topbar-sub">Application Builder</span></div>
     </div>
-
-    <!-- RIGHT: OUTPUT -->
-    <div class="sticky-output">
-      <div class="card">
-        <div class="card-head">
-          <h2>Generated Output</h2>
-          <span id="output-status">—</span>
-        </div>
-        <div class="card-body">
-
-          <div class="meta-grid">
-            <div class="meta-box"><div class="mk">Mode</div><div class="mv" id="metaMode">—</div></div>
-            <div class="meta-box"><div class="mk">Config key</div><div class="mv" id="metaConfig">—</div></div>
-            <div class="meta-box"><div class="mk">Opportunity</div><div class="mv" id="metaOpportunity">—</div></div>
-            <div class="meta-box"><div class="mk">Saved session</div><div class="mv" id="metaSaved">—</div></div>
-          </div>
-
-          <div class="section-label">Response preview</div>
-          <div class="output-preview" id="rawResponse">Response preview will appear here.</div>
-
-          <div class="divider"></div>
-
-          <div class="section-label">Application draft</div>
-          <div class="output-dark" id="outputBox">Your generated application draft will appear here after you click Generate.</div>
-
-          <!-- EXPORT ACTIONS -->
-          <div class="actions" style="margin-top:1rem">
-            <button class="btn-pdf" id="pdfBtn" onclick="exportPDF()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/>
-                <line x1="9" y1="15" x2="15" y2="15"/>
-              </svg>
-              Export PDF
-            </button>
-            <button class="btn-ghost" id="copyBtn" onclick="copyOutput()" style="display:none">Copy text</button>
-          </div>
-
-          <div class="pdf-progress" id="pdfProgress">⏳ Generating PDF — please wait...</div>
-          <div class="pdf-info" id="pdfInfo"></div>
-
-        </div>
-      </div>
-    </div>
-
+  </div>
+  <div class="topbar-actions">
+    <button class="tb-btn outline" onclick="window.location.href='/app.html'">← Back to Chat</button>
+    <button class="tb-btn gold" id="download-btn" onclick="downloadPDF()" disabled>⬇ Download PDF</button>
   </div>
 </div>
 
+<div class="layout">
+  <!-- SIDEBAR FORM -->
+  <div class="sidebar">
+    <div class="form-title">Application Setup</div>
+
+    <div class="type-tabs">
+      <button class="type-tab active" onclick="setType('grant')" id="tab-grant">📋 Grant</button>
+      <button class="type-tab" onclick="setType('scholarship')" id="tab-scholarship">🎓 Scholarship</button>
+    </div>
+
+    <div class="form-section">
+      <label class="form-label">Organization / Applicant</label>
+      <div class="form-group">
+        <input class="form-input" id="f-name" placeholder="Organization or your name">
+      </div>
+      <div class="form-group">
+        <select class="form-select" id="f-sector">
+          <option value="">— Sector —</option>
+          <option value="IT / Technology">IT / Technology</option>
+          <option value="Education">Education</option>
+          <option value="Agriculture">Agriculture</option>
+          <option value="Environment / Energy">Environment / Energy</option>
+          <option value="Civil Society">Civil Society</option>
+          <option value="Health / Social">Health / Social</option>
+          <option value="Research / Innovation">Research / Innovation</option>
+          <option value="SME / Business">SME / Business</option>
+          <option value="Tourism / Culture">Tourism / Culture</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <select class="form-select" id="f-country">
+          <option value="">— Country —</option>
+          <option value="North Macedonia">North Macedonia</option>
+          <option value="Serbia">Serbia</option>
+          <option value="Croatia">Croatia</option>
+          <option value="Bosnia">Bosnia</option>
+          <option value="Albania">Albania</option>
+          <option value="Kosovo">Kosovo</option>
+          <option value="Bulgaria">Bulgaria</option>
+          <option value="Montenegro">Montenegro</option>
+          <option value="Slovenia">Slovenia</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <label class="form-label">Program / Opportunity</label>
+      <div class="form-group">
+        <input class="form-input" id="f-program-title" placeholder="Program name">
+      </div>
+      <div class="form-group">
+        <input class="form-input" id="f-donor" placeholder="Donor / Funder">
+      </div>
+      <div class="form-row">
+        <input class="form-input" id="f-amount" placeholder="Amount (€60,000)">
+        <select class="form-select" id="f-lang">
+          <option value="en">English</option>
+          <option value="mk">Македонски</option>
+          <option value="sr">Српски</option>
+          <option value="de">Deutsch</option>
+          <option value="fr">Français</option>
+          <option value="tr">Türkçe</option>
+          <option value="bg">Български</option>
+          <option value="ar">العربية</option>
+          <option value="zh">中文</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section" id="grant-extras">
+      <label class="form-label">Project details (optional)</label>
+      <textarea class="form-textarea" id="f-description" placeholder="Brief description of your project idea..."></textarea>
+    </div>
+
+    <button class="generate-btn" id="gen-btn" onclick="generate()">
+      ✦ Generate Application
+    </button>
+  </div>
+
+  <!-- MAIN AREA -->
+  <div class="main-area" id="main-area">
+    <div class="doc-placeholder" id="placeholder">
+      <div class="icon">📋</div>
+      <h3>Ready to build your application</h3>
+      <p>Fill in the form on the left and click Generate. Marginova will create a complete, professional application draft in your language.</p>
+      <p style="margin-top:.5rem;font-size:.78rem">Grant: Abstract · Problem · LFM · Activities · Gantt · Budget · Risks<br>Scholarship: Motivation letter · Research proposal · Return plan</p>
+    </div>
+    <div id="doc-output" style="display:none"></div>
+  </div>
+</div>
+
+<!-- PROGRESS OVERLAY -->
+<div class="progress-overlay" id="progress-overlay">
+  <div class="progress-box">
+    <h3>Generating Application</h3>
+    <p id="progress-msg">Analyzing your profile...</p>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-step" id="progress-step">Step 1 of 3</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-// ════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════
-const API_URL = '/api/application';
+const { createClient } = supabase;
+const db = createClient(
+  'https://yidalveetwkcrjkvzbsn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M'
+);
 
-let lastGeneratedText = null;
-let lastMeta          = null;
-let lastApiData       = null;
+let appType = 'grant';
+let generatedContent = null;
+let currentSession  = null;
 
-const statusBox    = document.getElementById('status');
-const outputBox    = document.getElementById('outputBox');
-const rawBox       = document.getElementById('rawResponse');
-const generateBtn  = document.getElementById('generateBtn');
-const copyBtn      = document.getElementById('copyBtn');
-const pdfBtn       = document.getElementById('pdfBtn');
-const progressWrap = document.getElementById('progressWrap');
-const pdfProgress  = document.getElementById('pdfProgress');
-const pdfInfo      = document.getElementById('pdfInfo');
+// Get session
+(async()=>{
+  const { data:{session} } = await db.auth.getSession();
+  currentSession = session;
+  if (!session) {
+    showToast('Please sign in first');
+    setTimeout(()=>window.location.href='/app.html', 2000);
+  }
+})();
 
-// ════════════════════════════════════════════════
-// UI HELPERS
-// ════════════════════════════════════════════════
-
-function setStatus(type, msg) {
-  statusBox.className = 'status ' + type;
-  statusBox.textContent = msg;
-}
-function clearStatus() { statusBox.className = 'status'; statusBox.textContent = ''; }
-
-function clearOutput() {
-  outputBox.textContent = 'Your generated application draft will appear here after you click Generate.';
-  rawBox.textContent    = 'Response preview will appear here.';
-  ['metaMode','metaConfig','metaOpportunity','metaSaved','output-status'].forEach(id => {
-    document.getElementById(id).textContent = '—';
-  });
-  pdfBtn.classList.remove('show');
-  copyBtn.style.display = 'none';
-  pdfInfo.classList.remove('show');
-  lastGeneratedText = null;
-  lastMeta = null;
+function setType(t) {
+  appType = t;
+  document.getElementById('tab-grant').classList.toggle('active', t==='grant');
+  document.getElementById('tab-scholarship').classList.toggle('active', t==='scholarship');
+  document.getElementById('grant-extras').style.display = t==='grant' ? 'block' : 'none';
 }
 
-// ════════════════════════════════════════════════
-// FORM HELPERS
-// ════════════════════════════════════════════════
-
-function getPayload() {
-  const rawId    = document.getElementById('opportunityId').value.trim();
-  const parsedId = rawId ? parseInt(rawId, 10) : null;
-  return {
-    userId:            document.getElementById('userId').value.trim() || null,
-    opportunityId:     (!parsedId || isNaN(parsedId)) ? null : parsedId,
-    configKey:         document.getElementById('configKey').value.trim() || 'premium_application_system',
-    lang:              document.getElementById('lang').value,
-    project_title:     document.getElementById('projectTitle').value.trim(),
-    project_idea:      document.getElementById('projectIdea').value.trim(),
-    target_group:      document.getElementById('targetGroup').value.trim(),
-    location:          document.getElementById('location').value.trim(),
-    duration_months:   Number(document.getElementById('durationMonths').value) || null,
-    budget_amount:     Number(document.getElementById('budgetAmount').value) || null,
-    budget_currency:   document.getElementById('budgetCurrency').value,
-    partners:          document.getElementById('partners').value.trim(),
-    problem_statement: document.getElementById('problemStatement').value.trim(),
-    expected_results:  document.getElementById('expectedResults').value.trim(),
-    notes:             document.getElementById('notes').value.trim()
-  };
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
 }
 
-function validate(p) {
-  if (!p.opportunityId) return 'Opportunity ID is required and must be a positive number.';
-  if (!p.project_title) return 'Project title is required.';
-  if (!p.project_idea)  return 'Project idea is required.';
-  return null;
+function setProgress(pct, msg, step) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-msg').textContent  = msg;
+  document.getElementById('progress-step').textContent = step;
 }
-
-// ════════════════════════════════════════════════
-// GENERATE
-// ════════════════════════════════════════════════
 
 async function generate() {
-  clearStatus();
-  const payload = getPayload();
-  const err     = validate(payload);
-  if (err) { setStatus('warn', err); return; }
+  const name   = document.getElementById('f-name').value.trim();
+  const sector = document.getElementById('f-sector').value;
+  const country= document.getElementById('f-country').value;
+  const progT  = document.getElementById('f-program-title').value.trim();
+  const donor  = document.getElementById('f-donor').value.trim();
+  const amount = document.getElementById('f-amount').value.trim();
+  const lang   = document.getElementById('f-lang').value;
+  const desc   = document.getElementById('f-description').value.trim();
 
-  generateBtn.disabled = true;
-  progressWrap.classList.add('show');
-  setStatus('warn', 'Generating application draft...');
-  outputBox.textContent = 'Generating...';
-  rawBox.textContent    = 'Loading...';
-  pdfBtn.classList.remove('show');
-  copyBtn.style.display = 'none';
-  pdfInfo.classList.remove('show');
-  document.getElementById('output-status').textContent = 'Processing...';
+  if (!name || !sector || !progT) {
+    showToast('Please fill: name, sector, program name');
+    return;
+  }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  document.getElementById('progress-overlay').classList.add('show');
+  setProgress(10, 'Sending to Marginova AI...', 'Step 1 of 3');
 
   try {
-    const res  = await fetch(API_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload)
+    setProgress(25, 'Gemini is writing your application...', 'Step 1 of 3');
+
+    const token = currentSession?.access_token;
+    const res   = await fetch('/api/generate-application', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        type:    appType,
+        profile: { name, sector, country, description: desc },
+        selectedProgram: { title: progT, donor, amount },
+        language: lang,
+      }),
     });
+
+    setProgress(70, 'Processing results...', 'Step 2 of 3');
+
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Generation failed');
 
-    const rawStr = JSON.stringify(data, null, 2);
-    rawBox.textContent = rawStr.length > 2000 ? rawStr.slice(0, 2000) + '\n...[truncated]' : rawStr;
+    setProgress(90, 'Rendering document...', 'Step 3 of 3');
+    generatedContent = data;
 
-    if (!res.ok) throw new Error(data?.error?.message || 'Request failed');
+    renderDocument(data, appType, lang);
+    setProgress(100, 'Done!', 'Complete');
 
-    const text = data?.content?.[0]?.text || 'No output returned.';
-    outputBox.textContent = text;
+    setTimeout(()=>{
+      document.getElementById('progress-overlay').classList.remove('show');
+      document.getElementById('download-btn').disabled = false;
+      showToast('Application generated successfully!');
+    }, 600);
 
-    // Store for PDF export
-    lastGeneratedText = text;
-    lastApiData       = data;
-
-    // Build meta for PDF
-    lastMeta = {
-      projectTitle: payload.project_title,
-      opportunity:  data?.opportunity?.title || '',
-      orgName:      payload.project_title,   // best we have client-side
-      country:      payload.location || '',
-      sector:       '',                        // enriched if profile loaded
-      orgType:      '',
-      budget:       payload.budget_amount
-                    ? `${payload.budget_amount} ${payload.budget_currency}`
-                    : '',
-      deadline:     data?.opportunity?.deadline || '',
-      sourceUrl:    data?.opportunity?.source_url || '',
-      date:         new Date().toLocaleDateString('en-GB')
-    };
-
-    // Update meta display
-    document.getElementById('metaMode').textContent        = data.mode || 'application';
-    document.getElementById('metaConfig').textContent      = data.config_key || payload.configKey;
-    document.getElementById('metaOpportunity').textContent = data?.opportunity?.title
-      ? `${data.opportunity.title}${data.opportunity.deadline ? ' · ' + data.opportunity.deadline : ''}`
-      : '—';
-    document.getElementById('metaSaved').textContent       = data?.saved_session?.id
-      ? `ID: ${data.saved_session.id} · ${data.saved_session.status || 'draft'}`
-      : 'Not saved';
-    document.getElementById('output-status').textContent   = '✓ Generated';
-
-    // Show export buttons
-    pdfBtn.classList.add('show');
-    copyBtn.style.display = 'inline-block';
-
-    const charCount = text.length;
-    const estPages  = Math.max(1, Math.round(charCount / 2800));
-    pdfInfo.textContent = `Ready to export · ~${estPages} page${estPages > 1 ? 's' : ''} · ${charCount.toLocaleString()} characters`;
-    pdfInfo.classList.add('show');
-
-    setStatus('ok', '✓ Application draft generated successfully. Click "Export PDF" to download.');
-
-  } catch(e) {
-    outputBox.textContent = 'Error generating output.';
-    document.getElementById('output-status').textContent = 'Error';
-    setStatus('err', 'Error: ' + e.message);
-  } finally {
-    generateBtn.disabled = false;
-    progressWrap.classList.remove('show');
+  } catch (err) {
+    document.getElementById('progress-overlay').classList.remove('show');
+    showToast('Error: ' + err.message);
+    console.error(err);
   }
+  btn.disabled = false;
 }
 
-// ════════════════════════════════════════════════
-// PDF EXPORT
-// ════════════════════════════════════════════════
+function esc(str) {
+  return (str || '').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+}
 
-function exportPDF() {
-  if (!lastGeneratedText || !lastMeta) {
-    setStatus('warn', 'No content to export. Generate a draft first.');
-    return;
+function fmt(n) {
+  return Number(n || 0).toLocaleString('en-EU');
+}
+
+function renderDocument(data, type, lang) {
+  const c       = data.content;
+  const program = data.program  || {};
+  const profile = data.profile  || {};
+  const isMk    = lang === 'mk';
+  const today   = new Date().toLocaleDateString('en-GB');
+
+  let html = `<div class="doc-wrapper">`;
+
+  // Cover
+  html += `<div class="doc-header">
+    <h1>${esc(c.project_title || program.title || 'Application Draft')}</h1>
+    <div style="font-size:.82rem;color:rgba(255,255,255,.45);margin-top:.25rem">${isMk?'Апликација':'Application'} — ${esc(program.title || '')}</div>
+    <div class="doc-meta">
+      <div class="doc-meta-item"><strong>${isMk?'Организација':'Organization'}</strong>${esc(profile.name||'')}</div>
+      <div class="doc-meta-item"><strong>${isMk?'Донор':'Donor'}</strong>${esc(program.donor||'')}</div>
+      <div class="doc-meta-item"><strong>${isMk?'Барање':'Amount'}</strong>${esc(program.amount||'')}</div>
+      <div class="doc-meta-item"><strong>${isMk?'Земја':'Country'}</strong>${esc(profile.country||'')}</div>
+      <div class="doc-meta-item"><strong>${isMk?'Генерирано':'Generated'}</strong>${today}</div>
+    </div>
+  </div>`;
+
+  if (type === 'grant') {
+    html += renderGrant(c, isMk);
+  } else {
+    html += renderScholarship(c, isMk);
   }
 
-  if (typeof pdfMake === 'undefined') {
-    setStatus('err', 'PDF library not loaded. Please refresh the page.');
-    return;
+  html += `</div>`;
+
+  document.getElementById('placeholder').style.display  = 'none';
+  document.getElementById('doc-output').style.display   = 'block';
+  document.getElementById('doc-output').innerHTML       = html;
+}
+
+function renderGrant(c, isMk) {
+  let html = '';
+  const T  = (mk, en) => isMk ? mk : en;
+
+  // Abstract
+  if (c.abstract) {
+    html += `<div class="doc-section">
+      <div class="doc-section-title">📌 ${T('Резиме','Abstract')}</div>
+      <div class="doc-text">${esc(c.abstract)}</div>
+    </div>`;
   }
 
-  pdfBtn.disabled = true;
-  pdfProgress.classList.add('show');
-  pdfProgress.textContent = '⏳ Building PDF — please wait...';
+  // Problem
+  if (c.problem_analysis) {
+    html += `<div class="doc-section">
+      <div class="doc-section-title">🔍 ${T('Анализа на проблем','Problem Analysis')}</div>
+      <div class="doc-text">${esc(c.problem_analysis)}</div>
+      ${c.innovation ? `<div class="doc-text" style="margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border)"><strong>${T('Иновација:','Innovation:')}</strong> ${esc(c.innovation)}</div>` : ''}
+    </div>`;
+  }
 
-  // Small timeout to let UI update before heavy PDF work
-  setTimeout(() => {
-    try {
-      const docDef  = buildPdfDefinition(lastGeneratedText, lastMeta);
-      const safeTitle = (lastMeta.projectTitle || 'application')
-        .replace(/[^a-zA-Z0-9\s]/g, '')
-        .trim()
-        .replace(/\s+/g, '_')
-        .slice(0, 40);
-      const filename = `marginova_${safeTitle}_${new Date().toISOString().slice(0, 10)}.pdf`;
+  // Objectives + Results
+  if (c.results?.length) {
+    html += `<div class="doc-section">
+      <div class="doc-section-title">🎯 ${T('Цели и резултати','Objectives & Results')}</div>
+      ${c.overall_objective ? `<p class="doc-text" style="margin-bottom:.5rem"><strong>${T('Главна цел:','Overall objective:')}</strong> ${esc(c.overall_objective)}</p>` : ''}
+      ${c.specific_objective ? `<p class="doc-text" style="margin-bottom:1rem"><strong>${T('Специфична цел:','Specific objective:')}</strong> ${esc(c.specific_objective)}</p>` : ''}
+      ${c.results.map(r => `
+        <div class="result-card">
+          <h4>R${r.number}. ${esc(r.title)}</h4>
+          ${r.description ? `<p>${esc(r.description)}</p>` : ''}
+          <div style="margin-top:.4rem">
+            ${(r.indicators||[]).map(i => `<span class="indicator-tag">${esc(i)}</span>`).join('')}
+          </div>
+          ${r.verification ? `<div style="font-size:.72rem;color:var(--muted);margin-top:.35rem">✓ ${esc(r.verification)}</div>` : ''}
+        </div>`).join('')}
+    </div>`;
+  }
 
-      pdfMake.createPdf(docDef).download(filename, () => {
-        pdfProgress.textContent = '✓ PDF downloaded: ' + filename;
-        setTimeout(() => pdfProgress.classList.remove('show'), 3000);
-        pdfBtn.disabled = false;
+  // LFM
+  if (c.lfm) {
+    const lfm = c.lfm;
+    html += `<div class="doc-section">
+      <div class="doc-section-title">📐 ${T('Логичка Рамка Матрица (LFM)','Logical Framework Matrix (LFM)')}</div>
+      <table class="doc-table lfm-table">
+        <tr><th>${T('Ниво','Level')}</th><th>${T('Опис','Description')}</th><th>OVI</th><th>MOV</th><th>${T('Претпоставки','Assumptions')}</th></tr>
+        <tr><td><strong>${T('Главна цел','Goal')}</strong></td><td>${esc(lfm.goal?.description)}</td><td>${esc(lfm.goal?.ovi)}</td><td>${esc(lfm.goal?.mov)}</td><td>${esc(lfm.goal?.assumptions)}</td></tr>
+        <tr><td><strong>${T('Специфична цел','Purpose')}</strong></td><td>${esc(lfm.purpose?.description)}</td><td>${esc(lfm.purpose?.ovi)}</td><td>${esc(lfm.purpose?.mov)}</td><td>${esc(lfm.purpose?.assumptions)}</td></tr>
+        ${(lfm.results||[]).map(r=>`<tr><td><strong>R${r.number}</strong></td><td>${esc(r.description)}</td><td>${esc(r.ovi)}</td><td>${esc(r.mov)}</td><td>${esc(r.assumptions)}</td></tr>`).join('')}
+      </table>
+    </div>`;
+  }
+
+  // Gantt
+  if (c.gantt?.length) {
+    html += `<div class="doc-section">
+      <div class="doc-section-title">📅 ${T('Временска рамка (Gantt)','Timeline (Gantt Chart)')}</div>
+      <div class="gantt-wrap">
+        <table class="gantt-table">
+          <tr>
+            <th style="text-align:left">${T('Активност','Activity')}</th>
+            ${Array.from({length:18},(_,i)=>`<th>M${i+1}</th>`).join('')}
+          </tr>
+          ${c.gantt.map(a=>`
+            <tr>
+              <td style="text-align:left;max-width:200px">${esc(a.id)} ${esc(a.title)}</td>
+              ${a.bars.map(b=>`<td style="padding:.2rem">${b?'<div class="gantt-bar"></div>':''}</td>`).join('')}
+            </tr>`).join('')}
+        </table>
+      </div>
+    </div>`;
+  }
+
+  // Budget
+  if (c.budget_lines?.length) {
+    const bt = c.budget_totals || {};
+    html += `<div class="doc-section">
+      <div class="doc-section-title">💰 ${T('Буџет','Budget')}</div>
+      <div class="budget-total">
+        <div class="budget-total-item"><strong>€${fmt(bt.totalGrant)}</strong><span>${T('Барање грант','Grant requested')}</span></div>
+        <div class="budget-total-item"><strong>€${fmt(bt.totalOwn)}</strong><span>${T('Ко-финансирање','Co-financing')}</span></div>
+        <div class="budget-total-item"><strong>€${fmt(bt.totalBudget)}</strong><span>${T('Вкупно','Total')}</span></div>
+        <div class="budget-total-item"><strong>${bt.coFinPct||0}%</strong><span>${T('Ко-фин %','Co-fin %')}</span></div>
+        <div class="budget-total-item"><strong>€${fmt(bt.perBeneficiary)}</strong><span>${T('/корисник','/beneficiary')}</span></div>
+      </div>
+      <table class="doc-table">
+        <tr><th>${T('Категорија','Category')}</th><th>${T('Ставка','Item')}</th><th>${T('Јед.','Unit')}</th><th>${T('Кол.','Qty')}</th><th>${T('Цена/јед.','Unit cost')}</th><th>${T('Вкупно','Total')}</th><th>${T('Грант','Grant')}</th><th>${T('Ко-фин.','Own')}</th></tr>
+        ${c.budget_lines.map(l=>`<tr><td>${esc(l.category)}</td><td>${esc(l.item)}</td><td>${esc(l.unit)}</td><td>${l.quantity}</td><td>€${fmt(l.unit_cost)}</td><td>€${fmt(l.total)}</td><td>€${fmt(l.grant_amount)}</td><td>€${fmt(l.own_contribution)}</td></tr>`).join('')}
+        <tfoot><tr><td colspan="5"><strong>${T('ВКУПНО','TOTAL')}</strong></td><td><strong>€${fmt(bt.totalBudget)}</strong></td><td><strong>€${fmt(bt.totalGrant)}</strong></td><td><strong>€${fmt(bt.totalOwn)}</strong></td></tr></tfoot>
+      </table>
+      ${c.budget_notes ? `<p style="font-size:.75rem;color:var(--muted);margin-top:.5rem">${esc(c.budget_notes)}</p>` : ''}
+    </div>`;
+  }
+
+  // Risks
+  if (c.risks?.length) {
+    html += `<div class="doc-section">
+      <div class="doc-section-title">⚠️ ${T('Ризици и митигација','Risks & Mitigation')}</div>
+      <table class="doc-table">
+        <tr><th>${T('Ризик','Risk')}</th><th>${T('Веројатност','Probability')}</th><th>${T('Влијание','Impact')}</th><th>${T('Митигација','Mitigation')}</th></tr>
+        ${c.risks.map(r=>`
+          <tr>
+            <td>${esc(r.risk)}</td>
+            <td><span class="risk-badge risk-${(r.probability||'').toLowerCase().slice(0,3)==='low'?'low':(r.probability||'').toLowerCase().slice(0,3)==='hig'?'high':'med'}">${esc(r.probability)}</span></td>
+            <td><span class="risk-badge risk-${(r.impact||'').toLowerCase().slice(0,3)==='low'?'low':(r.impact||'').toLowerCase().slice(0,3)==='hig'?'high':'med'}">${esc(r.impact)}</span></td>
+            <td>${esc(r.mitigation)}</td>
+          </tr>`).join('')}
+      </table>
+    </div>`;
+  }
+
+  // Sustainability
+  if (c.sustainability) {
+    html += `<div class="doc-section">
+      <div class="doc-section-title">🌿 ${T('Одржливост','Sustainability')}</div>
+      <div class="doc-text">${esc(c.sustainability)}</div>
+    </div>`;
+  }
+
+  return html;
+}
+
+function renderScholarship(c, isMk) {
+  let html = '';
+  const T  = (mk, en) => isMk ? mk : en;
+  const sec = (icon, title, content) => content ? `<div class="doc-section"><div class="doc-section-title">${icon} ${title}</div><div class="doc-text">${esc(content)}</div></div>` : '';
+
+  html += sec('📝', T('Мотивациско писмо','Personal Statement'), c.personal_statement);
+  html += sec('🎓', T('Академска позадина','Academic Background'), c.academic_background);
+  html += sec('💼', T('Професионално искуство','Professional Experience'), c.professional_experience);
+  html += sec('🔬', T('Истражувачки предлог','Research Proposal'), c.research_proposal);
+  html += sec('🌍', T('Зошто овој програм','Why This Program'), c.why_this_program);
+  html += sec('🏠', T('План за враќање','Return & Impact Plan'), c.return_plan);
+
+  if (c.references_guidance?.length) {
+    html += `<div class="doc-section">
+      <div class="doc-section-title">📬 ${T('Препораки — упатство','References Guidance')}</div>
+      <ul style="padding-left:1.25rem">${c.references_guidance.map(g=>`<li class="doc-text" style="margin-bottom:.4rem">${esc(g)}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  if (c.cv_structure?.length) {
+    html += `<div class="doc-section">
+      <div class="doc-section-title">📄 ${T('Структура на CV','CV Structure')}</div>
+      <ul style="padding-left:1.25rem">${c.cv_structure.map(g=>`<li class="doc-text" style="margin-bottom:.4rem">${esc(g)}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  return html;
+}
+
+// ─── CLIENT-SIDE PDF WITH jsPDF ──────────────────────────────
+async function downloadPDF() {
+  if (!generatedContent) return;
+  showToast('Generating PDF...');
+
+  const { jsPDF } = window.jspdf;
+  const doc       = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const c         = generatedContent.content;
+  const program   = generatedContent.program  || {};
+  const profile   = generatedContent.profile  || {};
+  const lang      = generatedContent.language || 'en';
+  const isMk      = lang === 'mk';
+  const T         = (mk, en) => isMk ? mk : en;
+  const today     = new Date().toLocaleDateString('en-GB');
+
+  const W     = 210;
+  const margin= 18;
+  const cw    = W - margin * 2;
+  let   y     = 0;
+
+  function checkPage(needed = 10) {
+    if (y + needed > 275) { doc.addPage(); y = margin; }
+  }
+
+  // Cover page
+  doc.setFillColor(15, 22, 35);
+  doc.rect(0, 0, W, 60, 'F');
+  doc.setTextColor(201, 168, 76);
+  doc.setFontSize(18);
+  doc.setFont('helvetica','bold');
+  doc.text('MARGINOVA.AI', margin, 22);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(255, 255, 255);
+  doc.text(T('Апликација за финансирање','Funding Application'), margin, 30);
+  doc.setFontSize(13);
+  doc.setFont('helvetica','bold');
+  doc.text((c.project_title || program.title || 'Application').substring(0, 60), margin, 45);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(150, 150, 150);
+  doc.text([
+    `${T('Организација','Organization')}: ${profile.name || ''}`,
+    `${T('Донор','Donor')}: ${program.donor || ''}    ${T('Износ','Amount')}: ${program.amount || ''}`,
+    `${T('Генерирано','Generated')}: ${today}`,
+  ], margin, 54);
+
+  y = 72;
+  doc.setTextColor(0, 0, 0);
+
+  function addSection(title, body) {
+    if (!body) return;
+    checkPage(18);
+    doc.setFillColor(246, 239, 217);
+    doc.rect(margin, y - 4, cw, 9, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(15, 22, 35);
+    doc.text(title, margin + 2, y + 2);
+    y += 10;
+    doc.setFontSize(9);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(40, 40, 40);
+    const lines = doc.splitTextToSize(body, cw);
+    lines.forEach(line => {
+      checkPage(5);
+      doc.text(line, margin, y);
+      y += 4.8;
+    });
+    y += 4;
+  }
+
+  if (generatedContent.type === 'grant') {
+    addSection(T('РЕЗИМЕ','ABSTRACT'), c.abstract);
+    addSection(T('АНАЛИЗА НА ПРОБЛЕМ','PROBLEM ANALYSIS'), c.problem_analysis);
+    addSection(T('ИНОВАЦИЈА','INNOVATION'), c.innovation);
+
+    // Results table
+    if (c.results?.length) {
+      checkPage(20);
+      doc.setFillColor(246, 239, 217);
+      doc.rect(margin, y - 4, cw, 9, 'F');
+      doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(15,22,35);
+      doc.text(T('ЦЕЛИ И РЕЗУЛТАТИ','OBJECTIVES & RESULTS'), margin+2, y+2);
+      y += 12;
+      doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        head:   [[T('Бр','#'), T('Резултат','Result'), T('Индикатори','Indicators'), T('Верификација','Verification')]],
+        body:   c.results.map(r => [r.number, r.title, (r.indicators||[]).join('\n'), r.verification||'']),
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [15,22,35], textColor: [201,168,76] },
+        alternateRowStyles: { fillColor: [250,248,243] },
       });
-    } catch(e) {
-      pdfProgress.textContent = '✗ PDF error: ' + e.message;
-      pdfBtn.disabled = false;
-      console.error('[PDF]', e);
-    }
-  }, 80);
-}
-
-// ════════════════════════════════════════════════
-// PDF BUILDER — inline (no external file needed)
-// ════════════════════════════════════════════════
-
-function parseInline(text) {
-  if (!text) return [{ text: '' }];
-  const result = [];
-  const regex  = /\*\*([^*]+)\*\*|\*([^*\n]+)\*|`([^`]+)`/g;
-  let last = 0, m;
-  while ((m = regex.exec(text)) !== null) {
-    if (m.index > last) result.push({ text: text.slice(last, m.index), fontSize: 10, color: '#111111' });
-    if (m[1] !== undefined) result.push({ text: m[1], bold: true, fontSize: 10, color: '#000000' });
-    if (m[2] !== undefined) result.push({ text: m[2], italics: true, fontSize: 10, color: '#333333' });
-    if (m[3] !== undefined) result.push({ text: m[3], fontSize: 9, color: '#222222' });
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) result.push({ text: text.slice(last), fontSize: 10, color: '#111111' });
-  return result.length ? result : [{ text: text, fontSize: 10, color: '#111111' }];
-}
-
-function parseMarkdownTable(lines) {
-  if (lines.length < 2) return null;
-  const parseRow = (line) =>
-    line.split('|').map(c => c.trim()).filter((_, i, a) => i !== 0 && i !== a.length - 1);
-  const dataLines = lines.filter(l => !/^\|[-:\s|]+\|$/.test(l));
-  if (dataLines.length < 1) return null;
-  const headers = parseRow(dataLines[0]);
-  const rows    = dataLines.slice(1).map(parseRow);
-  const headerRow = headers.map(h => ({
-    text: h, fontSize: 9, bold: true, color: '#FFFFFF',
-    fillColor: '#111111', margin: [4, 5, 4, 5],
-    border: [false, false, false, false]
-  }));
-  const bodyRows = rows.map((row, ri) =>
-    row.map(cell => ({
-      text: cell, fontSize: 9, color: '#111111',
-      margin: [4, 4, 4, 4],
-      fillColor: ri % 2 === 0 ? '#FFFFFF' : '#F5F5F5',
-      border: [false, false, false, true],
-      borderColor: ['', '', '', '#DDDDDD']
-    }))
-  );
-  const padded = bodyRows.map(row => {
-    while (row.length < headers.length) row.push({ text: '', fontSize: 9, color: '#111111', margin: [4,4,4,4] });
-    return row;
-  });
-  return {
-    table: { headerRows: 1, widths: Array(headers.length).fill('*'), body: [headerRow, ...padded] },
-    layout: {
-      hLineWidth: (i, node) => i === 0 || i === node.table.body.length ? 1 : 0.5,
-      vLineWidth: () => 0,
-      hLineColor: (i) => i === 0 ? '#111111' : '#DDDDDD',
-    },
-    margin: [0, 8, 0, 12]
-  };
-}
-
-function parseTextToContent(rawText) {
-  if (!rawText) return [];
-  const content = [];
-  const lines = rawText.split('\n');
-  let i = 0;
-
-  while (i < lines.length) {
-    const line     = lines[i].trimEnd();
-    const stripped = line.trim();
-
-    if (!stripped) { content.push({ text: '', margin: [0, 3, 0, 0] }); i++; continue; }
-
-    // Markdown headings
-    if (/^#{1,3}\s/.test(stripped)) {
-      const level = stripped.match(/^(#+)/)[1].length;
-      const title = stripped.replace(/^#+\s*/, '');
-      content.push(buildSectionHeader(title, level));
-      i++; continue;
+      y = doc.lastAutoTable.finalY + 6;
     }
 
-    // Numbered section heading (short line starting with capital)
-    if (/^\d{1,2}\.\s+[A-ZÁÉА-Ш]/.test(stripped) && stripped.length < 70) {
-      const title = stripped.replace(/^\d+\.\s+/, '');
-      content.push(buildSectionHeader(title, 2));
-      i++; continue;
-    }
-
-    // Separator lines
-    if (/^[-─═━]{5,}$/.test(stripped)) {
-      content.push({
-        canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 0.5, lineColor: '#BBBBBB' }],
-        margin: [0, 6, 0, 6]
-      });
-      i++; continue;
-    }
-
-    // Markdown tables
-    if (/^\|.+\|/.test(stripped)) {
-      const tableLines = [];
-      while (i < lines.length && /^\|.+\|/.test(lines[i].trim())) { tableLines.push(lines[i].trim()); i++; }
-      const tbl = parseMarkdownTable(tableLines);
-      if (tbl) content.push(tbl);
-      continue;
-    }
-
-    // Bullet lists
-    if (/^[-•*▶➤✓✗☐☑]\s+/.test(stripped)) {
-      const bullets = [];
-      while (i < lines.length && /^[-•*▶➤✓✗☐☑]\s+/.test(lines[i].trim())) {
-        bullets.push({ text: parseInline(lines[i].trim().replace(/^[-•*▶➤✓✗☐☑]\s+/, '')), margin: [0, 1, 0, 1] });
-        i++;
-      }
-      content.push({ ul: bullets, margin: [8, 4, 0, 4], fontSize: 10 });
-      continue;
-    }
-
-    // Numbered lists (longer items)
-    if (/^\d+\.\s+/.test(stripped) && stripped.length > 70) {
-      const items = [];
-      while (i < lines.length && /^\d+\.\s+/.test(lines[i].trim())) {
-        items.push({ text: parseInline(lines[i].trim().replace(/^\d+\.\s+/, '')), margin: [0, 1, 0, 1] });
-        i++;
-      }
-      content.push({ ol: items, margin: [8, 4, 0, 4], fontSize: 10 });
-      continue;
-    }
-
-    // Key: Value pattern
-    if (/^[A-ZА-ШA-Za-z][^:]{0,35}:\s+\S/.test(stripped) && !stripped.startsWith('http') && stripped.length < 200) {
-      const ci  = stripped.indexOf(':');
-      const key = stripped.slice(0, ci).trim();
-      const val = stripped.slice(ci + 1).trim();
-      content.push({
-        columns: [
-          { text: key + ':', bold: true, fontSize: 9, color: '#555555', width: 130 },
-          { text: val, fontSize: 10, color: '#111111' }
+    // Budget table
+    if (c.budget_lines?.length) {
+      checkPage(20);
+      doc.setFillColor(246, 239, 217);
+      doc.rect(margin, y-4, cw, 9, 'F');
+      doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(15,22,35);
+      doc.text(T('БУЏЕТ','BUDGET'), margin+2, y+2);
+      y += 12;
+      const bt = c.budget_totals || {};
+      doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        head:   [[T('Ставка','Item'), T('Кол.','Qty'), T('Цена','Unit cost'), T('Вкупно','Total'), T('Грант','Grant'), T('Ко-фин.','Own')]],
+        body: [
+          ...c.budget_lines.map(l => [l.item, l.quantity, `€${Number(l.unit_cost).toLocaleString()}`, `€${Number(l.total).toLocaleString()}`, `€${Number(l.grant_amount).toLocaleString()}`, `€${Number(l.own_contribution).toLocaleString()}`]),
+          ['TOTAL', '', '', `€${Number(bt.totalBudget||0).toLocaleString()}`, `€${Number(bt.totalGrant||0).toLocaleString()}`, `€${Number(bt.totalOwn||0).toLocaleString()}`],
         ],
-        margin: [0, 2, 0, 2]
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [15,22,35], textColor: [201,168,76] },
+        alternateRowStyles: { fillColor: [250,248,243] },
+        foot: [],
       });
-      i++; continue;
+      y = doc.lastAutoTable.finalY + 6;
     }
 
-    // URL lines
-    if (/^https?:\/\//.test(stripped)) {
-      content.push({ text: stripped, fontSize: 9, color: '#333333', decoration: 'underline', margin: [0, 2, 0, 4] });
-      i++; continue;
-    }
+    addSection(T('ОДРЖЛИВОСТ','SUSTAINABILITY'), c.sustainability);
+    addSection(T('КАПАЦИТЕТ НА ТИМОТ','TEAM CAPACITY'), c.team_capacity);
 
-    // Default: body paragraph
-    content.push({ text: parseInline(stripped), margin: [0, 2, 0, 2], lineHeight: 1.45 });
-    i++;
+  } else {
+    // Scholarship
+    addSection(T('МОТИВАЦИСКО ПИСМО','PERSONAL STATEMENT'), c.personal_statement);
+    addSection(T('АКАДЕМСКА ПОЗАДИНА','ACADEMIC BACKGROUND'), c.academic_background);
+    addSection(T('ИСКУСТВО','PROFESSIONAL EXPERIENCE'), c.professional_experience);
+    addSection(T('ИСТРАЖУВАЧКИ ПРЕДЛОГ','RESEARCH PROPOSAL'), c.research_proposal);
+    addSection(T('ЗОШТО ОВОЈ ПРОГРАМ','WHY THIS PROGRAM'), c.why_this_program);
+    addSection(T('ПЛАН ЗА ВРАЌАЊЕ','RETURN & IMPACT PLAN'), c.return_plan);
   }
-  return content;
-}
 
-function buildSectionHeader(title, level) {
-  if (level === 1) {
-    return {
-      columns: [{
-        canvas: [{ type: 'rect', x: 0, y: 0, w: 5, h: 20, r: 0, color: '#000000' }],
-        width: 12, margin: [0, 14, 0, 0]
-      }, {
-        text: title, fontSize: 14, bold: true, color: '#000000', margin: [0, 14, 0, 6]
-      }]
-    };
+  // Footer on all pages
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7); doc.setTextColor(150,150,150);
+    doc.text(`Generated by Marginova.AI — ${today} — Page ${i}/${totalPages}`, margin, 292);
+    doc.setDrawColor(201,168,76);
+    doc.setLineWidth(0.3);
+    doc.line(margin, 289, W - margin, 289);
   }
-  if (level === 2) {
-    return {
-      stack: [
-        { text: title, fontSize: 12, bold: true, color: '#000000', margin: [0, 14, 0, 4] },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 1, lineColor: '#000000' }], margin: [0, 0, 0, 6] }
-      ]
-    };
-  }
-  return { text: title, fontSize: 11, bold: true, color: '#111111', margin: [0, 8, 0, 3] };
+
+  doc.save(`marginova_${generatedContent.type}_${Date.now()}.pdf`);
+  showToast('PDF downloaded!');
 }
-
-function buildCoverPage(meta) {
-  const { projectTitle, opportunity, country, budget, deadline, date } = meta;
-  const refId = 'MGN-' + Date.now().toString(36).toUpperCase();
-  return {
-    refId,
-    cover: [
-      { canvas: [{ type: 'rect', x: 0, y: 0, w: 480, h: 5, r: 0, color: '#000000' }] },
-      { text: '', margin: [0, 70, 0, 0] },
-      { text: 'MARGINOVA.AI', fontSize: 8, bold: true, color: '#999999', margin: [0, 0, 0, 16] },
-      { text: projectTitle || 'Grant Application Draft', fontSize: 28, bold: true, color: '#000000', lineHeight: 1.15, margin: [0, 0, 0, 10] },
-      { text: opportunity || '', fontSize: 13, color: '#333333', margin: [0, 0, 0, 50] },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 1, lineColor: '#000000' }], margin: [0, 0, 0, 22] },
-      {
-        columns: [
-          { stack: [{ text: 'COUNTRY', fontSize: 7, bold: true, color: '#888888', margin: [0,0,0,4] }, { text: country || '—', fontSize: 11, color: '#000000' }], width: '*' },
-          { stack: [{ text: 'BUDGET', fontSize: 7, bold: true, color: '#888888', margin: [0,0,0,4] }, { text: budget || '—', fontSize: 11, color: '#000000' }], width: '*' },
-          { stack: [{ text: 'DEADLINE', fontSize: 7, bold: true, color: '#888888', margin: [0,0,0,4] }, { text: deadline || '—', fontSize: 11, color: '#000000' }], width: '*' },
-          { stack: [{ text: 'DATE', fontSize: 7, bold: true, color: '#888888', margin: [0,0,0,4] }, { text: date || new Date().toLocaleDateString('en-GB'), fontSize: 11, color: '#000000' }], width: '*' }
-        ],
-        margin: [0, 0, 0, 22]
-      },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 0.5, lineColor: '#CCCCCC' }], margin: [0, 0, 0, 16] },
-      { text: `Reference: ${refId}`, fontSize: 8, color: '#BBBBBB' },
-      { text: '', pageBreak: 'after' }
-    ]
-  };
-}
-
-function buildPdfDefinition(rawText, meta) {
-  const coverResult = buildCoverPage(meta);
-  const refId       = coverResult.refId;
-  const bodyContent = parseTextToContent(rawText);
-
-  return {
-    pageSize:    'A4',
-    pageMargins: [56, 60, 56, 50],
-
-    header: (page) => {
-      if (page === 1) return null;
-      return {
-        columns: [
-          { text: (meta.projectTitle || 'Application Draft').slice(0, 55), fontSize: 8, color: '#AAAAAA', margin: [56, 20, 0, 0] },
-          { text: 'Marginova.AI', fontSize: 8, color: '#CCCCCC', alignment: 'right', margin: [0, 20, 56, 0] }
-        ]
-      };
-    },
-
-    footer: (page, pageCount) => ({
-      columns: [
-        { text: refId, fontSize: 7, color: '#BBBBBB', margin: [56, 0, 0, 0] },
-        { text: `${page} / ${pageCount}`, fontSize: 7, color: '#AAAAAA', alignment: 'right', margin: [0, 0, 56, 0] }
-      ],
-      margin: [0, 10, 0, 0]
-    }),
-
-    content: [
-      // Cover
-      ...coverResult.cover,
-
-      // Opportunity info box
-      {
-        table: {
-          widths: ['*', '*'],
-          body: [
-            [
-              { stack: [{ text: 'FUNDING PROGRAM', fontSize: 7, bold: true, color: '#888888', margin:[0,0,0,3] }, { text: meta.opportunity || '—', fontSize: 10, bold: true, color: '#000000' }], border:[false,false,false,false], fillColor:'#F5F5F5', margin:[10,10,10,10] },
-              { stack: [{ text: 'DEADLINE', fontSize: 7, bold: true, color: '#888888', margin:[0,0,0,3] }, { text: meta.deadline || 'Verify on source', fontSize: 10, color: '#000000' }], border:[false,false,false,false], fillColor:'#F5F5F5', margin:[10,10,10,10] }
-            ],
-            [
-              { stack: [{ text: 'BUDGET', fontSize: 7, bold: true, color: '#888888', margin:[0,0,0,3] }, { text: meta.budget || '—', fontSize: 10, color: '#000000' }], border:[false,false,false,false], fillColor:'#FAFAFA', margin:[10,8,10,10] },
-              { stack: [{ text: 'SOURCE', fontSize: 7, bold: true, color: '#888888', margin:[0,0,0,3] }, { text: meta.sourceUrl || '—', fontSize: 9, color: '#333333', decoration: meta.sourceUrl ? 'underline' : 'none' }], border:[false,false,false,false], fillColor:'#FAFAFA', margin:[10,8,10,10] }
-            ]
-          ]
-        },
-        layout: { hLineWidth:()=>0.5, vLineWidth:()=>0.5, hLineColor:()=>'#DDDDDD', vLineColor:()=>'#DDDDDD' },
-        margin: [0, 0, 0, 24]
-      },
-
-      // Main body
-      ...bodyContent,
-
-      // Disclaimer
-      {
-        stack: [
-          { text: '', margin: [0, 20, 0, 0] },
-          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 0.5, lineColor: '#CCCCCC' }], margin: [0, 0, 0, 10] },
-          { text: 'DISCLAIMER', fontSize: 7, bold: true, color: '#AAAAAA', margin: [0, 0, 0, 5] },
-          { text: 'This is an AI-generated application draft by Marginova.AI — a structured starting point for grant preparation. All funding opportunity details (deadlines, amounts, eligibility) must be verified directly with the donor. Marginova.AI does not guarantee accuracy of third-party program information. Review and complete with a qualified professional before submission.', fontSize: 8, color: '#AAAAAA', lineHeight: 1.5 }
-        ]
-      }
-    ],
-
-    defaultStyle: { font: 'Roboto', fontSize: 10, color: '#111111', lineHeight: 1.4 }
-  };
-}
-
-// ════════════════════════════════════════════════
-// COPY
-// ════════════════════════════════════════════════
-
-function copyOutput() {
-  if (!lastGeneratedText) return;
-  navigator.clipboard.writeText(lastGeneratedText).then(() => {
-    copyBtn.textContent = '✓ Copied!';
-    setTimeout(() => { copyBtn.textContent = 'Copy text'; }, 1500);
-  });
-}
-
-// ════════════════════════════════════════════════
-// DEMO + CLEAR
-// ════════════════════════════════════════════════
-
-function fillDemo() {
-  document.getElementById('userId').value           = '';
-  document.getElementById('opportunityId').value    = '1';
-  document.getElementById('configKey').value        = 'premium_application_system';
-  document.getElementById('lang').value             = 'en';
-  document.getElementById('projectTitle').value     = 'Digital Support Platform for Small Farmers';
-  document.getElementById('projectIdea').value      = 'The project establishes a practical digital support platform for small farmers through training, planning tools and improved access to market information and financial opportunities.';
-  document.getElementById('targetGroup').value      = 'Small farmers and young agricultural producers';
-  document.getElementById('location').value         = 'North Macedonia — Pelagonia region';
-  document.getElementById('durationMonths').value   = '12';
-  document.getElementById('budgetAmount').value     = '45000';
-  document.getElementById('budgetCurrency').value   = 'EUR';
-  document.getElementById('partners').value         = 'Local agricultural association and advisory organization';
-  document.getElementById('problemStatement').value = 'Small farmers have poor access to organized information, digital tools and structured support for improving productivity and preparing for financing.';
-  document.getElementById('expectedResults').value  = 'Improved capacity for at least 60 farmers, practical planning tools and better readiness for future funding calls.';
-  document.getElementById('notes').value            = 'Emphasize practical approach, clear indicators and realistic budget.';
-  clearStatus();
-}
-
-function clearForm() {
-  document.querySelectorAll('input,textarea').forEach(el => {
-    if (el.id !== 'configKey') el.value = '';
-  });
-  document.getElementById('configKey').value    = 'premium_application_system';
-  document.getElementById('lang').value         = 'en';
-  document.getElementById('budgetCurrency').value = 'EUR';
-  clearStatus();
-  clearOutput();
-}
-
-// Init
-clearOutput();
 </script>
 </body>
 </html>
