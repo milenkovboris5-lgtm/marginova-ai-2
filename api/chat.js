@@ -150,7 +150,9 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: { message: 'No message provided.' } });
     }
 
-    const lang  = body.lang || detectLang(userText);
+    // FIX: detect lang from full conversation — catches "на македонски", "in english" etc.
+    const langText = (body.messages || []).slice(-3).map(m => m.content || '').join(' ') + ' ' + userText;
+    const lang = body.lang || detectLang(langText);
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Detect profile from current conversation ONLY — no Supabase profiles
