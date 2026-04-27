@@ -166,7 +166,11 @@ ${buildMatchReason(p, profile)}
     ? `\nNOTE: ${sources.serper} result(s) from web search — those must be verified directly on source URLs.`
     : '';
 
-  const synthesisPrompt = `LANGUAGE: Always respond in ${L}. Match the user's language exactly.
+  const synthesisPrompt = `CRITICAL INSTRUCTION: You MUST respond ENTIRELY in ${L}. 
+Every single word of your response must be in ${L}.
+Do NOT use English unless ${L} is English.
+LANGUAGE = ${L}. This overrides everything else.
+
 
 You are MARGINOVA — a funding evaluation system.
 Today: ${today}
@@ -202,7 +206,25 @@ PROGRAM DATA (use ONLY this, nothing else):
 
 ${programBlocks}`;
 
-  const contents = [{ role: 'user', parts: [{ text: 'Present the 3 funding decisions now.' }] }];
+  // Language-specific user trigger — forces Gemini to respond in target language
+  const USER_TRIGGERS = {
+    mk: 'Прикажи ги 3-те одлуки за финансирање сега. Одговори САМО на македонски јазик.',
+    sr: 'Prikaži 3 odluke o finansiranju sada. Odgovori SAMO na srpskom jeziku.',
+    hr: 'Prikaži 3 odluke o financiranju sada. Odgovori SAMO na hrvatskom jeziku.',
+    bg: 'Покажи 3-те решения за финансиране сега. Отговори САМО на български.',
+    de: 'Zeige jetzt die 3 Finanzierungsentscheidungen. Antworte NUR auf Deutsch.',
+    fr: 'Présente maintenant les 3 décisions de financement. Réponds UNIQUEMENT en français.',
+    es: 'Presenta las 3 decisiones de financiamiento ahora. Responde SOLO en español.',
+    it: 'Presenta ora le 3 decisioni di finanziamento. Rispondi SOLO in italiano.',
+    pl: 'Przedstaw teraz 3 decyzje finansowe. Odpowiedz TYLKO po polsku.',
+    tr: 'Şimdi 3 finansman kararını sun. YALNIZCA Türkçe yanıt ver.',
+    ar: 'قدم الآن قرارات التمويل الثلاثة. أجب باللغة العربية فقط.',
+    ru: 'Покажи 3 решения о финансировании. Отвечай ТОЛЬКО на русском языке.',
+    uk: 'Покажи 3 рішення щодо фінансування. Відповідай ТІЛЬКИ українською мовою.',
+  };
+  const userTrigger = USER_TRIGGERS[lang] || 'Present the 3 funding decisions now. Respond in ' + L + ' only.';
+
+  const contents = [{ role: 'user', parts: [{ text: userTrigger }] }];
   return await gemini(synthesisPrompt, contents, { maxTokens: 2000, temperature: 0.2 });
 }
 
