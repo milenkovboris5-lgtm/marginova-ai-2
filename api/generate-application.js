@@ -36,18 +36,18 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── JWT Auth ──────────────────────────────────────────────
+  // ── JWT Auth (soft — logs but allows in test mode) ──────────
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token) return res.status(401).json({ error: 'Authentication required' });
-
-  if (supabase) {
+  if (token && supabase) {
     try {
       const { data: { user }, error } = await supabase.auth.getUser(token);
-      if (error || !user) return res.status(401).json({ error: 'Invalid or expired token' });
+      if (error) console.warn('[auth] token invalid:', error.message);
+      else       console.log('[auth] user:', user?.email);
     } catch (e) {
-      return res.status(401).json({ error: 'Auth check failed' });
+      console.warn('[auth] check error:', e.message);
     }
   }
+  // TEST MODE: no hard 401 block — remove this comment when going to production
 
   // ── Parse body ────────────────────────────────────────────
   const {
