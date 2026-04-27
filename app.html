@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><link rel="icon" href="/favicon.png" type="image/png">
+<meta charset="UTF-8">
+<link rel="icon" href="/favicon.png" type="image/png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Marginova.AI — Workspace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,7 +23,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;color:var(--text);backgro
 button,input,textarea,select{font:inherit}
 a{color:var(--gold);text-decoration:none}
 
-/* AUTH */
 .auth-screen{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:var(--navy)}
 .auth-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .auth-bg::before{content:'';position:absolute;top:-30%;right:-20%;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.07) 0%,transparent 65%)}
@@ -44,10 +44,8 @@ a{color:var(--gold);text-decoration:none}
 .auth-msg{font-size:.73rem;color:rgba(255,255,255,.3);text-align:center}
 .auth-err{font-size:.75rem;text-align:center;color:#e74c3c;display:none}
 
-/* APP LAYOUT */
 .app{display:none;height:100%;grid-template-columns:260px 1fr 300px;grid-template-rows:64px 1fr auto;grid-template-areas:'sidebar header panel' 'sidebar main panel' 'sidebar composer panel'}
 
-/* SIDEBAR */
 .sidebar{grid-area:sidebar;background:var(--navy);border-right:1px solid rgba(201,168,76,.1);display:flex;flex-direction:column;overflow:hidden}
 .sb-brand{padding:1.25rem 1.1rem 1rem;border-bottom:1px solid rgba(201,168,76,.08);display:flex;align-items:center;gap:.75rem}
 .sb-mark{width:40px;height:40px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--navy);box-shadow:0 8px 20px rgba(201,168,76,.25)}
@@ -69,7 +67,6 @@ a{color:var(--gold);text-decoration:none}
 .sb-premium-text{font-size:.75rem;color:rgba(255,255,255,.4);line-height:1.5;margin-bottom:.75rem}
 .sb-premium-btn{width:100%;padding:.6rem;border:none;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);font-weight:600;font-size:.78rem;cursor:pointer}
 
-/* HEADER */
 .header{grid-area:header;background:rgba(250,248,243,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;gap:1rem}
 .header-title{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:.5rem}
 .header-sub{font-size:.75rem;color:var(--muted)}
@@ -77,11 +74,8 @@ a{color:var(--gold);text-decoration:none}
 .h-badge{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);padding:.3rem .75rem;border-radius:999px;font-size:.7rem;font-weight:500;color:var(--gold)}
 .h-btn{padding:.45rem .85rem;border-radius:8px;border:1px solid var(--border-soft);background:var(--white);color:var(--muted);cursor:pointer;font-size:.78rem;display:flex;align-items:center;gap:.4rem;transition:.15s}
 .h-btn:hover{border-color:var(--gold);color:var(--gold)}
-.h-btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);border:none;font-weight:600;box-shadow:0 6px 18px rgba(201,168,76,.22)}
-.h-btn-gold:hover{transform:translateY(-1px);color:var(--navy)}
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px rgba(31,169,75,.15)}
 
-/* MAIN */
 .main{grid-area:main;overflow:hidden;display:flex;flex-direction:column;background:var(--cream);min-height:0}
 .chat-welcome{padding:1.25rem 1.5rem .75rem;flex-shrink:0}
 .welcome-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:1.1rem 1.4rem}
@@ -108,20 +102,14 @@ a{color:var(--gold);text-decoration:none}
 .bubble strong{color:var(--navy);font-weight:600}
 .bubble.user strong{color:var(--gold-light)}
 .bubble a{color:var(--gold);text-decoration:underline;text-underline-offset:2px}
-.bubble code{background:rgba(0,0,0,.06);padding:.1rem .3rem;border-radius:4px;font-size:.78rem}
 .itag{display:inline-block;padding:.14rem .5rem;border-radius:999px;font-size:.62rem;letter-spacing:.07em;margin-bottom:.4rem}
 .itag.grant{background:rgba(201,168,76,.1);color:#9A7421;border:1px solid rgba(201,168,76,.2)}
-.itag.general{background:rgba(15,22,35,.06);color:var(--navy-soft);border:1px solid rgba(15,22,35,.1)}
-.msg-actions{margin-top:.5rem;display:flex;gap:.4rem;flex-wrap:wrap}
-.msg-btn{background:transparent;border:1px solid rgba(0,0,0,.08);border-radius:6px;padding:.25rem .55rem;font-size:.68rem;color:#888;cursor:pointer;transition:.15s}
-.msg-btn:hover,.msg-btn.copied{border-color:var(--gold);color:var(--gold)}
 .typing-bubble{display:flex;gap:4px;align-items:center;padding:.85rem 1rem}
 .td{width:6px;height:6px;border-radius:50%;background:var(--gold);opacity:.4;animation:tdPulse 1.2s infinite}
 .td:nth-child(2){animation-delay:.2s}
 .td:nth-child(3){animation-delay:.4s}
 @keyframes tdPulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:.9;transform:scale(1.1)}}
 
-/* COMPOSER */
 .composer{grid-area:composer;padding:.85rem 1.5rem 1rem;background:rgba(250,248,243,.95);backdrop-filter:blur(12px);border-top:1px solid var(--border)}
 .file-preview{display:none;align-items:center;gap:.6rem;background:rgba(201,168,76,.06);border:1px solid var(--border);border-radius:8px;padding:.45rem .75rem;max-width:800px;margin:0 auto .5rem;font-size:.75rem;color:var(--muted)}
 .file-rm{background:transparent;border:none;color:#aaa;cursor:pointer}
@@ -138,10 +126,7 @@ a{color:var(--gold);text-decoration:none}
 .tool-btn:hover{border-color:var(--gold);color:var(--gold)}
 .composer-tip{font-size:.72rem;color:rgba(0,0,0,.3)}
 
-/* RIGHT PANEL */
 .panel{grid-area:panel;background:rgba(250,248,243,.7);border-left:1px solid var(--border);display:flex;flex-direction:column;gap:.75rem;padding:.85rem;overflow-y:auto}
-.panel::-webkit-scrollbar{width:3px}
-.panel::-webkit-scrollbar-thumb{background:rgba(0,0,0,.08)}
 .p-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:.9rem 1rem}
 .p-card-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
 .p-card-title h3{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;color:var(--navy)}
@@ -158,7 +143,6 @@ a{color:var(--gold);text-decoration:none}
 .opp-item div{font-size:.75rem;color:var(--muted);line-height:1.45}
 .opp-match{display:inline-block;margin-top:.3rem;padding:.15rem .45rem;border-radius:999px;background:rgba(31,169,75,.1);color:#167a36;font-size:.66rem;font-weight:600}
 
-/* DRAWER */
 .drawer{position:fixed;top:0;right:-280px;width:270px;height:100%;background:var(--navy);border-left:1px solid rgba(201,168,76,.12);z-index:150;transition:right .28s ease;display:flex;flex-direction:column;box-shadow:-24px 0 60px rgba(0,0,0,.2)}
 .drawer.open{right:0}
 .drawer-head{padding:1.1rem 1rem;border-bottom:1px solid rgba(201,168,76,.1);display:flex;justify-content:space-between;align-items:center}
@@ -180,7 +164,6 @@ a{color:var(--gold);text-decoration:none}
 .drawer-foot{padding:.75rem 1rem;border-top:1px solid rgba(201,168,76,.08);text-align:center}
 .d-version{font-size:.62rem;color:rgba(255,255,255,.2)}
 
-/* MODALS */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:var(--white);border:1px solid var(--border);border-radius:20px;padding:1.75rem;width:min(360px,88vw);display:flex;flex-direction:column;gap:.85rem;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.16)}
@@ -191,8 +174,7 @@ a{color:var(--gold);text-decoration:none}
 .mbtn{flex:1;padding:.65rem;border-radius:8px;font-size:.82rem;cursor:pointer;border:1px solid rgba(0,0,0,.08);background:var(--white);color:var(--muted)}
 .mbtn.navy{background:var(--navy);color:var(--gold);border:none;font-weight:600}
 
-/* PROFILE MODAL */
-.profile-modal-box{background:var(--white);border:1px solid var(--border);border-radius:24px;width:min(500px,92vw);max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 40px 80px rgba(0,0,0,.16);animation:fadeUp .3s ease}
+.profile-modal-box{background:var(--white);border:1px solid var(--border);border-radius:24px;width:min(500px,92vw);max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 40px 80px rgba(0,0,0,.16)}
 .profile-modal-box::-webkit-scrollbar{width:4px}
 .profile-modal-box::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:4px}
 .pm-head{background:var(--navy);padding:1.75rem 1.75rem 1.5rem;display:flex;align-items:center;gap:1rem;border-radius:24px 24px 0 0}
@@ -216,10 +198,7 @@ a{color:var(--gold);text-decoration:none}
 .pm-cancel{padding:.8rem 1.2rem;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:transparent;color:var(--muted);font-size:.85rem;cursor:pointer;transition:.2s}
 .pm-cancel:hover{border-color:var(--gold);color:var(--gold)}
 
-/* OPPORTUNITIES PANEL */
 .opp-panel-box{background:var(--white);border:1px solid var(--border);border-radius:24px;width:min(640px,96vw);max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 40px 80px rgba(0,0,0,.16)}
-.opp-panel-box::-webkit-scrollbar{width:4px}
-.opp-panel-box::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:4px}
 .op-head{background:var(--navy);padding:1.5rem 1.75rem;border-radius:24px 24px 0 0;display:flex;justify-content:space-between;align-items:center}
 .op-head h2{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--white)}
 .op-head span{font-size:.75rem;color:rgba(255,255,255,.4)}
@@ -237,7 +216,6 @@ a{color:var(--gold);text-decoration:none}
 .op-card-link{font-size:.72rem;color:var(--gold);margin-top:.5rem;display:inline-block}
 .op-loading{text-align:center;padding:2rem;color:var(--muted);font-size:.85rem}
 
-/* SAVED PANEL */
 .saved-panel-box{background:var(--white);border:1px solid var(--border);border-radius:24px;width:min(560px,96vw);max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 40px 80px rgba(0,0,0,.16)}
 .sv-head{background:var(--navy);padding:1.5rem 1.75rem;border-radius:24px 24px 0 0;display:flex;justify-content:space-between;align-items:center}
 .sv-head h2{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--white)}
@@ -248,7 +226,6 @@ a{color:var(--gold);text-decoration:none}
 .sv-card div{font-size:.75rem;color:var(--muted)}
 .sv-date{font-size:.68rem;color:rgba(0,0,0,.25);margin-top:.3rem}
 
-/* ANALYSIS MODAL */
 .analysis-panel-box{background:var(--white);border:1px solid var(--border);border-radius:24px;width:min(560px,96vw);max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 40px 80px rgba(0,0,0,.16)}
 .an-head{background:var(--navy);padding:1.5rem 1.75rem;border-radius:24px 24px 0 0}
 .an-head h2{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--white);margin-bottom:.2rem}
@@ -264,38 +241,19 @@ a{color:var(--gold);text-decoration:none}
 .an-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:999px;transition:width .6s ease}
 .an-bar-val{font-size:.72rem;color:var(--muted);width:30px;text-align:right;flex-shrink:0}
 
-/* TOAST */
 .toast{position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.5rem 1rem;font-size:.75rem;color:rgba(255,255,255,.8);opacity:0;transition:opacity .3s;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
-/* RESPONSIVE */
 @media(max-width:1200px){.app{grid-template-columns:230px 1fr 280px}}
-@media(max-width:1024px){
-  .app{grid-template-columns:200px 1fr;grid-template-areas:'sidebar header' 'sidebar main' 'sidebar composer'}
-  .panel{display:none}
-}
-@media(max-width:768px){
-  .app{grid-template-columns:1fr;grid-template-rows:56px 1fr auto;grid-template-areas:'header' 'main' 'composer'}
-  .sidebar,.panel{display:none}
-  .header{padding:0 1rem}
-  .chat-welcome{padding:1rem 1rem .5rem}
-  .chat-scroll{padding:.75rem 1rem 0}
-  .composer{padding:.65rem 1rem .85rem}
-  .welcome-text h2{font-size:1.45rem}
-}
-@media(max-width:480px){
-  .quick-chips{gap:.35rem}
-  .chip{font-size:.68rem;padding:.35rem .7rem}
-  .msg-input{font-size:.85rem}
-  .send-btn{width:42px;height:42px}
-}
+@media(max-width:1024px){.app{grid-template-columns:200px 1fr;grid-template-areas:'sidebar header' 'sidebar main' 'sidebar composer';.panel{display:none}}}
+@media(max-width:768px){.app{grid-template-columns:1fr;grid-template-rows:56px 1fr auto;grid-template-areas:'header' 'main' 'composer';.sidebar,.panel{display:none}.header{padding:0 1rem}.chat-welcome{padding:1rem 1rem .5rem}.chat-scroll{padding:.75rem 1rem 0}.composer{padding:.65rem 1rem .85rem}.welcome-text h2{font-size:1.45rem}}
+@media(max-width:480px){.quick-chips{gap:.35rem}.chip{font-size:.68rem;padding:.35rem .7rem}.msg-input{font-size:.85rem}.send-btn{width:42px;height:42px}}
 </style>
 </head>
 <body>
 
-<!-- AUTH -->
 <div class="auth-screen" id="auth-screen">
   <div class="auth-bg"></div>
   <div class="auth-box">
@@ -316,562 +274,180 @@ a{color:var(--gold);text-decoration:none}
   </div>
 </div>
 
-<!-- APP -->
 <div class="app" id="app">
   <aside class="sidebar">
-    <div class="sb-brand">
-      <div class="sb-mark">M</div>
-      <div class="sb-name">Marginova<span>.AI</span></div>
-    </div>
+    <div class="sb-brand"><div class="sb-mark">M</div><div class="sb-name">Marginova<span>.AI</span></div></div>
     <nav class="sb-nav">
-      <div class="sb-item active" id="nav-chat" onclick="setNav('chat')">
-        <span class="sb-item-icon">💬</span> Chat
-      </div>
-      <div class="sb-item" id="nav-opps" onclick="openOpportunities()">
-        <span class="sb-item-icon">🧭</span> Opportunities
-      </div>
-      <div class="sb-item" id="nav-profile" onclick="openProfileModal()">
-        <span class="sb-item-icon">👤</span> My Profile
-      </div>
-      <div class="sb-item" id="nav-analysis" onclick="openAnalysis()">
-        <span class="sb-item-icon">📈</span> Analysis
-      </div>
-      <div class="sb-item" id="nav-saved" onclick="openSaved()">
-        <span class="sb-item-icon">🔖</span> Saved
-      </div>
-      <div class="sb-item" onclick="showToast('Documents coming soon')">
-        <span class="sb-item-icon">📄</span> Documents
-      </div>
+      <div class="sb-item active" onclick="setNav('chat')"><span class="sb-item-icon">💬</span> Chat</div>
+      <div class="sb-item" onclick="openOpportunities()"><span class="sb-item-icon">🧭</span> Opportunities</div>
+      <div class="sb-item" onclick="openProfileModal()"><span class="sb-item-icon">👤</span> My Profile</div>
+      <div class="sb-item" onclick="openAnalysis()"><span class="sb-item-icon">📈</span> Analysis</div>
+      <div class="sb-item" onclick="openSaved()"><span class="sb-item-icon">🔖</span> Saved</div>
+      <div class="sb-item" onclick="showToast('Documents coming soon')"><span class="sb-item-icon">📄</span> Documents</div>
       <div class="sb-divider"></div>
-      <div class="sb-item" onclick="openPremium()">
-        <span class="sb-item-icon">🧩</span> Build Application
-        <span style="font-size:.62rem;background:rgba(201,168,76,.15);color:var(--gold);padding:.1rem .35rem;border-radius:999px;margin-left:auto">PRO</span>
-      </div>
+      <div class="sb-item" onclick="openPremium()"><span class="sb-item-icon">🧩</span> Build Application<span style="font-size:.62rem;background:rgba(201,168,76,.15);color:var(--gold);padding:.1rem .35rem;border-radius:999px;margin-left:auto">PRO</span></div>
     </nav>
-    <div class="sb-stats">
-      <div class="sb-stat"><strong>200+</strong><span>Programs</span></div>
-      <div class="sb-stat"><strong>40+</strong><span>Countries</span></div>
-      <div class="sb-stat"><strong>24/7</strong><span>Live</span></div>
-    </div>
-    <div class="sb-bottom">
-      <div class="sb-premium">
-        <div class="sb-premium-title">Go Premium</div>
-        <div class="sb-premium-text">Application builder, LFM, budget drafts and full proposal workflow.</div>
-        <button class="sb-premium-btn" onclick="openPremium()">Upgrade Now</button>
-      </div>
-    </div>
+    <div class="sb-stats"><div class="sb-stat"><strong>200+</strong><span>Programs</span></div><div class="sb-stat"><strong>40+</strong><span>Countries</span></div><div class="sb-stat"><strong>24/7</strong><span>Live</span></div></div>
+    <div class="sb-bottom"><div class="sb-premium"><div class="sb-premium-title">Go Premium</div><div class="sb-premium-text">Application builder, LFM, budget drafts and full proposal workflow.</div><button class="sb-premium-btn" onclick="openPremium()">Upgrade Now</button></div></div>
   </aside>
 
   <header class="header">
-    <div>
-      <div class="header-title"><div class="live-dot"></div>Funding Workspace</div>
-      <div class="header-sub">Decision system · Real-time · Verified</div>
-    </div>
-    <div class="header-actions">
-      <div class="h-badge" id="tok-badge">Free</div>
-      <button class="h-btn h-btn-gold" onclick="openPremium()">Upgrade</button>
-      <button class="h-btn" onclick="openDrawer()">⚙ Account</button>
-    </div>
+    <div><div class="header-title"><div class="live-dot"></div>Funding Workspace</div><div class="header-sub">Decision system · Real-time · Verified</div></div>
+    <div class="header-actions"><div class="h-badge" id="tok-badge">Free</div><button class="h-btn" onclick="openDrawer()">⚙ Account</button></div>
   </header>
 
   <main class="main">
     <div class="chat-welcome" id="welcome-block">
-      <div class="welcome-card">
-        <div class="welcome-text">
-          <h2>Hello, I'm <em>Marginova.</em></h2>
-          <p>Your funding decision system — TOP 3 opportunities, YES/NO/CONDITIONAL decisions, probability scores.</p>
-        </div>
-      </div>
-      <div class="quick-chips">
-        <div class="chip" onclick="quickStart('Find the top 3 funding opportunities matched to my profile and give me a decision for each.')">🎯 Get my top 3</div>
-        <div class="chip" onclick="quickStart('Check my eligibility and give me a YES/NO/CONDITIONAL decision with probability for each option.')">📊 Decision analysis</div>
-        <div class="chip" onclick="quickStart('I am looking for a scholarship. Analyze my profile and give me the best options with probability of success.')">🎓 Scholarships</div>
-        <div class="chip chip-premium" onclick="openPremium()">🧩 Build application ✦</div>
-      </div>
+      <div class="welcome-card"><div class="welcome-text"><h2>Hello, I'm <em>Marginova.</em></h2><p>Your funding decision system — TOP 3 opportunities, YES/NO/CONDITIONAL decisions, probability scores.</p></div></div>
+      <div class="quick-chips"><div class="chip" onclick="quickStart('Find the top 3 funding opportunities matched to my profile and give me a decision for each.')">🎯 Get my top 3</div><div class="chip" onclick="quickStart('Check my eligibility and give me a YES/NO/CONDITIONAL decision with probability for each option.')">📊 Decision analysis</div><div class="chip" onclick="quickStart('I am looking for a scholarship. Analyze my profile and give me the best options with probability of success.')">🎓 Scholarships</div><div class="chip chip-premium" onclick="openPremium()">🧩 Build application ✦</div></div>
     </div>
-    <div class="chat-scroll" id="chat-scroll">
-      <div class="msgs" id="messages">
-        <div class="msg-row">
-          <div class="msg-av ai">M</div>
-          <div class="bubble ai">
-            <p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p>
-            <p style="margin-top:.4rem">Tell me about your project or organization to get started.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="chat-scroll" id="chat-scroll"><div class="msgs" id="messages"><div class="msg-row"><div class="msg-av ai">M</div><div class="bubble ai"><p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p><p style="margin-top:.4rem">Tell me about your project or organization to get started.</p></div></div></div></div>
   </main>
 
   <div class="composer">
-    <div class="file-preview" id="file-preview">
-      <span>📎</span><span class="file-name" id="file-name">document.pdf</span>
-      <button class="file-rm" onclick="removeFile()">✕</button>
-    </div>
-    <div class="composer-inner">
-      <div class="composer-top">
-        <textarea class="msg-input" id="msg-input"
-          placeholder="Describe your project, org type, country and budget — get your TOP 3 decision..."
-          rows="1"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"
-          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
-        <button class="send-btn" id="send-btn" onclick="sendMsg()">➤</button>
-      </div>
-      <div class="composer-tools">
-        <div class="tool-left">
-          <label class="tool-btn"><input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" style="display:none" onchange="handleFile(event)">📎 Attach</label>
-          <label class="tool-btn"><input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">📷 Photo</label>
-        </div>
-        <div class="composer-tip">Tip: More project detail = better funding matches</div>
-      </div>
-    </div>
+    <div class="file-preview" id="file-preview"><span>📎</span><span class="file-name" id="file-name"></span><button class="file-rm" onclick="removeFile()">✕</button></div>
+    <div class="composer-inner"><div class="composer-top"><textarea class="msg-input" id="msg-input" placeholder="Describe your project, org type, country and budget — get your TOP 3 decision..." rows="1" onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();sendMsg();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea><button class="send-btn" id="send-btn" onclick="sendMsg()">➤</button></div><div class="composer-tools"><div class="tool-left"><label class="tool-btn"><input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" style="display:none" onchange="handleFile(event)">📎 Attach</label><label class="tool-btn"><input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">📷 Photo</label></div><div class="composer-tip">Tip: More project detail = better funding matches</div></div></div>
   </div>
 
   <aside class="panel">
-    <div class="p-card">
-      <div class="p-card-title">
-        <h3>Your Profile</h3>
-        <button class="p-edit-btn" onclick="openProfileModal()">Edit</button>
-      </div>
-      <div class="profile-lines">
-        <div class="profile-line"><strong id="profile-org">—</strong></div>
-        <div class="profile-line" id="profile-country">—</div>
-        <div class="profile-line"><span class="profile-pill" id="profile-sector">Not set</span></div>
-        <div class="profile-line" id="profile-budget" style="font-size:.75rem">Budget: not set</div>
-      </div>
-    </div>
-    <div class="p-card">
-      <div class="p-card-title">
-        <h3>Top 3 Decisions</h3>
-        <button class="p-edit-btn" onclick="openOpportunities()">View all</button>
-      </div>
-      <div class="opp-list" id="recent-opps">
-        <div class="opp-item"><strong style="color:var(--muted)">No decisions yet</strong><div>Describe your project to get your TOP 3 with YES/CONDITIONAL/BACKUP decisions.</div></div>
-      </div>
-    </div>
-    <div class="p-card" style="background:var(--navy);border-color:rgba(201,168,76,.15)">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:var(--gold);margin-bottom:.4rem">Premium Power</div>
-      <div style="font-size:.78rem;color:rgba(255,255,255,.45);line-height:1.55;margin-bottom:.85rem">Build complete applications, LFM, budget drafts and full proposal structure.</div>
-      <button onclick="openPremium()" style="width:100%;padding:.6rem;border:none;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);font-weight:600;font-size:.78rem;cursor:pointer;">Open Application Builder</button>
-    </div>
+    <div class="p-card"><div class="p-card-title"><h3>Your Profile</h3><button class="p-edit-btn" onclick="openProfileModal()">Edit</button></div><div class="profile-lines"><div class="profile-line"><strong id="profile-org">—</strong></div><div class="profile-line" id="profile-country">—</div><div class="profile-line"><span class="profile-pill" id="profile-sector">Not set</span></div><div class="profile-line" id="profile-budget" style="font-size:.75rem">Budget: not set</div></div></div>
+    <div class="p-card"><div class="p-card-title"><h3>Top 3 Decisions</h3><button class="p-edit-btn" onclick="openOpportunities()">View all</button></div><div class="opp-list" id="recent-opps"><div class="opp-item"><strong style="color:var(--muted)">No decisions yet</strong><div>Describe your project to get your TOP 3 with YES/CONDITIONAL/BACKUP decisions.</div></div></div></div>
+    <div class="p-card" style="background:var(--navy);border-color:rgba(201,168,76,.15)"><div style="font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:var(--gold);margin-bottom:.4rem">Premium Power</div><div style="font-size:.78rem;color:rgba(255,255,255,.45);line-height:1.55;margin-bottom:.85rem">Build complete applications, LFM, budget drafts and full proposal structure.</div><button onclick="openPremium()" style="width:100%;padding:.6rem;border:none;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);font-weight:600;font-size:.78rem;cursor:pointer;">Open Application Builder</button></div>
   </aside>
 </div>
 
-<!-- DRAWER -->
 <div class="drawer" id="drawer">
   <div class="drawer-head"><h3>Account</h3><button class="drawer-close" onclick="closeDrawer()">✕</button></div>
-  <div class="drawer-body">
-    <div class="d-email" id="drawer-email">—</div>
-    <div class="d-plan"><span class="d-plan-label">Plan</span><span class="d-plan-val" id="drawer-plan">Free</span></div>
-    <div class="d-quota" id="drawer-quota" style="display:none">
-      <span id="quota-text">0 / 20 messages</span>
-      <div class="d-quota-bar"><div class="d-quota-fill" id="quota-fill" style="width:0%"></div></div>
-    </div>
-    <div class="d-sep"></div>
-    <div class="d-section">Chat</div>
-    <button class="drawer-btn" onclick="clearChat();closeDrawer()">🗑 Clear history</button>
-    <div class="d-sep"></div>
-    <div class="d-section">Language</div>
-    <button class="drawer-btn" onclick="setLang('en');closeDrawer()">🇬🇧 English</button>
-    <button class="drawer-btn" onclick="setLang('mk');closeDrawer()">🇲🇰 Macedonian</button>
-    <button class="drawer-btn" onclick="setLang('sr');closeDrawer()">🇷🇸 Serbian</button>
-    <div class="d-sep"></div>
-    <button class="drawer-btn danger" onclick="doSignOut()">→ Sign out</button>
-  </div>
-  <div class="drawer-foot"><div class="d-version">Marginova — Funding Decision System v3</div></div>
+  <div class="drawer-body"><div class="d-email" id="drawer-email">—</div><div class="d-plan"><span class="d-plan-label">Plan</span><span class="d-plan-val" id="drawer-plan">Free</span></div><div class="d-quota" id="drawer-quota" style="display:none"><span id="quota-text">0 / 20 messages</span><div class="d-quota-bar"><div class="d-quota-fill" id="quota-fill" style="width:0%"></div></div></div><div class="d-sep"></div><div class="d-section">Chat</div><button class="drawer-btn" onclick="clearChat();closeDrawer()">🗑 Clear history</button><div class="d-sep"></div><div class="d-section">Language</div><button class="drawer-btn" onclick="setLang('en');closeDrawer()">🇬🇧 English</button><button class="drawer-btn" onclick="setLang('mk');closeDrawer()">🇲🇰 Macedonian</button><button class="drawer-btn" onclick="setLang('sr');closeDrawer()">🇷🇸 Serbian</button><div class="d-sep"></div><button class="drawer-btn danger" onclick="doSignOut()">→ Sign out</button></div>
+  <div class="drawer-foot"><div class="d-version">Marginova — Funding Decision System v4</div></div>
 </div>
 
-<!-- UPGRADE MODAL -->
-<div class="modal-overlay" id="upgrade-modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('upgrade-modal')">✕</button>
-    <h3>Premium workspace</h3>
-    <p>Unlock the application builder — generate LFM, budget drafts, risk matrices and full proposal structure from any matched opportunity.</p>
-    <div class="modal-btns">
-      <button class="mbtn" onclick="closeModal('upgrade-modal')">Later</button>
-      <button class="mbtn navy" onclick="window.location.href='/index.html#pricing'">See Plans →</button>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="upgrade-modal"><div class="modal"><button class="modal-close" onclick="closeModal('upgrade-modal')">✕</button><h3>Premium workspace</h3><p>Unlock the application builder — generate LFM, budget drafts, risk matrices and full proposal structure from any matched opportunity.</p><div class="modal-btns"><button class="mbtn" onclick="closeModal('upgrade-modal')">Later</button><button class="mbtn navy" onclick="window.location.href='/index.html#pricing'">See Plans →</button></div></div></div>
 
-<!-- PROFILE MODAL -->
-<div class="modal-overlay" id="profile-modal">
-  <div class="profile-modal-box">
-    <div class="pm-head">
-      <div class="pm-av" id="pm-av">M</div>
-      <div>
-        <div class="pm-title">My Profile</div>
-        <div class="pm-email-txt" id="pm-email-txt">—</div>
-        <div class="pm-plan-tag" id="pm-plan-tag">Free</div>
-      </div>
-    </div>
-    <div class="pm-body">
-      <div class="pm-slabel">Organization details</div>
-      <div class="pm-field">
-        <label class="pm-label">Organization type</label>
-        <select class="pm-select" id="pm-orgtype">
-          <option value="">— Select type —</option>
-          <option value="NGO / Association">NGO / Association</option>
-          <option value="Startup">Startup</option>
-          <option value="SME">SME / Small Business</option>
-          <option value="Agricultural holding">Agricultural holding</option>
-          <option value="Individual / Entrepreneur">Individual / Entrepreneur</option>
-          <option value="Municipality / Public body">Municipality / Public body</option>
-          <option value="University / Research">University / Research</option>
-        </select>
-      </div>
-      <div class="pm-field">
-        <label class="pm-label">Primary sector</label>
-        <select class="pm-select" id="pm-sector">
-          <option value="">— Select sector —</option>
-          <option value="IT / Technology">IT / Technology</option>
-          <option value="Agriculture">Agriculture</option>
-          <option value="Education">Education</option>
-          <option value="Environment / Energy">Environment / Energy</option>
-          <option value="Civil Society">Civil Society</option>
-          <option value="Health / Social">Health / Social</option>
-          <option value="Research / Innovation">Research / Innovation</option>
-          <option value="SME / Business">SME / Business</option>
-          <option value="Tourism / Culture">Tourism / Culture</option>
-        </select>
-      </div>
-      <div class="pm-field">
-        <label class="pm-label">Country</label>
-        <select class="pm-select" id="pm-country">
-          <option value="">— Select country —</option>
-          <option value="North Macedonia">North Macedonia</option>
-          <option value="Serbia">Serbia</option>
-          <option value="Croatia">Croatia</option>
-          <option value="Bosnia">Bosnia and Herzegovina</option>
-          <option value="Albania">Albania</option>
-          <option value="Kosovo">Kosovo</option>
-          <option value="Bulgaria">Bulgaria</option>
-          <option value="Montenegro">Montenegro</option>
-          <option value="Slovenia">Slovenia</option>
-          <option value="Other EU">Other EU country</option>
-          <option value="Global">Global / International</option>
-        </select>
-      </div>
-      <div class="pm-field">
-        <label class="pm-label">Budget range you're looking for</label>
-        <select class="pm-select" id="pm-budget">
-          <option value="">— Select range —</option>
-          <option value="up to €30k">Up to €30,000</option>
-          <option value="€30k–€150k">€30,000 – €150,000</option>
-          <option value="€150k–€500k">€150,000 – €500,000</option>
-          <option value="above €500k">Above €500,000</option>
-        </select>
-      </div>
-      <div class="pm-field">
-        <label class="pm-label">Project goals <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-        <textarea class="pm-textarea" id="pm-goals" placeholder="Briefly describe what your organization does and what type of funding you're looking for..."></textarea>
-      </div>
-      <div class="pm-status" id="pm-status"></div>
-      <div class="pm-actions">
-        <button class="pm-save" onclick="saveProfile()">Save profile</button>
-        <button class="pm-cancel" onclick="closeModal('profile-modal')">Cancel</button>
-      </div>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="profile-modal"><div class="profile-modal-box"><div class="pm-head"><div class="pm-av" id="pm-av">M</div><div><div class="pm-title">My Profile</div><div class="pm-email-txt" id="pm-email-txt">—</div><div class="pm-plan-tag" id="pm-plan-tag">Free</div></div></div><div class="pm-body"><div class="pm-slabel">Organization details</div><div class="pm-field"><label class="pm-label">Organization type</label><select class="pm-select" id="pm-orgtype"><option value="">— Select type —</option><option value="NGO / Association">NGO / Association</option><option value="Startup">Startup</option><option value="SME">SME / Small Business</option><option value="Agricultural holding">Agricultural holding</option><option value="Individual / Entrepreneur">Individual / Entrepreneur</option><option value="Municipality / Public body">Municipality / Public body</option><option value="University / Research">University / Research</option></select></div><div class="pm-field"><label class="pm-label">Primary sector</label><select class="pm-select" id="pm-sector"><option value="">— Select sector —</option><option value="IT / Technology">IT / Technology</option><option value="Agriculture">Agriculture</option><option value="Education">Education</option><option value="Environment / Energy">Environment / Energy</option><option value="Civil Society">Civil Society</option><option value="Health / Social">Health / Social</option><option value="Research / Innovation">Research / Innovation</option><option value="SME / Business">SME / Business</option><option value="Tourism / Culture">Tourism / Culture</option></select></div><div class="pm-field"><label class="pm-label">Country</label><select class="pm-select" id="pm-country"><option value="">— Select country —</option><option value="North Macedonia">North Macedonia</option><option value="Serbia">Serbia</option><option value="Croatia">Croatia</option><option value="Bosnia">Bosnia and Herzegovina</option><option value="Albania">Albania</option><option value="Kosovo">Kosovo</option><option value="Bulgaria">Bulgaria</option><option value="Montenegro">Montenegro</option><option value="Slovenia">Slovenia</option><option value="Other EU">Other EU country</option><option value="Global">Global / International</option></select></div><div class="pm-field"><label class="pm-label">Budget range you're looking for</label><select class="pm-select" id="pm-budget"><option value="">— Select range —</option><option value="up to €30k">Up to €30,000</option><option value="€30k–€150k">€30,000 – €150,000</option><option value="€150k–€500k">€150,000 – €500,000</option><option value="above €500k">Above €500,000</option></select></div><div class="pm-field"><label class="pm-label">Project goals <span style="color:var(--muted);font-weight:400">(optional)</span></label><textarea class="pm-textarea" id="pm-goals" placeholder="Briefly describe what your organization does and what type of funding you're looking for..."></textarea></div><div class="pm-status" id="pm-status"></div><div class="pm-actions"><button class="pm-save" onclick="saveProfile()">Save profile</button><button class="pm-cancel" onclick="closeModal('profile-modal')">Cancel</button></div></div></div></div>
 
-<!-- OPPORTUNITIES MODAL -->
-<div class="modal-overlay" id="opps-modal">
-  <div class="opp-panel-box">
-    <div class="op-head">
-      <h2>Active Programs</h2>
-      <div style="display:flex;align-items:center;gap:.75rem">
-        <span id="op-count">Loading...</span>
-        <button onclick="closeModal('opps-modal')" style="background:transparent;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:1.1rem">✕</button>
-      </div>
-    </div>
-    <div class="op-filters">
-      <button class="op-filter active" onclick="filterOpps('all',this)">All</button>
-      <button class="op-filter" onclick="filterOpps('IT / Technology',this)">IT / Tech</button>
-      <button class="op-filter" onclick="filterOpps('Agriculture',this)">Agriculture</button>
-      <button class="op-filter" onclick="filterOpps('Civil Society',this)">Civil Society</button>
-      <button class="op-filter" onclick="filterOpps('Environment / Energy',this)">Environment</button>
-      <button class="op-filter" onclick="filterOpps('Education',this)">Education</button>
-      <button class="op-filter" onclick="filterOpps('Health / Social',this)">Health</button>
-    </div>
-    <div class="op-list" id="op-list"><div class="op-loading">Loading programs...</div></div>
-  </div>
-</div>
+<div class="modal-overlay" id="opps-modal"><div class="opp-panel-box"><div class="op-head"><h2>Active Programs</h2><div style="display:flex;align-items:center;gap:.75rem"><span id="op-count">Loading...</span><button onclick="closeModal('opps-modal')" style="background:transparent;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:1.1rem">✕</button></div></div><div class="op-filters"><button class="op-filter active" onclick="filterOpps('all',this)">All</button><button class="op-filter" onclick="filterOpps('IT / Technology',this)">IT / Tech</button><button class="op-filter" onclick="filterOpps('Agriculture',this)">Agriculture</button><button class="op-filter" onclick="filterOpps('Civil Society',this)">Civil Society</button><button class="op-filter" onclick="filterOpps('Environment / Energy',this)">Environment</button><button class="op-filter" onclick="filterOpps('Education',this)">Education</button><button class="op-filter" onclick="filterOpps('Health / Social',this)">Health</button></div><div class="op-list" id="op-list"><div class="op-loading">Loading programs...</div></div></div></div>
 
-<!-- SAVED MODAL -->
-<div class="modal-overlay" id="saved-modal">
-  <div class="saved-panel-box">
-    <div class="sv-head">
-      <h2>Saved Searches</h2>
-      <button onclick="closeModal('saved-modal')" style="background:transparent;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:1.1rem">✕</button>
-    </div>
-    <div class="sv-body" id="sv-body">
-      <div class="sv-empty">Your saved searches will appear here.</div>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="saved-modal"><div class="saved-panel-box"><div class="sv-head"><h2>Saved Searches</h2><button onclick="closeModal('saved-modal')" style="background:transparent;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:1.1rem">✕</button></div><div class="sv-body" id="sv-body"><div class="sv-empty">Your saved searches will appear here.</div></div></div></div>
 
-<!-- ANALYSIS MODAL -->
-<div class="modal-overlay" id="analysis-modal">
-  <div class="analysis-panel-box">
-    <div class="an-head">
-      <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--white);margin-bottom:.2rem">Your Analysis</h2>
-      <div style="font-size:.75rem;color:rgba(255,255,255,.4)">Based on your profile and activity</div>
-    </div>
-    <div class="an-body" id="an-body">
-      <div class="an-grid" id="an-stats"></div>
-      <div>
-        <div class="an-section">Top matching sectors in database</div>
-        <div id="an-bars"></div>
-      </div>
-      <div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:1rem;font-size:.82rem;color:var(--muted);line-height:1.6" id="an-tip"></div>
-    </div>
-    <div style="padding:1rem 1.75rem;border-top:1px solid var(--border)">
-      <button onclick="closeModal('analysis-modal')" style="width:100%;padding:.7rem;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;font-size:.82rem">Close</button>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="analysis-modal"><div class="analysis-panel-box"><div class="an-head"><h2 style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--white);margin-bottom:.2rem">Your Analysis</h2><div style="font-size:.75rem;color:rgba(255,255,255,.4)">Based on your profile and activity</div></div><div class="an-body" id="an-body"><div class="an-grid" id="an-stats"></div><div><div class="an-section">Top matching sectors in database</div><div id="an-bars"></div></div><div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:1rem;font-size:.82rem;color:var(--muted);line-height:1.6" id="an-tip"></div></div><div style="padding:1rem 1.75rem;border-top:1px solid var(--border)"><button onclick="closeModal('analysis-modal')" style="width:100%;padding:.7rem;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;font-size:.82rem">Close</button></div></div></div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── SUPABASE INIT ──
-// Anon key is public by design (Supabase RLS controls access).
-// Service key stays server-side only (utils.js via env var).
 const {createClient} = supabase;
-
 const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
-
-const db = createClient(SUPA_URL, SUPA_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'marginova_auth' }
-});
-
-// NOTE: When /api/config.js is deployed on server, switch to:
-// async function initSupabase() {
-//   const cfg = await fetch('/api/config').then(r => r.json());
-//   db = createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: {...} });
-// }
-
-async function initSupabase() { /* db already initialized above */ }
+const db = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'marginova_auth' } });
 
 let currentUser = null, authMode = 'login', lang = localStorage.getItem('mlang') || 'en';
-let chatHistory = [], currentFile = null;
-let allOpportunities = [];
-let currentUserPlan = 'free'; // track plan for openPremium gate
+let chatHistory = [], currentFile = null, allOpportunities = [], currentUserPlan = 'free';
 
-// ── AUTH ──
-function setAuthMode(m) {
-  authMode = m;
-  document.querySelectorAll('.auth-tab').forEach((t,i) =>
-    t.classList.toggle('active', (i===0&&m==='login')||(i===1&&m==='signup')));
-  document.getElementById('auth-pw').placeholder =
-    m === 'signup' ? 'Choose a password (min 6 chars)' : 'Password';
-}
+function setAuthMode(m) { authMode = m; document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&m==='login')||(i===1&&m==='signup'))); document.getElementById('auth-pw').placeholder = m === 'signup' ? 'Choose a password (min 6 chars)' : 'Password'; }
 
 async function doAuth() {
-  const email = document.getElementById('auth-email').value.trim();
-  const pw    = document.getElementById('auth-pw').value;
-  const err   = document.getElementById('auth-err');
+  const email = document.getElementById('auth-email').value.trim(), pw = document.getElementById('auth-pw').value, err = document.getElementById('auth-err');
   err.style.display = 'none';
   if (!email || !pw) { showAuthErr('Please fill all fields.'); return; }
   try {
     let res;
-    if (authMode === 'signup') {
-      res = await db.auth.signUp({ email, password: pw });
-      if (!res.error) { showAuthErr('Check your email to confirm your account.', true); return; }
-    } else {
-      res = await db.auth.signInWithPassword({ email, password: pw });
-    }
+    if (authMode === 'signup') { res = await db.auth.signUp({ email, password: pw }); if (!res.error) { showAuthErr('Check your email to confirm your account.', true); return; } }
+    else { res = await db.auth.signInWithPassword({ email, password: pw }); }
     if (res.error) { showAuthErr(res.error.message); return; }
-    currentUser = res.data.user;
-    initApp();
+    currentUser = res.data.user; initApp();
   } catch(e) { showAuthErr(e.message); }
 }
+function showAuthErr(msg, ok = false) { const err = document.getElementById('auth-err'); err.style.color = ok ? '#1fa94b' : '#e74c3c'; err.textContent = msg; err.style.display = 'block'; }
 
-function showAuthErr(msg, ok = false) {
-  const err = document.getElementById('auth-err');
-  err.style.color = ok ? '#1fa94b' : '#e74c3c';
-  err.textContent = msg;
-  err.style.display = 'block';
-}
-
-function initApp() {
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'grid';
-  if (currentUser) {
-    document.getElementById('drawer-email').textContent = currentUser.email;
-    loadUserProfile();
-  }
-}
+function initApp() { document.getElementById('auth-screen').style.display = 'none'; document.getElementById('app').style.display = 'grid'; if (currentUser) { document.getElementById('drawer-email').textContent = currentUser.email; loadUserProfile(); } }
 
 async function loadUserProfile() {
   if (!currentUser) return;
   try {
-    const { data, error } = await db.from('profiles')
-      .select('plan,daily_msgs,last_msg_date,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country')
-      .eq('user_id', currentUser.id)
-      .maybeSingle();
-
+    const { data, error } = await db.from('profiles').select('plan,daily_msgs,last_msg_date,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country').eq('user_id', currentUser.id).maybeSingle();
     if (error) { console.log('[PROFILE]', error.message); return; }
-
-    const plan = data?.plan || 'free';
-    currentUserPlan = plan; // ← store for openPremium gate
-
-    const limits  = { free:20, starter:500, pro:2000, business:-1 };
-    const limit   = limits[plan] ?? 20;
-    const today   = new Date().toISOString().split('T')[0];
-    const used    = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
-
+    const plan = data?.plan || 'free'; currentUserPlan = plan;
+    const limits = { free:20, starter:500, pro:2000, business:-1 };
+    const limit = limits[plan] ?? 20;
+    const today = new Date().toISOString().split('T')[0];
+    const used = data?.last_msg_date === today ? (data?.daily_msgs || 0) : 0;
     document.getElementById('drawer-plan').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
-    document.getElementById('tok-badge').textContent   = plan.charAt(0).toUpperCase() + plan.slice(1);
-
+    document.getElementById('tok-badge').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
     if (limit !== -1) {
       const pct = Math.min(100, Math.round((used / limit) * 100));
       document.getElementById('drawer-quota').style.display = 'block';
-      document.getElementById('quota-text').textContent     = `${used} / ${limit} messages today`;
-      document.getElementById('quota-fill').style.width     = pct + '%';
+      document.getElementById('quota-text').textContent = `${used} / ${limit} messages today`;
+      document.getElementById('quota-fill').style.width = pct + '%';
     }
-
-    document.getElementById('profile-org').textContent    = data?.organization_type || data?.detected_org_type || 'Not set';
+    document.getElementById('profile-org').textContent = data?.organization_type || data?.detected_org_type || 'Not set';
     document.getElementById('profile-country').textContent = data?.country || data?.detected_country || 'Country not set';
-    document.getElementById('profile-sector').textContent  = data?.sector || data?.detected_sector || 'Sector not set';
-    document.getElementById('profile-budget').textContent  = 'Budget: ' + (data?.goals || 'not set');
-  } catch(e) {
-    console.log('[PROFILE ERROR]', e.message);
-    showToast('Could not load profile — using defaults');
-  }
+    document.getElementById('profile-sector').textContent = data?.sector || data?.detected_sector || 'Sector not set';
+    document.getElementById('profile-budget').textContent = 'Budget: ' + (data?.goals || 'not set');
+  } catch(e) { console.log('[PROFILE ERROR]', e.message); showToast('Could not load profile — using defaults'); }
 }
 
-// ── SIGN OUT — FIX: clear ALL state before signing out ──
 async function doSignOut() {
-  // 1. Clear sensitive state first
-  chatHistory      = [];
-  currentFile      = null;
-  allOpportunities = [];
-  currentUser      = null;
-  currentUserPlan  = 'free';
-
-  // 2. Sign out from Supabase
+  chatHistory = []; currentFile = null; allOpportunities = []; currentUser = null; currentUserPlan = 'free';
   await db.auth.signOut();
-
-  // 3. Reset UI
   closeDrawer();
-  document.getElementById('app').style.display        = 'none';
+  document.getElementById('app').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
-
-  // 4. Reset chat to pristine state
-  document.getElementById('messages').innerHTML = `
-    <div class="msg-row">
-      <div class="msg-av ai">M</div>
-      <div class="bubble ai">
-        <p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p>
-        <p style="margin-top:.4rem">Tell me about your project or organization to get started.</p>
-      </div>
-    </div>`;
-
-  const wb = document.getElementById('welcome-block');
-  if (wb) wb.style.display = 'block';
-
-  // 5. Reset profile panel
-  document.getElementById('profile-org').textContent     = '—';
+  document.getElementById('messages').innerHTML = '<div class="msg-row"><div class="msg-av ai">M</div><div class="bubble ai"><p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p><p style="margin-top:.4rem">Tell me about your project or organization to get started.</p></div></div>';
+  document.getElementById('welcome-block').style.display = 'block';
+  document.getElementById('profile-org').textContent = '—';
   document.getElementById('profile-country').textContent = '—';
-  document.getElementById('profile-sector').textContent  = 'Not set';
-  document.getElementById('profile-budget').textContent  = 'Budget: not set';
-  document.getElementById('recent-opps').innerHTML = `
-    <div class="opp-item">
-      <strong style="color:var(--muted)">No decisions yet</strong>
-      <div>Describe your project to get your TOP 3 with YES/CONDITIONAL/BACKUP decisions.</div>
-    </div>`;
-
+  document.getElementById('profile-sector').textContent = 'Not set';
+  document.getElementById('profile-budget').textContent = 'Budget: not set';
+  document.getElementById('recent-opps').innerHTML = '<div class="opp-item"><strong style="color:var(--muted)">No decisions yet</strong><div>Describe your project to get your TOP 3 with YES/CONDITIONAL/BACKUP decisions.</div></div>';
   document.getElementById('drawer-quota').style.display = 'none';
-  document.getElementById('tok-badge').textContent       = 'Free';
-  document.getElementById('drawer-plan').textContent     = 'Free';
-  document.getElementById('drawer-email').textContent    = '—';
+  document.getElementById('tok-badge').textContent = 'Free';
+  document.getElementById('drawer-plan').textContent = 'Free';
+  document.getElementById('drawer-email').textContent = '—';
 }
 
-// ── UI ──
-function setNav(n) {
-  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
-  document.getElementById('nav-' + n)?.classList.add('active');
-}
-function openDrawer()  { document.getElementById('drawer').classList.add('open'); }
+function setNav(n) { document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active')); document.getElementById('nav-' + n)?.classList.add('active'); }
+function openDrawer() { document.getElementById('drawer').classList.add('open'); }
 function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function setLang(l)    { lang = l; localStorage.setItem('mlang', l); showToast('Language: ' + l.toUpperCase()); }
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2400);
-}
+function setLang(l) { lang = l; localStorage.setItem('mlang', l); showToast('Language: ' + l.toUpperCase()); }
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2400); }
+function openPremium() { const isPro = currentUserPlan === 'pro' || currentUserPlan === 'business'; if (isPro) { window.location.href = '/premium-application.html'; } else { openModal('upgrade-modal'); } }
 
-// ── OPEN PREMIUM — FIX: plan gate ──
-function openPremium() {
-  const isPro = currentUserPlan === 'pro' || currentUserPlan === 'business';
-  if (isPro) {
-    window.location.href = '/premium-application.html';
-  } else {
-    openModal('upgrade-modal');
-  }
-}
-
-// ── PROFILE MODAL ──
 async function openProfileModal() {
   openModal('profile-modal');
-  if (currentUser) {
-    document.getElementById('pm-email-txt').textContent = currentUser.email;
-    document.getElementById('pm-av').textContent = currentUser.email.charAt(0).toUpperCase();
-  }
+  if (currentUser) { document.getElementById('pm-email-txt').textContent = currentUser.email; document.getElementById('pm-av').textContent = currentUser.email.charAt(0).toUpperCase(); }
   if (!currentUser) return;
   try {
-    const { data, error } = await db.from('profiles')
-      .select('plan,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country')
-      .eq('user_id', currentUser.id)
-      .maybeSingle();
-
+    const { data, error } = await db.from('profiles').select('plan,sector,country,organization_type,goals,detected_sector,detected_org_type,detected_country').eq('user_id', currentUser.id).maybeSingle();
     if (error) { console.log('[PM]', error.message); return; }
     if (data) {
-      document.getElementById('pm-orgtype').value  = data.organization_type || data.detected_org_type || '';
-      document.getElementById('pm-sector').value   = data.sector || data.detected_sector || '';
-      document.getElementById('pm-country').value  = data.country || data.detected_country || '';
-      document.getElementById('pm-budget').value   = data.goals || '';
-      document.getElementById('pm-goals').value    = '';
-      document.getElementById('pm-plan-tag').textContent =
-        (data.plan || 'free').charAt(0).toUpperCase() + (data.plan || 'free').slice(1);
+      document.getElementById('pm-orgtype').value = data.organization_type || data.detected_org_type || '';
+      document.getElementById('pm-sector').value = data.sector || data.detected_sector || '';
+      document.getElementById('pm-country').value = data.country || data.detected_country || '';
+      document.getElementById('pm-budget').value = data.goals || '';
+      document.getElementById('pm-plan-tag').textContent = (data.plan || 'free').charAt(0).toUpperCase() + (data.plan || 'free').slice(1);
     }
   } catch(e) {}
 }
 
 async function saveProfile() {
   if (!currentUser) return;
-  const orgType = document.getElementById('pm-orgtype').value;
-  const sector  = document.getElementById('pm-sector').value;
-  const country = document.getElementById('pm-country').value;
-  const budget  = document.getElementById('pm-budget').value;
-  const st      = document.getElementById('pm-status');
+  const orgType = document.getElementById('pm-orgtype').value, sector = document.getElementById('pm-sector').value, country = document.getElementById('pm-country').value, budget = document.getElementById('pm-budget').value, st = document.getElementById('pm-status');
   st.className = 'pm-status'; st.textContent = 'Saving...';
   try {
-    const { error } = await db.from('profiles').upsert({
-      user_id: currentUser.id,
-      organization_type: orgType || null, sector: sector || null,
-      country: country || null, goals: budget || null,
-      detected_org_type: orgType || null, detected_sector: sector || null,
-      detected_country: country || null
-    }, { onConflict: 'user_id' });
-
+    const { error } = await db.from('profiles').upsert({ user_id: currentUser.id, organization_type: orgType || null, sector: sector || null, country: country || null, goals: budget || null, detected_org_type: orgType || null, detected_sector: sector || null, detected_country: country || null }, { onConflict: 'user_id' });
     if (error) throw error;
-    document.getElementById('profile-org').textContent     = orgType || 'Not set';
+    document.getElementById('profile-org').textContent = orgType || 'Not set';
     document.getElementById('profile-country').textContent = country || 'Not set';
-    document.getElementById('profile-sector').textContent  = sector || 'Not set';
-    document.getElementById('profile-budget').textContent  = 'Budget: ' + (budget || 'not set');
+    document.getElementById('profile-sector').textContent = sector || 'Not set';
+    document.getElementById('profile-budget').textContent = 'Budget: ' + (budget || 'not set');
     st.className = 'pm-status ok'; st.textContent = '✓ Profile saved!';
     setTimeout(() => closeModal('profile-modal'), 1200);
     showToast('Profile updated — matching improved!');
   } catch(e) { st.className = 'pm-status err'; st.textContent = 'Error saving. Try again.'; }
 }
 
-// ── OPPORTUNITIES ──
 async function openOpportunities() {
   openModal('opps-modal');
   const list = document.getElementById('op-list');
@@ -879,9 +455,7 @@ async function openOpportunities() {
     list.innerHTML = '<div class="op-loading">Loading programs...</div>';
     try {
       const today = new Date().toISOString().split('T')[0];
-      const { data } = await db.from('funding_opportunities')
-        .select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,source_url,status')
-        .eq('status', 'Open').limit(200);
+      const { data } = await db.from('funding_opportunities').select('id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,source_url,status').eq('status', 'Open').limit(200);
       allOpportunities = (data || []).filter(g => !g.application_deadline || g.application_deadline >= today);
     } catch(e) { list.innerHTML = '<div class="op-loading">Error loading programs.</div>'; return; }
   }
@@ -892,70 +466,33 @@ async function openOpportunities() {
 function renderOpps(opps) {
   const list = document.getElementById('op-list');
   if (!opps.length) { list.innerHTML = '<div class="op-loading">No programs found for this filter.</div>'; return; }
-  list.innerHTML = opps.map(g => `
-    <div class="op-card">
-      <div class="op-card-top"><div class="op-card-title">${g.title}</div></div>
-      <div class="op-card-org">${g.organization_name || ''}</div>
-      <div class="op-card-meta">
-        ${g.award_amount ? `<span class="op-tag">€${Number(g.award_amount).toLocaleString()} ${g.currency||''}</span>` : (g.funding_range ? `<span class="op-tag">${g.funding_range}</span>` : '')}
-        ${g.country ? `<span class="op-tag">${g.country}</span>` : ''}
-        ${g.application_deadline ? `<span class="op-tag">⏰ ${g.application_deadline}</span>` : ''}
-      </div>
-      ${g.eligibility ? `<div style="font-size:.72rem;color:var(--muted);margin-top:.4rem;line-height:1.4">${g.eligibility.slice(0,120)}${g.eligibility.length>120?'...':''}</div>` : ''}
-      ${g.source_url ? `<a class="op-card-link" href="${g.source_url}" target="_blank" rel="noopener">View program →</a>` : ''}
-    </div>`).join('');
+  list.innerHTML = opps.map(g => `<div class="op-card"><div class="op-card-top"><div class="op-card-title">${escapeHtml(g.title)}</div></div><div class="op-card-org">${g.organization_name || ''}</div><div class="op-card-meta">${g.award_amount ? `<span class="op-tag">€${Number(g.award_amount).toLocaleString()} ${g.currency||''}</span>` : (g.funding_range ? `<span class="op-tag">${g.funding_range}</span>` : '')}${g.country ? `<span class="op-tag">${g.country}</span>` : ''}${g.application_deadline ? `<span class="op-tag">⏰ ${g.application_deadline}</span>` : ''}</div>${g.eligibility ? `<div style="font-size:.72rem;color:var(--muted);margin-top:.4rem;line-height:1.4">${escapeHtml(g.eligibility.slice(0,120))}${g.eligibility.length>120?'...':''}</div>` : ''}${g.source_url ? `<a class="op-card-link" href="${g.source_url}" target="_blank" rel="noopener">View program →</a>` : ''}</div>`).join('');
 }
 
 function filterOpps(sector, btn) {
   document.querySelectorAll('.op-filter').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (sector === 'all') { renderOpps(allOpportunities); return; }
-  const sectorMap = {
-    'IT / Technology':      ['ai','tech','digital','software','innovation','ict'],
-    'Agriculture':          ['agri','farm','rural','food','ipard'],
-    'Civil Society':        ['ngo','civil','nonprofit','rights','community'],
-    'Environment / Energy': ['climate','environment','green','energy','renewable'],
-    'Education':            ['education','school','youth','training','learning'],
-    'Health / Social':      ['health','social','welfare','care','women','gender']
-  };
+  const sectorMap = { 'IT / Technology': ['ai','tech','digital','software','innovation','ict'], 'Agriculture': ['agri','farm','rural','food','ipard'], 'Civil Society': ['ngo','civil','nonprofit','rights','community'], 'Environment / Energy': ['climate','environment','green','energy','renewable'], 'Education': ['education','school','youth','training','learning'], 'Health / Social': ['health','social','welfare','care','women','gender'] };
   const kws = sectorMap[sector] || [sector.toLowerCase()];
-  const filtered = allOpportunities.filter(g => {
-    const hay = (g.focus_areas||'').toLowerCase() + (g.title||'').toLowerCase();
-    return kws.some(k => hay.includes(k));
-  });
+  const filtered = allOpportunities.filter(g => { const hay = (g.focus_areas||'').toLowerCase() + (g.title||'').toLowerCase(); return kws.some(k => hay.includes(k)); });
   renderOpps(filtered);
 }
 
-// ── SAVED ──
 async function openSaved() {
   openModal('saved-modal');
   const body = document.getElementById('sv-body');
   try {
     if (!currentUser) { body.innerHTML = '<div class="sv-empty">Sign in to see saved searches.</div>'; return; }
-    const { data } = await db.from('search_cache')
-      .select('query_text,created_at,results')
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (!data || !data.length) {
-      body.innerHTML = '<div class="sv-empty">No saved searches yet.<br>After a funding search, your results are cached here automatically.</div>';
-      return;
-    }
-    body.innerHTML = data.map(s => `
-      <div class="sv-card">
-        <strong>${s.query_text || 'Funding search'}</strong>
-        <div>${Array.isArray(s.results) ? s.results.length + ' results cached' : ''}</div>
-        <div class="sv-date">${new Date(s.created_at).toLocaleDateString('en-GB')}</div>
-      </div>`).join('');
+    const { data } = await db.from('search_cache').select('query_text,created_at,results').order('created_at', { ascending: false }).limit(20);
+    if (!data || !data.length) { body.innerHTML = '<div class="sv-empty">No saved searches yet.<br>After a funding search, your results are cached here automatically.</div>'; return; }
+    body.innerHTML = data.map(s => `<div class="sv-card"><strong>${escapeHtml(s.query_text || 'Funding search')}</strong><div>${Array.isArray(s.results) ? s.results.length + ' results cached' : ''}</div><div class="sv-date">${new Date(s.created_at).toLocaleDateString('en-GB')}</div></div>`).join('');
   } catch(e) { body.innerHTML = '<div class="sv-empty">Error loading saved searches.</div>'; }
 }
 
-// ── ANALYSIS ──
 async function openAnalysis() {
   openModal('analysis-modal');
-  const statsEl = document.getElementById('an-stats');
-  const barsEl  = document.getElementById('an-bars');
-  const tipEl   = document.getElementById('an-tip');
+  const statsEl = document.getElementById('an-stats'); const barsEl = document.getElementById('an-bars'); const tipEl = document.getElementById('an-tip');
   statsEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.82rem;grid-column:1/-1">Loading...</div>';
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -964,269 +501,94 @@ async function openAnalysis() {
       currentUser ? db.from('profiles').select('sector,country,organization_type,goals,daily_msgs,plan').eq('user_id', currentUser.id).maybeSingle() : { data: null },
       db.from('search_cache').select('id').limit(100)
     ]);
-
     if (oppsErr) console.log('[ANALYSIS]', oppsErr.message);
     const active = (opps || []).filter(g => !g.application_deadline || g.application_deadline >= today);
-    const plan   = profileData?.plan || 'free';
-    const msgs   = profileData?.daily_msgs || 0;
-
-    statsEl.innerHTML = `
-      <div class="an-stat-card"><div class="an-num">${active.length}</div><div class="an-lbl">Active Programs</div></div>
-      <div class="an-stat-card"><div class="an-num">${cache?.length || 0}</div><div class="an-lbl">Cached Searches</div></div>
-      <div class="an-stat-card"><div class="an-num">${msgs}</div><div class="an-lbl">Messages Today</div></div>
-      <div class="an-stat-card"><div class="an-num">${plan.charAt(0).toUpperCase()+plan.slice(1)}</div><div class="an-lbl">Current Plan</div></div>`;
-
+    const plan = profileData?.plan || 'free';
+    const msgs = profileData?.daily_msgs || 0;
+    statsEl.innerHTML = `<div class="an-stat-card"><div class="an-num">${active.length}</div><div class="an-lbl">Active Programs</div></div><div class="an-stat-card"><div class="an-num">${cache?.length || 0}</div><div class="an-lbl">Cached Searches</div></div><div class="an-stat-card"><div class="an-num">${msgs}</div><div class="an-lbl">Messages Today</div></div><div class="an-stat-card"><div class="an-num">${plan.charAt(0).toUpperCase()+plan.slice(1)}</div><div class="an-lbl">Current Plan</div></div>`;
     const sectorCounts = {};
-    (opps || []).forEach(g => {
-      const f = (g.focus_areas || '').toLowerCase();
-      [['IT / Technology',['tech','digital','ai','software']],['Agriculture',['agri','farm','rural']],
-       ['Civil Society',['ngo','civil','nonprofit']],['Environment',['climate','green','energy']],
-       ['Education',['education','youth','school']],['Health',['health','social','welfare']]
-      ].forEach(([s, kws]) => {
-        if (kws.some(k => f.includes(k))) sectorCounts[s] = (sectorCounts[s] || 0) + 1;
-      });
-    });
-
+    (opps || []).forEach(g => { const f = (g.focus_areas || '').toLowerCase(); [['IT / Technology',['tech','digital','ai','software']],['Agriculture',['agri','farm','rural']],['Civil Society',['ngo','civil','nonprofit']],['Environment',['climate','green','energy']],['Education',['education','youth','school']],['Health',['health','social','welfare']]].forEach(([s, kws]) => { if (kws.some(k => f.includes(k))) sectorCounts[s] = (sectorCounts[s] || 0) + 1; }); });
     const max = Math.max(...Object.values(sectorCounts), 1);
-    barsEl.innerHTML = Object.entries(sectorCounts).sort((a,b) => b[1]-a[1]).slice(0,6).map(([s,c]) => `
-      <div class="an-bar-row">
-        <div class="an-bar-label">${s}</div>
-        <div class="an-bar-track"><div class="an-bar-fill" style="width:${Math.round(c/max*100)}%"></div></div>
-        <div class="an-bar-val">${c}</div>
-      </div>`).join('');
-
+    barsEl.innerHTML = Object.entries(sectorCounts).sort((a,b) => b[1]-a[1]).slice(0,6).map(([s,c]) => `<div class="an-bar-row"><div class="an-bar-label">${s}</div><div class="an-bar-track"><div class="an-bar-fill" style="width:${Math.round(c/max*100)}%"></div></div><div class="an-bar-val">${c}</div></div>`).join('');
     const userSector = profileData?.sector || profileData?.detected_sector || 'your sector';
     tipEl.innerHTML = `💡 <strong>Tip:</strong> Your profile is set to <strong>${userSector}</strong>. The more specific your profile, the better your matches. <span style="color:var(--gold);cursor:pointer" onclick="closeModal('analysis-modal');openProfileModal()">Update profile →</span>`;
-  } catch(e) {
-    statsEl.innerHTML = '<div style="color:var(--muted);font-size:.82rem;grid-column:1/-1">Error loading analysis.</div>';
-  }
+  } catch(e) { statsEl.innerHTML = '<div style="color:var(--muted);font-size:.82rem;grid-column:1/-1">Error loading analysis.</div>'; }
 }
 
-// ── MARKDOWN ──
-function parseMarkdown(text) {
-  const links = []; let i = 0;
-  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (_, t, u) => {
-    links.push(`<a href="${u}" target="_blank" rel="noopener">${t}</a>`);
-    return `\x00LINK${i++}\x00`;
-  });
-  text = text.replace(/(https?:\/\/[^\s<>")\x00]+)/g, (_, u) => {
-    links.push(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
-    return `\x00LINK${i++}\x00`;
-  });
-  text = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  text = text
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>');
-  text = text.replace(/\x00LINK(\d+)\x00/g, (_, n) => links[+n]);
-  return text;
-}
+function parseMarkdown(text) { const links = []; let i = 0; text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (_, t, u) => { links.push(`<a href="${u}" target="_blank" rel="noopener">${t}</a>`); return `\x00LINK${i++}\x00`; }); text = text.replace(/(https?:\/\/[^\s<>")\x00]+)/g, (_, u) => { links.push(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`); return `\x00LINK${i++}\x00`; }); text = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*\n]+)\*/g, '<em>$1</em>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/^### (.+)$/gm, '<h3>$1</h3>').replace(/^## (.+)$/gm, '<h3>$1</h3>').replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>'); text = text.replace(/\x00LINK(\d+)\x00/g, (_, n) => links[+n]); return text; }
 
-// ── MESSAGES ──
-const INITIAL_MSG = `
-  <div class="msg-row">
-    <div class="msg-av ai">M</div>
-    <div class="bubble ai">
-      <p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p>
-      <p style="margin-top:.4rem">Tell me about your project or organization to get started.</p>
-    </div>
-  </div>`;
+const INITIAL_MSG = '<div class="msg-row"><div class="msg-av ai">M</div><div class="bubble ai"><p>Hi! I analyze your profile and give you a funding decision — <strong>TOP 3 only</strong>, with <strong>YES / CONDITIONAL / BACKUP</strong> and a probability of success for each.</p><p style="margin-top:.4rem">Tell me about your project or organization to get started.</p></div></div>';
+function clearChat() { chatHistory = []; document.getElementById('messages').innerHTML = INITIAL_MSG; const wb = document.getElementById('welcome-block'); if (wb) wb.style.display = 'block'; showToast('Chat cleared'); }
 
-function clearChat() {
-  chatHistory = [];
-  document.getElementById('messages').innerHTML = INITIAL_MSG;
-  const wb = document.getElementById('welcome-block');
-  if (wb) wb.style.display = 'block';
-  showToast('Chat cleared');
-}
-
-function addMsg(role, text, intent, actions = []) {
+function addMsg(role, text, intent) {
   const msgs = document.getElementById('messages');
-  const row  = document.createElement('div');
-  row.className = 'msg-row' + (role === 'user' ? ' user' : '');
-
-  if (role === 'ai') {
-    const av = document.createElement('div');
-    av.className = 'msg-av ai'; av.textContent = 'M';
-    row.appendChild(av);
-  }
-
-  const b = document.createElement('div');
-  b.className = 'bubble ' + role;
-
-  if (role === 'ai' && intent && intent !== 'general') {
-    b.innerHTML = `<span class="itag ${intent}">${intent === 'grant' ? 'Decision' : 'General'}</span><br>`;
-  }
-
-  const span = document.createElement('span');
-  span.innerHTML = '<p>' + parseMarkdown(text) + '</p>';
-  b.appendChild(span);
-
-  if (role === 'ai') {
-    const wrap = document.createElement('div');
-    wrap.className = 'msg-actions';
-    const cp = document.createElement('button');
-    cp.className = 'msg-btn'; cp.textContent = 'Copy';
-    cp.onclick = () => navigator.clipboard.writeText(text).then(() => {
-      cp.textContent = '✓ Copied'; cp.classList.add('copied');
-      setTimeout(() => { cp.textContent = 'Copy'; cp.classList.remove('copied'); }, 1500);
-    });
-    wrap.appendChild(cp);
-    actions.forEach(a => {
-      const btn = document.createElement('button');
-      btn.className = 'msg-btn'; btn.textContent = a.label;
-      btn.onclick = a.onClick;
-      wrap.appendChild(btn);
-    });
-    b.appendChild(wrap);
-  } else {
-    const av = document.createElement('div');
-    av.className = 'msg-av user'; av.textContent = 'You';
-    row.appendChild(b); row.appendChild(av);
-    msgs.appendChild(row);
-    document.getElementById('chat-scroll').scrollTop = 99999;
-    return;
-  }
-
-  row.appendChild(b);
-  msgs.appendChild(row);
-  document.getElementById('chat-scroll').scrollTop = 99999;
+  const row = document.createElement('div'); row.className = 'msg-row' + (role === 'user' ? ' user' : '');
+  if (role === 'ai') { const av = document.createElement('div'); av.className = 'msg-av ai'; av.textContent = 'M'; row.appendChild(av); }
+  const b = document.createElement('div'); b.className = 'bubble ' + role;
+  if (role === 'ai' && intent && intent !== 'general') b.innerHTML = `<span class="itag ${intent}">${intent === 'grant' ? 'Decision' : 'General'}</span><br>`;
+  const span = document.createElement('span'); span.innerHTML = '<p>' + parseMarkdown(text) + '</p>'; b.appendChild(span);
+  if (role === 'ai') { const wrap = document.createElement('div'); wrap.className = 'msg-actions'; const cp = document.createElement('button'); cp.className = 'msg-btn'; cp.textContent = 'Copy'; cp.onclick = () => navigator.clipboard.writeText(text).then(() => { cp.textContent = '✓ Copied'; cp.classList.add('copied'); setTimeout(() => { cp.textContent = 'Copy'; cp.classList.remove('copied'); }, 1500); }); wrap.appendChild(cp); b.appendChild(wrap); row.appendChild(b); } else { const av = document.createElement('div'); av.className = 'msg-av user'; av.textContent = 'You'; row.appendChild(b); row.appendChild(av); }
+  msgs.appendChild(row); document.getElementById('chat-scroll').scrollTop = 99999;
 }
 
-function addTyping() {
-  const msgs = document.getElementById('messages');
-  const row  = document.createElement('div');
-  row.className = 'msg-row'; row.id = 'typing';
-  row.innerHTML = '<div class="msg-av ai">M</div><div class="bubble ai typing-bubble"><div class="td"></div><div class="td"></div><div class="td"></div></div>';
-  msgs.appendChild(row);
-  document.getElementById('chat-scroll').scrollTop = 99999;
-}
+function addTyping() { const msgs = document.getElementById('messages'); const row = document.createElement('div'); row.className = 'msg-row'; row.id = 'typing'; row.innerHTML = '<div class="msg-av ai">M</div><div class="bubble ai typing-bubble"><div class="td"></div><div class="td"></div><div class="td"></div></div>'; msgs.appendChild(row); document.getElementById('chat-scroll').scrollTop = 99999; }
 function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
 
-// ── FILES ──
-function handleFile(e)  { const f = e.target.files[0]; if (f) readFile(f); }
+function handleFile(e) { const f = e.target.files[0]; if (f) readFile(f); }
 function handlePhoto(e) { const f = e.target.files[0]; if (f) readFile(f); }
-function readFile(file) {
-  const r = new FileReader();
-  r.onload = ev => {
-    currentFile = { data: ev.target.result.split(',')[1], type: file.type, name: file.name };
-    document.getElementById('file-name').textContent = file.name;
-    document.getElementById('file-preview').style.display = 'flex';
-    showToast('File attached: ' + file.name);
-  };
-  r.readAsDataURL(file);
-}
-function removeFile() {
-  currentFile = null;
-  document.getElementById('file-preview').style.display = 'none';
-  document.getElementById('file-input').value = '';
+function readFile(file) { const r = new FileReader(); r.onload = ev => { currentFile = { data: ev.target.result.split(',')[1], type: file.type, name: file.name }; document.getElementById('file-name').textContent = file.name; document.getElementById('file-preview').style.display = 'flex'; showToast('File attached: ' + file.name); }; r.readAsDataURL(file); }
+function removeFile() { currentFile = null; document.getElementById('file-preview').style.display = 'none'; document.getElementById('file-input').value = ''; }
+
+function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+
+function detectLanguage(text) {
+  if (!text) return 'en';
+  const lower = text.toLowerCase();
+  const mkKeywords = /zdravo|jas sum|северна|македонија|македонски|јас|сум|што|како|сакам|треба|може|зошто|каде|кога|НВО|проект|грант|финансира|субвенци|стипенди|работам|имам|сакате|дали|нема|треба|може|дека|нашата/;
+  const hasMkChars = /[ќѓѕљњџ]/i.test(lower);
+  if (mkKeywords.test(lower) || hasMkChars) return 'mk';
+  if (/\bzdravo|zbogom|hvala|македон\b/i.test(lower)) return 'mk';
+  return 'en';
 }
 
-// ── SEND ──
 async function sendMsg() {
-  const inp  = document.getElementById('msg-input');
-  const text = inp.value.trim();
+  const inp = document.getElementById('msg-input'); const text = inp.value.trim();
   if (!text && !currentFile) return;
   inp.value = ''; inp.style.height = 'auto';
-
-  const btn = document.getElementById('send-btn');
-  btn.disabled = true; btn.classList.add('loading');
-
-  if (text)        addMsg('user', text);
+  const detectedLang = detectLanguage(text);
+  const finalLang = detectedLang === 'mk' ? 'mk' : lang;
+  if (finalLang === 'mk') console.log('[LANG] Detected Macedonian automatically');
+  const btn = document.getElementById('send-btn'); btn.disabled = true; btn.classList.add('loading');
+  if (text) addMsg('user', text);
   if (currentFile) addMsg('user', '📎 ' + currentFile.name);
   chatHistory.push({ role: 'user', content: text || '[Document attached]' });
-
-  const wb = document.getElementById('welcome-block');
-  if (wb) wb.style.display = 'none';
+  const wb = document.getElementById('welcome-block'); if (wb) wb.style.display = 'none';
   addTyping();
-
   try {
-    const payload = {
-      messages:  chatHistory.slice(-8),
-      lang,
-      userId:    currentUser?.id || null,
-      image:     currentFile?.data || null,
-      imageType: currentFile?.type || null
-    };
-
-    const res  = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    const payload = { messages: chatHistory.slice(-8), lang: finalLang, userId: currentUser?.id || null, image: currentFile?.data || null, imageType: currentFile?.type || null };
+    const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
-
     removeTyping(); removeFile();
-
-    if (res.status === 429 && data?.quota_exceeded) {
-      openPremium();
-      btn.disabled = false; btn.classList.remove('loading');
-      return;
-    }
+    if (res.status === 429 && data?.quota_exceeded) { openPremium(); btn.disabled = false; btn.classList.remove('loading'); return; }
     if (!res.ok) throw new Error(data?.error?.message || 'Request failed');
-
-    const reply  = data?.content?.[0]?.text || 'No response received.';
+    const reply = data?.content?.[0]?.text || 'No response received.';
     const intent = data?.intent || 'general';
     chatHistory.push({ role: 'assistant', content: reply });
-
-    const actions = [];
     if (data?.top_matches?.length) {
-      document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0,3).map((x,i) => {
-        const roles      = ['APPLY','CONDITIONAL','BACKUP'];
-        const roleColors = ['#1fa94b','#BA7517','#378ADD'];
-        const role  = roles[i] || 'APPLY';
-        const color = roleColors[i] || roleColors[0];
-        return `<div class="opp-item">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
-            <span style="font-size:.62rem;font-weight:600;letter-spacing:.07em;color:${color};background:${color}18;border:1px solid ${color}33;padding:.15rem .5rem;border-radius:999px">${role}</span>
-            <span style="font-size:.65rem;font-weight:600;color:${color}">${x.score||0}%</span>
-          </div>
-          <strong>${x.title}</strong>
-          <div>${x.snippet||''}</div>
-        </div>`;
-      }).join('');
-      actions.push({ label: 'Build application', onClick: () => openPremium() });
+      document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0,3).map((x,i) => { const roles = ['APPLY','CONDITIONAL','BACKUP']; const roleColors = ['#1fa94b','#BA7517','#378ADD']; const role = roles[i] || 'APPLY'; const color = roleColors[i] || roleColors[0]; return `<div class="opp-item"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem"><span style="font-size:.62rem;font-weight:600;letter-spacing:.07em;color:${color};background:${color}18;border:1px solid ${color}33;padding:.15rem .5rem;border-radius:999px">${role}</span><span style="font-size:.65rem;font-weight:600;color:${color}">${x.score||0}%</span></div><strong>${escapeHtml(x.title)}</strong><div>${escapeHtml(x.snippet||'')}</div></div>`; }).join('');
     }
-
-    addMsg('ai', reply, intent, actions);
-    loadUserProfile();
-  } catch(e) {
-    removeTyping();
-    addMsg('ai', '⚠️ ' + (e.message || 'Connection error. Please try again.'));
-  }
-
-  btn.disabled = false; btn.classList.remove('loading');
-  document.getElementById('msg-input').focus();
+    addMsg('ai', reply, intent); loadUserProfile();
+  } catch(e) { removeTyping(); addMsg('ai', '⚠️ ' + (e.message || 'Connection error. Please try again.')); }
+  btn.disabled = false; btn.classList.remove('loading'); document.getElementById('msg-input').focus();
 }
 
-function quickStart(text) {
-  document.getElementById('msg-input').value = text;
-  sendMsg();
-}
+function quickStart(txt) { document.getElementById('msg-input').value = txt; sendMsg(); }
 
-// ── AUTH STATE ──
 (async () => {
-  await initSupabase();
-
-  db.auth.onAuthStateChange((event, session) => {
-    if (session) { currentUser = session.user; initApp(); }
-  });
-
   const { data: { session } } = await db.auth.getSession();
   if (session) { currentUser = session.user; initApp(); }
 })();
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    closeDrawer();
-    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
-  }
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDrawer(); document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); } });
 </script>
 </body>
 </html>
