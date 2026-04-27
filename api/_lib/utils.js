@@ -111,7 +111,7 @@ const WORD_LANG = [
   { lang: 'nl', re: /nederland|dutch|Nederland|Goedemorgen/i },
   { lang: 'pt', re: /brasil|portugal|português|Bom dia|Olá/i },
   { lang: 'cs', re: /česká|republika|česky|projekt|Dobrý den|Ahoj/i },
-  { lang: 'hu', re: /magyarország|magyar|szervezet/Jó napot/Szia/i },
+  { lang: 'hu', re: /magyarország|magyar|szervezet|Jó napot|Szia/i },
   { lang: 'ru', re: /[А-я]/ },
 ];
 
