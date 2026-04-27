@@ -320,35 +320,70 @@ function calcProbability(program, profile) {
 // Pure logic — explains WHY based on data, no invention
 
 function buildMatchReason(program, profile) {
-  const reasons = [];
-  const focus   = (program.focus_areas || program.description || '').toLowerCase();
-  const country = (program.country || '').toLowerCase();
+  const parts = [];
+  const focus   = (program.focus_areas || '').toLowerCase();
+  const desc    = (program.description || '').toLowerCase();
+  const country = (program.country     || '').toLowerCase();
   const elig    = (program.eligibility || '').toLowerCase();
+  const hay     = `${focus} ${desc}`;
 
-  if (profile.sector) {
-    const sKw = profile.sector.split('/')[0].trim().toLowerCase();
-    if (focus.includes(sKw) || focus.includes('environment') || focus.includes('climate') ||
-        focus.includes('renewable') || focus.includes('civil') || focus.includes('ngo')) {
-      reasons.push(`Program focus matches your sector (${profile.sector})`);
-    }
+  // 1. WHAT specifically matched in focus_areas/description
+  const SECTOR_WORDS = {
+    'Environment / Energy':  ['environment','climate','renewable','biodiversity','conservation','clean energy','ecosystem','pollution','nature','wildlife','forest','sustainability'],
+    'Civil Society':         ['civil society','ngo','nonprofit','advocacy','democracy','grassroots','rights','governance'],
+    'Agriculture':           ['agriculture','farmer','rural','food','farm','ipard'],
+    'Education':             ['education','school','learning','scholarship','training','erasmus'],
+    'IT / Technology':       ['technology','digital','software','ai','innovation','ict','startup'],
+    'Health / Social':       ['health','social','welfare','care','women','gender'],
+    'Research / Innovation': ['research','science','innovation','university','academic'],
+    'SME / Business':        ['business','enterprise','sme','company','entrepreneur'],
+    'Student / Youth':       ['student','scholarship','fellowship','youth','erasmus','fulbright'],
+  };
+  const kws = SECTOR_WORDS[profile.sector] || [];
+  const matched = kws.filter(k => hay.includes(k));
+  if (matched.length > 0) {
+    parts.push(`Covers: ${matched.slice(0,3).join(', ')}`);
   }
 
+  // 2. Country — show exact match type
   if (profile.country) {
     const pc = profile.country.toLowerCase();
-    if (country.includes(pc)) reasons.push(`${profile.country} is explicitly listed as eligible country`);
-    else if (country.includes('western balkans')) reasons.push(`Western Balkans region is eligible (includes ${profile.country})`);
-    else if (country.includes('global') || country.includes('europe')) reasons.push('Program is open globally/Europe-wide');
-  }
-
-  if (profile.orgType) {
-    const org = profile.orgType.split('/')[0].trim().toLowerCase();
-    if (elig.includes(org) || elig.includes('ngo') || elig.includes('civil')) {
-      reasons.push(`Your org type (${profile.orgType}) matches eligibility criteria`);
+    if (country.includes(pc)) {
+      parts.push(`${profile.country} listed as eligible`);
+    } else if (country.includes('western balkans')) {
+      parts.push(`Western Balkans eligible (includes ${profile.country})`);
+    } else if (country.includes('global') || country.includes('europe')) {
+      parts.push(`Open to ${profile.country} (global/Europe-wide)`);
     }
   }
 
-  if (!reasons.length) reasons.push('Profile partially matches — verify eligibility before applying');
-  return reasons.join('. ');
+  // 3. Org type — show eligibility snippet if matched
+  if (profile.orgType && elig.length > 10) {
+    const orgKw = (profile.orgType || '').toLowerCase().split('/')[0].trim();
+    const synonyms = { 'ngo':['ngo','nonprofit','civil society','foundation','association'],
+                       'sme':['sme','company','enterprise','business'],
+                       'individual':['individual','person','applicant','citizen','creator'] };
+    const checks = synonyms[orgKw] || [orgKw];
+    if (checks.some(k => elig.includes(k))) {
+      const snippet = elig.replace(/\s+/g,' ').slice(0, 70);
+      parts.push(`Eligible: "${snippet}..."`);
+    }
+  }
+
+  // 4. Budget fit — concrete numbers only
+  if (profile.budget && program.award_amount) {
+    const RANGES = { 'up to €30k':[0,30000], '€30k–€150k':[30000,150000],
+                     '€150k–€500k':[150000,500000], 'above €500k':[500000,Infinity] };
+    const [mn, mx] = RANGES[profile.budget] || [0, Infinity];
+    const amt = Number(program.award_amount);
+    if (amt >= mn && amt <= mx) {
+      parts.push(`Amount ${amt.toLocaleString()} ${program.currency||'EUR'} fits your budget`);
+    }
+  }
+
+  return parts.length
+    ? parts.join(' · ')
+    : 'Partial match — verify eligibility on source';
 }
 
 module.exports = { extractFromSerper, synthesize, analyzeRisks, calcProbability };
