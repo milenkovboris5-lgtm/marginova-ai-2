@@ -827,12 +827,19 @@ async function sendMsg() {
 
     // Update sidebar with results (matchSignals + riskFactors, no score)
     if (data?.top_matches?.length) {
-      document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0, 4).map(x => `
+      document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0, 4).map((x, i) => `
         <div class="opp-item">
           <strong>${escapeHtml(x.title)}</strong>
-          <div>${escapeHtml(x.organization || '')}${x.deadline ? ' · ' + x.deadline : ''}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin:.15rem 0">${escapeHtml(x.organization || '')}${x.deadline ? ' · ' + x.deadline : ''}${x.amount ? ' · ' + x.amount : ''}</div>
           ${x.matchSignals?.length ? `<div class="opp-signals">✅ ${escapeHtml(x.matchSignals[0])}</div>` : ''}
           ${x.riskFactors?.length  ? `<div class="opp-risks">⚠️ ${escapeHtml(x.riskFactors[0])}</div>`   : ''}
+          <button
+            onclick='openBuilder(${JSON.stringify(x)})'
+            style="margin-top:.5rem;width:100%;padding:.38rem .55rem;border:1px solid rgba(201,168,76,.28);border-radius:7px;background:rgba(201,168,76,.06);color:var(--gold);font-size:.69rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.35rem;transition:.15s"
+            onmouseover="this.style.background='rgba(201,168,76,.14)'"
+            onmouseout="this.style.background='rgba(201,168,76,.06)'">
+            🧩 Build Application
+          </button>
         </div>`).join('');
     }
 
@@ -844,6 +851,20 @@ async function sendMsg() {
 
   btn.disabled = false; btn.classList.remove('loading');
   document.getElementById('msg-input').focus();
+}
+
+// ─── OPEN BUILDER ────────────────────────────────────────────
+function openBuilder(program) {
+  const country = document.getElementById('profile-country')?.textContent?.trim() || '';
+  const sector  = document.getElementById('profile-sector')?.textContent?.trim()  || '';
+  const params  = new URLSearchParams({
+    title:   program.title        || '',
+    donor:   program.organization || '',
+    amount:  program.amount       || '',
+    country: country !== 'Country not set' ? country : '',
+    sector:  sector  !== 'Sector not set'  ? sector  : '',
+  });
+  window.location.href = '/premium-application.html?' + params.toString();
 }
 
 function quickStart(txt) {
