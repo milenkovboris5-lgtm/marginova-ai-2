@@ -1,13 +1,23 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/_lib/llmRouter.js
-// v5 — REPLACE THE ENTIRE FILE WITH THIS
-// No TOP3. No score. No YES/NO. Gemini formats, user chooses.
-// Serper only when DB < 3. Safe error handling throughout.
+// v6 — REPLACE THE ENTIRE FILE WITH THIS
+//
+// FIXES over v5:
+// 1. buildDataRows() passes TIER label to Gemini based on _relevanceScore
+//    score >= 7  → STRONG MATCH
+//    score 4-6   → POSSIBLE MATCH
+//    score 1-3   → BROAD MATCH
+//    score <= 0  → LOW MATCH
+// 2. synthesize() system prompt updated:
+//    - Programs are sorted best-match-first (v6 scorer fix)
+//    - Gemini formats high-tier programs with more detail
+//    - Low-tier programs get a brief note, not full treatment
+//    - User still decides — Marginova informs, not decides
 // ═══════════════════════════════════════════════════════════
 
 const { gemini, LANG_NAMES } = require('./utils');
 
-console.log('[llmRouter] v5 loaded — no score, user chooses, safe parsing');
+console.log('[llmRouter] v6 loaded — tier labels, relevance-aware formatting');
 
 const NATIVE_NAMES = {
   mk:'македонски', sr:'српски',   hr:'hrvatski',  bs:'bosanski',
@@ -19,21 +29,42 @@ const NATIVE_NAMES = {
   ja:'日本語',     zh:'中文',
 };
 
-// ─── SAFE AMOUNT PARSER ─────────────────────────────────────
+// ─── TIER LABEL ──────────────────────────────────────────────
+// Translates _relevanceScore into a human-readable tier.
+// Passed to Gemini so it can format high vs low matches differently.
+// Does NOT assign YES/NO — donor still decides eligibility.
+
+const TIER_LABELS = {
+  en: { strong: 'Strong match',  possible: 'Possible match',  broad: 'Broad match',  low: 'Low match — verify eligibility' },
+  mk: { strong: 'Силен мач',     possible: 'Можен мач',       broad: 'Широк мач',    low: 'Слаб мач — провери подобност' },
+  sr: { strong: 'Jak match',     possible: 'Moguć match',     broad: 'Širok match',  low: 'Slab match — proveri podobnost' },
+  de: { strong: 'Starke Passung',possible: 'Mögliche Passung',broad: 'Breite Passung',low: 'Geringe Passung — Berechtigung prüfen' },
+  fr: { strong: 'Bonne correspondance', possible: 'Correspondance possible', broad: 'Correspondance large', low: 'Faible correspondance — vérifier éligibilité' },
+  tr: { strong: 'Güçlü eşleşme', possible: 'Olası eşleşme', broad: 'Geniş eşleşme', low: 'Düşük eşleşme — uygunluğu kontrol edin' },
+};
+
+function getTierLabel(score, lang) {
+  const labels = TIER_LABELS[lang] || TIER_LABELS['en'];
+  const s      = Number(score) || 0;
+  if (s >= 7)  return labels.strong;
+  if (s >= 4)  return labels.possible;
+  if (s >= 1)  return labels.broad;
+  return labels.low;
+}
+
+// ─── SAFE AMOUNT PARSER ──────────────────────────────────────
 function parseAmount(val) {
   if (!val) return null;
   const n = parseFloat(String(val).replace(/[^0-9.]/g, ''));
   return isNaN(n) ? null : n;
 }
 
-// ─── MATCH SIGNAL TEXT ──────────────────────────────────────
+// ─── MATCH SIGNAL TEXT ───────────────────────────────────────
 function buildMatchText(p, profile) {
-  // Use pre-computed signals from fundingScorer if available
   if (Array.isArray(p.matchSignals) && p.matchSignals.length > 0) {
     return p.matchSignals.slice(0, 4).map(s => `• ${s}`).join('\n');
   }
 
-  // Fallback: derive from raw fields
   const parts = [];
   const hay   = `${p.focus_areas || ''} ${p.description || ''}`.toLowerCase();
   const ctry  = (p.country || '').toLowerCase();
@@ -57,9 +88,9 @@ function buildMatchText(p, profile) {
 
   if (profile?.country) {
     const pc = profile.country.toLowerCase();
-    if (ctry.includes(pc))                       parts.push(`${profile.country} explicitly listed`);
-    else if (ctry.includes('western balkans'))    parts.push('Western Balkans region eligible');
-    else if (/global|europe/.test(ctry))          parts.push('Open internationally');
+    if (ctry.includes(pc))                     parts.push(`${profile.country} explicitly listed`);
+    else if (ctry.includes('western balkans')) parts.push('Western Balkans region eligible');
+    else if (/global|europe/.test(ctry))       parts.push('Open internationally');
   }
 
   return parts.length
@@ -67,14 +98,12 @@ function buildMatchText(p, profile) {
     : '• Check eligibility on official source';
 }
 
-// ─── RISK FACTOR TEXT ───────────────────────────────────────
+// ─── RISK FACTOR TEXT ────────────────────────────────────────
 function buildRiskText(p, profile) {
-  // Use pre-computed risks from fundingScorer if available
   if (Array.isArray(p.riskFactors) && p.riskFactors.length > 0) {
     return p.riskFactors.slice(0, 4).map(r => `• ${r}`).join('\n');
   }
 
-  // Fallback
   const risks = [];
   const ctry  = (p.country || '').toLowerCase();
   const desc  = `${p.description || ''} ${p.focus_areas || ''}`.toLowerCase();
@@ -100,18 +129,23 @@ function buildRiskText(p, profile) {
   return risks.map(r => `• ${r}`).join('\n');
 }
 
-// ─── BUILD DATA ROWS FOR GEMINI ─────────────────────────────
-function buildDataRows(programs, profile) {
+// ─── BUILD DATA ROWS FOR GEMINI ──────────────────────────────
+// v6 FIX: includes TIER label per program so Gemini can format
+// high-relevance programs with more detail than low-relevance ones.
+
+function buildDataRows(programs, profile, lang) {
   return programs.map((p, i) => {
     const amtNum = parseAmount(p.award_amount);
     const amt    = amtNum
       ? `${Math.round(amtNum).toLocaleString()} ${p.currency || 'EUR'}`
       : (p.funding_range || '—');
 
-    const src = p.source === 'serper_extracted' ? '[WEB — verify]' : '[DB]';
+    const src   = p.source === 'serper_extracted' ? '[WEB — verify]' : '[DB]';
+    const tier  = getTierLabel(p._relevanceScore, lang);
+    const score = Number(p._relevanceScore) || 0;
 
     return `---
-[${i + 1}] ${src}
+[${i + 1}] ${src} | TIER: ${tier} | SCORE: ${score}
 NAME: ${p.title || 'Unknown'}
 ORG: ${p.organization_name || '—'}
 AMOUNT: ${amt}
@@ -126,16 +160,20 @@ ${buildRiskText(p, profile)}`;
   }).join('\n\n');
 }
 
-// ─── MAIN SYNTHESIZE ────────────────────────────────────────
+// ─── MAIN SYNTHESIZE ─────────────────────────────────────────
+
 /**
  * synthesize(lang, today, profile, programs, sources)
  *
- * Gemini presents all programs (up to 6).
- * NO probability %. NO YES/NO/APPLY labels. NO score.
- * User reads and picks what suits them.
+ * v6 changes:
+ * - Receives programs already sorted by _relevanceScore DESC (v6 scorer)
+ * - Passes TIER labels to Gemini for relevance-aware formatting
+ * - System prompt instructs Gemini to format high-tier programs
+ *   with full detail, low-tier programs with a brief note
+ * - Still NO probability %, NO YES/NO, NO score shown to user
+ *   The TIER label is informational framing, not a decision
  */
 async function synthesize(lang, today, profile, programs, sources) {
-  // Safe type coercion
   const safeLang     = typeof lang === 'string' ? lang : 'en';
   const safeToday    = typeof today === 'string' ? today : new Date().toLocaleDateString('en-GB');
   const safePrograms = Array.isArray(programs) ? programs : [];
@@ -144,7 +182,6 @@ async function synthesize(lang, today, profile, programs, sources) {
   const nativeName = NATIVE_NAMES[safeLang] || 'English';
   const langName   = LANG_NAMES[safeLang]   || 'English';
 
-  // No results case
   if (safePrograms.length === 0) {
     return safeLang === 'mk'
       ? 'Нема пронајдени програми за вашиот профил. Додадете повеќе детали — сектор, земја, тип на организација.'
@@ -154,7 +191,7 @@ async function synthesize(lang, today, profile, programs, sources) {
   const profileLine = [profile?.sector, profile?.orgType, profile?.country, profile?.budget]
     .filter(Boolean).join(' | ') || 'not specified';
 
-  const dataRows = buildDataRows(safePrograms, profile || {});
+  const dataRows = buildDataRows(safePrograms, profile || {}, safeLang);
 
   const langInstruction = safeLang === 'mk'
     ? 'Задолжително одговори САМО на македонски јазик. Сите секции мора да бидат на македонски.'
@@ -164,14 +201,23 @@ async function synthesize(lang, today, profile, programs, sources) {
 Today: ${safeToday}. User profile: ${profileLine}.
 DB results: ${safeSources.db}. Web results: ${safeSources.serper}.
 
+CONTEXT: Programs are already sorted best-match-first by a relevance algorithm.
+Each program has a TIER label that reflects how well it matches the user profile:
+- STRONG MATCH: High relevance — country + sector + org type all align
+- POSSIBLE MATCH: Good relevance — most signals align
+- BROAD MATCH: Moderate relevance — some signals align, verify details
+- LOW MATCH: Low relevance — global program with few profile signals
+
 STRICT RULES — follow exactly:
 1. You are NOT a decision-maker. The donor/funder decides eligibility — not you.
-2. Do NOT assign probability %, scores, or rankings of any kind.
-3. Do NOT label programs YES / NO / CONDITIONAL / APPLY / BACKUP or any similar label.
-4. Show ALL programs. The user makes their own choice.
+2. Do NOT assign probability %, numerical scores, or YES/NO labels.
+3. Show ALL programs. The user makes their own choice.
+4. FORMAT by tier: STRONG and POSSIBLE programs get full detail.
+   BROAD and LOW programs get a shorter entry — still show URL and deadline.
 5. Translate the match signals and risk factors into the user's language.
 6. Keep amounts, dates, and URLs character-for-character as given in the data.
-7. [WEB — verify] tagged results: add a short note that the user must verify details on the official website.
+7. [WEB — verify] tagged results: add a short note to verify on official website.
+8. Do NOT show the TIER label or SCORE number to the user — use it only for formatting decisions.
 
 Format EACH program exactly like this (no deviations):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -182,13 +228,16 @@ Format EACH program exactly like this (no deviations):
 🌍 [COUNTRY / REGION]
 
 ✅ Why this may be relevant to you:
-[MATCH SIGNALS — translated, keep bullet format]
+[MATCH SIGNALS — translated, bullet format]
 
 ⚠️ What to verify before applying:
-[RISK FACTORS — translated, keep bullet format]
+[RISK FACTORS — translated, bullet format]
 
 🔗 [URL]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For BROAD and LOW MATCH programs: keep the same format but shorten
+match signals to 1 bullet and risk factors to 1 bullet.
 
 After ALL programs add exactly one line:
 ▶ NEXT STEP: [one concrete action today — e.g. "Open link 1 and check if your organization type appears in the official eligibility section"]`;
@@ -205,7 +254,6 @@ After ALL programs add exactly one line:
   } catch (err) {
     console.error('[SYNTHESIZE] Gemini call failed:', err.message);
 
-    // Safe fallback — still useful to the user
     const fallback = safePrograms.map((p, i) => {
       const amtNum = parseAmount(p.award_amount);
       const amt    = amtNum ? `${Math.round(amtNum).toLocaleString()} ${p.currency || 'EUR'}` : (p.funding_range || '—');
@@ -218,11 +266,11 @@ After ALL programs add exactly one line:
   }
 }
 
-// ─── SERPER EXTRACTION ──────────────────────────────────────
+// ─── SERPER EXTRACTION ───────────────────────────────────────
+
 /**
  * extractFromSerper(serperResults, profile)
  * Called ONLY when DB returns fewer than MIN_RESULTS (3).
- * Gemini extracts structured data from raw Serper snippets.
  */
 async function extractFromSerper(serperResults, profile) {
   if (!Array.isArray(serperResults) || serperResults.length === 0) return [];
@@ -277,6 +325,7 @@ ${snippets}`;
         focus_areas:          safeProfile.sector  || '',
         matchSignals:         r.relevance_notes ? [`Web: ${r.relevance_notes}`] : [],
         riskFactors:          ['Web result — verify ALL details on official source before applying'],
+        _relevanceScore:      0,
         _matchCount:          0,
         source:               'serper_extracted',
         link:                 String(r.url),
