@@ -1,14 +1,17 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/generate-application.js
-// v2.1 — ONE CHANGE ONLY vs v2:
-//   safeGemini() maxTokens: 4000 → 8000
-//   Fixes truncated LFM / budget / narrative sections.
-//   vercel.json must have maxDuration: 60 for this endpoint.
+// v2.2 — CHANGES vs v2.1:
+//   safeGemini() now takes maxTokens as parameter (default 8000)
+//   narrative: 8000 (long prose)
+//   plan:      4000 (compact JSON)
+//   budget:    2000 (tabular JSON)
+//   scholarship: 6000
+//   Promise.all wall time = ~25s → well within 60s Vercel limit
 // ═══════════════════════════════════════════════════════════
 
 const { setCors, gemini, supabase } = require('./_lib/utils');
 
-console.log('[generate-application] v2.1 loaded — maxTokens 8000, no Puppeteer, JWT auth, LFM');
+console.log('[generate-application] v2.2 loaded — differentiated token limits, parallel calls ~25s');
 
 // ─── LANGUAGE MAP ────────────────────────────────────────────
 const LANG_NAMES = {
@@ -138,12 +141,16 @@ Return ONLY valid JSON. Amounts must be realistic numbers:
   "notes": "Budget note explaining co-financing and cost efficiency"
 }`;
 
-  // ── Call Gemini 3x in parallel ────────────────────────────
+  // ── Call Gemini 3x in parallel — differentiated token limits ─
+  // narrative: 8000 (long prose — abstract, problem analysis, sustainability)
+  // plan:      4000 (compact JSON — results, activities, risks)
+  // budget:    2000 (tabular JSON — 8 budget lines with numbers)
+  // Promise.all wall time = slowest = narrative ~25s → within 60s limit
   console.log('[generate-application] calling Gemini 3x in parallel...');
   const [narrativeRaw, planRaw, budgetRaw] = await Promise.all([
-    safeGemini(narrativePrompt, lang),
-    safeGemini(planPrompt,     lang),
-    safeGemini(budgetPrompt,   lang),
+    safeGemini(narrativePrompt, lang, 8000),
+    safeGemini(planPrompt,      lang, 4000),
+    safeGemini(budgetPrompt,    lang, 2000),
   ]);
 
   const narrative = parseJSON(narrativeRaw, narrativeFallback(org, sector, country, lang));
@@ -212,7 +219,7 @@ Return ONLY valid JSON:
   "cv_structure": ["Education entry", "Experience entry", "Skills entry", "Publications/Awards entry"]
 }`;
 
-  const raw     = await safeGemini(prompt, lang);
+  const raw     = await safeGemini(prompt, lang, 6000);
   const content = parseJSON(raw, scholarshipFallback(name, sector, country, lang));
   return content;
 }
@@ -220,12 +227,14 @@ Return ONLY valid JSON:
 // ═══ HELPERS ════════════════════════════════════════════════
 
 // ─── safeGemini ──────────────────────────────────────────────
-// v2.1 FIX: maxTokens 4000 → 8000
-// Fixes truncated LFM, budget lines, and narrative sections.
-// Gemini 2.5 Flash supports up to 65,536 output tokens.
-// 3 parallel calls × 8000 = 24,000 total — well within limits.
-// Vercel timeout covered by maxDuration: 60 in vercel.json.
-async function safeGemini(prompt, lang) {
+// v2.2 FIX: maxTokens is now a parameter, not hardcoded.
+// Each call gets exactly what it needs — no more, no less:
+//   narrative → 8000 (long prose sections)
+//   plan      → 4000 (compact JSON: results + activities + risks)
+//   budget    → 2000 (tabular JSON: 8 budget lines)
+//   scholarship→ 6000 (personal statement + structured fields)
+// Promise.all wall time = max(narrative) = ~25s → well within 60s.
+async function safeGemini(prompt, lang, maxTokens = 8000) {
   const system = [
     'You are a professional grant writer.',
     'OUTPUT RULES (non-negotiable):',
@@ -239,10 +248,10 @@ async function safeGemini(prompt, lang) {
 
   try {
     const result = await gemini(system, [{ role: 'user', parts: [{ text: prompt }] }], {
-      maxTokens:   8000,  // v2.1: was 4000 — caused truncation of LFM/budget/narrative
+      maxTokens,
       temperature: 0.1,
     });
-    console.log('[safeGemini] raw preview:', (result || '').slice(0, 300));
+    console.log(`[safeGemini] maxTokens:${maxTokens} raw preview:`, (result || '').slice(0, 200));
     return result;
   } catch (e) {
     console.warn('[safeGemini] gemini call error:', e.message);
