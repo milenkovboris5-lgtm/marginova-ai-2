@@ -233,53 +233,87 @@ Return ONLY valid JSON:
 // ═══ HELPERS ════════════════════════════════════════════════
 
 async function safeGemini(prompt, lang) {
-  const system = `You are a professional grant/scholarship writer. 
-CRITICAL: Respond ONLY in the language specified in the prompt.
-Return ONLY valid JSON. No markdown fences. No explanation. No preamble.`;
+  // CRITICAL: system prompt must force JSON-only output
+  // The prompt itself contains language instruction — system stays English
+  const system = [
+    'You are a professional grant writer.',
+    'OUTPUT RULES (non-negotiable):',
+    '1. Return ONLY a valid JSON object — nothing else.',
+    '2. No markdown fences (no ```json), no explanation, no preamble.',
+    '3. No trailing commas. No comments inside JSON.',
+    '4. All string values must use double quotes.',
+    '5. Do NOT translate JSON keys — only translate string values.',
+    '6. If a value would be very long, shorten it to fit valid JSON.',
+  ].join('\n');
 
   try {
     const result = await gemini(system, [{ role: 'user', parts: [{ text: prompt }] }], {
-      maxTokens: 2500, temperature: 0.2,
+      maxTokens: 2000, temperature: 0.1,
     });
+    // Log first 300 chars so we can see what Gemini returns if parse fails
+    console.log('[safeGemini] raw preview:', (result || '').slice(0, 300));
     return result;
   } catch (e) {
-    console.warn('[safeGemini] error:', e.message);
+    console.warn('[safeGemini] gemini call error:', e.message);
     return '{}';
   }
 }
 
 function parseJSON(raw, fallback) {
   if (!raw) return fallback;
+
+  // Step 1: Strip markdown fences and leading/trailing whitespace
+  let clean = raw
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  // Step 2: Find the outermost JSON object
+  const start = clean.indexOf('{');
+  const end   = clean.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) {
+    console.warn('[parseJSON] no JSON object found, using fallback');
+    return fallback;
+  }
+  let candidate = clean.slice(start, end + 1);
+
+  // Step 3: Try direct parse first
   try {
-    // Strip markdown fences
-    let clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-
-    // Try to extract JSON object first, then array
-    let parsed = null;
-    const objMatch = clean.match(/\{[\s\S]*\}/);
-    if (objMatch) {
-      try { parsed = JSON.parse(objMatch[0]); } catch(_) {}
-    }
-
-    // If object parse failed, try to repair and re-parse
-    if (!parsed && objMatch) {
-      try {
-        // Remove trailing commas before ] or }
-        const repaired = objMatch[0]
-          .replace(/,\s*([}\]])/g, '$1')
-          .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
-        parsed = JSON.parse(repaired);
-      } catch(_) {}
-    }
-
-    if (!parsed) {
-      console.warn('[parseJSON] all parse attempts failed, using fallback');
-      return fallback;
-    }
-
+    const parsed = JSON.parse(candidate);
     return { ...fallback, ...parsed };
-  } catch (e) {
-    console.warn('[parseJSON] failed:', e.message);
+  } catch (_) {}
+
+  // Step 4: Repair common Gemini JSON issues
+  try {
+    let repaired = candidate
+      // Remove trailing commas before } or ]
+      .replace(/,\s*([}\]])/g, '$1')
+      // Fix single-quoted strings → double-quoted
+      .replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"')
+      // Fix unquoted ASCII keys
+      .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":')
+      // Remove JS comments
+      .replace(/\/\/[^\n]*/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      // Fix truncated strings at end of response
+      .replace(/"[^"]*$/, '"[truncated]"')
+      // Remove control characters
+      .replace(/[\x00-\x1F\x7F]/g, ' ');
+
+    // If string ends abruptly, try to close open brackets
+    const opens  = (repaired.match(/\[/g) || []).length;
+    const closes = (repaired.match(/\]/g) || []).length;
+    const openB  = (repaired.match(/\{/g) || []).length;
+    const closeB = (repaired.match(/\}/g) || []).length;
+    for (let i = 0; i < opens - closes;  i++) repaired += ']';
+    for (let i = 0; i < openB - closeB;  i++) repaired += '}';
+
+    const parsed = JSON.parse(repaired);
+    console.log('[parseJSON] repaired successfully');
+    return { ...fallback, ...parsed };
+  } catch (e2) {
+    console.warn('[parseJSON] all repair attempts failed:', e2.message.slice(0, 80));
+    console.warn('[parseJSON] raw preview:', candidate.slice(0, 200));
     return fallback;
   }
 }
