@@ -248,7 +248,7 @@ async function safeGemini(prompt, lang) {
 
   try {
     const result = await gemini(system, [{ role: 'user', parts: [{ text: prompt }] }], {
-      maxTokens: 2000, temperature: 0.1,
+      maxTokens: 4000, temperature: 0.1,
     });
     // Log first 300 chars so we can see what Gemini returns if parse fails
     console.log('[safeGemini] raw preview:', (result || '').slice(0, 300));
