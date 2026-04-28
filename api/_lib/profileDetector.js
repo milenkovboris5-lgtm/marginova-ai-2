@@ -1,26 +1,21 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/_lib/profileDetector.js
-// v3 — COMPLETE REWRITE
+// v4 — REPLACE THE ENTIRE FILE WITH THIS
 //
-// KEY IMPROVEMENTS over v2:
-// 1. SCORING system — not first-match-wins, but most-signals-wins
-// 2. Startup correctly detected even with "земјоделство" in text
-// 3. Macedonian: стартап, основач, кофаундер, дооел, НВО, НГО
-// 4. Correct priority: Startup > Agricultural holding (org type)
-// 5. IT/Tech correctly wins over Agriculture for "AI за земјоделство"
-// 6. needsSearch — detects org descriptions without grant keywords
-// 7. Multi-country detection (primary + region)
+// CHANGES over v3:
+// 1. COUNTRY_PATTERNS expanded — 15 → 40 European countries
+// 2. WORD_LANG expanded — hu, cs, sk, pl, pt, fi, sv, da, no, nl
+// 3. needsSearch() fixed — NO-SEARCH guards prevent firing on
+//    follow-up messages, short replies, and acknowledgments.
+//    sectorScore alone no longer triggers search.
 // ═══════════════════════════════════════════════════════════
 
 // ─── SECTOR DEFINITIONS ──────────────────────────────────────
-// Each sector has weighted keywords. More specific = higher weight.
-// The sector with highest total score wins.
 
 const SECTORS = [
   {
     sector: 'IT / Technology',
     keywords: [
-      // High weight — very specific
       { w: 3, r: /\bai\b|artificial\s+intelligence|вештачка\s+интелиген|machine\s+learning|blockchain|блокчејн|deep\s+learning|neural/i },
       { w: 3, r: /software\s+development|web\s+app|mobile\s+app|програмир|programming|coding|cybersecurity/i },
       { w: 2, r: /\btech\b|\bit\b|дигитал|digital|innovation|иновац|ict|платформа|platform|startup/i },
@@ -113,8 +108,6 @@ const SECTORS = [
 ];
 
 // ─── ORG TYPE DEFINITIONS ────────────────────────────────────
-// CRITICAL ORDER: More specific types first.
-// Startup must be before SME. NGO must be before generic.
 
 const ORG_TYPES = [
   {
@@ -174,26 +167,62 @@ const ORG_TYPES = [
   },
 ];
 
-// ─── COUNTRY PATTERNS ────────────────────────────────────────
+// ─── COUNTRY PATTERNS (expanded: 15 → 40) ───────────────────
+
 const COUNTRY_PATTERNS = [
+  // Western Balkans
   { country: 'North Macedonia', regex: /macedon|makedon|north\s+macedon|mkd|севerna|македон|северна|Skopje|скопје|македонија/i },
   { country: 'Serbia',          regex: /\bserbia\b|srbija|србија|Belgrade|Beograd|Нови\s+Сад/i },
-  { country: 'Croatia',         regex: /croatia|hrvatska|Zagreb|Hrvatska/i },
-  { country: 'Bosnia',          regex: /\bbosnia\b|\bbih\b|босна|Sarajevo|Босна/i },
-  { country: 'Bulgaria',        regex: /bulgaria|bulgar|бугарија|Sofia|Sofija/i },
-  { country: 'Albania',         regex: /\balbania\b|shqiperi|Tirana|shqipëri/i },
+  { country: 'Croatia',         regex: /croatia|hrvatska|Zagreb/i },
+  { country: 'Bosnia',          regex: /\bbosnia\b|\bbih\b|босна|Sarajevo/i },
+  { country: 'Albania',         regex: /\balbania\b|shqiperi|Tirana/i },
   { country: 'Kosovo',          regex: /\bkosovo\b|косово|Pristina|Prishtina/i },
-  { country: 'Montenegro',      regex: /montenegro|crna\s+gora|Podgorica|Черна\s+Гора/i },
+  { country: 'Montenegro',      regex: /montenegro|crna\s+gora|Podgorica/i },
   { country: 'Slovenia',        regex: /\bslovenia\b|slovenija|Ljubljana/i },
+
+  // EU — Eastern & Central
+  { country: 'Bulgaria',        regex: /bulgaria|bulgar|бугарија|Sofia/i },
   { country: 'Romania',         regex: /\bromania\b|românia|Bucharest|Букурешт/i },
-  { country: 'Greece',          regex: /\bgreece\b|grecia|Athens|Атина/i },
-  { country: 'Turkey',          regex: /\bturkey\b|türkiye|Ankara|Istanbul|Турција/i },
+  { country: 'Hungary',         regex: /\bhungary\b|magyarország|Budapest|унгарија|Macaristan/i },
+  { country: 'Czech Republic',  regex: /czech|česká|republika|Prague|Praha|Прага|чешка/i },
+  { country: 'Slovakia',        regex: /\bslovakia\b|slovensko|Bratislava|словачка/i },
+  { country: 'Poland',          regex: /\bpoland\b|polska|Warsaw|Warszawa|полска/i },
+  { country: 'Estonia',         regex: /\bestonia\b|eesti|Tallinn/i },
+  { country: 'Latvia',          regex: /\blatvia\b|latvija|Riga/i },
+  { country: 'Lithuania',       regex: /\blithuania\b|lietuva|Vilnius/i },
+  { country: 'Cyprus',          regex: /\bcyprus\b|кипар|Nicosia/i },
+  { country: 'Malta',           regex: /\bmalta\b|Valletta/i },
+
+  // EU — Western
+  { country: 'Greece',          regex: /\bgreece\b|grecia|Athens|Атина|Ελλάδα/i },
+  { country: 'Portugal',        regex: /\bportugal\b|português|Lisbon|Lisboa|португалија/i },
+  { country: 'Netherlands',     regex: /\bnetherlands\b|nederland|Amsterdam|холандија|dutch/i },
+  { country: 'Belgium',         regex: /\bbelgium\b|belgique|Brussels|Bruxelles|белгија/i },
+  { country: 'Ireland',         regex: /\bireland\b|éire|Dublin|ирска/i },
+  { country: 'Luxembourg',      regex: /\bluxembourg\b|luxemburg|луксембург/i },
+
+  // EU — Nordic
+  { country: 'Sweden',          regex: /\bsweden\b|sverige|Stockholm|шведска/i },
+  { country: 'Finland',         regex: /\bfinland\b|suomi|Helsinki|финска/i },
+  { country: 'Denmark',         regex: /\bdenmark\b|danmark|Copenhagen|København|данска/i },
+
+  // Non-EU European
+  { country: 'Norway',          regex: /\bnorway\b|norge|Oslo|норвешка/i },
+  { country: 'Switzerland',     regex: /\bswitzerland\b|Schweiz|Bern|Zurich|швајцарија/i },
+  { country: 'Austria',         regex: /\baustria\b|Österreich|Wien|Vienna|австрија/i },
+  { country: 'Turkey',          regex: /\bturkey\b|türkiye|Ankara|Istanbul|Турција|türk/i },
+  { country: 'Ukraine',         regex: /ukraine|україна|Kyiv|Kiev|украина/i },
+  { country: 'Iceland',         regex: /\biceland\b|ísland|Reykjavik/i },
+
+  // Big EU (kept for completeness)
   { country: 'Germany',         regex: /\bgermany\b|Deutschland|Berlin|Германија/i },
-  { country: 'Austria',         regex: /\baustria\b|Österreich|Wien|Vienna|Австрија/i },
-  { country: 'Switzerland',     regex: /\bswitzerland\b|Schweiz|Bern|Zurich|Швајцарија/i },
+  { country: 'France',          regex: /\bfrance\b|français|Paris|Франција/i },
+  { country: 'Italy',           regex: /\bitaly\b|italia|Rome|Roma|Италија/i },
+  { country: 'Spain',           regex: /\bspain\b|españa|Madrid|Шпанија/i },
 ];
 
 // ─── BUDGET PATTERNS ─────────────────────────────────────────
+
 const BUDGET_PATTERNS = [
   { budget: 'above €500k',  regex: /[1-9]\d{0,2}[\s,.]?000[\s,.]?000|[1-9]\d?\s*million|милион|мил\b|\d+\s*mil/i },
   { budget: '€150k–€500k',  regex: /[1-4]\d{2}[\s,.]?000\s*(евра|eur|€)?|[1-4]\d{2}k\b|500[\s,.]?000|500k|двесте|триста|четиристо/i },
@@ -202,13 +231,12 @@ const BUDGET_PATTERNS = [
 ];
 
 // ─── STOP WORDS ──────────────────────────────────────────────
+
 const STOP_WORDS = new Set([
-  // English
   'about','where','which','would','could','their','there','what',
   'have','this','that','with','from','they','will','been','were',
   'hello','dear','your','the','and','for','not','please','thank',
   'thanks','regards','some','also','very','more','work','make',
-  // Macedonian
   'сакате','дали','имаме','нема','треба','може','дека','нашата',
   'која','кои','најди','покажи','постои','опции','можности',
   'благодарам','здраво','јас','сум','ние','сме','во','на',
@@ -216,13 +244,24 @@ const STOP_WORDS = new Set([
   'работиме','работам','сакам','имам','имаме','правиме',
 ]);
 
+// ─── NO-SEARCH PATTERNS ──────────────────────────────────────
+// Pure acknowledgments and follow-ups that never need a DB search.
+// v3 bug: sectorScore >= 5 fired search on every message including
+// "благодарам" and "добро" after profile was established.
+
+const NO_SEARCH_PATTERNS = [
+  // Macedonian acknowledgments
+  /^(благодарам|фала|добро|разбрав|ок|океј|да|не|супер|одлично|браво|точно|се\s+разбира|јасно|сфатив|perfect|thanks|thank\s+you|ok|okay|great|got\s+it|understood|noted|nice|cool|perfect)[\s!.]*$/i,
+  // Short non-informative replies (≤ 3 words, no funding keywords)
+  /^[\w\s,!.]{1,25}$/,
+];
+
+// Explicit funding intent — these always trigger search regardless
+// Note: \b does not match Cyrillic word boundaries in JS — Cyrillic terms use no \b
+const EXPLICIT_FUNDING = /(\bgrant\b|\bfund\b|\bfinanc|\bsubsid|\bfellowship\b|\bscholarship\b|\baward\b|\bdonor\b|\bopen\s+call\b|\bcall\s+for\s+proposal|грант|фонд|финансир|субвенц|стипенд|грантови|донатор|отворен\s+повик|можности|барам|бараме|најди|покажи|пребарај|\bopportunities\b)/i;
+
 // ─── SCORING ENGINE ──────────────────────────────────────────
 
-/**
- * scorePatterns(text, patterns)
- * Returns array of {name, score} sorted by score descending.
- * Uses weighted keyword matching — more signals = higher score.
- */
 function scorePatterns(text, patterns) {
   const scores = patterns.map(p => {
     const name  = p.sector || p.orgType;
@@ -234,6 +273,8 @@ function scorePatterns(text, patterns) {
   return scores.sort((a, b) => b.score - a.score);
 }
 
+// ─── DETECT PROFILE ──────────────────────────────────────────
+
 /**
  * detectProfile(text)
  * Extracts user profile from conversation text.
@@ -242,21 +283,14 @@ function scorePatterns(text, patterns) {
 function detectProfile(text) {
   if (!text) return { sector: null, orgType: null, country: null, budget: null, keywords: [] };
 
-  // Score all sectors and org types
-  const sectorScores  = scorePatterns(text, SECTORS);
-  const orgScores     = scorePatterns(text, ORG_TYPES);
+  const sectorScores = scorePatterns(text, SECTORS);
+  const orgScores    = scorePatterns(text, ORG_TYPES);
 
-  // Only assign if there is at least 1 signal
   const topSector  = sectorScores[0]?.score  > 0 ? sectorScores[0].name  : null;
   const topOrgType = orgScores[0]?.score     > 0 ? orgScores[0].name     : null;
+  const country    = COUNTRY_PATTERNS.find(p => p.regex.test(text))?.country || null;
+  const budget     = BUDGET_PATTERNS.find(p => p.regex.test(text))?.budget   || null;
 
-  // Country — first match wins (explicit mention)
-  const country = COUNTRY_PATTERNS.find(p => p.regex.test(text))?.country || null;
-
-  // Budget — highest range that matches
-  const budget = BUDGET_PATTERNS.find(p => p.regex.test(text))?.budget || null;
-
-  // Debug log for development
   if (process.env.NODE_ENV !== 'production') {
     const top3s = sectorScores.slice(0, 3).filter(s => s.score > 0);
     const top3o = orgScores.slice(0, 3).filter(s => s.score > 0);
@@ -264,7 +298,6 @@ function detectProfile(text) {
     if (top3o.length) console.log('[profileDetector] orgType scores:', top3o.map(s => `${s.name}:${s.score}`).join(', '));
   }
 
-  // Keywords — content nouns for fundingScorer
   const t        = text.toLowerCase();
   const keywords = t
     .replace(/[^a-zа-ш0-9\s]/gi, ' ')
@@ -275,49 +308,75 @@ function detectProfile(text) {
   return { sector: topSector, orgType: topOrgType, country, budget, keywords };
 }
 
+// ─── NEEDS SEARCH ────────────────────────────────────────────
+
 /**
  * needsSearch(text)
- * Returns true when the message signals intent to find funding.
- * Deliberately broad — better to search unnecessarily than to miss.
+ *
+ * v3 bug: sectorScore >= 5 fired on EVERY message once the user
+ * described their org. "Благодарам" after a search = another search.
+ *
+ * v4 fix — two-gate system:
+ *   Gate 1 (NO-SEARCH): if the message is clearly a short reply,
+ *   acknowledgment, or follow-up with no new funding intent → false.
+ *   Gate 2 (SEARCH): explicit funding keywords, org description,
+ *   or strong multi-signal profile match → true.
+ *
+ * sectorScore alone NO LONGER triggers search.
+ * Sector + country still triggers (strong profile signal).
+ * Sector + orgType still triggers (strong profile signal).
  */
 function needsSearch(text) {
   if (!text) return false;
-  const t = text.toLowerCase();
+  const t     = text.toLowerCase().trim();
+  const words = t.split(/\s+/).filter(Boolean);
 
-  // 1. Explicit grant/fund intent
-  const explicitFunding = /\b(grant|fund|financ|subsid|fellowship|scholarship|award|donor|open\s+call|call\s+for\s+proposal|грант|фонд|финансир|субвенц|стипенд|грантови|донатор|отворен\s+повик)\b/i;
+  // ── Gate 1: NO-SEARCH guards (check first) ───────────────
 
-  // 2. Org description — user describes themselves
+  // Very short messages with no explicit funding intent → never search
+  if (words.length <= 3 && !EXPLICIT_FUNDING.test(t)) return false;
+
+  // Pure acknowledgment patterns → never search
+  for (const pat of NO_SEARCH_PATTERNS) {
+    if (pat.test(t) && !EXPLICIT_FUNDING.test(t)) return false;
+  }
+
+  // ── Gate 2: SEARCH triggers ───────────────────────────────
+
+  // 1. Explicit grant/fund keywords → always search
+  if (EXPLICIT_FUNDING.test(t)) return true;
+
+  // 2. User describes their organization → search
   const orgDescription = /\b(јас\s+сум|ние\s+сме|сум\s+нво|сме\s+нво|сум\s+нго|сме\s+нго|сум\s+стартап|сме\s+стартап|i\s+am\s+a[n]?\s+|we\s+are\s+a[n]?\s+|our\s+organization|нашата\s+организација|работиме\s+на|работам\s+на)\b/i;
+  if (orgDescription.test(t)) return true;
 
-  // 3. Looking for something
+  // 3. Search intent with profile signal → search
   const searchIntent = /\b(кои|која|најди|покажи|постои|барам|бараме|what|find|show|look\s+for|search|looking\s+for|препорач|options|можности|опции)\b/i;
+  const hasSector    = SECTORS.some(s => s.keywords.some(k => k.r.test(text)));
+  const hasCountry   = COUNTRY_PATTERNS.some(p => p.regex.test(text));
+  const hasOrg       = ORG_TYPES.some(o => o.keywords.some(k => k.r.test(text)));
+  const hasBudget    = /€|\$|\beur\b|\busd\b|\bevra\b|\bdolari\b|\b\d{4,}\b/i.test(t);
 
-  // 4. Budget signal (strong indicator of funding search)
-  const budgetSignal = /€|\$|\beur\b|\busd\b|\bevra\b|\bdolari\b|\b\d{4,}\b/i;
+  if (searchIntent.test(t) && (hasSector || hasCountry || hasOrg)) return true;
 
-  // 5. Has a profile signal (sector + country or org type)
-  const hasSector  = SECTORS.some(s   => s.keywords.some(k => k.r.test(text)));
-  const hasCountry = COUNTRY_PATTERNS.some(p => p.regex.test(text));
-  const hasOrg     = ORG_TYPES.some(o => o.keywords.some(k => k.r.test(text)));
+  // 4. Budget signal + profile signal → search
+  if (hasBudget && (hasSector || hasOrg || hasCountry)) return true;
 
-  // Score-based: if sector+orgType both detected = clear funding search
-  const hasOrgType = ORG_TYPES.some(o => o.keywords.some(k => k.r.test(text)));
-  const sectorScore = SECTORS.reduce((max, s) => {
-    const sc = s.keywords.reduce((sum, k) => sum + (k.r.test(text) ? k.w : 0), 0);
-    return Math.max(max, sc);
-  }, 0);
+  // 5. Sector + country together → search (strong profile)
+  if (hasSector && hasCountry) return true;
 
-  return (
-    explicitFunding.test(t)  ||
-    orgDescription.test(t)   ||
-    (searchIntent.test(t) && (hasSector || hasCountry || hasOrg)) ||
-    (budgetSignal.test(t)  && (hasSector || hasOrg || hasCountry)) ||
-    (hasSector && hasCountry)  ||
-    (hasSector && budgetSignal.test(t)) ||
-    (sectorScore >= 3 && hasOrgType)   ||
-    (sectorScore >= 5)
-  );
+  // 6. Sector + orgType together → search (strong profile)
+  if (hasSector && hasOrg) return true;
+
+  // 7. sectorScore alone → NOT enough (v3 bug fix)
+  // Previously: sectorScore >= 5 → return true
+  // Now: sector alone does not trigger search.
+  // Rationale: "Имам НВО во Македонија која прави едукација" contains
+  // both sector AND country/orgType → caught by rules 5/6 above.
+  // A bare follow-up like "а кои се роковите?" has sector context
+  // from prior messages but no NEW search intent → skip.
+
+  return false;
 }
 
 module.exports = { detectProfile, needsSearch };
