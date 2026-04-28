@@ -115,38 +115,12 @@ Return ONLY valid JSON (no markdown, no explanation):
   "communication": "How results will be disseminated: reports, social media, policy briefs, events. 60-80 words."
 }`;
 
-  // ── Prompt 2: Results, Activities, Gantt ──────────────────
-  const planPrompt = `You are a senior EU grant writer. Write in ${langName}.
-ALL text must be in ${langName}.
+  // ── Prompt 2: Results, Activities, Risks ─────────────────
+  const planPrompt = `EU grant writer. Language: ${langName}. ALL text in ${langName}.
+Project: ${profile.sector || 'Digital Education'} in ${country}. Budget: ${budgetAmt}. Duration: 18 months.
 
-Project: ${profile.sector || 'Digital Education'} in ${country}
-Duration: 18 months
-Budget: ${budgetAmt}
-
-Return ONLY valid JSON:
-{
-  "overall_objective": "Broad development goal this project contributes to (1 sentence)",
-  "specific_objective": "What the project will achieve directly (1 sentence, SMART)",
-  "results": [
-    {"number": 1, "title": "Result title", "description": "25 words", "indicators": ["Indicator 1 with baseline and target", "Indicator 2"], "verification": "How verified (survey/certificate/report)"},
-    {"number": 2, "title": "Result title", "description": "25 words", "indicators": ["Indicator 1", "Indicator 2"], "verification": "How verified"},
-    {"number": 3, "title": "Result title", "description": "25 words", "indicators": ["Indicator 1", "Indicator 2"], "verification": "How verified"}
-  ],
-  "activities": [
-    {"id": "A1.1", "result": 1, "title": "Activity title", "description": "Brief description", "months": "1-2", "responsible": "Role"},
-    {"id": "A1.2", "result": 1, "title": "Activity title", "description": "Brief description", "months": "2-4", "responsible": "Role"},
-    {"id": "A2.1", "result": 2, "title": "Activity title", "description": "Brief description", "months": "3-8", "responsible": "Role"},
-    {"id": "A2.2", "result": 2, "title": "Activity title", "description": "Brief description", "months": "6-12", "responsible": "Role"},
-    {"id": "A3.1", "result": 3, "title": "Activity title", "description": "Brief description", "months": "10-16", "responsible": "Role"},
-    {"id": "A3.2", "result": 3, "title": "Activity title", "description": "Brief description", "months": "14-18", "responsible": "Role"},
-    {"id": "A0.1", "result": 0, "title": "Project management & reporting", "description": "Coordination, monitoring, final report", "months": "1-18", "responsible": "Project Manager"}
-  ],
-  "risks": [
-    {"risk": "Risk description", "probability": "Low|Medium|High", "impact": "Low|Medium|High", "mitigation": "Mitigation measure"},
-    {"risk": "Risk description", "probability": "Low|Medium|High", "impact": "Low|Medium|High", "mitigation": "Mitigation measure"},
-    {"risk": "Risk description", "probability": "Low|Medium|High", "impact": "Low|Medium|High", "mitigation": "Mitigation measure"}
-  ]
-}`;
+Return ONLY minified valid JSON, no extra spaces, no trailing commas:
+{"overall_objective":"1 sentence","specific_objective":"1 SMART sentence","results":[{"number":1,"title":"title","description":"brief","indicators":["indicator with target"],"verification":"how"},{"number":2,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"},{"number":3,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"}],"activities":[{"id":"A1.1","result":1,"title":"title","months":"1-2","responsible":"role"},{"id":"A1.2","result":1,"title":"title","months":"3-5","responsible":"role"},{"id":"A2.1","result":2,"title":"title","months":"4-9","responsible":"role"},{"id":"A2.2","result":2,"title":"title","months":"7-14","responsible":"role"},{"id":"A3.1","result":3,"title":"title","months":"12-16","responsible":"role"},{"id":"A3.2","result":3,"title":"title","months":"16-18","responsible":"role"},{"id":"A0.1","result":0,"title":"Project management","months":"1-18","responsible":"Project Manager"}],"risks":[{"risk":"risk","probability":"Low","impact":"High","mitigation":"measure"},{"risk":"risk","probability":"Medium","impact":"Medium","mitigation":"measure"},{"risk":"risk","probability":"Low","impact":"Medium","mitigation":"measure"}]}`;
 
   // ── Prompt 3: Budget with unit costs ──────────────────────
   const budgetPrompt = `You are a senior EU grant accountant. Write in ${langName}.
@@ -277,10 +251,32 @@ Return ONLY valid JSON. No markdown fences. No explanation. No preamble.`;
 function parseJSON(raw, fallback) {
   if (!raw) return fallback;
   try {
-    const clean   = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    const match   = clean.match(/\{[\s\S]*\}/);
-    if (!match) return fallback;
-    const parsed  = JSON.parse(match[0]);
+    // Strip markdown fences
+    let clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+    // Try to extract JSON object first, then array
+    let parsed = null;
+    const objMatch = clean.match(/\{[\s\S]*\}/);
+    if (objMatch) {
+      try { parsed = JSON.parse(objMatch[0]); } catch(_) {}
+    }
+
+    // If object parse failed, try to repair and re-parse
+    if (!parsed && objMatch) {
+      try {
+        // Remove trailing commas before ] or }
+        const repaired = objMatch[0]
+          .replace(/,\s*([}\]])/g, '$1')
+          .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+        parsed = JSON.parse(repaired);
+      } catch(_) {}
+    }
+
+    if (!parsed) {
+      console.warn('[parseJSON] all parse attempts failed, using fallback');
+      return fallback;
+    }
+
     return { ...fallback, ...parsed };
   } catch (e) {
     console.warn('[parseJSON] failed:', e.message);
