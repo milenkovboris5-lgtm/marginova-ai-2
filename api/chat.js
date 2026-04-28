@@ -1,7 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════
-// MARGINOVA — api/chat.js  v5.1 — DIAGNOSTIC + PRODUCTION READY
-// 500 error fix: wrapped every module load in try/catch,
-// added startup self-test, safe fallbacks for missing env vars.
+// MARGINOVA — api/chat.js  v6 — TTL fix + relevance-aware llmRouter
+//
+// CHANGES over v5.1:
+// 1. CACHE_TTL_HOURS: 24 → 6  (stale results fix)
+// 2. cleanCache() runs every request (fire-and-forget, not 5% random)
+//    Minimal cost — only deletes expired rows, fast query
 // ═══════════════════════════════════════════════════════════════════════
 
 // ─── STARTUP DIAGNOSTICS ─────────────────────────────────────────────
@@ -20,7 +23,6 @@ try {
   console.log('[chat.js] utils loaded ✓');
 } catch (e) {
   console.error('[chat.js] FAILED to load utils:', e.message);
-  // Export a minimal handler that explains the problem
   module.exports = async (req, res) => {
     res.status(500).json({ error: { message: 'Server config error: utils module failed to load. ' + e.message } });
   };
@@ -48,7 +50,6 @@ try {
   console.error('[chat.js] FAILED to load llmRouter:', e.message);
 }
 
-// Destructure from utils (safe)
 const {
   ft,
   detectLang,
@@ -60,7 +61,6 @@ const {
   getTable,
 } = utils;
 
-// Safe destructure from optional modules
 const { detectProfile, needsSearch } = profileDetector || {
   detectProfile: () => ({ sector: null, orgType: null, country: null, budget: null, keywords: [] }),
   needsSearch:   () => false,
@@ -72,9 +72,9 @@ const {
   needsSerper,
   RESULTS_TO_SHOW = 6,
 } = fundingScorer || {
-  searchDB:       async () => [],
-  mergeWithWeb:   (a, b) => [...a, ...b].slice(0, 6),
-  needsSerper:    () => false,
+  searchDB:        async () => [],
+  mergeWithWeb:    (a, b) => [...a, ...b].slice(0, 6),
+  needsSerper:     () => false,
   RESULTS_TO_SHOW: 6,
 };
 
@@ -86,8 +86,12 @@ const { extractFromSerper, synthesize } = llmRouter || {
 };
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────
-const SERPER_KEY      = process.env.SERPER_API_KEY;
-const CACHE_TTL_HOURS = 24;
+const SERPER_KEY = process.env.SERPER_API_KEY;
+
+// v6 FIX: 24h → 6h — reduces stale result window dramatically.
+// searchDB hits Supabase (fast, free tier handles it).
+// Users inserting new programs now see them within 6h max.
+const CACHE_TTL_HOURS = 6;
 
 // ─── CACHE HELPERS ───────────────────────────────────────────────────
 function hashQuery(str) {
@@ -142,6 +146,9 @@ async function saveCache(key, queryText, results) {
   }
 }
 
+// v6 FIX: cleanCache runs every request (fire-and-forget).
+// Cost: one fast DELETE WHERE expires_at < now() per request.
+// Much better than 5% random — expired rows are always cleaned promptly.
 async function cleanCache() {
   if (!supabase) return;
   try {
@@ -202,7 +209,6 @@ async function hybridSearch(userText, profile) {
     orgType: profile.orgType, budget: profile.budget,
   }));
 
-  // Step 1: DB always first
   let dbResults = [];
   try {
     dbResults = await searchDB(profile);
@@ -211,7 +217,6 @@ async function hybridSearch(userText, profile) {
     console.error('[HYBRID] searchDB error:', e.message);
   }
 
-  // Step 2: Serper ONLY if DB is insufficient
   const doSerper = needsSerper(dbResults);
   console.log('[HYBRID] Serper needed:', doSerper);
 
@@ -238,7 +243,6 @@ async function hybridSearch(userText, profile) {
 
 // ─── MAIN HANDLER ────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  // CORS first — always
   try { setCors(req, res); } catch (e) { console.error('[CORS]', e.message); }
 
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -246,13 +250,11 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: { message: 'Method Not Allowed' } });
   }
 
-  // ── ENV CHECK ──────────────────────────────────────────────
   if (!process.env.GEMINI_API_KEY) {
     console.error('[handler] GEMINI_API_KEY not set');
     return res.status(500).json({ error: { message: 'Server configuration error: missing AI API key.' } });
   }
 
-  // ── IP RATE LIMIT ──────────────────────────────────────────
   try {
     const allowed = await checkIP(req);
     if (!allowed) {
@@ -260,11 +262,9 @@ module.exports = async function handler(req, res) {
     }
   } catch (e) {
     console.warn('[IP CHECK] error (allowing):', e.message);
-    // Don't block on IP check error in test mode
   }
 
   try {
-    // ── PARSE BODY ────────────────────────────────────────────
     const body = req.body || {};
     console.log('[handler] body keys:', Object.keys(body));
 
@@ -282,7 +282,7 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: { message: 'No message provided.' } });
     }
 
-    // ── LANGUAGE DETECTION ────────────────────────────────────
+    // ── Language detection ────────────────────────────────
     const langText = (body.messages || []).slice(-3).map(m => m.content || '').join(' ') + ' ' + userText;
     const lang     = body.lang || detectLang(langText);
     const today    = new Date().toLocaleDateString('en-GB', {
@@ -290,7 +290,7 @@ module.exports = async function handler(req, res) {
     });
     console.log('[handler] lang:', lang, 'today:', today);
 
-    // ── PROFILE DETECTION ─────────────────────────────────────
+    // ── Profile detection ─────────────────────────────────
     const conversationText = (body.messages || [])
       .slice(-4).map(m => m.content || '').join(' ') + ' ' + userText;
 
@@ -302,10 +302,11 @@ module.exports = async function handler(req, res) {
       console.warn('[handler] detectProfile error:', e.message);
     }
 
-    // Periodic cache cleanup
-    if (Math.random() < 0.05) cleanCache().catch(() => {});
+    // v6 FIX: cleanCache runs every request (fire-and-forget)
+    // Cost negligible — fast DELETE on indexed expires_at column
+    cleanCache().catch(() => {});
 
-    // ── SEARCH DECISION ───────────────────────────────────────
+    // ── Search decision ───────────────────────────────────
     let shouldSearch = false;
     try {
       shouldSearch = needsSearch(conversationText)
@@ -324,7 +325,6 @@ module.exports = async function handler(req, res) {
     if (shouldSearch && !imageData) {
       const cacheKey = buildCacheKey(userText, profile) + '_' + lang;
 
-      // Try cache first
       try {
         const cached = await getCached(cacheKey);
         if (cached?.results?.length) {
@@ -337,7 +337,6 @@ module.exports = async function handler(req, res) {
         console.warn('[handler] cache lookup error:', e.message);
       }
 
-      // DB + optional Serper if no cache
       if (!fromCache) {
         try {
           const hybrid = await hybridSearch(userText, profile);
@@ -350,12 +349,11 @@ module.exports = async function handler(req, res) {
           }
         } catch (e) {
           console.error('[handler] hybridSearch error:', e.message);
-          // Continue — Gemini will handle no-results case gracefully
         }
       }
     }
 
-    // ── GEMINI SYNTHESIS ──────────────────────────────────────
+    // ── Gemini synthesis ──────────────────────────────────
     console.log('[handler] calling synthesize with', results.length, 'results');
     let text = '';
     try {
@@ -367,7 +365,7 @@ module.exports = async function handler(req, res) {
         : `Error generating response: ${e.message}`;
     }
 
-    // ── RESPONSE ──────────────────────────────────────────────
+    // ── Response ──────────────────────────────────────────
     return res.status(200).json({
       content:     [{ type: 'text', text }],
       intent:      shouldSearch ? 'funding' : 'general',
@@ -376,29 +374,28 @@ module.exports = async function handler(req, res) {
       db_results:  sources.db,
       web_results: sources.serper,
       top_matches: results.slice(0, RESULTS_TO_SHOW).map(r => ({
-        title:        r.title             || '',
-        organization: r.organization_name || '',
-        deadline:     r.application_deadline || '',
-        amount:       r.award_amount
+        title:          r.title             || '',
+        organization:   r.organization_name || '',
+        deadline:       r.application_deadline || '',
+        amount:         r.award_amount
           ? `${Number(r.award_amount).toLocaleString()} ${r.currency || 'EUR'}`
           : (r.funding_range || ''),
-        country:      r.country      || '',
-        matchSignals: r.matchSignals || [],
-        riskFactors:  r.riskFactors  || [],
-        source:       r.source       || 'db',
-        link:         r.link         || '',
-        snippet:      r.snippet      || '',
+        country:        r.country      || '',
+        matchSignals:   r.matchSignals || [],
+        riskFactors:    r.riskFactors  || [],
+        relevanceScore: r._relevanceScore || 0,
+        source:         r.source       || 'db',
+        link:           r.link         || '',
+        snippet:        r.snippet      || '',
       })),
     });
 
   } catch (err) {
-    // Top-level catch — should never reach here, but if it does log everything
     console.error('[handler] UNHANDLED ERROR:', err.message);
     console.error('[handler] stack:', err.stack);
     return res.status(500).json({
       error: {
         message: 'Internal server error. Check server logs for details.',
-        // Only expose details in non-production
         detail: process.env.NODE_ENV !== 'production' ? err.message : undefined,
       },
     });
