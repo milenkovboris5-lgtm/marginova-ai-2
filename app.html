@@ -475,22 +475,23 @@ a{color:var(--gold);text-decoration:none}
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── SUPABASE INIT (anon key — safe for frontend auth) ───────
+// ─── SUPABASE INIT ───────────────────────────────────────────
 const { createClient } = supabase;
-const SUPA_URL = 'https://yidalveetwkcrjkvzbsn.supabase.co';
+const SUPA_URL  = 'https://yidalveetwkcrjkvzbsn.supabase.co';
 const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M';
-// NOTE: anon key is safe to expose — it only allows auth flows.
-// All DB queries go through /api/* endpoints using the SERVICE key.
 const db = createClient(SUPA_URL, SUPA_ANON, {
   auth: { persistSession: true, autoRefreshToken: true, storageKey: 'marginova_auth' }
 });
 
 // ─── STATE ───────────────────────────────────────────────────
-let currentUser    = null;
-let authMode       = 'login';
-let lang           = localStorage.getItem('mlang') || 'en';
-let chatHistory    = [];
-let currentFile    = null;
+// chatHistory lives ONLY in RAM for the current session.
+// Login = fresh start. Logout = wiped. Refresh = wiped.
+// No persistence, no trim logic needed.
+let currentUser     = null;
+let authMode        = 'login';
+let lang            = localStorage.getItem('mlang') || 'en';
+let chatHistory     = [];
+let currentFile     = null;
 let currentUserPlan = 'free';
 
 // ─── AUTH ────────────────────────────────────────────────────
@@ -538,7 +539,7 @@ function initApp() {
   }
 }
 
-// ─── PROFILE — uses /api/me proxy (SERVICE key stays on backend) ──
+// ─── PROFILE ─────────────────────────────────────────────────
 async function loadUserProfile() {
   if (!currentUser) return;
   try {
@@ -567,7 +568,10 @@ async function loadUserProfile() {
 }
 
 async function doSignOut() {
-  chatHistory = []; currentFile = null; currentUser = null; currentUserPlan = 'free';
+  chatHistory     = [];
+  currentFile     = null;
+  currentUser     = null;
+  currentUserPlan = 'free';
   await db.auth.signOut();
   closeDrawer();
   document.getElementById('app').style.display = 'none';
@@ -576,16 +580,16 @@ async function doSignOut() {
 }
 
 function resetUI() {
-  document.getElementById('messages').innerHTML = '<div class="msg-row"><div class="msg-av ai">M</div><div class="bubble ai"><p>Hi! Describe your project, organization type, country and budget — I\'ll find funding opportunities that may match.</p></div></div>';
+  document.getElementById('messages').innerHTML = INITIAL_MSG;
   document.getElementById('welcome-block').style.display = 'block';
   document.getElementById('profile-org').textContent     = '—';
   document.getElementById('profile-country').textContent = '—';
   document.getElementById('profile-sector').textContent  = 'Not set';
   document.getElementById('profile-budget').textContent  = 'Budget: not set';
   document.getElementById('recent-opps').innerHTML       = '<div class="opp-item"><strong style="color:var(--muted)">No results yet</strong><div>Describe your project to find funding opportunities.</div></div>';
-  document.getElementById('tok-badge').textContent   = 'Free';
-  document.getElementById('drawer-plan').textContent = 'Free';
-  document.getElementById('drawer-email').textContent = '—';
+  document.getElementById('tok-badge').textContent       = 'Free';
+  document.getElementById('drawer-plan').textContent     = 'Free';
+  document.getElementById('drawer-email').textContent    = '—';
 }
 
 // ─── PROFILE MODAL ───────────────────────────────────────────
@@ -620,7 +624,6 @@ async function saveProfile() {
   const st      = document.getElementById('pm-status');
   st.className = 'pm-status'; st.textContent = 'Saving...';
   try {
-    // Write profile via Supabase (anon key + RLS policy: auth.uid() = user_id)
     const { error } = await db.from('profiles').upsert({
       user_id:           currentUser.id,
       organization_type: orgType  || null,
@@ -643,7 +646,7 @@ async function saveProfile() {
 }
 
 // ─── UI HELPERS ──────────────────────────────────────────────
-function setNav(n) { document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active')); }
+function setNav(n)     { document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active')); }
 function openDrawer()  { document.getElementById('drawer').classList.add('open'); }
 function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
@@ -766,7 +769,7 @@ function removeFile() {
   document.getElementById('file-input').value = '';
 }
 
-// ─── LANG DETECTION ──────────────────────────────────────────
+// ─── LANGUAGE DETECTION ──────────────────────────────────────
 function detectLanguage(text) {
   if (!text) return 'en';
   const lower = text.toLowerCase();
@@ -793,11 +796,9 @@ async function sendMsg() {
   if (text) addMsg('user', text);
   if (currentFile) addMsg('user', '📎 ' + currentFile.name);
 
-  // ── FIX: trim chatHistory to prevent memory leak ──
+  // chatHistory lives only in RAM — no trim, no persistence, no slice.
+  // A fresh login always starts with chatHistory = [].
   chatHistory.push({ role: 'user', content: text || '[Document attached]' });
-  if (chatHistory.length > 30) {
-    chatHistory = chatHistory.slice(-24);
-  }
 
   const wb = document.getElementById('welcome-block');
   if (wb) wb.style.display = 'none';
@@ -805,7 +806,7 @@ async function sendMsg() {
 
   try {
     const payload = {
-      messages:  chatHistory.slice(-8),
+      messages:  chatHistory,
       lang:      finalLang,
       userId:    currentUser?.id || null,
       image:     currentFile?.data || null,
@@ -827,14 +828,12 @@ async function sendMsg() {
     const intent = data?.intent || 'general';
 
     chatHistory.push({ role: 'assistant', content: reply });
-    // Trim again after assistant reply
-    if (chatHistory.length > 30) chatHistory = chatHistory.slice(-24);
 
     addMsg('ai', reply, intent);
 
-    // Update sidebar with results (matchSignals + riskFactors, no score)
+    // Update sidebar panel with latest results
     if (data?.top_matches?.length) {
-      document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0, 4).map((x, i) => `
+      document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0, 4).map(x => `
         <div class="opp-item">
           <strong>${escapeHtml(x.title)}</strong>
           <div style="font-size:.72rem;color:var(--muted);margin:.15rem 0">${escapeHtml(x.organization || '')}${x.deadline ? ' · ' + x.deadline : ''}${x.amount ? ' · ' + x.amount : ''}</div>
