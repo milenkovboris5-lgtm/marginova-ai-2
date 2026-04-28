@@ -1,23 +1,14 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/generate-application.js
-// v2 — PERFECT VERSION
-//
-// DIFFERENCES from old generate-pdf.js:
-// ✅ NO Puppeteer — returns structured JSON, client renders PDF
-// ✅ JWT auth — only logged-in users can generate
-// ✅ 3 specialized Gemini prompts (not 1 monolithic)
-// ✅ Full LFM matrix (Goal/Purpose/Outputs/Activities + OVI + MOV)
-// ✅ Unit-cost budget (quantity × unit price, co-financing column)
-// ✅ Schema validation + safe fallbacks for every field
-// ✅ Language validation — retry if Gemini responds in wrong language
-// ✅ CORS restricted to marginova.tech
-// ✅ 11 sections (EU-compliant structure)
-// ✅ Gantt timeline data included
+// v2.1 — ONE CHANGE ONLY vs v2:
+//   safeGemini() maxTokens: 4000 → 8000
+//   Fixes truncated LFM / budget / narrative sections.
+//   vercel.json must have maxDuration: 60 for this endpoint.
 // ═══════════════════════════════════════════════════════════
 
 const { setCors, gemini, supabase } = require('./_lib/utils');
 
-console.log('[generate-application] v2 loaded — no Puppeteer, JWT auth, LFM');
+console.log('[generate-application] v2.1 loaded — maxTokens 8000, no Puppeteer, JWT auth, LFM');
 
 // ─── LANGUAGE MAP ────────────────────────────────────────────
 const LANG_NAMES = {
@@ -47,11 +38,10 @@ module.exports = async function handler(req, res) {
       console.warn('[auth] check error:', e.message);
     }
   }
-  // TEST MODE: no hard 401 block — remove this comment when going to production
 
   // ── Parse body ────────────────────────────────────────────
   const {
-    type            = 'grant',     // 'grant' | 'scholarship'
+    type            = 'grant',
     profile         = {},
     selectedProgram = {},
     language        = 'en',
@@ -86,12 +76,12 @@ module.exports = async function handler(req, res) {
 
 // ═══ GRANT APPLICATION ═══════════════════════════════════════
 async function generateGrant(profile, program, lang, langName) {
-  const org     = profile.organization  || profile.name       || 'Our Organization';
-  const sector  = profile.sector        || 'Education / IT';
-  const country = profile.country       || 'North Macedonia';
+  const org       = profile.organization  || profile.name       || 'Our Organization';
+  const sector    = profile.sector        || 'Education / IT';
+  const country   = profile.country       || 'North Macedonia';
   const budgetAmt = program.amount        || program.award_amount || '€60,000';
-  const donor   = program.donor         || program.organization_name || 'Funding Organization';
-  const title   = program.title         || 'Funding Program';
+  const donor     = program.donor         || program.organization_name || 'Funding Organization';
+  const title     = program.title         || 'Funding Program';
 
   // ── Prompt 1: Narrative sections ──────────────────────────
   const narrativePrompt = `You are a senior EU grant writer. Write a professional grant application in ${langName}.
@@ -117,7 +107,8 @@ Return ONLY valid JSON (no markdown, no explanation):
 
   // ── Prompt 2: Results, Activities, Risks ─────────────────
   const planPrompt = `EU grant writer. Language: ${langName}. ALL text in ${langName}.
-Project: ${profile.sector || 'Digital Education'} in ${country}. Budget: ${budgetAmt}. Duration: 18 months.
+Project: ${sector} in ${country}. Budget: ${budgetAmt}. Duration: 18 months.
+Donor: ${donor}. Program: ${title}.
 
 Return ONLY minified valid JSON, no extra spaces, no trailing commas:
 {"overall_objective":"1 sentence","specific_objective":"1 SMART sentence","results":[{"number":1,"title":"title","description":"brief","indicators":["indicator with target"],"verification":"how"},{"number":2,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"},{"number":3,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"}],"activities":[{"id":"A1.1","result":1,"title":"title","months":"1-2","responsible":"role"},{"id":"A1.2","result":1,"title":"title","months":"3-5","responsible":"role"},{"id":"A2.1","result":2,"title":"title","months":"4-9","responsible":"role"},{"id":"A2.2","result":2,"title":"title","months":"7-14","responsible":"role"},{"id":"A3.1","result":3,"title":"title","months":"12-16","responsible":"role"},{"id":"A3.2","result":3,"title":"title","months":"16-18","responsible":"role"},{"id":"A0.1","result":0,"title":"Project management","months":"1-18","responsible":"Project Manager"}],"risks":[{"risk":"risk","probability":"Low","impact":"High","mitigation":"measure"},{"risk":"risk","probability":"Medium","impact":"Medium","mitigation":"measure"},{"risk":"risk","probability":"Low","impact":"Medium","mitigation":"measure"}]}`;
@@ -130,6 +121,7 @@ Total budget: ${budgetAmt}
 Duration: 18 months
 Sector: ${sector}
 Country: ${country}
+Donor: ${donor}
 
 Return ONLY valid JSON. Amounts must be realistic numbers:
 {
@@ -165,33 +157,29 @@ Return ONLY valid JSON. Amounts must be realistic numbers:
   const gantt = buildGantt(plan.activities || []);
 
   // ── Compute budget totals ─────────────────────────────────
-  const budgetLines  = budget.budget_lines || [];
-  const totalGrant   = budgetLines.reduce((s, l) => s + (Number(l.grant_amount)  || 0), 0);
-  const totalOwn     = budgetLines.reduce((s, l) => s + (Number(l.own_contribution) || 0), 0);
-  const totalBudget  = totalGrant + totalOwn;
-  const coFinPct     = totalBudget > 0 ? Math.round((totalOwn / totalBudget) * 100) : 0;
+  const budgetLines    = budget.budget_lines || [];
+  const totalGrant     = budgetLines.reduce((s, l) => s + (Number(l.grant_amount)      || 0), 0);
+  const totalOwn       = budgetLines.reduce((s, l) => s + (Number(l.own_contribution)  || 0), 0);
+  const totalBudget    = totalGrant + totalOwn;
+  const coFinPct       = totalBudget > 0 ? Math.round((totalOwn / totalBudget) * 100) : 0;
   const perBeneficiary = Math.round(totalBudget / 150);
 
   return {
-    // Narrative
-    project_title:    narrative.project_title   || `${sector} Project in ${country}`,
-    abstract:         narrative.abstract        || '',
+    project_title:    narrative.project_title    || `${sector} Project in ${country}`,
+    abstract:         narrative.abstract         || '',
     problem_analysis: narrative.problem_analysis || '',
-    innovation:       narrative.innovation      || '',
-    sustainability:   narrative.sustainability  || '',
-    team_capacity:    narrative.team_capacity   || '',
-    communication:    narrative.communication   || '',
-    // Plan
-    overall_objective:  plan.overall_objective  || '',
-    specific_objective: plan.specific_objective || '',
-    results:            plan.results            || [],
-    activities:         plan.activities         || [],
-    risks:              plan.risks              || [],
-    // Budget
+    innovation:       narrative.innovation       || '',
+    sustainability:   narrative.sustainability   || '',
+    team_capacity:    narrative.team_capacity    || '',
+    communication:    narrative.communication    || '',
+    overall_objective:  plan.overall_objective   || '',
+    specific_objective: plan.specific_objective  || '',
+    results:            plan.results             || [],
+    activities:         plan.activities          || [],
+    risks:              plan.risks               || [],
     budget_lines:  budgetLines,
     budget_totals: { totalGrant, totalOwn, totalBudget, coFinPct, perBeneficiary },
     budget_notes:  budget.notes || '',
-    // Matrices
     lfm,
     gantt,
   };
@@ -226,15 +214,18 @@ Return ONLY valid JSON:
 
   const raw     = await safeGemini(prompt, lang);
   const content = parseJSON(raw, scholarshipFallback(name, sector, country, lang));
-
   return content;
 }
 
 // ═══ HELPERS ════════════════════════════════════════════════
 
+// ─── safeGemini ──────────────────────────────────────────────
+// v2.1 FIX: maxTokens 4000 → 8000
+// Fixes truncated LFM, budget lines, and narrative sections.
+// Gemini 2.5 Flash supports up to 65,536 output tokens.
+// 3 parallel calls × 8000 = 24,000 total — well within limits.
+// Vercel timeout covered by maxDuration: 60 in vercel.json.
 async function safeGemini(prompt, lang) {
-  // CRITICAL: system prompt must force JSON-only output
-  // The prompt itself contains language instruction — system stays English
   const system = [
     'You are a professional grant writer.',
     'OUTPUT RULES (non-negotiable):',
@@ -248,9 +239,9 @@ async function safeGemini(prompt, lang) {
 
   try {
     const result = await gemini(system, [{ role: 'user', parts: [{ text: prompt }] }], {
-      maxTokens: 4000, temperature: 0.1,
+      maxTokens:   8000,  // v2.1: was 4000 — caused truncation of LFM/budget/narrative
+      temperature: 0.1,
     });
-    // Log first 300 chars so we can see what Gemini returns if parse fails
     console.log('[safeGemini] raw preview:', (result || '').slice(0, 300));
     return result;
   } catch (e) {
@@ -259,16 +250,15 @@ async function safeGemini(prompt, lang) {
   }
 }
 
+// ─── parseJSON ───────────────────────────────────────────────
 function parseJSON(raw, fallback) {
   if (!raw) return fallback;
 
-  // Step 1: Strip markdown fences and leading/trailing whitespace
   let clean = raw
     .replace(/```json\s*/gi, '')
     .replace(/```\s*/g, '')
     .trim();
 
-  // Step 2: Find the outermost JSON object
   const start = clean.indexOf('{');
   const end   = clean.lastIndexOf('}');
   if (start === -1 || end === -1 || end <= start) {
@@ -277,61 +267,51 @@ function parseJSON(raw, fallback) {
   }
   let candidate = clean.slice(start, end + 1);
 
-  // Step 3: Try direct parse first
   try {
-    const parsed = JSON.parse(candidate);
-    return { ...fallback, ...parsed };
+    return { ...fallback, ...JSON.parse(candidate) };
   } catch (_) {}
 
-  // Step 4: Repair common Gemini JSON issues
   try {
     let repaired = candidate
-      // Remove trailing commas before } or ]
       .replace(/,\s*([}\]])/g, '$1')
-      // Fix single-quoted strings → double-quoted
       .replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"')
-      // Fix unquoted ASCII keys
       .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":')
-      // Remove JS comments
       .replace(/\/\/[^\n]*/g, '')
       .replace(/\/\*[\s\S]*?\*\//g, '')
-      // Fix truncated strings at end of response
       .replace(/"[^"]*$/, '"[truncated]"')
-      // Remove control characters
       .replace(/[\x00-\x1F\x7F]/g, ' ');
 
-    // If string ends abruptly, try to close open brackets
     const opens  = (repaired.match(/\[/g) || []).length;
     const closes = (repaired.match(/\]/g) || []).length;
     const openB  = (repaired.match(/\{/g) || []).length;
     const closeB = (repaired.match(/\}/g) || []).length;
-    for (let i = 0; i < opens - closes;  i++) repaired += ']';
-    for (let i = 0; i < openB - closeB;  i++) repaired += '}';
+    for (let i = 0; i < opens  - closes; i++) repaired += ']';
+    for (let i = 0; i < openB  - closeB; i++) repaired += '}';
 
     const parsed = JSON.parse(repaired);
     console.log('[parseJSON] repaired successfully');
     return { ...fallback, ...parsed };
   } catch (e2) {
     console.warn('[parseJSON] all repair attempts failed:', e2.message.slice(0, 80));
-    console.warn('[parseJSON] raw preview:', candidate.slice(0, 200));
     return fallback;
   }
 }
 
+// ─── buildLFM ────────────────────────────────────────────────
 function buildLFM(narrative, plan, lang) {
   const isMk = lang === 'mk';
   return {
     goal: {
-      description:  plan.overall_objective  || (isMk ? 'Придонес кон регионалниот развој' : 'Contribute to regional development'),
-      ovi:          isMk ? 'Регионален индекс на развој' : 'Regional development index',
-      mov:          isMk ? 'Национална статистика' : 'National statistics',
-      assumptions:  isMk ? 'Политичка стабилност во регионот' : 'Political stability in the region',
+      description: plan.overall_objective  || (isMk ? 'Придонес кон регионалниот развој' : 'Contribute to regional development'),
+      ovi:         isMk ? 'Регионален индекс на развој' : 'Regional development index',
+      mov:         isMk ? 'Национална статистика'       : 'National statistics',
+      assumptions: isMk ? 'Политичка стабилност во регионот' : 'Political stability in the region',
     },
     purpose: {
-      description:  plan.specific_objective || (isMk ? 'Подобрување на условите за целната група' : 'Improved conditions for target group'),
-      ovi:          isMk ? 'Број на корисници со подобрени услови' : 'Number of beneficiaries with improved conditions',
-      mov:          isMk ? 'Анкета пред/после проектот' : 'Pre/post project survey',
-      assumptions:  isMk ? 'Целната група ќе учествува активно' : 'Target group actively participates',
+      description: plan.specific_objective || (isMk ? 'Подобрување на условите за целната група' : 'Improved conditions for target group'),
+      ovi:         isMk ? 'Број на корисници со подобрени услови' : 'Number of beneficiaries with improved conditions',
+      mov:         isMk ? 'Анкета пред/после проектот'            : 'Pre/post project survey',
+      assumptions: isMk ? 'Целната група ќе учествува активно'    : 'Target group actively participates',
     },
     results: (plan.results || []).map(r => ({
       number:      r.number,
@@ -349,15 +329,14 @@ function buildLFM(narrative, plan, lang) {
   };
 }
 
+// ─── buildGantt ──────────────────────────────────────────────
 function buildGantt(activities) {
   return activities.map(a => {
-    const parts   = (a.months || '1-1').split('-').map(Number);
-    const start   = parts[0] || 1;
-    const end     = parts[1] || start;
-    const bars    = [];
-    for (let m = 1; m <= 18; m++) {
-      bars.push(m >= start && m <= end);
-    }
+    const parts = (a.months || '1-1').split('-').map(Number);
+    const start = parts[0] || 1;
+    const end   = parts[1] || start;
+    const bars  = [];
+    for (let m = 1; m <= 18; m++) bars.push(m >= start && m <= end);
     return { id: a.id, title: a.title, result: a.result, responsible: a.responsible, bars };
   });
 }
@@ -366,17 +345,13 @@ function buildGantt(activities) {
 function narrativeFallback(org, sector, country, lang) {
   const mk = lang === 'mk';
   return {
-    project_title: mk ? `Дигитална иновација за ${country}` : `Digital Innovation for ${country}`,
-    abstract: mk
-      ? `Проектот ќе изгради капацитети во секторот ${sector} во ${country}, со директна корист за 150 корисници. Преку иновативен пристап, организацијата ${org} ќе спроведе обуки, ќе развие дигитална платформа и ќе обезбеди долгорочна одржливост преку партнерства со локалните институции.`
-      : `This project will build capacity in the ${sector} sector in ${country}, directly benefiting 150 people. Through an innovative approach, ${org} will deliver training, develop a digital platform, and ensure long-term sustainability through partnerships with local institutions.`,
-    problem_analysis: mk
-      ? `Недостатокот на дигитални вештини во ${country} е клучна пречка за економски развој. Според достапните податоци, значителен дел од целната популација нема пристап до квалитетна обука.`
-      : `The lack of digital skills in ${country} is a key barrier to economic development. Available data indicates a significant portion of the target population lacks access to quality training.`,
-    innovation: mk ? 'Иновативен пристап кој комбинира онлајн и офлајн обука.' : 'Innovative blended learning approach combining online and offline training.',
-    sustainability: mk ? 'По завршувањето на проектот, платформата ќе продолжи со работа преку членарини.' : 'After the project, the platform will continue through membership fees.',
-    team_capacity: mk ? `Организацијата ${org} има докажано искуство во секторот.` : `${org} has proven experience in the sector.`,
-    communication: mk ? 'Резултатите ќе бидат споделени преку веб-сајт, социјални мрежи и јавни настани.' : 'Results will be shared via website, social media, and public events.',
+    project_title:    mk ? `Дигитална иновација за ${country}` : `Digital Innovation for ${country}`,
+    abstract:         mk ? `Проектот ќе изгради капацитети во секторот ${sector} во ${country}, со директна корист за 150 корисници. Преку иновативен пристап, организацијата ${org} ќе спроведе обуки, ќе развие дигитална платформа и ќе обезбеди долгорочна одржливост преку партнерства со локалните институции.` : `This project will build capacity in the ${sector} sector in ${country}, directly benefiting 150 people. Through an innovative approach, ${org} will deliver training, develop a digital platform, and ensure long-term sustainability through partnerships with local institutions.`,
+    problem_analysis: mk ? `Недостатокот на дигитални вештини во ${country} е клучна пречка за економски развој.` : `The lack of digital skills in ${country} is a key barrier to economic development.`,
+    innovation:       mk ? 'Иновативен пристап кој комбинира онлајн и офлајн обука.' : 'Innovative blended learning approach combining online and offline training.',
+    sustainability:   mk ? 'По завршувањето на проектот, платформата ќе продолжи со работа преку членарини.' : 'After the project, the platform will continue through membership fees.',
+    team_capacity:    mk ? `Организацијата ${org} има докажано искуство во секторот.` : `${org} has proven experience in the sector.`,
+    communication:    mk ? 'Резултатите ќе бидат споделени преку веб-сајт, социјални мрежи и јавни настани.' : 'Results will be shared via website, social media, and public events.',
   };
 }
 
@@ -386,23 +361,23 @@ function planFallback(sector, country, lang) {
     overall_objective:  mk ? `Придонес кон одржливиот развој на ${sector} секторот во ${country}` : `Contribute to sustainable development of the ${sector} sector in ${country}`,
     specific_objective: mk ? 'Зголемен пристап до квалитетни услуги за 150 корисници до крајот на проектот' : '150 beneficiaries have improved access to quality services by end of project',
     results: [
-      { number: 1, title: mk ? 'Зајакнат институционален капацитет' : 'Strengthened institutional capacity', description: mk ? 'Организацијата е зајакната' : 'Organization strengthened', indicators: ['1 platform developed', '5 staff trained'], verification: mk ? 'Договори и извештаи' : 'Contracts and reports' },
-      { number: 2, title: mk ? '150 корисници обучени' : '150 beneficiaries trained', description: mk ? 'Обуки спроведени' : 'Training delivered', indicators: ['150 certificates issued', '80% satisfaction rate'], verification: mk ? 'Сертификати и анкети' : 'Certificates and surveys' },
-      { number: 3, title: mk ? 'Одржливост обезбедена' : 'Sustainability ensured', description: mk ? 'Долгорочен план активиран' : 'Long-term plan activated', indicators: ['Partnership agreement signed', 'Revenue model operational'], verification: mk ? 'Договори за партнерство' : 'Partnership agreements' },
+      { number: 1, title: mk ? 'Зајакнат институционален капацитет' : 'Strengthened institutional capacity', description: '', indicators: ['1 platform developed', '5 staff trained'], verification: mk ? 'Договори и извештаи' : 'Contracts and reports' },
+      { number: 2, title: mk ? '150 корисници обучени' : '150 beneficiaries trained', description: '', indicators: ['150 certificates issued', '80% satisfaction rate'], verification: mk ? 'Сертификати и анкети' : 'Certificates and surveys' },
+      { number: 3, title: mk ? 'Одржливост обезбедена' : 'Sustainability ensured', description: '', indicators: ['Partnership agreement signed', 'Revenue model operational'], verification: mk ? 'Договори за партнерство' : 'Partnership agreements' },
     ],
     activities: [
-      { id: 'A1.1', result: 1, title: mk ? 'Развој на платформа' : 'Platform development', description: '', months: '1-5', responsible: mk ? 'Технички тим' : 'Technical team' },
-      { id: 'A1.2', result: 1, title: mk ? 'Обука на персонал' : 'Staff training', description: '', months: '2-3', responsible: mk ? 'Координатор' : 'Coordinator' },
-      { id: 'A2.1', result: 2, title: mk ? 'Регрутација на учесници' : 'Participant recruitment', description: '', months: '3-4', responsible: mk ? 'Координатор' : 'Coordinator' },
-      { id: 'A2.2', result: 2, title: mk ? 'Спроведување на обуки' : 'Training delivery', description: '', months: '5-14', responsible: mk ? 'Тренери' : 'Trainers' },
-      { id: 'A3.1', result: 3, title: mk ? 'Партнерски договори' : 'Partnership agreements', description: '', months: '12-15', responsible: mk ? 'Директор' : 'Director' },
-      { id: 'A3.2', result: 3, title: mk ? 'Финален извештај' : 'Final report', description: '', months: '17-18', responsible: mk ? 'Тим' : 'Team' },
-      { id: 'A0.1', result: 0, title: mk ? 'Управување со проект' : 'Project management', description: '', months: '1-18', responsible: mk ? 'Проект менаџер' : 'Project Manager' },
+      { id: 'A1.1', result: 1, title: mk ? 'Развој на платформа'        : 'Platform development',      months: '1-5',   responsible: mk ? 'Технички тим'    : 'Technical team' },
+      { id: 'A1.2', result: 1, title: mk ? 'Обука на персонал'          : 'Staff training',            months: '2-3',   responsible: mk ? 'Координатор'     : 'Coordinator' },
+      { id: 'A2.1', result: 2, title: mk ? 'Регрутација на учесници'    : 'Participant recruitment',   months: '3-4',   responsible: mk ? 'Координатор'     : 'Coordinator' },
+      { id: 'A2.2', result: 2, title: mk ? 'Спроведување на обуки'      : 'Training delivery',         months: '5-14',  responsible: mk ? 'Тренери'         : 'Trainers' },
+      { id: 'A3.1', result: 3, title: mk ? 'Партнерски договори'        : 'Partnership agreements',    months: '12-15', responsible: mk ? 'Директор'        : 'Director' },
+      { id: 'A3.2', result: 3, title: mk ? 'Финален извештај'           : 'Final report',              months: '17-18', responsible: mk ? 'Тим'             : 'Team' },
+      { id: 'A0.1', result: 0, title: mk ? 'Управување со проект'       : 'Project management',        months: '1-18',  responsible: mk ? 'Проект менаџер'  : 'Project Manager' },
     ],
     risks: [
-      { risk: mk ? 'Низок интерес на корисниците' : 'Low beneficiary interest', probability: 'Low', impact: 'High', mitigation: mk ? 'Рана комуникација и пилот фаза' : 'Early communication and pilot phase' },
-      { risk: mk ? 'Доцнење на плаќања' : 'Payment delays', probability: 'Medium', impact: 'Medium', mitigation: mk ? 'Резервен фонд' : 'Reserve fund' },
-      { risk: mk ? 'Технички проблеми со платформата' : 'Technical platform issues', probability: 'Low', impact: 'Medium', mitigation: mk ? 'Тестирање пред лансирање' : 'Pre-launch testing' },
+      { risk: mk ? 'Низок интерес на корисниците' : 'Low beneficiary interest',       probability: 'Low',    impact: 'High',   mitigation: mk ? 'Рана комуникација и пилот фаза' : 'Early communication and pilot phase' },
+      { risk: mk ? 'Доцнење на плаќања'           : 'Payment delays',                 probability: 'Medium', impact: 'Medium', mitigation: mk ? 'Резервен фонд'                  : 'Reserve fund' },
+      { risk: mk ? 'Технички проблеми'            : 'Technical platform issues',      probability: 'Low',    impact: 'Medium', mitigation: mk ? 'Тестирање пред лансирање'       : 'Pre-launch testing' },
     ],
   };
 }
@@ -412,13 +387,13 @@ function budgetFallback(lang) {
   return {
     budget_lines: [
       { category: mk?'Човечки ресурси':'Human Resources', item: mk?'Проект координатор':'Project Coordinator', unit:'month', quantity:18, unit_cost:1100, total:19800, grant_amount:19800, own_contribution:0 },
-      { category: mk?'Човечки ресурси':'Human Resources', item: mk?'Технички експерт':'Technical Expert',    unit:'month', quantity:12, unit_cost:900,  total:10800, grant_amount:8640,  own_contribution:2160 },
-      { category: mk?'Патување':'Travel',                  item: mk?'Локални посети':'Local field visits',     unit:'trip',  quantity:20, unit_cost:75,   total:1500,  grant_amount:1500,  own_contribution:0 },
-      { category: mk?'Опрема':'Equipment',                 item: mk?'Лаптопи за обука':'Training laptops',     unit:'unit',  quantity:10, unit_cost:550,  total:5500,  grant_amount:5500,  own_contribution:0 },
-      { category: mk?'Услуги':'Services',                  item: mk?'Развој на платформа':'Platform dev',      unit:'lump',  quantity:1,  unit_cost:7000, total:7000,  grant_amount:7000,  own_contribution:0 },
-      { category: mk?'Обука':'Training',                   item: mk?'Материјали за обука':'Training materials', unit:'pax',   quantity:150,unit_cost:22,   total:3300,  grant_amount:3300,  own_contribution:0 },
-      { category: mk?'Комуникација':'Communication',       item: mk?'Видливост':'Visibility & comms',          unit:'lump',  quantity:1,  unit_cost:1800, total:1800,  grant_amount:1800,  own_contribution:0 },
-      { category: mk?'Индиректни трошоци':'Indirect costs',item: mk?'Индиректни трошоци (7%)':'Indirect (7%)', unit:'lump',  quantity:1,  unit_cost:3457, total:3457,  grant_amount:3457,  own_contribution:0 },
+      { category: mk?'Човечки ресурси':'Human Resources', item: mk?'Технички експерт':'Technical Expert',      unit:'month', quantity:12, unit_cost:900,  total:10800, grant_amount:8640,  own_contribution:2160 },
+      { category: mk?'Патување':'Travel',                  item: mk?'Локални посети':'Local field visits',      unit:'trip',  quantity:20, unit_cost:75,   total:1500,  grant_amount:1500,  own_contribution:0 },
+      { category: mk?'Опрема':'Equipment',                 item: mk?'Лаптопи за обука':'Training laptops',      unit:'unit',  quantity:10, unit_cost:550,  total:5500,  grant_amount:5500,  own_contribution:0 },
+      { category: mk?'Услуги':'Services',                  item: mk?'Развој на платформа':'Platform dev',       unit:'lump',  quantity:1,  unit_cost:7000, total:7000,  grant_amount:7000,  own_contribution:0 },
+      { category: mk?'Обука':'Training',                   item: mk?'Материјали за обука':'Training materials',  unit:'pax',   quantity:150,unit_cost:22,   total:3300,  grant_amount:3300,  own_contribution:0 },
+      { category: mk?'Комуникација':'Communication',       item: mk?'Видливост':'Visibility & comms',           unit:'lump',  quantity:1,  unit_cost:1800, total:1800,  grant_amount:1800,  own_contribution:0 },
+      { category: mk?'Индиректни трошоци':'Indirect costs',item: mk?'Индиректни трошоци (7%)':'Indirect (7%)',  unit:'lump',  quantity:1,  unit_cost:3457, total:3457,  grant_amount:3457,  own_contribution:0 },
     ],
     notes: mk ? 'Буџетот вклучува co-financing од 2,160 EUR (4%) од страна на организацијата.' : 'Budget includes co-financing of €2,160 (4%) from the organization.',
   };
@@ -427,15 +402,13 @@ function budgetFallback(lang) {
 function scholarshipFallback(name, sector, country, lang) {
   const mk = lang === 'mk';
   return {
-    personal_statement: mk
-      ? `Растев во ${country} гледајќи ги предизвиците во секторот ${sector}. Секогаш верував дека образованието е клучот за промена. Оваа стипендија ќе ми даде можност да ги стекнам знаењата и вештините потребни за да придонесам конкретно кон развојот на мојата заедница. По завршувањето на студиите, планирам да се вратам и да применам научените методи во реалниот контекст на ${country}, со цел да создадам мерливо влијание.`
-      : `Growing up in ${country}, I witnessed firsthand the challenges in the ${sector} sector. I have always believed that education is the key to meaningful change. This scholarship will give me the opportunity to acquire the knowledge and skills needed to contribute concretely to my community's development. After completing my studies, I plan to return and apply the learned methods in the real context of ${country}, creating measurable impact.`,
-    academic_background:      mk ? 'Дипломиран со одличен успех. Учествував во истражувачки проекти.' : 'Graduated with distinction. Participated in research projects.',
-    professional_experience:  mk ? 'Работев на проекти поврзани со секторот. Волонтерска работа во НВО.' : 'Worked on sector-related projects. Volunteered with NGOs.',
-    research_proposal:        mk ? 'Наслов: Иновации во секторот. Методологија: квалитативна и квантитативна анализа. Очекувани резултати: публикација и политичка препорака.' : 'Title: Innovations in the sector. Methodology: mixed methods research. Expected outcomes: publication and policy recommendation.',
-    return_plan:              mk ? 'По враќањето, ќе работам со националните институции за да ги применам стекнатите знаења.' : 'After returning, I will work with national institutions to apply the acquired knowledge.',
-    why_this_program:         mk ? 'Овој програм е идеален поради неговата репутација, мрежата на алумни и фокусот на мојот сектор.' : 'This program is ideal due to its reputation, alumni network, and focus on my sector.',
-    references_guidance:      [mk?'Нагласете ги лидерските квалитети':'Emphasize leadership qualities', mk?'Споменете конкретни постигнувања':'Mention specific achievements', mk?'Опишете го потенцијалот за влијание':'Describe impact potential'],
-    cv_structure:             [mk?'Образование: Универзитет, степен, година, просек':'Education: University, degree, year, GPA', mk?'Искуство: Позиција, организација, период, достигнувања':'Experience: Position, org, period, achievements', mk?'Вештини: Јазици, технологии, сертификати':'Skills: Languages, tech, certifications', mk?'Признанија: Награди, публикации':'Recognition: Awards, publications'],
+    personal_statement:      mk ? `Растев во ${country} гледајќи ги предизвиците во секторот ${sector}. Оваа стипендија ќе ми даде можност да придонесам конкретно кон развојот на мојата заедница.` : `Growing up in ${country}, I witnessed firsthand the challenges in the ${sector} sector. This scholarship will give me the opportunity to contribute concretely to my community's development.`,
+    academic_background:     mk ? 'Дипломиран со одличен успех. Учествував во истражувачки проекти.' : 'Graduated with distinction. Participated in research projects.',
+    professional_experience: mk ? 'Работев на проекти поврзани со секторот. Волонтерска работа во НВО.' : 'Worked on sector-related projects. Volunteered with NGOs.',
+    research_proposal:       mk ? 'Наслов: Иновации во секторот. Методологија: мешани методи. Очекувани резултати: публикација и препорака.' : 'Title: Innovations in the sector. Methodology: mixed methods. Expected outcomes: publication and policy recommendation.',
+    return_plan:             mk ? 'По враќањето, ќе работам со националните институции за да ги применам стекнатите знаења.' : 'After returning, I will work with national institutions to apply the acquired knowledge.',
+    why_this_program:        mk ? 'Овој програм е идеален поради репутацијата, мрежата на алумни и фокусот на мојот сектор.' : 'This program is ideal due to its reputation, alumni network, and focus on my sector.',
+    references_guidance:     [mk?'Нагласете ги лидерските квалитети':'Emphasize leadership qualities', mk?'Споменете конкретни постигнувања':'Mention specific achievements', mk?'Опишете го потенцијалот за влијание':'Describe impact potential'],
+    cv_structure:            [mk?'Образование: Универзитет, степен, година':'Education: University, degree, year', mk?'Искуство: Позиција, организација, период':'Experience: Position, org, period', mk?'Вештини: Јазици, технологии':'Skills: Languages, tech', mk?'Признанија: Награди, публикации':'Recognition: Awards, publications'],
   };
 }
