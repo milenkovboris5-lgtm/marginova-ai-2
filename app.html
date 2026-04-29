@@ -539,6 +539,12 @@ function initApp() {
   }
 }
 
+// ─── SESSION PROFILE (RAM only) ──────────────────────────────
+// Set by sendMsg() after a successful search.
+// Used by openBuilder() — NOT from Supabase.
+// Wiped on refresh = clean slate every session.
+let sessionProfile = { sector: null, country: null, orgType: null };
+
 // ─── PROFILE ─────────────────────────────────────────────────
 async function loadUserProfile() {
   if (!currentUser) return;
@@ -556,12 +562,14 @@ async function loadUserProfile() {
     const plan = data.profile?.plan || 'free';
     currentUserPlan = plan;
 
-    document.getElementById('drawer-plan').textContent     = plan.charAt(0).toUpperCase() + plan.slice(1);
-    document.getElementById('tok-badge').textContent       = plan.charAt(0).toUpperCase() + plan.slice(1);
-    document.getElementById('profile-org').textContent     = data.profile?.organization_type || 'Not set';
-    document.getElementById('profile-country').textContent = data.profile?.country           || 'Country not set';
-    document.getElementById('profile-sector').textContent  = data.profile?.sector            || 'Sector not set';
-    document.getElementById('profile-budget').textContent  = 'Budget: ' + (data.profile?.goals || 'not set');
+    // OPTION C: Supabase profile → plan badge + drawer only.
+    // Sidebar "Your Profile" stays "—" until user sends first message.
+    // Prevents stale saved profile from contaminating new sessions.
+    document.getElementById('drawer-plan').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+    document.getElementById('tok-badge').textContent   = plan.charAt(0).toUpperCase() + plan.slice(1);
+
+    // Cache in memory for Profile Modal pre-fill only.
+    if (data.profile) window._savedProfile = data.profile;
   } catch (e) {
     console.warn('[profile] loadUserProfile error:', e.message);
   }
@@ -569,6 +577,8 @@ async function loadUserProfile() {
 
 async function doSignOut() {
   chatHistory     = [];
+  sessionProfile  = { sector: null, country: null, orgType: null };
+  window._savedProfile = null;
   currentFile     = null;
   currentUser     = null;
   currentUserPlan = 'free';
@@ -582,6 +592,7 @@ async function doSignOut() {
 function resetUI() {
   document.getElementById('messages').innerHTML = INITIAL_MSG;
   document.getElementById('welcome-block').style.display = 'block';
+  // Sidebar starts clean — no Supabase data pre-filled
   document.getElementById('profile-org').textContent     = '—';
   document.getElementById('profile-country').textContent = '—';
   document.getElementById('profile-sector').textContent  = 'Not set';
@@ -601,16 +612,21 @@ async function openProfileModal() {
   }
   if (!currentUser) return;
   try {
-    const { data: { session } } = await db.auth.getSession();
-    if (!session?.access_token) return;
-    const res  = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
-    const data = await res.json();
-    if (data.profile) {
-      document.getElementById('pm-orgtype').value = data.profile.organization_type || '';
-      document.getElementById('pm-sector').value  = data.profile.sector            || '';
-      document.getElementById('pm-country').value = data.profile.country           || '';
-      document.getElementById('pm-budget').value  = data.profile.goals             || '';
-      document.getElementById('pm-plan-tag').textContent = (data.profile.plan || 'free').charAt(0).toUpperCase() + (data.profile.plan || 'free').slice(1);
+    // Use cached profile if available, else fetch
+    const profile = window._savedProfile || await (async () => {
+      const { data: { session } } = await db.auth.getSession();
+      if (!session?.access_token) return null;
+      const res  = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+      const data = await res.json();
+      if (data.profile) window._savedProfile = data.profile;
+      return data.profile;
+    })();
+    if (profile) {
+      document.getElementById('pm-orgtype').value = profile.organization_type || '';
+      document.getElementById('pm-sector').value  = profile.sector            || '';
+      document.getElementById('pm-country').value = profile.country           || '';
+      document.getElementById('pm-budget').value  = profile.goals             || '';
+      document.getElementById('pm-plan-tag').textContent = (profile.plan || 'free').charAt(0).toUpperCase() + (profile.plan || 'free').slice(1);
     }
   } catch (e) { console.warn('[pm] load error:', e.message); }
 }
@@ -635,10 +651,21 @@ async function saveProfile() {
       detected_country:  country  || null,
     }, { onConflict: 'user_id' });
     if (error) throw error;
+
+    // Update cached saved profile
+    window._savedProfile = { ...window._savedProfile, organization_type: orgType, sector, country, goals: budget };
+
+    // Update sessionProfile so Builder uses fresh data immediately
+    sessionProfile.sector  = sector  || null;
+    sessionProfile.country = country || null;
+    sessionProfile.orgType = orgType || null;
+
+    // Update sidebar to reflect what user just saved
     document.getElementById('profile-org').textContent     = orgType || 'Not set';
     document.getElementById('profile-country').textContent = country || 'Not set';
     document.getElementById('profile-sector').textContent  = sector  || 'Not set';
     document.getElementById('profile-budget').textContent  = 'Budget: ' + (budget || 'not set');
+
     st.className = 'pm-status ok'; st.textContent = '✓ Profile saved!';
     setTimeout(() => closeModal('profile-modal'), 1200);
     showToast('Profile updated — better matches incoming!');
@@ -831,6 +858,30 @@ async function sendMsg() {
 
     addMsg('ai', reply, intent);
 
+    // Update sessionProfile and sidebar from this session's search results.
+    // This is the LIVE detected profile — separate from Supabase saved profile.
+    if (data?.top_matches?.length) {
+      // Extract detected profile signals from the conversation payload
+      // The backend detected these from the user's messages this session
+      const firstMatch = data.top_matches[0];
+
+      // Update sidebar "Your Profile" with session-detected data only
+      // We read profile signals back from the request we just sent
+      const sentMsgs = chatHistory.slice(-4).map(m => m.content || '').join(' ');
+      // Simple extraction for sidebar display
+      const countryMatch = sentMsgs.match(/\b(Македонија|Macedonia|Serbia|Croatia|Bosnia|Albania|Kosovo|Bulgaria|Montenegro|Slovenia|Poland|Germany|Turkey|France|Italy|Spain|Hungary|Czech|Slovakia|Portugal|Netherlands|Belgium|Sweden|Finland|Denmark|Norway|Ukraine)\b/i);
+      const orgMatch     = sentMsgs.match(/\b(НВО|НГО|ngo|startup|стартап|МСП|sme|фармер|farmer|municipality|university)\b/i);
+
+      if (countryMatch) {
+        sessionProfile.country = countryMatch[0];
+        document.getElementById('profile-country').textContent = countryMatch[0];
+      }
+      if (orgMatch) {
+        sessionProfile.orgType = orgMatch[0];
+        document.getElementById('profile-org').textContent = orgMatch[0];
+      }
+    }
+
     // Update sidebar panel with latest results
     if (data?.top_matches?.length) {
       document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0, 4).map(x => `
@@ -861,14 +912,16 @@ async function sendMsg() {
 
 // ─── OPEN BUILDER ────────────────────────────────────────────
 function openBuilder(program) {
-  const country = document.getElementById('profile-country')?.textContent?.trim() || '';
-  const sector  = document.getElementById('profile-sector')?.textContent?.trim()  || '';
+  // OPTION C FIX: use sessionProfile (detected this session) not sidebar DOM.
+  // Sidebar DOM may contain stale Supabase data from previous sessions.
+  const country = sessionProfile.country || '';
+  const sector  = sessionProfile.sector  || '';
   const params  = new URLSearchParams({
     title:   program.title        || '',
     donor:   program.organization || '',
     amount:  program.amount       || '',
-    country: country !== 'Country not set' ? country : '',
-    sector:  sector  !== 'Sector not set'  ? sector  : '',
+    country: country,
+    sector:  sector,
   });
   window.location.href = '/premium-application.html?' + params.toString();
 }
