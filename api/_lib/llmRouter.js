@@ -12,7 +12,38 @@
 
 const { gemini, LANG_NAMES } = require('./utils');
 
-console.log('[llmRouter] v8 loaded — decision-first, elimination, concrete actions');
+console.log('[llmRouter] v8 loaded — decision-first, elimination, Bug#5 sanitizer');
+
+// ═══ GEMINI JSON SANITIZER — Bug #5 fix ══════════════════
+// Macedonian/Cyrillic text with unescaped quotes crashes JSON.
+// State machine approach — only reliable fix for unicode-heavy Gemini output.
+function sanitizeGeminiJSON(raw) {
+  if (!raw || typeof raw !== 'string') return raw;
+  let s = raw
+    .replace(/\u201C|\u201D/g, "'")
+    .replace(/\u2018|\u2019/g, "'")
+    .replace(/\u00AB|\u00BB/g, "'");
+  let out = '', inStr = false, escaped = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (escaped) { out += ch; escaped = false; continue; }
+    if (ch === '\\') { out += ch; escaped = true; continue; }
+    if (ch === '"') {
+      if (!inStr) { inStr = true; out += ch; continue; }
+      let j = i + 1;
+      while (j < s.length && ' \n\r\t'.includes(s[j])) j++;
+      const next = j < s.length ? s[j] : '';
+      if (next === ':' || next === ',' || next === '}' || next === ']' || next === '') {
+        inStr = false; out += ch;
+      } else {
+        out += '\\"';
+      }
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
 
 const NATIVE_NAMES = {
   mk:'македонски', sr:'српски',   hr:'hrvatski',  bs:'bosanski',
@@ -233,8 +264,10 @@ After ALL programs write exactly one line:
   const contents = [{ role: 'user', parts: [{ text: userMsg }] }];
 
   try {
-    const result = await gemini(systemPrompt, contents, { maxTokens: 3500, temperature: 0.1 });
-    if (!result || typeof result !== 'string') {
+    const rawResult = await gemini(systemPrompt, contents, { maxTokens: 3500, temperature: 0.1 });
+    // Bug #5: sanitize Gemini output before returning — handles MK/Cyrillic quote issues
+    const result = sanitizeGeminiJSON(rawResult);
+    if (!rawResult || typeof rawResult !== 'string') {
       throw new Error('Gemini returned empty or non-string result');
     }
     return result;
