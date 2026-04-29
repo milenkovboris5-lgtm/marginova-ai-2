@@ -17,10 +17,8 @@
       "memory": 256
     }
   },
-  "rewrites": [
-    { "source": "/app",     "destination": "/app.html" },
-    { "source": "/builder", "destination": "/premium-application.html" }
-  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "crons": [
     {
       "path": "/api/cron/update-opportunities",
