@@ -182,7 +182,7 @@ STRICT RULES:
 
   // Budget: parse then VALIDATE totals
   let budget = parseJSON(budgetRaw, null);
-  budget = validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName);
+  budget = await validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName);
 
   const lfm   = buildLFM(narrative, plan, lang);
   const gantt = buildGantt(plan.activities || []);
