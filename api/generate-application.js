@@ -13,7 +13,6 @@ const { setCors, gemini, supabase } = require('./_lib/utils');
 
 console.log('[generate-application] v2.2 loaded — differentiated token limits, parallel calls ~25s');
 
-// ─── LANGUAGE MAP ────────────────────────────────────────────
 const LANG_NAMES = {
   mk:'македонски (Macedonian)', en:'English', sr:'српски (Serbian)',
   hr:'hrvatski (Croatian)',     bg:'български (Bulgarian)', ro:'română (Romanian)',
@@ -24,13 +23,11 @@ const LANG_NAMES = {
   ko:'한국어 (Korean)',          uk:'українська (Ukrainian)',
 };
 
-// ─── MAIN HANDLER ────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   setCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── JWT Auth (soft — logs but allows in test mode) ──────────
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
   if (token && supabase) {
     try {
@@ -42,7 +39,6 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── Parse body ────────────────────────────────────────────
   const {
     type            = 'grant',
     profile         = {},
@@ -77,7 +73,6 @@ module.exports = async function handler(req, res) {
   }
 };
 
-// ═══ GRANT APPLICATION ═══════════════════════════════════════
 async function generateGrant(profile, program, lang, langName) {
   const org       = profile.organization  || profile.name       || 'Our Organization';
   const sector    = profile.sector        || 'Education / IT';
@@ -86,7 +81,6 @@ async function generateGrant(profile, program, lang, langName) {
   const donor     = program.donor         || program.organization_name || 'Funding Organization';
   const title     = program.title         || 'Funding Program';
 
-  // ── Prompt 1: Narrative sections ──────────────────────────
   const narrativePrompt = `You are a senior EU grant writer. Write a professional grant application in ${langName}.
 ALL string values must be in ${langName}.
 
@@ -113,7 +107,6 @@ Return ONLY valid JSON with ENGLISH keys and ${langName} string values:
   "communication": "How results will be disseminated: reports, social media, policy briefs, events. 60-80 words in ${langName}."
 }`;
 
-  // ── Prompt 2: Results, Activities, Risks ─────────────────
   const planPrompt = `EU grant writer. String values in ${langName}. ALL JSON keys stay in English.
 
 CRITICAL JSON KEY RULE: NEVER translate JSON keys.
@@ -128,8 +121,6 @@ Donor: ${donor}. Program: ${title}.
 Return ONLY minified valid JSON with English keys and ${langName} values:
 {"overall_objective":"1 sentence in ${langName}","specific_objective":"1 SMART sentence in ${langName}","results":[{"number":1,"title":"title in ${langName}","description":"brief in ${langName}","indicators":["indicator with target in ${langName}"],"verification":"how in ${langName}"},{"number":2,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"},{"number":3,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"}],"activities":[{"id":"A1.1","result":1,"title":"title in ${langName}","months":"1-2","responsible":"role in ${langName}"},{"id":"A1.2","result":1,"title":"title","months":"3-5","responsible":"role"},{"id":"A2.1","result":2,"title":"title","months":"4-9","responsible":"role"},{"id":"A2.2","result":2,"title":"title","months":"7-14","responsible":"role"},{"id":"A3.1","result":3,"title":"title","months":"12-16","responsible":"role"},{"id":"A3.2","result":3,"title":"title","months":"16-18","responsible":"role"},{"id":"A0.1","result":0,"title":"Project management in ${langName}","months":"1-18","responsible":"Project Manager in ${langName}"}],"risks":[{"risk":"risk in ${langName}","probability":"Low","impact":"High","mitigation":"measure in ${langName}"},{"risk":"risk","probability":"Medium","impact":"Medium","mitigation":"measure"},{"risk":"risk","probability":"Low","impact":"Medium","mitigation":"measure"}]}`;
 
-  // ── Prompt 3: Budget with unit costs ──────────────────────
-  // Parse the actual budget amount for scaling instructions
   const budgetNum = (() => {
     const s = String(budgetAmt).replace(/[^0-9]/g, '');
     const n = parseInt(s, 10);
@@ -139,73 +130,66 @@ Return ONLY minified valid JSON with English keys and ${langName} values:
   const budgetPrompt = `You are a senior EU grant accountant.
 Language for string VALUES only: ${langName}.
 
-CRITICAL JSON KEY RULE — NON-NEGOTIABLE:
-Keep ALL JSON keys EXACTLY in English as shown. NEVER translate JSON keys.
-Wrong: "буџетски_линии", "категорија" — FORBIDDEN
-Right: "budget_lines", "category", "item" — always these exact English keys.
+CRITICAL: ALL JSON keys stay in English exactly as shown. NEVER translate keys.
 
-BUDGET SCALING RULE — NON-NEGOTIABLE:
-The total of all budget lines MUST sum to approximately ${budgetAmt} (${budgetNum} EUR).
-Scale unit costs and quantities to reach this target. Do NOT copy the example amounts.
-The example shows structure only — recalculate every number for the actual budget.
+BUDGET MATH RULE — NON-NEGOTIABLE:
+Total budget = ${budgetNum} EUR (${budgetAmt}).
+Allocate using these percentages:
+- Human Resources: ${Math.round(budgetNum * 0.40)} EUR (40%)
+- Equipment: ${Math.round(budgetNum * 0.22)} EUR (22%)
+- Services: ${Math.round(budgetNum * 0.11)} EUR (11%)
+- Training: ${Math.round(budgetNum * 0.09)} EUR (9%)
+- Travel: ${Math.round(budgetNum * 0.04)} EUR (4%)
+- Communication: ${Math.round(budgetNum * 0.02)} EUR (2%)
+- Indirect costs (7% of direct costs): ${Math.round(budgetNum * 0.96 * 0.07)} EUR
 
-Total budget target: ${budgetAmt}
-Duration: 18 months
-Sector: ${sector}
-Country: ${country}
-Donor: ${donor}
+Context: ${sector} project in ${country}. 18 months. Donor: ${donor}.
 
-Typical EU budget split for ${sector} projects at ${budgetNum} EUR:
-- Human Resources: ~40% (${Math.round(budgetNum * 0.40).toLocaleString()} EUR)
-- Equipment/Infrastructure: ~22% (${Math.round(budgetNum * 0.22).toLocaleString()} EUR)
-- Services/Consulting: ~11% (${Math.round(budgetNum * 0.11).toLocaleString()} EUR)
-- Training/Events: ~9% (${Math.round(budgetNum * 0.09).toLocaleString()} EUR)
-- Communication: ~4% (${Math.round(budgetNum * 0.04).toLocaleString()} EUR)
-- Indirect costs: 7% of direct costs (auto-calculate from sum above)
-
-Return ONLY valid JSON with ENGLISH keys and ${langName} string values.
-All numeric fields must be real numbers — no placeholders, no text.
-Scale the amounts so the sum of all "total" fields is close to ${budgetNum} EUR.
-
+Return ONLY valid JSON — no markdown fences, no explanation, no preamble:
 {
   "budget_lines": [
-    {"category": "Human Resources", "item": "Project Coordinator", "unit": "month", "quantity": 18, "unit_cost": ${Math.round(budgetNum * 0.40 / 18)}, "total": ${Math.round(budgetNum * 0.40)}, "grant_amount": ${Math.round(budgetNum * 0.40)}, "own_contribution": 0},
-    {"category": "Human Resources", "item": "Technical Expert", "unit": "month", "quantity": 12, "unit_cost": ${Math.round(budgetNum * 0.10 / 12)}, "total": ${Math.round(budgetNum * 0.10)}, "grant_amount": ${Math.round(budgetNum * 0.08)}, "own_contribution": ${Math.round(budgetNum * 0.02)}},
-    {"category": "Equipment", "item": "Main equipment for ${sector}", "unit": "unit", "quantity": 5, "unit_cost": ${Math.round(budgetNum * 0.22 / 5)}, "total": ${Math.round(budgetNum * 0.22)}, "grant_amount": ${Math.round(budgetNum * 0.22)}, "own_contribution": 0},
-    {"category": "Services", "item": "Specialized services", "unit": "lump sum", "quantity": 1, "unit_cost": ${Math.round(budgetNum * 0.11)}, "total": ${Math.round(budgetNum * 0.11)}, "grant_amount": ${Math.round(budgetNum * 0.11)}, "own_contribution": 0},
-    {"category": "Training", "item": "Training and workshops", "unit": "participant", "quantity": 50, "unit_cost": ${Math.round(budgetNum * 0.09 / 50)}, "total": ${Math.round(budgetNum * 0.09)}, "grant_amount": ${Math.round(budgetNum * 0.09)}, "own_contribution": 0},
-    {"category": "Travel", "item": "Field visits and travel", "unit": "trip", "quantity": 20, "unit_cost": ${Math.round(budgetNum * 0.02 / 20)}, "total": ${Math.round(budgetNum * 0.02)}, "grant_amount": ${Math.round(budgetNum * 0.02)}, "own_contribution": 0},
-    {"category": "Communication", "item": "Visibility and communication", "unit": "lump sum", "quantity": 1, "unit_cost": ${Math.round(budgetNum * 0.02)}, "total": ${Math.round(budgetNum * 0.02)}, "grant_amount": ${Math.round(budgetNum * 0.02)}, "own_contribution": 0},
-    {"category": "Indirect costs", "item": "Indirect costs (7%)", "unit": "lump sum", "quantity": 1, "unit_cost": ${Math.round(budgetNum * 0.96 * 0.07)}, "total": ${Math.round(budgetNum * 0.96 * 0.07)}, "grant_amount": ${Math.round(budgetNum * 0.96 * 0.07)}, "own_contribution": 0}
+    {
+      "category": "Human Resources",
+      "item": "describe the role in ${langName}",
+      "unit": "month",
+      "quantity": NUMBER,
+      "unit_cost": NUMBER,
+      "total": NUMBER,
+      "grant_amount": NUMBER,
+      "own_contribution": NUMBER
+    }
   ],
-  "notes": "Budget note in ${langName} — total approximately ${budgetAmt}, explain co-financing and cost efficiency"
-}`;
+  "notes": "brief budget justification note in ${langName}"
+}
 
-  // ── Call Gemini 3x in parallel — differentiated token limits ─
-  // narrative: 8000 (long prose — abstract, problem analysis, sustainability)
-  // plan:      4000 (compact JSON — results, activities, risks)
-  // budget:    3000 (raised from 2000 — needs space to calculate scaled amounts)
-  console.log('[generate-application] calling Gemini 3x in parallel, budget target:', budgetAmt);
+STRICT RULES:
+1. ALL numeric fields must be plain integers — NO commas, NO dots as thousands separators, NO currency symbols, NO quotes around numbers
+2. Create exactly 7-8 budget lines covering the categories above
+3. Each line: unit_cost × quantity MUST equal total exactly
+4. Sum of ALL total fields MUST equal approximately ${budgetNum} EUR (within 5%)
+5. grant_amount + own_contribution = total for each line
+6. own_contribution is 0 for most lines; one line can have small co-financing`;
+
+  console.log('[generate-application] calling Gemini 3x in parallel, budget target:', budgetAmt, budgetNum);
   const [narrativeRaw, planRaw, budgetRaw] = await Promise.all([
     safeGemini(narrativePrompt, lang, 8000),
     safeGemini(planPrompt,      lang, 4000),
-    safeGemini(budgetPrompt,    lang, 3000),
+    safeGemini(budgetPrompt,    lang, 4000),
   ]);
 
   const narrative = parseJSON(narrativeRaw, narrativeFallback(org, sector, country, lang));
   const plan      = parseJSON(planRaw,      planFallback(sector, country, lang));
-  const budget    = parseJSON(budgetRaw,    budgetFallback(lang));
 
-  // ── Build LFM matrix ──────────────────────────────────────
-  const lfm = buildLFM(narrative, plan, lang);
+  // Budget: parse then VALIDATE totals
+  let budget = parseJSON(budgetRaw, null);
+  budget = validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName);
 
-  // ── Build Gantt data ──────────────────────────────────────
+  const lfm   = buildLFM(narrative, plan, lang);
   const gantt = buildGantt(plan.activities || []);
 
-  // ── Compute budget totals ─────────────────────────────────
   const budgetLines    = budget.budget_lines || [];
-  const totalGrant     = budgetLines.reduce((s, l) => s + (Number(l.grant_amount)      || 0), 0);
-  const totalOwn       = budgetLines.reduce((s, l) => s + (Number(l.own_contribution)  || 0), 0);
+  const totalGrant     = budgetLines.reduce((s, l) => s + parseLocaleNumber(l.grant_amount), 0);
+  const totalOwn       = budgetLines.reduce((s, l) => s + parseLocaleNumber(l.own_contribution), 0);
   const totalBudget    = totalGrant + totalOwn;
   const coFinPct       = totalBudget > 0 ? Math.round((totalOwn / totalBudget) * 100) : 0;
   const perBeneficiary = Math.round(totalBudget / 150);
@@ -231,7 +215,87 @@ Scale the amounts so the sum of all "total" fields is close to ${budgetNum} EUR.
   };
 }
 
-// ═══ SCHOLARSHIP APPLICATION ════════════════════════════════
+// ═══ LOCALE-SAFE NUMBER PARSER ═══════════════════════════════
+// Handles: 19800, "19800", "19,800", "19.800", "€19,800", "19 800"
+function parseLocaleNumber(val) {
+  if (val === null || val === undefined) return 0;
+  const s = String(val).trim();
+  // Remove currency symbols and spaces
+  let clean = s.replace(/[€$£¥₹\s]/g, '');
+  // European format: dots as thousands, optional comma decimal → 1.234,56 or 19.800
+  if (/^\d{1,3}(\.\d{3})+(,\d*)?$/.test(clean)) {
+    clean = clean.replace(/\./g, '').replace(',', '.');
+  } else if (/,\d{3}/.test(clean)) {
+    // US format: comma thousands separators → 1,234 or 1,234.56
+    clean = clean.replace(/,(\d{3})/g, '$1');
+  } else {
+    // Plain decimal comma → replace with dot
+    clean = clean.replace(',', '.');
+  }
+  // Remove any remaining non-numeric except decimal point and minus
+  clean = clean.replace(/[^0-9.-]/g, '');
+  const n = parseFloat(clean);
+  return isNaN(n) ? 0 : Math.round(n);
+}
+
+// ═══ BUDGET VALIDATION + FALLBACK REPAIR ════════════════════
+async function validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName) {
+  const lines = budget?.budget_lines;
+
+  if (!lines || !Array.isArray(lines) || lines.length === 0) {
+    console.warn('[budget] No budget_lines — using scaled fallback');
+    return scaledBudgetFallback(budgetNum, lang);
+  }
+
+  const parsedTotal = lines.reduce((s, l) => s + parseLocaleNumber(l.total), 0);
+  const tolerance   = budgetNum * 0.25; // 25% tolerance
+
+  console.log(`[budget] Parsed total: ${parsedTotal}, expected: ${budgetNum}, diff: ${Math.abs(parsedTotal - budgetNum)}`);
+
+  if (Math.abs(parsedTotal - budgetNum) <= tolerance) {
+    console.log('[budget] Validation PASSED');
+    return budget;
+  }
+
+  console.warn(`[budget] Validation FAILED (${parsedTotal} vs ${budgetNum}) — using scaled fallback`);
+  // Use deterministic scaled fallback instead of retry (faster, more reliable)
+  return scaledBudgetFallback(budgetNum, lang);
+}
+
+// ═══ DETERMINISTIC SCALED BUDGET FALLBACK ═══════════════════
+// Replaces the old hardcoded budgetFallback — always correct for any budgetNum
+function scaledBudgetFallback(budgetNum, lang) {
+  const mk = lang === 'mk';
+  const hr  = Math.round(budgetNum * 0.24); // HR coordinator
+  const hr2 = Math.round(budgetNum * 0.16); // HR expert
+  const eq  = Math.round(budgetNum * 0.22); // Equipment
+  const sv  = Math.round(budgetNum * 0.11); // Services
+  const tr  = Math.round(budgetNum * 0.09); // Training
+  const tv  = Math.round(budgetNum * 0.04); // Travel
+  const cm  = Math.round(budgetNum * 0.02); // Communication
+  const ic  = Math.round(budgetNum * 0.96 * 0.07); // Indirect 7%
+
+  // co-financing on expert line only (~2%)
+  const hr2own  = Math.round(hr2 * 0.15);
+  const hr2grant = hr2 - hr2own;
+
+  return {
+    budget_lines: [
+      { category: mk?'Човечки ресурси':'Human Resources',   item: mk?'Проект координатор':'Project Coordinator', unit:'month',    quantity:18, unit_cost:Math.round(hr/18),    total:hr,   grant_amount:hr,        own_contribution:0       },
+      { category: mk?'Човечки ресурси':'Human Resources',   item: mk?'Технички експерт':'Technical Expert',       unit:'month',    quantity:12, unit_cost:Math.round(hr2/12),   total:hr2,  grant_amount:hr2grant,  own_contribution:hr2own  },
+      { category: mk?'Опрема':'Equipment',                  item: mk?'Опрема за проектот':'Project equipment',    unit:'unit',     quantity:4,  unit_cost:Math.round(eq/4),     total:eq,   grant_amount:eq,        own_contribution:0       },
+      { category: mk?'Услуги':'Services',                   item: mk?'Специјализирани услуги':'Specialist services', unit:'lump sum', quantity:1, unit_cost:sv,               total:sv,   grant_amount:sv,        own_contribution:0       },
+      { category: mk?'Обука':'Training',                    item: mk?'Обука и работилници':'Training & workshops', unit:'participant', quantity:50, unit_cost:Math.round(tr/50), total:tr, grant_amount:tr,        own_contribution:0       },
+      { category: mk?'Патување':'Travel',                   item: mk?'Теренски посети':'Field visits',             unit:'trip',     quantity:10, unit_cost:Math.round(tv/10),    total:tv,   grant_amount:tv,        own_contribution:0       },
+      { category: mk?'Комуникација':'Communication',        item: mk?'Видливост и комуникација':'Visibility & comms', unit:'lump sum', quantity:1, unit_cost:cm,               total:cm,   grant_amount:cm,        own_contribution:0       },
+      { category: mk?'Индиректни трошоци':'Indirect costs', item: mk?'Индиректни трошоци (7%)':'Indirect costs (7%)', unit:'lump sum', quantity:1, unit_cost:ic,             total:ic,   grant_amount:ic,        own_contribution:0       },
+    ],
+    notes: mk
+      ? `Буџетот е пресметан врз основа на стандардна EU распределба. Вкупен грант: €${(hr+hr2grant+eq+sv+tr+tv+cm+ic).toLocaleString()}. Ко-финансирање: €${hr2own.toLocaleString()} (${Math.round(hr2own/(budgetNum)*100)}%).`
+      : `Budget calculated using standard EU allocation ratios. Total grant: €${(hr+hr2grant+eq+sv+tr+tv+cm+ic).toLocaleString()}. Co-financing: €${hr2own.toLocaleString()} (${Math.round(hr2own/(budgetNum)*100)}%).`,
+  };
+}
+
 async function generateScholarship(profile, program, lang, langName) {
   const name    = profile.name    || profile.email?.split('@')[0] || 'Applicant';
   const sector  = profile.sector  || 'Research';
@@ -253,7 +317,7 @@ Return ONLY valid JSON:
   "professional_experience": "Relevant work, internships, volunteer work. Concrete achievements with numbers. 100-120 words.",
   "research_proposal": "Title + Abstract (60 words) + Methodology (80 words) + Expected outcomes (40 words). Total 200 words.",
   "return_plan": "Specific plan for applying knowledge after returning: institution to join, project to launch, people to impact. Numbers and timeline. 100-120 words.",
-  "why_this_program": "Specific reasons why THIS scholarship/program is the right fit. Reference program's specific features. 80-100 words.",
+  "why_this_program": "Specific reasons why THIS scholarship/program is the right fit. Reference program specific features. 80-100 words.",
   "references_guidance": "What to ask from reference letter writers (3 bullet points)",
   "cv_structure": ["Education entry", "Experience entry", "Skills entry", "Publications/Awards entry"]
 }`;
@@ -263,16 +327,15 @@ Return ONLY valid JSON:
   return content;
 }
 
-// ═══ HELPERS ════════════════════════════════════════════════
+// ═══ GEMINI OUTPUT SANITIZER ════════════════════════════════
+// Runs BEFORE parseJSON — fixes curly/smart quotes Gemini sometimes outputs
+function sanitizeGeminiJSON(raw) {
+  if (!raw || typeof raw !== 'string') return raw;
+  return raw
+    .replace(/\u201C|\u201D/g, "'")  // curly double quotes → single quote
+    .replace(/\u2018|\u2019/g, "'"); // curly single quotes → single quote
+}
 
-// ─── safeGemini ──────────────────────────────────────────────
-// v2.2 FIX: maxTokens is now a parameter, not hardcoded.
-// Each call gets exactly what it needs — no more, no less:
-//   narrative → 8000 (long prose sections)
-//   plan      → 4000 (compact JSON: results + activities + risks)
-//   budget    → 2000 (tabular JSON: 8 budget lines)
-//   scholarship→ 6000 (personal statement + structured fields)
-// Promise.all wall time = max(narrative) = ~25s → well within 60s.
 async function safeGemini(prompt, lang, maxTokens = 8000) {
   const system = [
     'You are a professional grant writer.',
@@ -280,9 +343,13 @@ async function safeGemini(prompt, lang, maxTokens = 8000) {
     '1. Return ONLY a valid JSON object — nothing else.',
     '2. No markdown fences (no ```json), no explanation, no preamble.',
     '3. No trailing commas. No comments inside JSON.',
-    '4. All string values must use double quotes.',
-    '5. Do NOT translate JSON keys — only translate string values.',
-    '6. If a value would be very long, shorten it to fit valid JSON.',
+    '4. All string values must use double quotes on the OUTSIDE only.',
+    '5. CRITICAL: NEVER place double quote characters (" ") inside string values.',
+    '   They break JSON parsing. Use single quotes or remove them instead.',
+    '   WRONG: {"text": "The \"ERP\" system"}   RIGHT: {"text": "The ERP system"}',
+    '6. Do NOT translate JSON keys — only translate string values.',
+    '7. ALL numeric fields must be plain integers — no commas, no dots as thousands, no currency symbols.',
+    '8. If a value would be very long, shorten it to fit valid JSON.',
   ].join('\n');
 
   try {
@@ -290,7 +357,7 @@ async function safeGemini(prompt, lang, maxTokens = 8000) {
       maxTokens,
       temperature: 0.1,
     });
-    console.log(`[safeGemini] maxTokens:${maxTokens} raw preview:`, (result || '').slice(0, 200));
+    console.log(`[safeGemini] maxTokens:${maxTokens} raw preview:`, (result || '').slice(0, 300));
     return result;
   } catch (e) {
     console.warn('[safeGemini] gemini call error:', e.message);
@@ -298,9 +365,11 @@ async function safeGemini(prompt, lang, maxTokens = 8000) {
   }
 }
 
-// ─── parseJSON ───────────────────────────────────────────────
 function parseJSON(raw, fallback) {
   if (!raw) return fallback;
+
+  // Run sanitizer first — fixes curly quotes and other Gemini artifacts
+  raw = sanitizeGeminiJSON(raw);
 
   let clean = raw
     .replace(/```json\s*/gi, '')
@@ -316,7 +385,7 @@ function parseJSON(raw, fallback) {
   let candidate = clean.slice(start, end + 1);
 
   try {
-    return { ...fallback, ...JSON.parse(candidate) };
+    return fallback ? { ...fallback, ...JSON.parse(candidate) } : JSON.parse(candidate);
   } catch (_) {}
 
   try {
@@ -338,14 +407,13 @@ function parseJSON(raw, fallback) {
 
     const parsed = JSON.parse(repaired);
     console.log('[parseJSON] repaired successfully');
-    return { ...fallback, ...parsed };
+    return fallback ? { ...fallback, ...parsed } : parsed;
   } catch (e2) {
     console.warn('[parseJSON] all repair attempts failed:', e2.message.slice(0, 80));
     return fallback;
   }
 }
 
-// ─── buildLFM ────────────────────────────────────────────────
 function buildLFM(narrative, plan, lang) {
   const isMk = lang === 'mk';
   return {
@@ -377,7 +445,6 @@ function buildLFM(narrative, plan, lang) {
   };
 }
 
-// ─── buildGantt ──────────────────────────────────────────────
 function buildGantt(activities) {
   return activities.map(a => {
     const parts = (a.months || '1-1').split('-').map(Number);
@@ -389,12 +456,11 @@ function buildGantt(activities) {
   });
 }
 
-// ═══ FALLBACKS ══════════════════════════════════════════════
 function narrativeFallback(org, sector, country, lang) {
   const mk = lang === 'mk';
   return {
     project_title:    mk ? `Дигитална иновација за ${country}` : `Digital Innovation for ${country}`,
-    abstract:         mk ? `Проектот ќе изгради капацитети во секторот ${sector} во ${country}, со директна корист за 150 корисници. Преку иновативен пристап, организацијата ${org} ќе спроведе обуки, ќе развие дигитална платформа и ќе обезбеди долгорочна одржливост преку партнерства со локалните институции.` : `This project will build capacity in the ${sector} sector in ${country}, directly benefiting 150 people. Through an innovative approach, ${org} will deliver training, develop a digital platform, and ensure long-term sustainability through partnerships with local institutions.`,
+    abstract:         mk ? `Проектот ќе изгради капацитети во секторот ${sector} во ${country}, со директна корист за 150 корисници.` : `This project will build capacity in the ${sector} sector in ${country}, directly benefiting 150 people.`,
     problem_analysis: mk ? `Недостатокот на дигитални вештини во ${country} е клучна пречка за економски развој.` : `The lack of digital skills in ${country} is a key barrier to economic development.`,
     innovation:       mk ? 'Иновативен пристап кој комбинира онлајн и офлајн обука.' : 'Innovative blended learning approach combining online and offline training.',
     sustainability:   mk ? 'По завршувањето на проектот, платформата ќе продолжи со работа преку членарини.' : 'After the project, the platform will continue through membership fees.',
@@ -414,49 +480,32 @@ function planFallback(sector, country, lang) {
       { number: 3, title: mk ? 'Одржливост обезбедена' : 'Sustainability ensured', description: '', indicators: ['Partnership agreement signed', 'Revenue model operational'], verification: mk ? 'Договори за партнерство' : 'Partnership agreements' },
     ],
     activities: [
-      { id: 'A1.1', result: 1, title: mk ? 'Развој на платформа'        : 'Platform development',      months: '1-5',   responsible: mk ? 'Технички тим'    : 'Technical team' },
-      { id: 'A1.2', result: 1, title: mk ? 'Обука на персонал'          : 'Staff training',            months: '2-3',   responsible: mk ? 'Координатор'     : 'Coordinator' },
-      { id: 'A2.1', result: 2, title: mk ? 'Регрутација на учесници'    : 'Participant recruitment',   months: '3-4',   responsible: mk ? 'Координатор'     : 'Coordinator' },
-      { id: 'A2.2', result: 2, title: mk ? 'Спроведување на обуки'      : 'Training delivery',         months: '5-14',  responsible: mk ? 'Тренери'         : 'Trainers' },
-      { id: 'A3.1', result: 3, title: mk ? 'Партнерски договори'        : 'Partnership agreements',    months: '12-15', responsible: mk ? 'Директор'        : 'Director' },
-      { id: 'A3.2', result: 3, title: mk ? 'Финален извештај'           : 'Final report',              months: '17-18', responsible: mk ? 'Тим'             : 'Team' },
-      { id: 'A0.1', result: 0, title: mk ? 'Управување со проект'       : 'Project management',        months: '1-18',  responsible: mk ? 'Проект менаџер'  : 'Project Manager' },
+      { id: 'A1.1', result: 1, title: mk ? 'Развој на платформа'     : 'Platform development',    months: '1-5',   responsible: mk ? 'Технички тим'   : 'Technical team' },
+      { id: 'A1.2', result: 1, title: mk ? 'Обука на персонал'       : 'Staff training',          months: '2-3',   responsible: mk ? 'Координатор'    : 'Coordinator' },
+      { id: 'A2.1', result: 2, title: mk ? 'Регрутација'             : 'Participant recruitment', months: '3-4',   responsible: mk ? 'Координатор'    : 'Coordinator' },
+      { id: 'A2.2', result: 2, title: mk ? 'Спроведување на обуки'   : 'Training delivery',      months: '5-14',  responsible: mk ? 'Тренери'        : 'Trainers' },
+      { id: 'A3.1', result: 3, title: mk ? 'Партнерски договори'     : 'Partnership agreements', months: '12-15', responsible: mk ? 'Директор'       : 'Director' },
+      { id: 'A3.2', result: 3, title: mk ? 'Финален извештај'        : 'Final report',           months: '17-18', responsible: mk ? 'Тим'            : 'Team' },
+      { id: 'A0.1', result: 0, title: mk ? 'Управување со проект'    : 'Project management',     months: '1-18',  responsible: mk ? 'Проект менаџер' : 'Project Manager' },
     ],
     risks: [
-      { risk: mk ? 'Низок интерес на корисниците' : 'Low beneficiary interest',       probability: 'Low',    impact: 'High',   mitigation: mk ? 'Рана комуникација и пилот фаза' : 'Early communication and pilot phase' },
-      { risk: mk ? 'Доцнење на плаќања'           : 'Payment delays',                 probability: 'Medium', impact: 'Medium', mitigation: mk ? 'Резервен фонд'                  : 'Reserve fund' },
-      { risk: mk ? 'Технички проблеми'            : 'Technical platform issues',      probability: 'Low',    impact: 'Medium', mitigation: mk ? 'Тестирање пред лансирање'       : 'Pre-launch testing' },
+      { risk: mk ? 'Низок интерес на корисниците' : 'Low beneficiary interest', probability: 'Low',    impact: 'High',   mitigation: mk ? 'Рана комуникација' : 'Early communication' },
+      { risk: mk ? 'Доцнење на плаќања'           : 'Payment delays',           probability: 'Medium', impact: 'Medium', mitigation: mk ? 'Резервен фонд'     : 'Reserve fund' },
+      { risk: mk ? 'Технички проблеми'            : 'Technical issues',         probability: 'Low',    impact: 'Medium', mitigation: mk ? 'Тестирање'         : 'Pre-launch testing' },
     ],
-  };
-}
-
-function budgetFallback(lang) {
-  const mk = lang === 'mk';
-  return {
-    budget_lines: [
-      { category: mk?'Човечки ресурси':'Human Resources', item: mk?'Проект координатор':'Project Coordinator', unit:'month', quantity:18, unit_cost:1100, total:19800, grant_amount:19800, own_contribution:0 },
-      { category: mk?'Човечки ресурси':'Human Resources', item: mk?'Технички експерт':'Technical Expert',      unit:'month', quantity:12, unit_cost:900,  total:10800, grant_amount:8640,  own_contribution:2160 },
-      { category: mk?'Патување':'Travel',                  item: mk?'Локални посети':'Local field visits',      unit:'trip',  quantity:20, unit_cost:75,   total:1500,  grant_amount:1500,  own_contribution:0 },
-      { category: mk?'Опрема':'Equipment',                 item: mk?'Лаптопи за обука':'Training laptops',      unit:'unit',  quantity:10, unit_cost:550,  total:5500,  grant_amount:5500,  own_contribution:0 },
-      { category: mk?'Услуги':'Services',                  item: mk?'Развој на платформа':'Platform dev',       unit:'lump',  quantity:1,  unit_cost:7000, total:7000,  grant_amount:7000,  own_contribution:0 },
-      { category: mk?'Обука':'Training',                   item: mk?'Материјали за обука':'Training materials',  unit:'pax',   quantity:150,unit_cost:22,   total:3300,  grant_amount:3300,  own_contribution:0 },
-      { category: mk?'Комуникација':'Communication',       item: mk?'Видливост':'Visibility & comms',           unit:'lump',  quantity:1,  unit_cost:1800, total:1800,  grant_amount:1800,  own_contribution:0 },
-      { category: mk?'Индиректни трошоци':'Indirect costs',item: mk?'Индиректни трошоци (7%)':'Indirect (7%)',  unit:'lump',  quantity:1,  unit_cost:3457, total:3457,  grant_amount:3457,  own_contribution:0 },
-    ],
-    notes: mk ? 'Буџетот вклучува co-financing од 2,160 EUR (4%) од страна на организацијата.' : 'Budget includes co-financing of €2,160 (4%) from the organization.',
   };
 }
 
 function scholarshipFallback(name, sector, country, lang) {
   const mk = lang === 'mk';
   return {
-    personal_statement:      mk ? `Растев во ${country} гледајќи ги предизвиците во секторот ${sector}. Оваа стипендија ќе ми даде можност да придонесам конкретно кон развојот на мојата заедница.` : `Growing up in ${country}, I witnessed firsthand the challenges in the ${sector} sector. This scholarship will give me the opportunity to contribute concretely to my community's development.`,
-    academic_background:     mk ? 'Дипломиран со одличен успех. Учествував во истражувачки проекти.' : 'Graduated with distinction. Participated in research projects.',
-    professional_experience: mk ? 'Работев на проекти поврзани со секторот. Волонтерска работа во НВО.' : 'Worked on sector-related projects. Volunteered with NGOs.',
-    research_proposal:       mk ? 'Наслов: Иновации во секторот. Методологија: мешани методи. Очекувани резултати: публикација и препорака.' : 'Title: Innovations in the sector. Methodology: mixed methods. Expected outcomes: publication and policy recommendation.',
-    return_plan:             mk ? 'По враќањето, ќе работам со националните институции за да ги применам стекнатите знаења.' : 'After returning, I will work with national institutions to apply the acquired knowledge.',
-    why_this_program:        mk ? 'Овој програм е идеален поради репутацијата, мрежата на алумни и фокусот на мојот сектор.' : 'This program is ideal due to its reputation, alumni network, and focus on my sector.',
-    references_guidance:     [mk?'Нагласете ги лидерските квалитети':'Emphasize leadership qualities', mk?'Споменете конкретни постигнувања':'Mention specific achievements', mk?'Опишете го потенцијалот за влијание':'Describe impact potential'],
-    cv_structure:            [mk?'Образование: Универзитет, степен, година':'Education: University, degree, year', mk?'Искуство: Позиција, организација, период':'Experience: Position, org, period', mk?'Вештини: Јазици, технологии':'Skills: Languages, tech', mk?'Признанија: Награди, публикации':'Recognition: Awards, publications'],
+    personal_statement:      mk ? `Растев во ${country} гледајќи ги предизвиците во секторот ${sector}.` : `Growing up in ${country}, I witnessed firsthand the challenges in the ${sector} sector.`,
+    academic_background:     mk ? 'Дипломиран со одличен успех.' : 'Graduated with distinction.',
+    professional_experience: mk ? 'Работев на проекти поврзани со секторот.' : 'Worked on sector-related projects.',
+    research_proposal:       mk ? 'Наслов: Иновации во секторот.' : 'Title: Innovations in the sector.',
+    return_plan:             mk ? 'По враќањето, ќе работам со националните институции.' : 'After returning, I will work with national institutions.',
+    why_this_program:        mk ? 'Овој програм е идеален поради репутацијата.' : 'This program is ideal due to its reputation.',
+    references_guidance:     [mk?'Нагласете ги лидерските квалитети':'Emphasize leadership qualities', mk?'Споменете конкретни постигнувања':'Mention specific achievements', mk?'Опишете го потенцијалот':'Describe impact potential'],
+    cv_structure:            [mk?'Образование: Универзитет, степен, година':'Education: University, degree, year', mk?'Искуство: Позиција, организација':'Experience: Position, org', mk?'Вештини: Јазици':'Skills: Languages', mk?'Признанија':'Recognition: Awards'],
   };
 }
