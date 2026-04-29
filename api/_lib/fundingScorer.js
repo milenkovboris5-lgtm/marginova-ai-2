@@ -1,19 +1,19 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/_lib/fundingScorer.js
-// v7 — REPLACE THE ENTIRE FILE WITH THIS
+// v8 — REPLACE THE ENTIRE FILE WITH THIS
 //
-// FIXES over v6:
-// 1. Budget scoring three-tier logic:
-//    amt <= max       → +2 (fits)
-//    max < amt <= max*3 → 0  (neutral)
-//    amt > max*3      → -3 (way above — penalized, pushed to bottom)
-// 2. Budget risk factor: clear human message when mismatch
-//    "Budget mismatch: you need up to €30k, program offers €150k"
+// KEY DESIGN CHANGE over v7:
+// Budget is NO LONGER a scoring or filtering factor.
+// Reason: user budget = what they WANT to receive, not a cap.
+// A program offering 150k MAX is valid for a user wanting 30k —
+// they apply for the amount they need. We show the program,
+// the user checks the official source for their specific amount.
+// Relevance = sector + country + org type. That's all.
 // ═══════════════════════════════════════════════════════════
 
 const { getTable } = require('./utils');
 
-console.log('[fundingScorer] v7 loaded — budget three-tier scoring, clear mismatch warnings');
+console.log('[fundingScorer] v8 loaded — budget removed from scoring, relevance = sector+country+org');
 
 const SECTOR_SQL_KEYWORDS = {
   'Environment / Energy':      ['environment','climate','renewable','biodiversity','ecosystem','conservation','clean energy','pollution','nature','wildlife','forest','sustainability','green','energy','ecology','gef','geff','wwf','life programme','carbon','emission'],
@@ -39,12 +39,8 @@ const ORG_ELIGIBILITY = {
   'Individual / Entrepreneur':  ['individual','entrepreneur','founder','self-employed','freelance','creator','person','applicant'],
 };
 
-const BUDGET_RANGES = {
-  'up to €30k':   [0, 30000],
-  '€30k–€150k':   [30000, 150000],
-  '€150k–€500k':  [150000, 500000],
-  'above €500k':  [500000, Infinity],
-};
+// Note: Budget is intentionally NOT used for scoring or filtering.
+// See annotate() for explanation. Program amounts are informational only.
 
 // European regions — used in country matching
 const EUROPEAN_REGIONS = [
@@ -199,7 +195,7 @@ async function searchDB(profile) {
  *   +3  sector keyword hit in focus_areas
  *   +2  sector keyword hit in description
  *   +2  org type match in eligibility
- *   +2  budget range fits
+
  *   +1  regional match (Western Balkans / Europe)
  *   +1  per additional keyword hit (capped at +4)
  *  -2   global-only with no other signal (penalizes Amazon-style results)
@@ -255,26 +251,13 @@ function annotate(g, profile, sectorKws) {
     }
   }
 
-  // Budget range matching
-  // v7 FIX: Three-tier budget logic:
-  //   amt <= max       → +2 (fits — user can apply for this amount)
-  //   max < amt <= max*3 → 0  (above range but not extreme — neutral)
-  //   amt > max*3      → -3  (way above — misleading, penalize heavily)
-  // Example: user wants €30k, program offers €150k → amt > 30k*3=90k → -3
-  // Example: user wants €30k, program offers €60k  → amt > 30k*3=90k? No → neutral
-  if (profile.budget && g.award_amount != null) {
-    const [min, max] = BUDGET_RANGES[profile.budget] || [0, Infinity];
-    const amt = Number(g.award_amount);
-    if (!isNaN(amt)) {
-      if (amt >= min && amt <= max) {
-        relevanceScore += 2;
-        matchSignals.push(`Amount ${amt.toLocaleString()} ${g.currency || 'EUR'} fits your budget range`);
-      } else if (amt > max * 3) {
-        relevanceScore -= 3; // way above budget — pushes to bottom
-      }
-      // amt between max and max*3 → neutral (0), no signal either way
-    }
-  }
+  // Budget — informational only, NOT a scoring factor.
+  // The user's budget = what they WANT to receive, not a filter.
+  // A program offering 150k MAX is perfectly valid for a user wanting 30k —
+  // they can apply for a smaller amount. We never penalize or reward
+  // based on budget mismatch. The program amount appears in 💰 line only.
+  // buildDataRows() in llmRouter passes the raw amount to Gemini
+  // which formats it with appropriate context.
 
   // Keyword hits from user profile
   if (Array.isArray(profile.keywords) && profile.keywords.length > 0) {
@@ -310,21 +293,10 @@ function annotate(g, profile, sectorKws) {
     }
   }
 
-  // Budget risk factor
-  // v7 FIX: Only warn when amount is genuinely mismatched.
-  // amt > max*3 → strong warning (e.g. want 30k, program offers 150k)
-  // amt < min*0.5 → warn (program offers too little)
-  if (profile.budget && g.award_amount != null) {
-    const [mn, mx] = BUDGET_RANGES[profile.budget] || [0, Infinity];
-    const amt      = Number(g.award_amount);
-    if (!isNaN(amt)) {
-      if (amt > mx * 3) {
-        riskFactors.push(`Budget mismatch: you need ${profile.budget}, program offers ${Math.round(amt).toLocaleString()} ${g.currency || 'EUR'} — check if partial funding is allowed`);
-      } else if (amt < mn * 0.5) {
-        riskFactors.push(`Program offers ${Math.round(amt).toLocaleString()} ${g.currency || 'EUR'} — may be below your budget need`);
-      }
-    }
-  }
+  // Budget — no risk factor generated.
+  // The program's offered amount is shown in 💰 and the user
+  // checks the official source for their specific project amount.
+  // We do not generate misleading "budget mismatch" warnings.
 
   const combined = `${desc} ${focus}`;
   if (/global|international|worldwide/.test(combined) && !/western balkans|europe/.test(combined)) {
