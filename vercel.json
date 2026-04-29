@@ -12,6 +12,10 @@
       "maxDuration": 60,
       "memory": 512
     },
+    "api/parse-rfp.js": {
+      "maxDuration": 30,
+      "memory": 512
+    },
     "api/cron/update-opportunities.js": {
       "maxDuration": 60,
       "memory": 256
