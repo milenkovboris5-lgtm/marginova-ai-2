@@ -88,7 +88,12 @@ async function generateGrant(profile, program, lang, langName) {
 
   // ── Prompt 1: Narrative sections ──────────────────────────
   const narrativePrompt = `You are a senior EU grant writer. Write a professional grant application in ${langName}.
-ALL text must be in ${langName}. Do not use English if the language is not English.
+ALL string values must be in ${langName}.
+
+CRITICAL JSON KEY RULE — NON-NEGOTIABLE:
+Keep ALL JSON keys EXACTLY in English as shown. NEVER translate keys.
+Wrong: "наслов_на_проект", "резиме" — FORBIDDEN
+Right: "project_title", "abstract" — always use these exact English keys.
 
 Organization: ${org}
 Sector: ${sector}
@@ -97,28 +102,41 @@ Program: ${title}
 Donor: ${donor}
 Budget requested: ${budgetAmt}
 
-Return ONLY valid JSON (no markdown, no explanation):
+Return ONLY valid JSON with ENGLISH keys and ${langName} string values:
 {
-  "project_title": "compelling project title (max 12 words)",
-  "abstract": "Executive summary, 180-220 words. Problem + solution + target group + expected impact + budget. First sentence must hook the reader.",
-  "problem_analysis": "Root cause analysis with statistics (cite sources like Eurostat, World Bank, national statistics). 200-250 words. Include: scale of problem, who is affected, why existing solutions fail.",
-  "innovation": "What makes this project different from existing approaches. 80-100 words.",
-  "sustainability": "Financial sustainability (revenue model or follow-up funding), institutional sustainability (who continues after grant), impact sustainability (lasting change). 120-150 words.",
-  "team_capacity": "Organization track record, key team members roles, relevant previous projects. 100-120 words.",
-  "communication": "How results will be disseminated: reports, social media, policy briefs, events. 60-80 words."
+  "project_title": "compelling project title in ${langName} (max 12 words)",
+  "abstract": "Executive summary in ${langName}, 180-220 words. Problem + solution + target group + expected impact + budget. First sentence must hook the reader.",
+  "problem_analysis": "Root cause analysis in ${langName} with statistics (cite sources like Eurostat, World Bank, national statistics). 200-250 words. Include: scale of problem, who is affected, why existing solutions fail.",
+  "innovation": "What makes this project different from existing approaches. 80-100 words in ${langName}.",
+  "sustainability": "Financial sustainability (revenue model or follow-up funding), institutional sustainability, impact sustainability. 120-150 words in ${langName}.",
+  "team_capacity": "Organization track record, key team members roles, relevant previous projects. 100-120 words in ${langName}.",
+  "communication": "How results will be disseminated: reports, social media, policy briefs, events. 60-80 words in ${langName}."
 }`;
 
   // ── Prompt 2: Results, Activities, Risks ─────────────────
-  const planPrompt = `EU grant writer. Language: ${langName}. ALL text in ${langName}.
+  const planPrompt = `EU grant writer. String values in ${langName}. ALL JSON keys stay in English.
+
+CRITICAL JSON KEY RULE: NEVER translate JSON keys.
+Keep: "overall_objective", "specific_objective", "results", "number", "title",
+"description", "indicators", "verification", "activities", "id", "result",
+"months", "responsible", "risks", "risk", "probability", "impact", "mitigation"
+These key names must NEVER be translated — only their string values.
+
 Project: ${sector} in ${country}. Budget: ${budgetAmt}. Duration: 18 months.
 Donor: ${donor}. Program: ${title}.
 
-Return ONLY minified valid JSON, no extra spaces, no trailing commas:
-{"overall_objective":"1 sentence","specific_objective":"1 SMART sentence","results":[{"number":1,"title":"title","description":"brief","indicators":["indicator with target"],"verification":"how"},{"number":2,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"},{"number":3,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"}],"activities":[{"id":"A1.1","result":1,"title":"title","months":"1-2","responsible":"role"},{"id":"A1.2","result":1,"title":"title","months":"3-5","responsible":"role"},{"id":"A2.1","result":2,"title":"title","months":"4-9","responsible":"role"},{"id":"A2.2","result":2,"title":"title","months":"7-14","responsible":"role"},{"id":"A3.1","result":3,"title":"title","months":"12-16","responsible":"role"},{"id":"A3.2","result":3,"title":"title","months":"16-18","responsible":"role"},{"id":"A0.1","result":0,"title":"Project management","months":"1-18","responsible":"Project Manager"}],"risks":[{"risk":"risk","probability":"Low","impact":"High","mitigation":"measure"},{"risk":"risk","probability":"Medium","impact":"Medium","mitigation":"measure"},{"risk":"risk","probability":"Low","impact":"Medium","mitigation":"measure"}]}`;
+Return ONLY minified valid JSON with English keys and ${langName} values:
+{"overall_objective":"1 sentence in ${langName}","specific_objective":"1 SMART sentence in ${langName}","results":[{"number":1,"title":"title in ${langName}","description":"brief in ${langName}","indicators":["indicator with target in ${langName}"],"verification":"how in ${langName}"},{"number":2,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"},{"number":3,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"}],"activities":[{"id":"A1.1","result":1,"title":"title in ${langName}","months":"1-2","responsible":"role in ${langName}"},{"id":"A1.2","result":1,"title":"title","months":"3-5","responsible":"role"},{"id":"A2.1","result":2,"title":"title","months":"4-9","responsible":"role"},{"id":"A2.2","result":2,"title":"title","months":"7-14","responsible":"role"},{"id":"A3.1","result":3,"title":"title","months":"12-16","responsible":"role"},{"id":"A3.2","result":3,"title":"title","months":"16-18","responsible":"role"},{"id":"A0.1","result":0,"title":"Project management in ${langName}","months":"1-18","responsible":"Project Manager in ${langName}"}],"risks":[{"risk":"risk in ${langName}","probability":"Low","impact":"High","mitigation":"measure in ${langName}"},{"risk":"risk","probability":"Medium","impact":"Medium","mitigation":"measure"},{"risk":"risk","probability":"Low","impact":"Medium","mitigation":"measure"}]}`;
 
   // ── Prompt 3: Budget with unit costs ──────────────────────
-  const budgetPrompt = `You are a senior EU grant accountant. Write in ${langName}.
-ALL labels must be in ${langName}.
+  const budgetPrompt = `You are a senior EU grant accountant.
+Language for string VALUES only: ${langName}.
+
+CRITICAL JSON KEY RULE — NON-NEGOTIABLE:
+Keep ALL JSON keys EXACTLY in English as shown in the template below.
+NEVER translate JSON keys. Only translate string values (category names, item names, notes).
+Wrong: "буџетски_линии", "категорија", "ставка" — these are FORBIDDEN
+Right: "budget_lines", "category", "item" — always use these exact English keys.
 
 Total budget: ${budgetAmt}
 Duration: 18 months
@@ -126,7 +144,7 @@ Sector: ${sector}
 Country: ${country}
 Donor: ${donor}
 
-Return ONLY valid JSON. Amounts must be realistic numbers:
+Return ONLY valid JSON with ENGLISH keys and ${langName} string values:
 {
   "budget_lines": [
     {"category": "Human Resources", "item": "Project Coordinator", "unit": "month", "quantity": 18, "unit_cost": 1200, "total": 21600, "grant_amount": 21600, "own_contribution": 0},
@@ -138,7 +156,7 @@ Return ONLY valid JSON. Amounts must be realistic numbers:
     {"category": "Communication", "item": "Visibility & communication", "unit": "lump sum", "quantity": 1, "unit_cost": 2000, "total": 2000, "grant_amount": 2000, "own_contribution": 0},
     {"category": "Indirect costs", "item": "Indirect costs (7%)", "unit": "lump sum", "quantity": 1, "unit_cost": 3785, "total": 3785, "grant_amount": 3785, "own_contribution": 0}
   ],
-  "notes": "Budget note explaining co-financing and cost efficiency"
+  "notes": "Budget note in ${langName} explaining co-financing and cost efficiency"
 }`;
 
   // ── Call Gemini 3x in parallel — differentiated token limits ─
