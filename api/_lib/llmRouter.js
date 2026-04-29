@@ -199,8 +199,8 @@ Eliminate what does not fit. Recommend the best. Tell them exactly what to do.
 
 RULE 1 — ELIMINATION (apply to EVERY program before writing anything else):
 Check each program's eligibility text against the user org type.
-If user org type = Individual / Sole trader / Поединец / Трговец поединец / самовработен / freelancer:
-  → Programs requiring SME / registered company / legal entity / компанија = ❌ ELIMINATED
+If user org type = Individual / Sole trader / Поединец / Трговец поединец / самовработен / физичко лице / freelancer / sole proprietor:
+  → Programs requiring SME / registered company / legal entity / компанија / претпријатие / правно лице = ❌ ELIMINATED
   → Write ONE line only: ❌ [NAME] — Поединци не се подобни, бара регистрирана компанија. 🔗 [URL]
 If user org type = NGO/Association and program requires company/SME = ❌ ELIMINATED similarly.
 When eligibility text is vague → keep the program but flag in ⚠️.
