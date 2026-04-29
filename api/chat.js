@@ -283,8 +283,18 @@ module.exports = async function handler(req, res) {
     }
 
     // ── Language detection ────────────────────────────────
-    const langText = (body.messages || []).slice(-3).map(m => m.content || '').join(' ') + ' ' + userText;
-    const lang     = body.lang || detectLang(langText);
+    // Scan ALL messages (not just last 3) to catch explicit language requests
+    // e.g. "НА МАКЕДОНСКИ" sent after earlier English messages
+    const allMsgsText = (body.messages || []).map(m => m.content || '').join(' ') + ' ' + userText;
+
+    // Explicit language override — check current message first
+    const explicitMk = /на македонски|по македонски|in macedonian|makedonski/i.test(userText);
+    const explicitEn = /in english|на англиски|по английски/i.test(userText);
+
+    const lang = explicitMk ? 'mk'
+               : explicitEn ? 'en'
+               : body.lang  || detectLang(allMsgsText);
+
     const today    = new Date().toLocaleDateString('en-GB', {
       day: '2-digit', month: '2-digit', year: 'numeric',
     });
