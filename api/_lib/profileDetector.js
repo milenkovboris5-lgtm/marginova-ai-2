@@ -222,12 +222,20 @@ const COUNTRY_PATTERNS = [
 ];
 
 // ─── BUDGET PATTERNS ─────────────────────────────────────────
+// Budget is detected for DISPLAY purposes only (sidebar, Profile Modal).
+// It is NOT passed to fundingScorer for filtering or scoring.
+// fundingScorer v8 intentionally ignores budget — see its header comment.
+// We still detect it so the UI can show "Budget: up to €30k" in the sidebar.
 
 const BUDGET_PATTERNS = [
   { budget: 'above €500k',  regex: /[1-9]\d{0,2}[\s,.]?000[\s,.]?000|[1-9]\d?\s*million|милион|мил\b|\d+\s*mil/i },
   { budget: '€150k–€500k',  regex: /[1-4]\d{2}[\s,.]?000\s*(евра|eur|€)?|[1-4]\d{2}k\b|500[\s,.]?000|500k|двесте|триста|четиристо/i },
+  // v4 FIX: "up to €30k" must come BEFORE "€30k–€150k" in order.
+  // "до 30.000" and "до 30k" were matching the €30k–€150k range because
+  // [1-9]\d[\s,.]?000 matches "30.000" before the up-to check ran.
+  // Solution: check explicit "до/up to/до" prefix patterns first.
+  { budget: 'up to €30k',   regex: /до\s*[1-3]\d[\s,.]?000|до\s*[1-9][\s,.]?000|до\s*[1-9]k|up\s+to\s*[1-3]\d[\s,.]?000|up\s+to\s*[1-9]k|[1-2]\d[\s,.]?000\s*(евра|eur|€)?\s*$|[1-9][\s,.]?000\s*(евра|eur|€)?\s*$|\b[1-9]k\b|20k|30k|дваесет\s+илјади|триесет\s+илјади/i },
   { budget: '€30k–€150k',   regex: /[3-9]\d[\s,.]?000\s*(евра|eur|€)?|[1-9]\d[\s,.]?000\s*(евра|eur|€)?|[3-9]\dk\b|100k|150k|сто\s+илјади|педесет\s+илјади/i },
-  { budget: 'up to €30k',   regex: /[1-2]\d[\s,.]?000\s*(евра|eur|€)?|[1-9][\s,.]?000\s*(евра|eur|€)?\b|\b[1-9]k\b|20k|30k|дваесет\s+илјади|триесет\s+илјади/i },
 ];
 
 // ─── STOP WORDS ──────────────────────────────────────────────
