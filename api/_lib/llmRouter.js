@@ -1,13 +1,16 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/_lib/llmRouter.js
-// v8 — Balanced advisor: shows all programs, honest risks, user decides
+// v9 — v7 base + honest risk factors, no hallucination
+//
+// CHANGE from v7: Only the system prompt risk section improved.
+// Everything else identical to stable v7.
 // ═══════════════════════════════════════════════════════════
 
 const { gemini, LANG_NAMES } = require('./utils');
 
-console.log('[llmRouter] v8 loaded — balanced advisor, honest risks, user decides');
+console.log('[llmRouter] v9 loaded — v7 base, improved risk clarity');
 
-// ═══ GEMINI JSON SANITIZER — Bug #5 fix ══════════════════
+// ═══ GEMINI JSON SANITIZER ════════════════════════════════
 function sanitizeGeminiJSON(raw) {
   if (!raw || typeof raw !== 'string') return raw;
   let s = raw
@@ -47,12 +50,12 @@ const NATIVE_NAMES = {
 };
 
 const TIER_LABELS = {
-  en: { strong: 'Strong match',   possible: 'Possible match',       broad: 'Broad match',   low: 'Low match' },
-  mk: { strong: 'Силен мач',      possible: 'Можен мач',            broad: 'Широк мач',     low: 'Слаб мач' },
-  sr: { strong: 'Jak match',      possible: 'Moguć match',          broad: 'Širok match',   low: 'Slab match' },
-  de: { strong: 'Starke Passung', possible: 'Mögliche Passung',     broad: 'Breite Passung',low: 'Geringe Passung' },
+  en: { strong: 'Strong match',  possible: 'Possible match',  broad: 'Broad match',  low: 'Low match — verify eligibility' },
+  mk: { strong: 'Силен мач',     possible: 'Можен мач',       broad: 'Широк мач',    low: 'Слаб мач — провери подобност' },
+  sr: { strong: 'Jak match',     possible: 'Moguć match',     broad: 'Širok match',  low: 'Slab match — proveri podobnost' },
+  de: { strong: 'Starke Passung',possible: 'Mögliche Passung',broad: 'Breite Passung',low: 'Geringe Passung' },
   fr: { strong: 'Bonne correspondance', possible: 'Correspondance possible', broad: 'Large correspondance', low: 'Faible correspondance' },
-  tr: { strong: 'Güçlü eşleşme', possible: 'Olası eşleşme',        broad: 'Geniş eşleşme', low: 'Düşük eşleşme' },
+  tr: { strong: 'Güçlü eşleşme', possible: 'Olası eşleşme', broad: 'Geniş eşleşme', low: 'Düşük eşleşme' },
 };
 
 function getTierLabel(score, lang) {
@@ -108,8 +111,8 @@ function buildRiskText(p, profile) {
     return p.riskFactors.slice(0, 4).map(r => '• ' + r).join('\n');
   }
   const risks = [];
-  const ctry  = (p.country || '').toLowerCase();
-  const desc  = ((p.description || '') + ' ' + (p.focus_areas || '')).toLowerCase();
+  const ctry = (p.country || '').toLowerCase();
+  const desc = ((p.description || '') + ' ' + (p.focus_areas || '')).toLowerCase();
   if (profile && profile.country) {
     const pc = profile.country.toLowerCase();
     if (ctry.length > 0 && !ctry.includes(pc) && !/global|europe|western balkans/.test(ctry)) {
@@ -123,19 +126,19 @@ function buildRiskText(p, profile) {
     if (days < 14) risks.push('Deadline soon — ' + days + ' days remaining');
   }
   if (/global|international|worldwide/.test(desc)) risks.push('Global competition — many applicants expected');
-  if (p.source === 'serper_extracted')              risks.push('Web result — verify ALL details on official source');
-  if (!risks.length)                                risks.push('Review full eligibility criteria before applying');
+  if (p.source === 'serper_extracted') risks.push('Web result — verify ALL details on official source');
+  if (!risks.length) risks.push('Review full eligibility criteria before applying');
   return risks.map(r => '• ' + r).join('\n');
 }
 
 function buildDataRows(programs, profile, lang) {
   return programs.map((p, i) => {
     const amtNum = parseAmount(p.award_amount);
-    const amt    = amtNum
+    const amt = amtNum
       ? Math.round(amtNum).toLocaleString() + ' ' + (p.currency || 'EUR')
       : (p.funding_range || '—');
-    const src  = p.source === 'serper_extracted' ? '[WEB — verify]' : '[DB]';
-    const tier = getTierLabel(p._relevanceScore, lang);
+    const src   = p.source === 'serper_extracted' ? '[WEB — verify]' : '[DB]';
+    const tier  = getTierLabel(p._relevanceScore, lang);
     const score = Number(p._relevanceScore) || 0;
     return '---\n' +
       '[' + (i+1) + '] ' + src + ' | TIER: ' + tier + ' | SCORE: ' + score + '\n' +
@@ -166,52 +169,62 @@ async function synthesize(lang, today, profile, programs, sources) {
       : 'No funding programs found. Please add more details — sector, country, organization type.';
   }
 
-  const profileLine = [profile && profile.sector, profile && profile.orgType, profile && profile.country, profile && profile.budget]
-    .filter(Boolean).join(' | ') || 'not specified';
+  const profileLine = [
+    profile && profile.sector,
+    profile && profile.orgType,
+    profile && profile.country,
+    profile && profile.budget,
+  ].filter(Boolean).join(' | ') || 'not specified';
 
   const dataRows = buildDataRows(safePrograms, profile || {}, safeLang);
 
   const langInstruction = safeLang === 'mk'
-    ? 'Задолжително одговори САМО на македонски јазик.'
+    ? 'Задолжително одговори САМО на македонски јазик. Сите секции мора да бидат на македонски.'
     : 'You MUST respond entirely in ' + nativeName + ' (' + langName + ').';
 
+  // ═══ SYSTEM PROMPT — v9 ═══════════════════════════════════
+  // Base: identical to stable v7
+  // Change: risk factors are now specific, not generic
+  // No hallucination: use ONLY data provided, never invent programs
   const systemPrompt = 'You are MARGINOVA, a funding opportunities assistant. ' + langInstruction + '\n' +
     'Today: ' + safeToday + '. User profile: ' + profileLine + '.\n' +
     'DB results: ' + safeSources.db + '. Web results: ' + safeSources.serper + '.\n\n' +
-    'CONTEXT: Programs are sorted best-match-first. TIER: STRONG / POSSIBLE / BROAD / LOW.\n\n' +
-    'YOUR ROLE:\n' +
-    'You are an informed advisor — not a decision maker.\n' +
-    'Show the user what exists, be honest about risks, let them decide.\n' +
-    'Never eliminate programs. Never tell the user what they cannot do.\n\n' +
-    'RULE 1 — SHOW ALL PROGRAMS with honest risks:\n' +
-    'If there is an eligibility concern for the user profile, state it clearly in one sentence in the risk section.\n' +
-    'Examples of good risk notes:\n' +
-    '  "Бара регистрирана компанија — провери дали поединци се подобни"\n' +
-    '  "Бара завршен докторат — не е за веб девелопери без PhD"\n' +
-    '  "Рокот е за 13 дена — итно"\n' +
-    'Keep risks SHORT and SPECIFIC. Maximum 2 bullets per program.\n\n' +
-    'RULE 2 — BEST MATCH FIRST:\n' +
-    'The highest-scoring program gets a trophy prefix. Write one sentence why it fits best.\n\n' +
-    'RULE 3 — AMOUNTS AND DATES: Copy exactly as given in the data.\n\n' +
-    'RULE 4 — LANGUAGE: Respond entirely in ' + nativeName + '. No switching mid-response.\n\n' +
-    'RULE 5 — FORMAT:\n' +
-    'STRONG + POSSIBLE tiers = full format below.\n' +
-    'BROAD + LOW tiers = shorter (1 match signal, 1 risk, URL only).\n\n' +
-    'FORMAT FOR EACH PROGRAM:\n' +
-    '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n' +
-    '[trophy or N]. [PROGRAM NAME]\n' +
-    'institution [ORGANIZATION]\n' +
-    'money [AMOUNT]\n' +
-    'calendar Deadline: [DEADLINE]\n' +
-    'globe [COUNTRY]\n\n' +
-    'checkmark Зошто може да одговара:\n' +
-    '[1-2 specific reasons for this user]\n\n' +
-    'warning Провери пред да аплицираш:\n' +
-    '[1-2 specific things — not generic]\n\n' +
-    'link [URL]\n' +
-    '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n' +
-    'After ALL programs, write exactly one line:\n' +
-    'arrow СЛЕДЕН ЧЕКОР: [one specific action — a specific link, contact, or thing to check]';
+    'CONTEXT: Programs are already sorted best-match-first by a relevance algorithm.\n' +
+    'Each program has a TIER label: STRONG / POSSIBLE / BROAD / LOW MATCH.\n\n' +
+    'STRICT RULES:\n' +
+    '1. You are NOT a decision-maker. The donor decides eligibility — not you.\n' +
+    '2. Do NOT assign probability %, scores, or YES/NO labels.\n' +
+    '3. Show ALL programs provided. Do not invent, add, or remove any program.\n' +
+    '4. Use ONLY the data provided. Never invent URLs, amounts, deadlines, or organizations.\n' +
+    '5. STRONG and POSSIBLE programs: full format. BROAD and LOW: shorter entry.\n' +
+    '6. Translate match signals and risk factors into the user language.\n' +
+    '7. Keep amounts, dates, and URLs exactly as given in the data.\n' +
+    '8. [WEB — verify] results: add a note to verify on official website.\n' +
+    '9. RISK FACTORS — be specific, not generic:\n' +
+    '   FORBIDDEN: "Review full eligibility criteria before applying"\n' +
+    '   REQUIRED: State the actual specific issue:\n' +
+    '   "Бара регистрирана компанија — поединци не се подобни"\n' +
+    '   "Бара докторат — не е за веб девелопери без PhD"\n' +
+    '   "Бара партнер од друга земја"\n' +
+    '   "Рокот е за X дена — итно"\n' +
+    '   "Глобална конкуренција — 14.000+ апликанти, 5% стапка на успех"\n' +
+    '10. LANGUAGE: Respond entirely in ' + nativeName + '. No switching mid-response.\n\n' +
+    'Format EACH program exactly like this:\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+    '[N]. [PROGRAM NAME]\n' +
+    '🏛 [ORGANIZATION]\n' +
+    '💰 [AMOUNT]\n' +
+    '📅 Deadline: [DEADLINE]\n' +
+    '🌍 [COUNTRY / REGION]\n\n' +
+    '✅ Why this may be relevant to you:\n' +
+    '[MATCH SIGNALS — translated, specific]\n\n' +
+    '⚠️ What to verify before applying:\n' +
+    '[RISK FACTORS — specific, not generic — see rule 9]\n\n' +
+    '🔗 [URL]\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    'For BROAD and LOW programs: same format but 1 signal and 1 risk only.\n\n' +
+    'After ALL programs add exactly one line:\n' +
+    '▶ NEXT STEP: [one concrete action — a specific link to open or a specific thing to check]';
 
   const userMsg  = 'Present these ' + safePrograms.length + ' funding opportunities to the user:\n\n' + dataRows;
   const contents = [{ role: 'user', parts: [{ text: userMsg }] }];
@@ -227,11 +240,12 @@ async function synthesize(lang, today, profile, programs, sources) {
     console.error('[SYNTHESIZE] Gemini call failed:', err.message);
     const fallback = safePrograms.map((p, i) => {
       const amtNum = parseAmount(p.award_amount);
-      const amt    = amtNum
+      const amt = amtNum
         ? Math.round(amtNum).toLocaleString() + ' ' + (p.currency || 'EUR')
         : (p.funding_range || '—');
       return (i+1) + '. ' + (p.title || 'Unknown') + '\n   ' +
-        (p.organization_name || '') + ' | ' + amt + ' | ' + (p.application_deadline || 'TBD') + '\n   ' +
+        (p.organization_name || '') + ' | ' + amt + ' | ' +
+        (p.application_deadline || 'TBD') + '\n   ' +
         (p.link || p.source_url || '');
     }).join('\n\n');
     return safeLang === 'mk'
@@ -247,11 +261,12 @@ async function extractFromSerper(serperResults, profile) {
     .map((r, i) => '[' + (i+1) + '] ' + (r.title || '') + '\n' + (r.snippet || '') + '\n' + (r.link || ''))
     .join('\n\n');
   const safeProfile = profile || {};
-  const prompt = 'Extract funding program data from web search results.\n' +
+  const prompt =
+    'Extract funding program data from web search results.\n' +
     'Return a JSON array ONLY — no markdown fences, no explanation, no preamble.\n' +
-    'Only extract fields that are explicitly stated. Use null for anything not mentioned.\n' +
+    'Only extract fields explicitly stated. Use null for anything not mentioned.\n' +
     'User profile: sector=' + (safeProfile.sector || 'unknown') + ', country=' + (safeProfile.country || 'unknown') + '\n\n' +
-    'Return exactly this shape for each relevant result:\n' +
+    'Return exactly this shape:\n' +
     '[{"index":1,"title":"...","organization":"...or null","amount":"...or null","deadline":"YYYY-MM-DD or null","eligibility":"...or null","focus":"...","url":"...","relevance_notes":"brief note or null"}]\n\n' +
     'Web search results:\n' + snippets;
   try {
