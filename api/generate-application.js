@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/generate-application.js
-// v2.2 — CHANGES vs v2.1:
-//   safeGemini() now takes maxTokens as parameter (default 8000)
+// v2.3 — CHANGES over v2.2:
+//   Budget scaling: Gemini calculates amounts to match actual program budget
 //   narrative: 8000 (long prose)
 //   plan:      4000 (compact JSON)
-//   budget:    2000 (tabular JSON)
+//   Budget tokens: 2000 → 3000 (space for calculations)
 //   scholarship: 6000
 //   Promise.all wall time = ~25s → well within 60s Vercel limit
 // ═══════════════════════════════════════════════════════════
@@ -129,46 +129,66 @@ Return ONLY minified valid JSON with English keys and ${langName} values:
 {"overall_objective":"1 sentence in ${langName}","specific_objective":"1 SMART sentence in ${langName}","results":[{"number":1,"title":"title in ${langName}","description":"brief in ${langName}","indicators":["indicator with target in ${langName}"],"verification":"how in ${langName}"},{"number":2,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"},{"number":3,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"}],"activities":[{"id":"A1.1","result":1,"title":"title in ${langName}","months":"1-2","responsible":"role in ${langName}"},{"id":"A1.2","result":1,"title":"title","months":"3-5","responsible":"role"},{"id":"A2.1","result":2,"title":"title","months":"4-9","responsible":"role"},{"id":"A2.2","result":2,"title":"title","months":"7-14","responsible":"role"},{"id":"A3.1","result":3,"title":"title","months":"12-16","responsible":"role"},{"id":"A3.2","result":3,"title":"title","months":"16-18","responsible":"role"},{"id":"A0.1","result":0,"title":"Project management in ${langName}","months":"1-18","responsible":"Project Manager in ${langName}"}],"risks":[{"risk":"risk in ${langName}","probability":"Low","impact":"High","mitigation":"measure in ${langName}"},{"risk":"risk","probability":"Medium","impact":"Medium","mitigation":"measure"},{"risk":"risk","probability":"Low","impact":"Medium","mitigation":"measure"}]}`;
 
   // ── Prompt 3: Budget with unit costs ──────────────────────
+  // Parse the actual budget amount for scaling instructions
+  const budgetNum = (() => {
+    const s = String(budgetAmt).replace(/[^0-9]/g, '');
+    const n = parseInt(s, 10);
+    return isNaN(n) ? 60000 : n;
+  })();
+
   const budgetPrompt = `You are a senior EU grant accountant.
 Language for string VALUES only: ${langName}.
 
 CRITICAL JSON KEY RULE — NON-NEGOTIABLE:
-Keep ALL JSON keys EXACTLY in English as shown in the template below.
-NEVER translate JSON keys. Only translate string values (category names, item names, notes).
-Wrong: "буџетски_линии", "категорија", "ставка" — these are FORBIDDEN
-Right: "budget_lines", "category", "item" — always use these exact English keys.
+Keep ALL JSON keys EXACTLY in English as shown. NEVER translate JSON keys.
+Wrong: "буџетски_линии", "категорија" — FORBIDDEN
+Right: "budget_lines", "category", "item" — always these exact English keys.
 
-Total budget: ${budgetAmt}
+BUDGET SCALING RULE — NON-NEGOTIABLE:
+The total of all budget lines MUST sum to approximately ${budgetAmt} (${budgetNum} EUR).
+Scale unit costs and quantities to reach this target. Do NOT copy the example amounts.
+The example shows structure only — recalculate every number for the actual budget.
+
+Total budget target: ${budgetAmt}
 Duration: 18 months
 Sector: ${sector}
 Country: ${country}
 Donor: ${donor}
 
-Return ONLY valid JSON with ENGLISH keys and ${langName} string values:
+Typical EU budget split for ${sector} projects at ${budgetNum} EUR:
+- Human Resources: ~40% (${Math.round(budgetNum * 0.40).toLocaleString()} EUR)
+- Equipment/Infrastructure: ~22% (${Math.round(budgetNum * 0.22).toLocaleString()} EUR)
+- Services/Consulting: ~11% (${Math.round(budgetNum * 0.11).toLocaleString()} EUR)
+- Training/Events: ~9% (${Math.round(budgetNum * 0.09).toLocaleString()} EUR)
+- Communication: ~4% (${Math.round(budgetNum * 0.04).toLocaleString()} EUR)
+- Indirect costs: 7% of direct costs (auto-calculate from sum above)
+
+Return ONLY valid JSON with ENGLISH keys and ${langName} string values.
+Calculate realistic unit costs and quantities. Verify: sum of all "total" fields ≈ ${budgetNum}.
+
 {
   "budget_lines": [
-    {"category": "Human Resources", "item": "Project Coordinator", "unit": "month", "quantity": 18, "unit_cost": 1200, "total": 21600, "grant_amount": 21600, "own_contribution": 0},
-    {"category": "Human Resources", "item": "Technical Expert", "unit": "month", "quantity": 12, "unit_cost": 900, "total": 10800, "grant_amount": 8640, "own_contribution": 2160},
-    {"category": "Travel", "item": "Local travel (field visits)", "unit": "trip", "quantity": 24, "unit_cost": 80, "total": 1920, "grant_amount": 1920, "own_contribution": 0},
-    {"category": "Equipment", "item": "Laptops for training", "unit": "unit", "quantity": 10, "unit_cost": 600, "total": 6000, "grant_amount": 6000, "own_contribution": 0},
-    {"category": "Services", "item": "Platform development", "unit": "lump sum", "quantity": 1, "unit_cost": 8000, "total": 8000, "grant_amount": 8000, "own_contribution": 0},
-    {"category": "Training", "item": "Training materials & printing", "unit": "participant", "quantity": 150, "unit_cost": 25, "total": 3750, "grant_amount": 3750, "own_contribution": 0},
-    {"category": "Communication", "item": "Visibility & communication", "unit": "lump sum", "quantity": 1, "unit_cost": 2000, "total": 2000, "grant_amount": 2000, "own_contribution": 0},
-    {"category": "Indirect costs", "item": "Indirect costs (7%)", "unit": "lump sum", "quantity": 1, "unit_cost": 3785, "total": 3785, "grant_amount": 3785, "own_contribution": 0}
+    {"category": "Human Resources", "item": "Project Coordinator", "unit": "month", "quantity": 18, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
+    {"category": "Human Resources", "item": "Technical Expert", "unit": "month", "quantity": 12, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": CALCULATE},
+    {"category": "Equipment", "item": "Main equipment for ${sector}", "unit": "unit", "quantity": CALCULATE, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
+    {"category": "Services", "item": "Specialized services", "unit": "lump sum", "quantity": 1, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
+    {"category": "Training", "item": "Training and workshops", "unit": "participant", "quantity": CALCULATE, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
+    {"category": "Travel", "item": "Field visits and travel", "unit": "trip", "quantity": CALCULATE, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
+    {"category": "Communication", "item": "Visibility and communication", "unit": "lump sum", "quantity": 1, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
+    {"category": "Indirect costs", "item": "Indirect costs (7%)", "unit": "lump sum", "quantity": 1, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0}
   ],
-  "notes": "Budget note in ${langName} explaining co-financing and cost efficiency"
+  "notes": "Budget note in ${langName} — total sums to ${budgetAmt}, explain co-financing and cost efficiency"
 }`;
 
   // ── Call Gemini 3x in parallel — differentiated token limits ─
   // narrative: 8000 (long prose — abstract, problem analysis, sustainability)
   // plan:      4000 (compact JSON — results, activities, risks)
-  // budget:    2000 (tabular JSON — 8 budget lines with numbers)
-  // Promise.all wall time = slowest = narrative ~25s → within 60s limit
-  console.log('[generate-application] calling Gemini 3x in parallel...');
+  // budget:    3000 (raised from 2000 — needs space to calculate scaled amounts)
+  console.log('[generate-application] calling Gemini 3x in parallel, budget target:', budgetAmt);
   const [narrativeRaw, planRaw, budgetRaw] = await Promise.all([
     safeGemini(narrativePrompt, lang, 8000),
     safeGemini(planPrompt,      lang, 4000),
-    safeGemini(budgetPrompt,    lang, 2000),
+    safeGemini(budgetPrompt,    lang, 3000),
   ]);
 
   const narrative = parseJSON(narrativeRaw, narrativeFallback(org, sector, country, lang));
