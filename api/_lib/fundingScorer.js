@@ -1,19 +1,18 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/_lib/fundingScorer.js
-// v8 — REPLACE THE ENTIRE FILE WITH THIS
+// v9 — Individual/Поединец penalty + MK terms in ORG_ELIGIBILITY
 //
-// KEY DESIGN CHANGE over v7:
-// Budget is NO LONGER a scoring or filtering factor.
-// Reason: user budget = what they WANT to receive, not a cap.
-// A program offering 150k MAX is valid for a user wanting 30k —
-// they apply for the amount they need. We show the program,
-// the user checks the official source for their specific amount.
-// Relevance = sector + country + org type. That's all.
+// CHANGES over v8:
+// 1. ORG_ELIGIBILITY Individual — додадени македонски термини
+//    ('трговец поединец','поединец','самовработен','физичко лице')
+// 2. annotate() — SME penalty (-6 score) кога корисникот е поединец
+//    а програмата бара регистрирана компанија
+//    Ова осигурува Eurostars/EIC никогаш не се 🏆 за поединец
 // ═══════════════════════════════════════════════════════════
 
 const { getTable } = require('./utils');
 
-console.log('[fundingScorer] v8 loaded — budget removed from scoring, relevance = sector+country+org');
+console.log('[fundingScorer] v9 loaded — Individual penalty, MK terms');
 
 const SECTOR_SQL_KEYWORDS = {
   'Environment / Energy':      ['environment','climate','renewable','biodiversity','ecosystem','conservation','clean energy','pollution','nature','wildlife','forest','sustainability','green','energy','ecology','gef','geff','wwf','life programme','carbon','emission'],
@@ -36,13 +35,23 @@ const ORG_ELIGIBILITY = {
   'SME':                        ['sme','enterprise','company','business'],
   'Municipality / Public body': ['municipality','local government','public body'],
   'University / Research':      ['university','research','academic','institute'],
-  'Individual / Entrepreneur':  ['individual','entrepreneur','founder','self-employed','freelance','creator','person','applicant'],
+  // v9: Added Macedonian terms for individual/sole trader
+  'Individual / Entrepreneur':  [
+    'individual','entrepreneur','founder','self-employed','freelance',
+    'creator','person','applicant',
+    'трговец поединец','поединец','самовработен','физичко лице',
+    'sole trader','sole proprietor',
+  ],
 };
 
-// Note: Budget is intentionally NOT used for scoring or filtering.
-// See annotate() for explanation. Program amounts are informational only.
+// Keywords that indicate a program requires a registered company (not individual)
+const SME_REQUIRED_KEYWORDS = [
+  'sme','small and medium','enterprise','company','legal entity',
+  'registered company','incorporated','компанија','претпријатие',
+  'правно лице','трговско друштво','дооел','ад','акционерско',
+  'innovative sme','sme-led','sme partner',
+];
 
-// European regions — used in country matching
 const EUROPEAN_REGIONS = [
   'europe','european union','eu','western balkans','balkans',
   'southeast europe','eastern europe','central europe',
@@ -50,34 +59,17 @@ const EUROPEAN_REGIONS = [
 ];
 
 const SELECT_COLS     = 'id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status';
-const DB_FETCH_LIMIT  = 120;  // raised from 80 — more candidates, better final 6
+const DB_FETCH_LIMIT  = 120;
 const MIN_RESULTS     = 3;
 const RESULTS_TO_SHOW = 6;
 
-// ─── QUERY BUILDER HELPERS ───────────────────────────────────
-
-/**
- * buildSectorOrParts(keywords)
- * Builds Supabase OR filter using ALL sector keywords.
- * Searches focus_areas for all kws, description for first 6.
- * v5 bug: only used first 4 keywords.
- */
 function buildSectorOrParts(keywords) {
   if (!keywords || keywords.length === 0) return null;
-
   const focusParts = keywords.map(k => `focus_areas.ilike.%${k}%`);
   const descParts  = keywords.slice(0, 6).map(k => `description.ilike.%${k}%`);
-
   return [...focusParts, ...descParts].join(',');
 }
 
-/**
- * buildCountryOrParts(countryKw, sectorKws)
- * v5 bug: returned any program with "Europe" in country field.
- * v6 fix: requires BOTH (country/region match) AND (sector match).
- * Implemented by fetching country matches then filtering by sector
- * in JS — Supabase free tier doesn't support AND inside OR easily.
- */
 function buildCountryOrParts(countryKw) {
   const parts = [
     `country.ilike.%${countryKw}%`,
@@ -89,21 +81,11 @@ function buildCountryOrParts(countryKw) {
   return parts.join(',');
 }
 
-// ─── MAIN SEARCH ─────────────────────────────────────────────
-
-/**
- * searchDB(profile)
- * v6 improvements:
- * - Query 1 uses ALL sector keywords
- * - Query 2 results are post-filtered by sector relevance
- * - Final sort is relevance DESC, deadline ASC
- */
 async function searchDB(profile) {
   const today     = new Date().toISOString().split('T')[0];
   const sectorKws = SECTOR_SQL_KEYWORDS[profile.sector] || [];
   const queries   = [];
 
-  // ── Query 1: full sector keyword search ──────────────────
   if (sectorKws.length > 0) {
     const orParts = buildSectorOrParts(sectorKws);
     if (orParts) {
@@ -119,7 +101,6 @@ async function searchDB(profile) {
     }
   }
 
-  // ── Query 2: country / region ────────────────────────────
   const countryKw = profile.country || 'Balkans';
   queries.push(
     getTable('funding_opportunities')
@@ -139,7 +120,6 @@ async function searchDB(profile) {
     return [];
   }
 
-  // ── Merge + deduplicate ───────────────────────────────────
   const seen   = new Set();
   const merged = [];
 
@@ -158,22 +138,11 @@ async function searchDB(profile) {
     return [];
   }
 
-  // ── v6 FIX: Post-filter Query 2 results by sector ────────
-  // Programs that came in ONLY via country match (no sector signal)
-  // get a relevance penalty so they don't crowd out real matches.
-  // We don't remove them — we let the sort push them to the bottom.
-
-  // ── Annotate with weighted relevance score ────────────────
   const annotated = merged.map(g => annotate(g, profile, sectorKws));
 
-  // ── v6 FIX: Sort relevance DESC, deadline ASC as tiebreaker
-  // v5 bug: sorted only by deadline → Amazon ARA appeared first
   annotated.sort((a, b) => {
-    // Primary: higher relevance score wins
     const scoreDiff = (b._relevanceScore || 0) - (a._relevanceScore || 0);
     if (scoreDiff !== 0) return scoreDiff;
-
-    // Secondary: earlier deadline wins (within same relevance band)
     const da = a.application_deadline || '9999-12-31';
     const db = b.application_deadline || '9999-12-31';
     return da < db ? -1 : 1;
@@ -184,22 +153,6 @@ async function searchDB(profile) {
   return final;
 }
 
-// ─── ANNOTATE ────────────────────────────────────────────────
-
-/**
- * annotate(g, profile, sectorKws)
- * Attaches matchSignals[], riskFactors[], and _relevanceScore to each opportunity.
- *
- * _relevanceScore is a weighted integer used for sorting:
- *   +4  exact country match
- *   +3  sector keyword hit in focus_areas
- *   +2  sector keyword hit in description
- *   +2  org type match in eligibility
-
- *   +1  regional match (Western Balkans / Europe)
- *   +1  per additional keyword hit (capped at +4)
- *  -2   global-only with no other signal (penalizes Amazon-style results)
- */
 function annotate(g, profile, sectorKws) {
   const focus   = (g.focus_areas || '').toLowerCase();
   const desc    = (g.description || '').toLowerCase();
@@ -208,17 +161,15 @@ function annotate(g, profile, sectorKws) {
   const hay     = `${focus} ${desc}`;
 
   let relevanceScore = 0;
-
-  // ── Match signals ─────────────────────────────────────────
   const matchSignals = [];
 
-  // Sector keyword hits — check ALL keywords
+  // Sector keyword hits
   const focusHits = sectorKws.filter(k => focus.includes(k));
   const descHits  = sectorKws.filter(k => desc.includes(k) && !focus.includes(k));
 
   if (focusHits.length > 0) {
     relevanceScore += 3;
-    relevanceScore += Math.min(focusHits.length - 1, 4); // bonus for multiple hits
+    relevanceScore += Math.min(focusHits.length - 1, 4);
     matchSignals.push(`Sector keywords: ${focusHits.slice(0, 3).join(', ')}`);
   }
   if (descHits.length > 0) {
@@ -230,7 +181,7 @@ function annotate(g, profile, sectorKws) {
   if (profile.country) {
     const pc = profile.country.toLowerCase();
     if (country.includes(pc)) {
-      relevanceScore += 4; // exact country = strongest signal
+      relevanceScore += 4;
       matchSignals.push(`${profile.country} explicitly listed`);
     } else if (/western balkans|southeast europe/.test(country)) {
       relevanceScore += 2;
@@ -251,13 +202,26 @@ function annotate(g, profile, sectorKws) {
     }
   }
 
-  // Budget — informational only, NOT a scoring factor.
-  // The user's budget = what they WANT to receive, not a filter.
-  // A program offering 150k MAX is perfectly valid for a user wanting 30k —
-  // they can apply for a smaller amount. We never penalize or reward
-  // based on budget mismatch. The program amount appears in 💰 line only.
-  // buildDataRows() in llmRouter passes the raw amount to Gemini
-  // which formats it with appropriate context.
+  // v9: INDIVIDUAL vs SME PENALTY
+  // Ако корисникот е поединец и програмата бара компанија → -6 score
+  const isIndividual = profile.orgType && (
+    profile.orgType.toLowerCase().includes('individual') ||
+    profile.orgType.toLowerCase().includes('entrepreneur') ||
+    profile.orgType.toLowerCase().includes('поединец') ||
+    profile.orgType.toLowerCase().includes('трговец') ||
+    profile.orgType.toLowerCase().includes('самовработен') ||
+    profile.orgType.toLowerCase().includes('sole trader') ||
+    profile.orgType.toLowerCase().includes('sole proprietor')
+  );
+
+  if (isIndividual) {
+    const eligAndDesc = `${elig} ${desc}`;
+    const requiresCompany = SME_REQUIRED_KEYWORDS.some(k => eligAndDesc.includes(k));
+    if (requiresCompany) {
+      relevanceScore -= 6;
+      console.log(`[annotate] Individual penalty applied to: ${g.title} (score -6)`);
+    }
+  }
 
   // Keyword hits from user profile
   if (Array.isArray(profile.keywords) && profile.keywords.length > 0) {
@@ -268,15 +232,24 @@ function annotate(g, profile, sectorKws) {
     }
   }
 
-  // Penalty: global-only programs with no other signal (Amazon-style)
+  // Global-only penalty
   const isGlobalOnly = /global|international|worldwide/.test(country) &&
                        !/western balkans|europe|balkans/.test(country);
   if (isGlobalOnly && focusHits.length === 0 && descHits.length === 0) {
     relevanceScore -= 2;
   }
 
-  // ── Risk factors ──────────────────────────────────────────
+  // Risk factors
   const riskFactors = [];
+
+  // v9: Individual ineligibility risk — shown first
+  if (isIndividual) {
+    const eligAndDesc = `${elig} ${desc}`;
+    const requiresCompany = SME_REQUIRED_KEYWORDS.some(k => eligAndDesc.includes(k));
+    if (requiresCompany) {
+      riskFactors.push('⛔ Поединци/трговци поединци не се подобни — бара регистрирана компанија');
+    }
+  }
 
   if (profile.orgType && elig.length > 10) {
     const kws  = ORG_ELIGIBILITY[profile.orgType] || [];
@@ -292,11 +265,6 @@ function annotate(g, profile, sectorKws) {
       riskFactors.push(`Confirm ${profile.country} is eligible — listed: "${g.country}"`);
     }
   }
-
-  // Budget — no risk factor generated.
-  // The program's offered amount is shown in 💰 and the user
-  // checks the official source for their specific project amount.
-  // We do not generate misleading "budget mismatch" warnings.
 
   const combined = `${desc} ${focus}`;
   if (/global|international|worldwide/.test(combined) && !/western balkans|europe/.test(combined)) {
@@ -316,7 +284,7 @@ function annotate(g, profile, sectorKws) {
     riskFactors.push('Review full eligibility criteria before applying');
   }
 
-  // ── Display amount ────────────────────────────────────────
+  // Display amount
   const amtNum = Number(g.award_amount);
   const amtStr = (!isNaN(amtNum) && g.award_amount != null)
     ? `${amtNum.toLocaleString()} ${g.currency || 'EUR'}`.trim()
@@ -324,8 +292,8 @@ function annotate(g, profile, sectorKws) {
 
   return {
     ...g,
-    _relevanceScore: relevanceScore,     // weighted int — used for sort
-    _matchCount:     matchSignals.length, // kept for backward compat with llmRouter
+    _relevanceScore: relevanceScore,
+    _matchCount:     matchSignals.length,
     matchSignals,
     riskFactors,
     source:  g.source || 'db',
@@ -339,29 +307,16 @@ function annotate(g, profile, sectorKws) {
   };
 }
 
-// ─── MERGE WITH WEB ──────────────────────────────────────────
-
-/**
- * mergeWithWeb(dbResults, webResults)
- * DB first (verified), web fills gaps. Deduplicates by id.
- */
 function mergeWithWeb(dbResults, webResults) {
   const dbIds  = new Set((dbResults || []).map(r => r.id));
   const merged = [
     ...(dbResults || []),
     ...(webResults || []).filter(r => !dbIds.has(r.id)),
   ].slice(0, RESULTS_TO_SHOW);
-
   console.log(`[mergeWithWeb] db:${dbResults?.length || 0} web:${webResults?.length || 0} final:${merged.length}`);
   return merged;
 }
 
-// ─── NEEDS SERPER ────────────────────────────────────────────
-
-/**
- * needsSerper(dbResults)
- * Returns true only when DB alone is insufficient.
- */
 function needsSerper(dbResults) {
   return !Array.isArray(dbResults) || dbResults.length < MIN_RESULTS;
 }
