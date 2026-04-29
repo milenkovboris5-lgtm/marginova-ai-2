@@ -17,6 +17,10 @@
       "memory": 256
     }
   },
+  "rewrites": [
+    { "source": "/app",     "destination": "/app.html" },
+    { "source": "/builder", "destination": "/premium-application.html" }
+  ],
   "crons": [
     {
       "path": "/api/cron/update-opportunities",
