@@ -1,496 +1,502 @@
-// ═══════════════════════════════════════════════════════════
-// MARGINOVA — api/generate-application.js
-// v2.3 — CHANGES over v2.2:
-//   Budget scaling: Gemini calculates amounts to match actual program budget
-//   narrative: 8000 (long prose)
-//   plan:      4000 (compact JSON)
-//   Budget tokens: 2000 → 3000 (space for calculations)
-//   scholarship: 6000
-//   Promise.all wall time = ~25s → well within 60s Vercel limit
-// ═══════════════════════════════════════════════════════════
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marginova — Application Builder</title>
+<link rel="icon" href="/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C9A84C;--gold-light:#E8C97A;--gold-pale:#F6EFD9;
+  --navy:#0F1623;--navy-mid:#1A2235;
+  --cream:#FAF8F3;--text:#171717;--muted:#6B6560;--white:#fff;
+  --border:rgba(201,168,76,.14);--success:#1fa94b;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);overflow:hidden}
+button,input,textarea,select{font:inherit}
 
-const { setCors, gemini, supabase } = require('./_lib/utils');
+.topbar{height:60px;background:var(--navy);border-bottom:1px solid rgba(201,168,76,.12);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;z-index:10}
+.tb-brand{display:flex;align-items:center;gap:.65rem}
+.tb-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:var(--navy)}
+.tb-name{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;color:var(--white)}
+.tb-name span{color:var(--gold)}
+.tb-pill{font-size:.62rem;color:rgba(255,255,255,.35);border:1px solid rgba(201,168,76,.2);border-radius:999px;padding:.15rem .55rem;letter-spacing:.08em;text-transform:uppercase}
+.tb-actions{display:flex;gap:.6rem}
+.tb-btn{padding:.4rem .9rem;border-radius:8px;font-size:.78rem;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:.4rem}
+.tb-btn.ghost{background:transparent;border:1px solid rgba(201,168,76,.2);color:rgba(255,255,255,.55)}
+.tb-btn.ghost:hover{border-color:var(--gold);color:var(--gold)}
+.tb-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-light));border:none;color:var(--navy);font-weight:600}
+.tb-btn.primary:hover:not(:disabled){transform:translateY(-1px)}
+.tb-btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
 
-console.log('[generate-application] v2.2 loaded — differentiated token limits, parallel calls ~25s');
+.layout{display:grid;grid-template-columns:290px 1fr;height:calc(100vh - 60px);overflow:hidden}
+.sidebar{background:var(--white);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.sb-head{padding:1rem 1.25rem .85rem;border-bottom:1px solid var(--border)}
+.sb-head h2{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:var(--navy)}
+.sb-head p{font-size:.74rem;color:var(--muted)}
+.sb-body{padding:.85rem 1.1rem;flex:1;display:flex;flex-direction:column;gap:.65rem}
+.type-tabs{display:flex;gap:3px;background:rgba(0,0,0,.05);padding:3px;border-radius:9px}
+.type-tab{flex:1;padding:.5rem;border:none;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;font-size:.77rem;transition:.18s;text-align:center}
+.type-tab.active{background:var(--navy);color:var(--gold);font-weight:500}
+.f-group{display:flex;flex-direction:column;gap:.28rem}
+.f-label{font-size:.67rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.f-input,.f-select,.f-textarea{width:100%;padding:.62rem .75rem;border:1px solid rgba(201,168,76,.15);border-radius:8px;background:var(--cream);color:var(--text);font-size:.83rem;outline:none;transition:.2s}
+.f-input:focus,.f-select:focus,.f-textarea:focus{border-color:rgba(201,168,76,.4);background:var(--white)}
+.f-textarea{min-height:60px;resize:vertical;line-height:1.5}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+.from-chat{display:flex;align-items:center;gap:.4rem;background:rgba(31,169,75,.08);border:1px solid rgba(31,169,75,.2);border-radius:7px;padding:.45rem .7rem;font-size:.7rem;color:#0F5C2E}
+.from-chat-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.gen-btn{width:100%;padding:.85rem;border:none;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);font-weight:600;font-size:.88rem;cursor:pointer;box-shadow:0 6px 20px rgba(201,168,76,.22);transition:.2s;margin-top:auto}
+.gen-btn:hover:not(:disabled){transform:translateY(-1px)}
+.gen-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
-const LANG_NAMES = {
-  mk:'македонски (Macedonian)', en:'English', sr:'српски (Serbian)',
-  hr:'hrvatski (Croatian)',     bg:'български (Bulgarian)', ro:'română (Romanian)',
-  de:'Deutsch (German)',        fr:'français (French)',     es:'español (Spanish)',
-  it:'italiano (Italian)',      pl:'polski (Polish)',       tr:'Türkçe (Turkish)',
-  nl:'Nederlands (Dutch)',      pt:'português (Portuguese)',ru:'русский (Russian)',
-  ar:'العربية (Arabic)',        zh:'中文 (Chinese)',        ja:'日本語 (Japanese)',
-  ko:'한국어 (Korean)',          uk:'українська (Ukrainian)',
-};
+.main-area{overflow-y:auto;background:var(--cream)}
+.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:2rem;gap:1rem}
+.ph-icon{width:68px;height:68px;border-radius:18px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.15);display:flex;align-items:center;justify-content:center;font-size:1.9rem}
+.ph-title{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:300;color:var(--navy)}
+.ph-title em{font-style:italic;color:var(--gold)}
+.ph-desc{font-size:.83rem;color:var(--muted);line-height:1.7;max-width:360px}
+.ph-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;max-width:360px}
+.ph-feat{background:var(--white);border:1px solid var(--border);border-radius:7px;padding:.5rem .65rem;font-size:.71rem;color:var(--muted);display:flex;align-items:center;gap:.38rem}
+.ph-dot{width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0}
 
-module.exports = async function handler(req, res) {
-  setCors(req, res);
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
+.doc-wrap{max-width:810px;margin:0 auto;padding:1.25rem}
+.doc-cover{background:var(--navy);border-radius:14px;padding:1.75rem 2rem;margin-bottom:.85rem}
+.doc-cover h1{font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:300;color:var(--white);margin-bottom:.25rem}
+.doc-cover h1 em{color:var(--gold);font-style:italic}
+.doc-cover-sub{font-size:.75rem;color:rgba(255,255,255,.38);margin-bottom:1rem}
+.doc-meta{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem}
+.doc-meta strong{display:block;font-size:.63rem;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.18rem}
+.doc-meta span{font-size:.78rem;color:rgba(255,255,255,.78)}
+.doc-sec{background:var(--white);border:1px solid var(--border);border-radius:11px;padding:1.1rem 1.35rem;margin-bottom:.65rem}
+.doc-sec-title{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:var(--navy);margin-bottom:.75rem;padding-bottom:.55rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.45rem}
+.doc-text{font-size:.86rem;line-height:1.8;color:var(--text)}
+.res-card{border:1px solid rgba(201,168,76,.14);border-radius:8px;padding:.75rem .9rem;margin-bottom:.5rem;background:rgba(250,248,243,.4)}
+.res-card h4{font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:.25rem;display:flex;align-items:center;gap:.4rem}
+.res-num{background:var(--navy);color:var(--gold);font-size:.62rem;font-weight:500;padding:.1rem .42rem;border-radius:4px}
+.ind-tag{display:inline-block;background:var(--gold-pale);border:1px solid rgba(201,168,76,.2);color:#7A5A1A;padding:.12rem .46rem;border-radius:999px;font-size:.65rem;margin:.1rem}
+.risk-L{background:#EAF3DE;color:#27500A}
+.risk-M{background:#FAEEDA;color:#633806}
+.risk-H{background:#FCEBEB;color:#791F1F}
+.rb{display:inline-block;padding:.13rem .42rem;border-radius:4px;font-size:.65rem;font-weight:500}
+.bsummary{background:var(--navy);border-radius:9px;padding:.75rem 1rem;display:flex;gap:1.25rem;flex-wrap:wrap;margin-bottom:.75rem}
+.bsitem{text-align:center}
+.bsitem strong{display:block;font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--gold)}
+.bsitem span{font-size:.62rem;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:.06em}
+.dtable{width:100%;border-collapse:collapse;font-size:.8rem}
+.dtable th{background:var(--gold-pale);padding:.5rem .7rem;text-align:left;font-weight:500;color:var(--navy);border:.5px solid rgba(201,168,76,.18)}
+.dtable td{padding:.45rem .7rem;border:.5px solid rgba(0,0,0,.05);vertical-align:top}
+.dtable tr:nth-child(even) td{background:rgba(250,248,243,.35)}
+.dtable tfoot td{background:var(--gold-pale);font-weight:600}
+.gantt-w{overflow-x:auto}
+.gtbl{font-size:.69rem;border-collapse:collapse;min-width:660px;width:100%}
+.gtbl th,.gtbl td{padding:.28rem .32rem;border:.5px solid rgba(0,0,0,.05)}
+.gtbl th{background:var(--navy);color:rgba(255,255,255,.58);text-align:center;font-weight:400}
+.gtbl th:first-child{text-align:left;width:170px;color:rgba(255,255,255,.78)}
+.gbar{background:var(--gold);border-radius:2px;height:11px;width:100%}
+.lfm-lv{font-size:.68rem;font-weight:500;color:var(--white);background:var(--navy);padding:.18rem .45rem;border-radius:4px;white-space:nowrap}
 
-  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
-  if (token && supabase) {
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      if (error) console.warn('[auth] token invalid:', error.message);
-      else       console.log('[auth] user:', user?.email);
-    } catch (e) {
-      console.warn('[auth] check error:', e.message);
-    }
+.prog-overlay{position:fixed;inset:0;background:rgba(15,22,35,.82);backdrop-filter:blur(5px);z-index:500;display:none;align-items:center;justify-content:center}
+.prog-overlay.show{display:flex}
+.prog-box{background:var(--white);border-radius:18px;padding:2rem;width:min(390px,88vw);text-align:center}
+.prog-box h3{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--navy);margin-bottom:.3rem}
+.prog-box p{font-size:.8rem;color:var(--muted);margin-bottom:1.35rem;line-height:1.6}
+.prog-steps{display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.1rem;text-align:left}
+.ps{display:flex;align-items:center;gap:.55rem;font-size:.77rem;color:var(--muted);transition:.3s}
+.ps.active{color:var(--text);font-weight:500}
+.ps.done{color:var(--success)}
+.ps-dot{width:17px;height:17px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.58rem;transition:.3s}
+.prog-track{height:3.5px;background:rgba(0,0,0,.06);border-radius:999px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:999px;transition:width .5s ease}
+
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.45rem 1.1rem;font-size:.74rem;color:rgba(255,255,255,.85);opacity:0;transition:.3s;z-index:999;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tb-brand">
+    <div class="tb-mark">M</div>
+    <div style="display:flex;align-items:center;gap:.6rem">
+      <div class="tb-name">Marginova<span>.AI</span></div>
+      <div class="tb-pill">Builder</div>
+    </div>
+  </div>
+  <div class="tb-actions">
+    <button class="tb-btn ghost" onclick="history.length>1?history.back():window.location.href='/app.html'">← Back</button>
+    <button class="tb-btn primary" id="dl-btn" onclick="downloadPDF()" disabled>⬇ Download PDF</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-head">
+      <h2>Application Builder</h2>
+      <p>Fill in details, generate your draft</p>
+    </div>
+    <div class="sb-body">
+      <div class="from-chat" id="from-chat" style="display:none">
+        <div class="from-chat-dot"></div>
+        <span id="from-chat-msg">Program loaded — click Generate Application ✦</span>
+      </div>
+      <div class="type-tabs">
+        <button class="type-tab active" onclick="setType('grant')" id="tab-grant">📋 Grant</button>
+        <button class="type-tab" onclick="setType('scholarship')" id="tab-sch">🎓 Scholarship</button>
+      </div>
+      <div class="f-group"><label class="f-label">Organization / Name</label><input class="f-input" id="f-name" placeholder="Your organization name"></div>
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Sector</label>
+          <select class="f-select" id="f-sector">
+            <option value="">— Select —</option>
+            <option>IT / Technology</option><option>Education</option><option>Agriculture</option>
+            <option>Environment / Energy</option><option>Civil Society</option><option>Health / Social</option>
+            <option>Research / Innovation</option><option>SME / Business</option><option>Tourism / Culture</option>
+          </select>
+        </div>
+        <div class="f-group"><label class="f-label">Country</label>
+          <select class="f-select" id="f-country">
+            <option value="">— Select —</option>
+            <option>North Macedonia</option><option>Serbia</option><option>Croatia</option>
+            <option>Bosnia</option><option>Albania</option><option>Kosovo</option>
+            <option>Bulgaria</option><option>Montenegro</option><option>Slovenia</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="f-group"><label class="f-label">Program name</label><input class="f-input" id="f-title" placeholder="Program / opportunity name"></div>
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Donor</label><input class="f-input" id="f-donor" placeholder="Funder name"></div>
+        <div class="f-group"><label class="f-label">Amount</label><input class="f-input" id="f-amount" placeholder="€60,000"></div>
+      </div>
+      <div class="f-group"><label class="f-label">Language</label>
+        <select class="f-select" id="f-lang">
+          <option value="en">English</option><option value="mk">Македонски</option>
+          <option value="sr">Српски</option><option value="de">Deutsch</option>
+          <option value="fr">Français</option><option value="tr">Türkçe</option>
+          <option value="bg">Български</option><option value="hr">Hrvatski</option>
+          <option value="ar">العربية</option><option value="zh">中文</option>
+        </select>
+      </div>
+      <div class="f-group" id="f-desc-wrap"><label class="f-label">Project idea (optional)</label>
+        <textarea class="f-textarea" id="f-desc" placeholder="Brief description of what you want to achieve..."></textarea>
+      </div>
+      <button class="gen-btn" id="gen-btn" onclick="generate()">✦ Generate Application</button>
+    </div>
+  </div>
+
+  <div class="main-area">
+    <div id="placeholder" class="placeholder">
+      <div class="ph-icon">📋</div>
+      <h2 class="ph-title">Your <em>perfect</em> application</h2>
+      <p class="ph-desc">Fill the form and click Generate. Marginova writes a complete professional draft in your language — ready to refine and submit.</p>
+      <div class="ph-grid">
+        <div class="ph-feat"><div class="ph-dot"></div>Executive summary</div>
+        <div class="ph-feat"><div class="ph-dot"></div>LFM matrix</div>
+        <div class="ph-feat"><div class="ph-dot"></div>Gantt timeline</div>
+        <div class="ph-feat"><div class="ph-dot"></div>Unit-cost budget</div>
+        <div class="ph-feat"><div class="ph-dot"></div>Risk analysis</div>
+        <div class="ph-feat"><div class="ph-dot"></div>Sustainability plan</div>
+        <div class="ph-feat"><div class="ph-dot"></div>PDF download</div>
+        <div class="ph-feat"><div class="ph-dot"></div>20+ languages</div>
+      </div>
+    </div>
+    <div id="doc-out" style="display:none" class="doc-wrap"></div>
+  </div>
+</div>
+
+<div class="prog-overlay" id="prog-overlay">
+  <div class="prog-box">
+    <h3>Generating application</h3>
+    <p>Writing your draft — about 20 seconds.</p>
+    <div class="prog-steps">
+      <div class="ps active" id="ps0"><div class="ps-dot">1</div><span>Analyzing profile & program</span></div>
+      <div class="ps" id="ps1"><div class="ps-dot">2</div><span>Writing narrative sections</span></div>
+      <div class="ps" id="ps2"><div class="ps-dot">3</div><span>Building LFM & activity plan</span></div>
+      <div class="ps" id="ps3"><div class="ps-dot">4</div><span>Calculating budget</span></div>
+      <div class="ps" id="ps4"><div class="ps-dot">✓</div><span>Rendering document</span></div>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const { createClient } = supabase;
+const db = createClient(
+  'https://yidalveetwkcrjkvzbsn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M'
+);
+let appType = 'grant', genData = null, sess = null;
+
+const esc = s => (String(s||'')).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+const fmt = n => Number(n||0).toLocaleString('en-EU');
+
+(async()=>{
+  const { data:{session} } = await db.auth.getSession();
+  sess = session;
+
+  document.getElementById('placeholder').style.display = 'flex';
+  document.getElementById('doc-out').style.display     = 'none';
+  document.getElementById('doc-out').innerHTML         = '';
+  document.getElementById('dl-btn').disabled           = true;
+
+  const p = new URLSearchParams(window.location.search);
+  if (p.has('title') && p.get('title')) {
+    sv('f-title',   p.get('title'));
+    sv('f-donor',   p.get('donor'));
+    sv('f-amount',  p.get('amount'));
+    sv('f-country', p.get('country'));
+    sv('f-sector',  p.get('sector'));
+    if (p.get('type') === 'scholarship') setType('scholarship');
+    document.getElementById('from-chat').style.display = 'flex';
+    toast('Program loaded — click ✦ Generate Application');
   }
 
-  const {
-    type            = 'grant',
-    profile         = {},
-    selectedProgram = {},
-    language        = 'en',
-  } = req.body || {};
-
-  const langName = LANG_NAMES[language] || 'English';
-  console.log(`[generate-application] type=${type} lang=${language}`);
-
-  try {
-    let content;
-    if (type === 'scholarship') {
-      content = await generateScholarship(profile, selectedProgram, language, langName);
-    } else {
-      content = await generateGrant(profile, selectedProgram, language, langName);
-    }
-
-    return res.status(200).json({
-      success:  true,
-      type,
-      language,
-      profile,
-      program:  selectedProgram,
-      content,
-      generated_at: new Date().toISOString(),
-    });
-
-  } catch (err) {
-    console.error('[generate-application] error:', err.message);
-    return res.status(500).json({ error: 'Generation failed', detail: err.message });
+  if (session?.user?.email && !document.getElementById('f-name').value) {
+    const n = session.user.email.split('@')[0].replace(/[._]/g,' ');
+    document.getElementById('f-name').value = n.charAt(0).toUpperCase()+n.slice(1);
   }
-};
+})();
 
-async function generateGrant(profile, program, lang, langName) {
-  const org       = profile.organization  || profile.name       || 'Our Organization';
-  const sector    = profile.sector        || 'Education / IT';
-  const country   = profile.country       || 'North Macedonia';
-  const budgetAmt = program.amount        || program.award_amount || '€60,000';
-  const donor     = program.donor         || program.organization_name || 'Funding Organization';
-  const title     = program.title         || 'Funding Program';
-
-  const narrativePrompt = `You are a senior EU grant writer. Write a professional grant application in ${langName}.
-ALL string values must be in ${langName}.
-
-CRITICAL JSON KEY RULE — NON-NEGOTIABLE:
-Keep ALL JSON keys EXACTLY in English as shown. NEVER translate keys.
-Wrong: "наслов_на_проект", "резиме" — FORBIDDEN
-Right: "project_title", "abstract" — always use these exact English keys.
-
-Organization: ${org}
-Sector: ${sector}
-Country: ${country}
-Program: ${title}
-Donor: ${donor}
-Budget requested: ${budgetAmt}
-
-Return ONLY valid JSON with ENGLISH keys and ${langName} string values:
-{
-  "project_title": "compelling project title in ${langName} (max 12 words)",
-  "abstract": "Executive summary in ${langName}, 180-220 words. Problem + solution + target group + expected impact + budget. First sentence must hook the reader.",
-  "problem_analysis": "Root cause analysis in ${langName} with statistics (cite sources like Eurostat, World Bank, national statistics). 200-250 words. Include: scale of problem, who is affected, why existing solutions fail.",
-  "innovation": "What makes this project different from existing approaches. 80-100 words in ${langName}.",
-  "sustainability": "Financial sustainability (revenue model or follow-up funding), institutional sustainability, impact sustainability. 120-150 words in ${langName}.",
-  "team_capacity": "Organization track record, key team members roles, relevant previous projects. 100-120 words in ${langName}.",
-  "communication": "How results will be disseminated: reports, social media, policy briefs, events. 60-80 words in ${langName}."
-}`;
-
-  const planPrompt = `EU grant writer. String values in ${langName}. ALL JSON keys stay in English.
-
-CRITICAL JSON KEY RULE: NEVER translate JSON keys.
-Keep: "overall_objective", "specific_objective", "results", "number", "title",
-"description", "indicators", "verification", "activities", "id", "result",
-"months", "responsible", "risks", "risk", "probability", "impact", "mitigation"
-These key names must NEVER be translated — only their string values.
-
-Project: ${sector} in ${country}. Budget: ${budgetAmt}. Duration: 18 months.
-Donor: ${donor}. Program: ${title}.
-
-Return ONLY minified valid JSON with English keys and ${langName} values:
-{"overall_objective":"1 sentence in ${langName}","specific_objective":"1 SMART sentence in ${langName}","results":[{"number":1,"title":"title in ${langName}","description":"brief in ${langName}","indicators":["indicator with target in ${langName}"],"verification":"how in ${langName}"},{"number":2,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"},{"number":3,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"}],"activities":[{"id":"A1.1","result":1,"title":"title in ${langName}","months":"1-2","responsible":"role in ${langName}"},{"id":"A1.2","result":1,"title":"title","months":"3-5","responsible":"role"},{"id":"A2.1","result":2,"title":"title","months":"4-9","responsible":"role"},{"id":"A2.2","result":2,"title":"title","months":"7-14","responsible":"role"},{"id":"A3.1","result":3,"title":"title","months":"12-16","responsible":"role"},{"id":"A3.2","result":3,"title":"title","months":"16-18","responsible":"role"},{"id":"A0.1","result":0,"title":"Project management in ${langName}","months":"1-18","responsible":"Project Manager in ${langName}"}],"risks":[{"risk":"risk in ${langName}","probability":"Low","impact":"High","mitigation":"measure in ${langName}"},{"risk":"risk","probability":"Medium","impact":"Medium","mitigation":"measure"},{"risk":"risk","probability":"Low","impact":"Medium","mitigation":"measure"}]}`;
-
-  const budgetNum = (() => {
-    const s = String(budgetAmt).replace(/[^0-9]/g, '');
-    const n = parseInt(s, 10);
-    return isNaN(n) ? 60000 : n;
-  })();
-
-  const budgetPrompt = `You are a senior EU grant accountant.
-Language for string VALUES only: ${langName}.
-
-CRITICAL: ALL JSON keys stay in English exactly as shown. NEVER translate keys.
-
-BUDGET MATH RULE — NON-NEGOTIABLE:
-Total budget = ${budgetNum} EUR (${budgetAmt}).
-Allocate using these percentages:
-- Human Resources: ${Math.round(budgetNum * 0.40)} EUR (40%)
-- Equipment: ${Math.round(budgetNum * 0.22)} EUR (22%)
-- Services: ${Math.round(budgetNum * 0.11)} EUR (11%)
-- Training: ${Math.round(budgetNum * 0.09)} EUR (9%)
-- Travel: ${Math.round(budgetNum * 0.04)} EUR (4%)
-- Communication: ${Math.round(budgetNum * 0.02)} EUR (2%)
-- Indirect costs (7% of direct costs): ${Math.round(budgetNum * 0.96 * 0.07)} EUR
-
-Context: ${sector} project in ${country}. 18 months. Donor: ${donor}.
-
-Return ONLY valid JSON — no markdown fences, no explanation, no preamble:
-{
-  "budget_lines": [
-    {
-      "category": "Human Resources",
-      "item": "describe the role in ${langName}",
-      "unit": "month",
-      "quantity": NUMBER,
-      "unit_cost": NUMBER,
-      "total": NUMBER,
-      "grant_amount": NUMBER,
-      "own_contribution": NUMBER
-    }
-  ],
-  "notes": "brief budget justification note in ${langName}"
+function sv(id, val) {
+  const el = document.getElementById(id);
+  if (!el || !val) return;
+  if (el.tagName === 'SELECT') {
+    const opt = Array.from(el.options).find(o =>
+      o.value.toLowerCase().includes(val.toLowerCase()) ||
+      val.toLowerCase().includes(o.value.toLowerCase()));
+    if (opt) el.value = opt.value;
+  } else el.value = val;
 }
 
-STRICT RULES:
-1. ALL numeric fields must be plain integers — NO commas, NO dots as thousands separators, NO currency symbols, NO quotes around numbers
-2. Create exactly 7-8 budget lines covering the categories above
-3. Each line: unit_cost × quantity MUST equal total exactly
-4. Sum of ALL total fields MUST equal approximately ${budgetNum} EUR (within 5%)
-5. grant_amount + own_contribution = total for each line
-6. own_contribution is 0 for most lines; one line can have small co-financing`;
-
-  console.log('[generate-application] calling Gemini 3x in parallel, budget target:', budgetAmt, budgetNum);
-  const [narrativeRaw, planRaw, budgetRaw] = await Promise.all([
-    safeGemini(narrativePrompt, lang, 8000),
-    safeGemini(planPrompt,      lang, 4000),
-    safeGemini(budgetPrompt,    lang, 4000),
-  ]);
-
-  const narrative = parseJSON(narrativeRaw, narrativeFallback(org, sector, country, lang));
-  const plan      = parseJSON(planRaw,      planFallback(sector, country, lang));
-
-  // Budget: parse then VALIDATE totals
-  let budget = parseJSON(budgetRaw, null);
-  budget = validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName);
-
-  const lfm   = buildLFM(narrative, plan, lang);
-  const gantt = buildGantt(plan.activities || []);
-
-  const budgetLines    = budget.budget_lines || [];
-  const totalGrant     = budgetLines.reduce((s, l) => s + parseLocaleNumber(l.grant_amount), 0);
-  const totalOwn       = budgetLines.reduce((s, l) => s + parseLocaleNumber(l.own_contribution), 0);
-  const totalBudget    = totalGrant + totalOwn;
-  const coFinPct       = totalBudget > 0 ? Math.round((totalOwn / totalBudget) * 100) : 0;
-  const perBeneficiary = Math.round(totalBudget / 150);
-
-  return {
-    project_title:    narrative.project_title    || `${sector} Project in ${country}`,
-    abstract:         narrative.abstract         || '',
-    problem_analysis: narrative.problem_analysis || '',
-    innovation:       narrative.innovation       || '',
-    sustainability:   narrative.sustainability   || '',
-    team_capacity:    narrative.team_capacity    || '',
-    communication:    narrative.communication    || '',
-    overall_objective:  plan.overall_objective   || '',
-    specific_objective: plan.specific_objective  || '',
-    results:            plan.results             || [],
-    activities:         plan.activities          || [],
-    risks:              plan.risks               || [],
-    budget_lines:  budgetLines,
-    budget_totals: { totalGrant, totalOwn, totalBudget, coFinPct, perBeneficiary },
-    budget_notes:  budget.notes || '',
-    lfm,
-    gantt,
-  };
+function setType(t) {
+  appType = t;
+  ['grant','sch'].forEach(x => document.getElementById('tab-'+x).classList.toggle('active', (x==='grant')===(t==='grant')));
+  document.getElementById('f-desc-wrap').style.display = t==='grant' ? '' : 'none';
 }
 
-// ═══ LOCALE-SAFE NUMBER PARSER ═══════════════════════════════
-// Handles: 19800, "19800", "19,800", "19.800", "€19,800", "19 800"
-function parseLocaleNumber(val) {
-  if (val === null || val === undefined) return 0;
-  const s = String(val).trim();
-  // Remove currency symbols and spaces
-  let clean = s.replace(/[€$£¥₹\s]/g, '');
-  // European format: dots as thousands, optional comma decimal → 1.234,56 or 19.800
-  if (/^\d{1,3}(\.\d{3})+(,\d*)?$/.test(clean)) {
-    clean = clean.replace(/\./g, '').replace(',', '.');
-  } else if (/,\d{3}/.test(clean)) {
-    // US format: comma thousands separators → 1,234 or 1,234.56
-    clean = clean.replace(/,(\d{3})/g, '$1');
-  } else {
-    // Plain decimal comma → replace with dot
-    clean = clean.replace(',', '.');
-  }
-  // Remove any remaining non-numeric except decimal point and minus
-  clean = clean.replace(/[^0-9.-]/g, '');
-  const n = parseFloat(clean);
-  return isNaN(n) ? 0 : Math.round(n);
+function toast(msg, dur=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), dur);
 }
 
-// ═══ BUDGET VALIDATION + FALLBACK REPAIR ════════════════════
-async function validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName) {
-  const lines = budget?.budget_lines;
-
-  if (!lines || !Array.isArray(lines) || lines.length === 0) {
-    console.warn('[budget] No budget_lines — using scaled fallback');
-    return scaledBudgetFallback(budgetNum, lang);
-  }
-
-  const parsedTotal = lines.reduce((s, l) => s + parseLocaleNumber(l.total), 0);
-  const tolerance   = budgetNum * 0.25; // 25% tolerance
-
-  console.log(`[budget] Parsed total: ${parsedTotal}, expected: ${budgetNum}, diff: ${Math.abs(parsedTotal - budgetNum)}`);
-
-  if (Math.abs(parsedTotal - budgetNum) <= tolerance) {
-    console.log('[budget] Validation PASSED');
-    return budget;
-  }
-
-  console.warn(`[budget] Validation FAILED (${parsedTotal} vs ${budgetNum}) — using scaled fallback`);
-  // Use deterministic scaled fallback instead of retry (faster, more reliable)
-  return scaledBudgetFallback(budgetNum, lang);
-}
-
-// ═══ DETERMINISTIC SCALED BUDGET FALLBACK ═══════════════════
-// Replaces the old hardcoded budgetFallback — always correct for any budgetNum
-function scaledBudgetFallback(budgetNum, lang) {
-  const mk = lang === 'mk';
-  const hr  = Math.round(budgetNum * 0.24); // HR coordinator
-  const hr2 = Math.round(budgetNum * 0.16); // HR expert
-  const eq  = Math.round(budgetNum * 0.22); // Equipment
-  const sv  = Math.round(budgetNum * 0.11); // Services
-  const tr  = Math.round(budgetNum * 0.09); // Training
-  const tv  = Math.round(budgetNum * 0.04); // Travel
-  const cm  = Math.round(budgetNum * 0.02); // Communication
-  const ic  = Math.round(budgetNum * 0.96 * 0.07); // Indirect 7%
-
-  // co-financing on expert line only (~2%)
-  const hr2own  = Math.round(hr2 * 0.15);
-  const hr2grant = hr2 - hr2own;
-
-  return {
-    budget_lines: [
-      { category: mk?'Човечки ресурси':'Human Resources',   item: mk?'Проект координатор':'Project Coordinator', unit:'month',    quantity:18, unit_cost:Math.round(hr/18),    total:hr,   grant_amount:hr,        own_contribution:0       },
-      { category: mk?'Човечки ресурси':'Human Resources',   item: mk?'Технички експерт':'Technical Expert',       unit:'month',    quantity:12, unit_cost:Math.round(hr2/12),   total:hr2,  grant_amount:hr2grant,  own_contribution:hr2own  },
-      { category: mk?'Опрема':'Equipment',                  item: mk?'Опрема за проектот':'Project equipment',    unit:'unit',     quantity:4,  unit_cost:Math.round(eq/4),     total:eq,   grant_amount:eq,        own_contribution:0       },
-      { category: mk?'Услуги':'Services',                   item: mk?'Специјализирани услуги':'Specialist services', unit:'lump sum', quantity:1, unit_cost:sv,               total:sv,   grant_amount:sv,        own_contribution:0       },
-      { category: mk?'Обука':'Training',                    item: mk?'Обука и работилници':'Training & workshops', unit:'participant', quantity:50, unit_cost:Math.round(tr/50), total:tr, grant_amount:tr,        own_contribution:0       },
-      { category: mk?'Патување':'Travel',                   item: mk?'Теренски посети':'Field visits',             unit:'trip',     quantity:10, unit_cost:Math.round(tv/10),    total:tv,   grant_amount:tv,        own_contribution:0       },
-      { category: mk?'Комуникација':'Communication',        item: mk?'Видливост и комуникација':'Visibility & comms', unit:'lump sum', quantity:1, unit_cost:cm,               total:cm,   grant_amount:cm,        own_contribution:0       },
-      { category: mk?'Индиректни трошоци':'Indirect costs', item: mk?'Индиректни трошоци (7%)':'Indirect costs (7%)', unit:'lump sum', quantity:1, unit_cost:ic,             total:ic,   grant_amount:ic,        own_contribution:0       },
-    ],
-    notes: mk
-      ? `Буџетот е пресметан врз основа на стандардна EU распределба. Вкупен грант: €${(hr+hr2grant+eq+sv+tr+tv+cm+ic).toLocaleString()}. Ко-финансирање: €${hr2own.toLocaleString()} (${Math.round(hr2own/(budgetNum)*100)}%).`
-      : `Budget calculated using standard EU allocation ratios. Total grant: €${(hr+hr2grant+eq+sv+tr+tv+cm+ic).toLocaleString()}. Co-financing: €${hr2own.toLocaleString()} (${Math.round(hr2own/(budgetNum)*100)}%).`,
-  };
-}
-
-async function generateScholarship(profile, program, lang, langName) {
-  const name    = profile.name    || profile.email?.split('@')[0] || 'Applicant';
-  const sector  = profile.sector  || 'Research';
-  const country = profile.country || 'North Macedonia';
-  const title   = program.title   || 'Scholarship Program';
-
-  const prompt = `You are an expert scholarship application advisor. Write in ${langName}.
-ALL text must be in ${langName}.
-
-Applicant: ${name}
-Field: ${sector}
-Home country: ${country}
-Scholarship: ${title}
-
-Return ONLY valid JSON:
-{
-  "personal_statement": "Compelling motivation letter, 400-500 words, first person. Structure: 1) Hook opening about your journey 2) Academic/professional background 3) Specific goals for this scholarship 4) How you will use knowledge back home 5) Strong closing. Must be personal and specific, not generic.",
-  "academic_background": "Education history, research experience, publications if any, GPA context. 120-150 words.",
-  "professional_experience": "Relevant work, internships, volunteer work. Concrete achievements with numbers. 100-120 words.",
-  "research_proposal": "Title + Abstract (60 words) + Methodology (80 words) + Expected outcomes (40 words). Total 200 words.",
-  "return_plan": "Specific plan for applying knowledge after returning: institution to join, project to launch, people to impact. Numbers and timeline. 100-120 words.",
-  "why_this_program": "Specific reasons why THIS scholarship/program is the right fit. Reference program specific features. 80-100 words.",
-  "references_guidance": "What to ask from reference letter writers (3 bullet points)",
-  "cv_structure": ["Education entry", "Experience entry", "Skills entry", "Publications/Awards entry"]
-}`;
-
-  const raw     = await safeGemini(prompt, lang, 6000);
-  const content = parseJSON(raw, scholarshipFallback(name, sector, country, lang));
-  return content;
-}
-
-async function safeGemini(prompt, lang, maxTokens = 8000) {
-  const system = [
-    'You are a professional grant writer.',
-    'OUTPUT RULES (non-negotiable):',
-    '1. Return ONLY a valid JSON object — nothing else.',
-    '2. No markdown fences (no ```json), no explanation, no preamble.',
-    '3. No trailing commas. No comments inside JSON.',
-    '4. All string values must use double quotes.',
-    '5. Do NOT translate JSON keys — only translate string values.',
-    '6. ALL numeric fields must be plain integers — no commas, no dots as thousands, no currency symbols.',
-    '7. If a value would be very long, shorten it to fit valid JSON.',
-  ].join('\n');
-
-  try {
-    const result = await gemini(system, [{ role: 'user', parts: [{ text: prompt }] }], {
-      maxTokens,
-      temperature: 0.1,
-    });
-    console.log(`[safeGemini] maxTokens:${maxTokens} raw preview:`, (result || '').slice(0, 300));
-    return result;
-  } catch (e) {
-    console.warn('[safeGemini] gemini call error:', e.message);
-    return '{}';
-  }
-}
-
-function parseJSON(raw, fallback) {
-  if (!raw) return fallback;
-
-  let clean = raw
-    .replace(/```json\s*/gi, '')
-    .replace(/```\s*/g, '')
-    .trim();
-
-  const start = clean.indexOf('{');
-  const end   = clean.lastIndexOf('}');
-  if (start === -1 || end === -1 || end <= start) {
-    console.warn('[parseJSON] no JSON object found, using fallback');
-    return fallback;
-  }
-  let candidate = clean.slice(start, end + 1);
-
-  try {
-    return fallback ? { ...fallback, ...JSON.parse(candidate) } : JSON.parse(candidate);
-  } catch (_) {}
-
-  try {
-    let repaired = candidate
-      .replace(/,\s*([}\]])/g, '$1')
-      .replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"')
-      .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":')
-      .replace(/\/\/[^\n]*/g, '')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/"[^"]*$/, '"[truncated]"')
-      .replace(/[\x00-\x1F\x7F]/g, ' ');
-
-    const opens  = (repaired.match(/\[/g) || []).length;
-    const closes = (repaired.match(/\]/g) || []).length;
-    const openB  = (repaired.match(/\{/g) || []).length;
-    const closeB = (repaired.match(/\}/g) || []).length;
-    for (let i = 0; i < opens  - closes; i++) repaired += ']';
-    for (let i = 0; i < openB  - closeB; i++) repaired += '}';
-
-    const parsed = JSON.parse(repaired);
-    console.log('[parseJSON] repaired successfully');
-    return fallback ? { ...fallback, ...parsed } : parsed;
-  } catch (e2) {
-    console.warn('[parseJSON] all repair attempts failed:', e2.message.slice(0, 80));
-    return fallback;
-  }
-}
-
-function buildLFM(narrative, plan, lang) {
-  const isMk = lang === 'mk';
-  return {
-    goal: {
-      description: plan.overall_objective  || (isMk ? 'Придонес кон регионалниот развој' : 'Contribute to regional development'),
-      ovi:         isMk ? 'Регионален индекс на развој' : 'Regional development index',
-      mov:         isMk ? 'Национална статистика'       : 'National statistics',
-      assumptions: isMk ? 'Политичка стабилност во регионот' : 'Political stability in the region',
-    },
-    purpose: {
-      description: plan.specific_objective || (isMk ? 'Подобрување на условите за целната група' : 'Improved conditions for target group'),
-      ovi:         isMk ? 'Број на корисници со подобрени услови' : 'Number of beneficiaries with improved conditions',
-      mov:         isMk ? 'Анкета пред/после проектот'            : 'Pre/post project survey',
-      assumptions: isMk ? 'Целната група ќе учествува активно'    : 'Target group actively participates',
-    },
-    results: (plan.results || []).map(r => ({
-      number:      r.number,
-      description: r.title,
-      ovi:         (r.indicators || []).join('; ') || (isMk ? 'Индикатор за верификација' : 'Verification indicator'),
-      mov:         r.verification || (isMk ? 'Финален извештај' : 'Final report'),
-      assumptions: isMk ? 'Партнерите соработуваат' : 'Partners cooperate as planned',
-    })),
-    activities: (plan.activities || []).map(a => ({
-      id:          a.id,
-      description: a.title,
-      inputs:      isMk ? `Буџет, тим, опрема (Месеци ${a.months})` : `Budget, team, equipment (Months ${a.months})`,
-      assumptions: isMk ? 'Достапност на ресурси' : 'Resources available as planned',
-    })),
-  };
-}
-
-function buildGantt(activities) {
-  return activities.map(a => {
-    const parts = (a.months || '1-1').split('-').map(Number);
-    const start = parts[0] || 1;
-    const end   = parts[1] || start;
-    const bars  = [];
-    for (let m = 1; m <= 18; m++) bars.push(m >= start && m <= end);
-    return { id: a.id, title: a.title, result: a.result, responsible: a.responsible, bars };
+function startProg() {
+  document.getElementById('prog-overlay').classList.add('show');
+  const pcts=[8,28,52,78,94], delays=[0,4000,9000,15000,22000];
+  ['ps0','ps1','ps2','ps3','ps4'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.classList.remove('active','done');
+    el.querySelector('.ps-dot').textContent = i+1;
+    setTimeout(()=>{
+      if(i>0){
+        const prev=document.getElementById('ps'+(i-1));
+        prev.classList.remove('active'); prev.classList.add('done');
+        prev.querySelector('.ps-dot').textContent='✓';
+      }
+      el.classList.add('active');
+      document.getElementById('prog-fill').style.width=pcts[i]+'%';
+    }, delays[i]);
   });
 }
 
-function narrativeFallback(org, sector, country, lang) {
-  const mk = lang === 'mk';
-  return {
-    project_title:    mk ? `Дигитална иновација за ${country}` : `Digital Innovation for ${country}`,
-    abstract:         mk ? `Проектот ќе изгради капацитети во секторот ${sector} во ${country}, со директна корист за 150 корисници.` : `This project will build capacity in the ${sector} sector in ${country}, directly benefiting 150 people.`,
-    problem_analysis: mk ? `Недостатокот на дигитални вештини во ${country} е клучна пречка за економски развој.` : `The lack of digital skills in ${country} is a key barrier to economic development.`,
-    innovation:       mk ? 'Иновативен пристап кој комбинира онлајн и офлајн обука.' : 'Innovative blended learning approach combining online and offline training.',
-    sustainability:   mk ? 'По завршувањето на проектот, платформата ќе продолжи со работа преку членарини.' : 'After the project, the platform will continue through membership fees.',
-    team_capacity:    mk ? `Организацијата ${org} има докажано искуство во секторот.` : `${org} has proven experience in the sector.`,
-    communication:    mk ? 'Резултатите ќе бидат споделени преку веб-сајт, социјални мрежи и јавни настани.' : 'Results will be shared via website, social media, and public events.',
-  };
+function endProg() {
+  document.getElementById('prog-fill').style.width='100%';
+  ['ps0','ps1','ps2','ps3','ps4'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.classList.remove('active'); el.classList.add('done');
+    el.querySelector('.ps-dot').textContent='✓';
+  });
+  setTimeout(()=>document.getElementById('prog-overlay').classList.remove('show'), 500);
 }
 
-function planFallback(sector, country, lang) {
-  const mk = lang === 'mk';
-  return {
-    overall_objective:  mk ? `Придонес кон одржливиот развој на ${sector} секторот во ${country}` : `Contribute to sustainable development of the ${sector} sector in ${country}`,
-    specific_objective: mk ? 'Зголемен пристап до квалитетни услуги за 150 корисници до крајот на проектот' : '150 beneficiaries have improved access to quality services by end of project',
-    results: [
-      { number: 1, title: mk ? 'Зајакнат институционален капацитет' : 'Strengthened institutional capacity', description: '', indicators: ['1 platform developed', '5 staff trained'], verification: mk ? 'Договори и извештаи' : 'Contracts and reports' },
-      { number: 2, title: mk ? '150 корисници обучени' : '150 beneficiaries trained', description: '', indicators: ['150 certificates issued', '80% satisfaction rate'], verification: mk ? 'Сертификати и анкети' : 'Certificates and surveys' },
-      { number: 3, title: mk ? 'Одржливост обезбедена' : 'Sustainability ensured', description: '', indicators: ['Partnership agreement signed', 'Revenue model operational'], verification: mk ? 'Договори за партнерство' : 'Partnership agreements' },
-    ],
-    activities: [
-      { id: 'A1.1', result: 1, title: mk ? 'Развој на платформа'     : 'Platform development',    months: '1-5',   responsible: mk ? 'Технички тим'   : 'Technical team' },
-      { id: 'A1.2', result: 1, title: mk ? 'Обука на персонал'       : 'Staff training',          months: '2-3',   responsible: mk ? 'Координатор'    : 'Coordinator' },
-      { id: 'A2.1', result: 2, title: mk ? 'Регрутација'             : 'Participant recruitment', months: '3-4',   responsible: mk ? 'Координатор'    : 'Coordinator' },
-      { id: 'A2.2', result: 2, title: mk ? 'Спроведување на обуки'   : 'Training delivery',      months: '5-14',  responsible: mk ? 'Тренери'        : 'Trainers' },
-      { id: 'A3.1', result: 3, title: mk ? 'Партнерски договори'     : 'Partnership agreements', months: '12-15', responsible: mk ? 'Директор'       : 'Director' },
-      { id: 'A3.2', result: 3, title: mk ? 'Финален извештај'        : 'Final report',           months: '17-18', responsible: mk ? 'Тим'            : 'Team' },
-      { id: 'A0.1', result: 0, title: mk ? 'Управување со проект'    : 'Project management',     months: '1-18',  responsible: mk ? 'Проект менаџер' : 'Project Manager' },
-    ],
-    risks: [
-      { risk: mk ? 'Низок интерес на корисниците' : 'Low beneficiary interest', probability: 'Low',    impact: 'High',   mitigation: mk ? 'Рана комуникација' : 'Early communication' },
-      { risk: mk ? 'Доцнење на плаќања'           : 'Payment delays',           probability: 'Medium', impact: 'Medium', mitigation: mk ? 'Резервен фонд'     : 'Reserve fund' },
-      { risk: mk ? 'Технички проблеми'            : 'Technical issues',         probability: 'Low',    impact: 'Medium', mitigation: mk ? 'Тестирање'         : 'Pre-launch testing' },
-    ],
-  };
+async function generate() {
+  const name  = document.getElementById('f-name').value.trim();
+  const title = document.getElementById('f-title').value.trim();
+  if (!name)  { toast('Please enter your organization name'); return; }
+  if (!title) { toast('Please enter the program name');       return; }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  startProg();
+
+  try {
+    const { data: { session: freshSess } } = await db.auth.getSession();
+    if (freshSess) sess = freshSess;
+
+    const headers = {'Content-Type':'application/json'};
+    if (sess?.access_token) headers['Authorization'] = 'Bearer '+sess.access_token;
+
+    const res = await fetch('/api/generate-application', {
+      method:'POST', headers,
+      body: JSON.stringify({
+        type: appType,
+        profile: {
+          name,
+          sector:  document.getElementById('f-sector').value,
+          country: document.getElementById('f-country').value,
+          description: document.getElementById('f-desc')?.value?.trim()||'',
+        },
+        selectedProgram: {
+          title,
+          donor:  document.getElementById('f-donor').value.trim(),
+          amount: document.getElementById('f-amount').value.trim(),
+        },
+        language: document.getElementById('f-lang').value,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+    genData = data;
+    endProg();
+    renderDoc(data);
+    document.getElementById('dl-btn').disabled = false;
+    toast('Application generated!', 3000);
+  } catch(err) {
+    endProg();
+    toast('Error: '+err.message, 4000);
+    console.error(err);
+  }
+  btn.disabled = false;
 }
 
-function scholarshipFallback(name, sector, country, lang) {
-  const mk = lang === 'mk';
-  return {
-    personal_statement:      mk ? `Растев во ${country} гледајќи ги предизвиците во секторот ${sector}.` : `Growing up in ${country}, I witnessed firsthand the challenges in the ${sector} sector.`,
-    academic_background:     mk ? 'Дипломиран со одличен успех.' : 'Graduated with distinction.',
-    professional_experience: mk ? 'Работев на проекти поврзани со секторот.' : 'Worked on sector-related projects.',
-    research_proposal:       mk ? 'Наслов: Иновации во секторот.' : 'Title: Innovations in the sector.',
-    return_plan:             mk ? 'По враќањето, ќе работам со националните институции.' : 'After returning, I will work with national institutions.',
-    why_this_program:        mk ? 'Овој програм е идеален поради репутацијата.' : 'This program is ideal due to its reputation.',
-    references_guidance:     [mk?'Нагласете ги лидерските квалитети':'Emphasize leadership qualities', mk?'Споменете конкретни постигнувања':'Mention specific achievements', mk?'Опишете го потенцијалот':'Describe impact potential'],
-    cv_structure:            [mk?'Образование: Универзитет, степен, година':'Education: University, degree, year', mk?'Искуство: Позиција, организација':'Experience: Position, org', mk?'Вештини: Јазици':'Skills: Languages', mk?'Признанија':'Recognition: Awards'],
-  };
+function sec(icon, title, body) {
+  if (!body) return '';
+  return `<div class="doc-sec"><div class="doc-sec-title">${icon} ${title}</div>${body}</div>`;
 }
+
+function renderDoc(data) {
+  const c=data.content, prog=data.program||{}, prof=data.profile||{};
+  const isMk=(data.language||'en')==='mk';
+  const TX=(mk,en)=>isMk?mk:en;
+  const today=new Date().toLocaleDateString('en-GB');
+
+  let html=`<div class="doc-cover">
+    <h1>${esc(c.project_title||prog.title||'Application')}</h1>
+    <div class="doc-cover-sub">${esc(prog.title||'')} — ${esc(prog.donor||'')}</div>
+    <div class="doc-meta">
+      <div><strong>${TX('Организација','Organization')}</strong><span>${esc(prof.name||'—')}</span></div>
+      <div><strong>${TX('Сектор','Sector')}</strong><span>${esc(prof.sector||'—')}</span></div>
+      <div><strong>${TX('Земја','Country')}</strong><span>${esc(prof.country||'—')}</span></div>
+      <div><strong>${TX('Износ','Amount')}</strong><span>${esc(prog.amount||'—')}</span></div>
+      <div><strong>${TX('Датум','Date')}</strong><span>${today}</span></div>
+    </div>
+  </div>`;
+
+  if (data.type==='grant') html+=renderGrant(c,TX);
+  else                     html+=renderSch(c,TX);
+
+  document.getElementById('placeholder').style.display='none';
+  document.getElementById('doc-out').style.display='block';
+  document.getElementById('doc-out').innerHTML=html;
+}
+
+function renderGrant(c,TX) {
+  let h='';
+  h+=sec('📌',TX('Резиме','Abstract'),`<div class="doc-text">${esc(c.abstract)}</div>`);
+  h+=sec('🔍',TX('Анализа на проблем','Problem Analysis'),`
+    <div class="doc-text">${esc(c.problem_analysis)}</div>
+    ${c.innovation?`<div class="doc-text" style="margin-top:.8rem;padding-top:.7rem;border-top:1px solid var(--border)"><strong>${TX('Иновација:','Innovation:')}</strong> ${esc(c.innovation)}</div>`:''}`);
+
+  if (c.results?.length) {
+    let body=`
+      ${c.overall_objective?`<p class="doc-text" style="margin-bottom:.45rem"><strong>${TX('Главна цел:','Overall objective:')}</strong> ${esc(c.overall_objective)}</p>`:''}
+      ${c.specific_objective?`<p class="doc-text" style="margin-bottom:.9rem"><strong>${TX('Специфична цел:','Specific objective:')}</strong> ${esc(c.specific_objective)}</p>`:''}
+      ${c.results.map(r=>`<div class="res-card">
+        <h4><span class="res-num">R${esc(r.number)}</span>${esc(r.title)}</h4>
+        ${r.description?`<p style="font-size:.8rem;color:var(--muted);margin-bottom:.3rem">${esc(r.description)}</p>`:''}
+        ${(r.indicators||[]).map(i=>`<span class="ind-tag">${esc(i)}</span>`).join('')}
+        ${r.verification?`<div style="font-size:.7rem;color:var(--muted);margin-top:.35rem">✓ ${esc(r.verification)}</div>`:''}
+      </div>`).join('')}`;
+    h+=sec('🎯',TX('Цели и резултати','Objectives & Results'),body);
+  }
+
+  if (c.lfm) {
+    const lf=c.lfm;
+    h+=sec('📐',TX('Логичка Рамка','Logical Framework Matrix'),`<table class="dtable">
+      <tr><th>${TX('Ниво','Level')}</th><th>${TX('Опис','Description')}</th><th>OVI</th><th>MOV</th><th>${TX('Претпоставки','Assumptions')}</th></tr>
+      <tr><td><span class="lfm-lv">Goal</span></td><td>${esc(lf.goal?.description)}</td><td>${esc(lf.goal?.ovi)}</td><td>${esc(lf.goal?.mov)}</td><td>${esc(lf.goal?.assumptions)}</td></tr>
+      <tr><td><span class="lfm-lv">Purpose</span></td><td>${esc(lf.purpose?.description)}</td><td>${esc(lf.purpose?.ovi)}</td><td>${esc(lf.purpose?.mov)}</td><td>${esc(lf.purpose?.assumptions)}</td></tr>
+      ${(lf.results||[]).map(r=>`<tr><td><span class="lfm-lv">R${esc(r.number)}</span></td><td>${esc(r.description)}</td><td>${esc(r.ovi)}</td><td>${esc(r.mov)}</td><td>${esc(r.assumptions)}</td></tr>`).join('')}
+    </table>`);
+  }
+
+  if (c.gantt?.length) {
+    h+=sec('📅',TX('Временска рамка','Timeline (Gantt)'),`<div class="gantt-w"><table class="gtbl">
+      <tr><th>${TX('Активност','Activity')}</th>${Array.from({length:18},(_,i)=>`<th>M${i+1}</th>`).join('')}</tr>
+      ${c.gantt.map(a=>`<tr><td>${esc(a.id)} ${esc(a.title)}</td>${a.bars.map(b=>`<td style="padding:.18rem">${b?'<div class="gbar"></div>':''}</td>`).join('')}</tr>`).join('')}
+    </table></div>`);
+  }
+
+  if (c.budget_lines?.length) {
+    const bt=c.budget_totals||{};
+    const rc=v=>{const s=(String(v||'')).toLowerCase();return s[0]==='l'?'risk-L':s[0]==='h'?'risk-H':'risk-M';};
+    h+=sec('💰',TX('Буџет','Budget'),`
+      <div class="bsummary">
+        <div class="bsitem"><strong>€${fmt(bt.totalGrant)}</strong><span>${TX('Грант','Grant')}</span></div>
+        <div class="bsitem"><strong>€${fmt(bt.totalOwn)}</strong><span>${TX('Ко-фин.','Co-fin.')}</span></div>
+        <div class="bsitem"><strong>€${fmt(bt.totalBudget)}</strong><span>${TX('Вкупно','Total')}</span></div>
+        <div class="bsitem"><strong>${bt.coFinPct||0}%</strong><span>Co-fin %</span></div>
+        <div class="bsitem"><strong>€${fmt(bt.perBeneficiary)}</strong><span>${TX('/корисник','/beneficiary')}</span></div>
+      </div>
+      <table class="dtable">
+        <tr><th>${TX('Ставка','Item')}</th><th>${TX('Јед.','Unit')}</th><th>${TX('Кол.','Qty')}</th><th>${TX('Цена','Unit cost')}</th><th>${TX('Вкупно','Total')}</th><th>${TX('Грант','Grant')}</th><th>${TX('Ко-фин.','Own')}</th></tr>
+        ${c.budget_lines.map(l=>`<tr><td>${esc(l.item)}</td><td>${esc(l.unit)}</td><td>${esc(l.quantity)}</td><td>€${fmt(l.unit_cost)}</td><td>€${fmt(l.total)}</td><td>€${fmt(l.grant_amount)}</td><td>€${fmt(l.own_contribution)}</td></tr>`).join('')}
+        <tfoot><tr><td colspan="4"><strong>TOTAL</strong></td><td><strong>€${fmt(bt.totalBudget)}</strong></td><td><strong>€${fmt(bt.totalGrant)}</strong></td><td><strong>€${fmt(bt.totalOwn)}</strong></td></tr></tfoot>
+      </table>
+      ${c.budget_notes?`<p style="font-size:.72rem;color:var(--muted);margin-top:.45rem">${esc(c.budget_notes)}</p>`:''}`);
+
+    if (c.risks?.length) {
+      h+=sec('⚠️',TX('Ризици','Risks & Mitigation'),`<table class="dtable">
+        <tr><th>${TX('Ризик','Risk')}</th><th>${TX('Веројатност','Prob.')}</th><th>${TX('Влијание','Impact')}</th><th>${TX('Митигација','Mitigation')}</th></tr>
+        ${c.risks.map(r=>`<tr><td>${esc(r.risk)}</td><td><span class="rb ${rc(r.probability)}">${esc(r.probability)}</span></td><td><span class="rb ${rc(r.impact)}">${esc(r.impact)}</span></td><td>${esc(r.mitigation)}</td></tr>`).join('')}
+      </table>`);
+    }
+  }
+
+  if (c.sustainability) h+=sec('🌿',TX('Одржливост','Sustainability'),`<div class="doc-text">${esc(c.sustainability)}</div>`);
+  if (c.team_capacity)  h+=sec('👥',TX('Тим','Team Capacity'),`<div class="doc-text">${esc(c.team_capacity)}</div>`);
+  if (c.communication)  h+=sec('📢',TX('Комуникација','Communication'),`<div class="doc-text">${esc(c.communication)}</div>`);
+  return h;
+}
+
+function renderSch(c,TX) {
+  const ts=(icon,title,body)=>body?sec(icon,title,`<div class="doc-text">${esc(body)}</div>`):'';
+  let h='';
+  h+=ts('📝',TX('Мотивациско писмо','Personal Statement'),c.personal_statement);
+  h+=ts('🎓',TX('Академска позадина','Academic Background'),c.academic_background);
+  h+=ts('💼',TX('Искуство','Professional Experience'),c.professional_experience);
+  h+=ts('🔬',TX('Истражувачки предлог','Research Proposal'),c.research_proposal);
+  h+=ts('🎯',TX('Зошто овој програм','Why This Program'),c.why_this_program);
+  h+=ts('🏠',TX('План за враќање','Return & Impact Plan'),c.return_plan);
+  if (c.references_guidance?.length) h+=sec('📬',TX('Упатство за препораки','References Guidance'),
+    `<ul style="padding-left:1.2rem">${c.references_guidance.map(g=>`<li class="doc-text" style="margin-bottom:.3rem">${esc(g)}</li>`).join('')}</ul>`);
+  if (c.cv_structure?.length) h+=sec('📄',TX('Структура на CV','CV Structure'),
+    `<ul style="padding-left:1.2rem">${c.cv_structure.map(g=>`<li class="doc-text" style="margin-bottom:.3rem">${esc(g)}</li>`).join('')}</ul>`);
+  return h;
+}
+
+async function downloadPDF() {
+  if (!genData) return;
+  toast('Opening print dialog...', 2000);
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('doc-out').style.display     = 'block';
+  const prog  = genData.program || {};
+  const title = (prog.title || 'marginova-application').slice(0, 60)
+    .replace(/[^a-zA-Z0-9 ._-]/g, '-');
+  const oldTitle    = document.title;
+  document.title    = title;
+  await new Promise(r => setTimeout(r, 250));
+  window.print();
+  document.title = oldTitle;
+}
+</script>
+</body>
+</html>
