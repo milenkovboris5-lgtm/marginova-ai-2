@@ -164,20 +164,21 @@ Typical EU budget split for ${sector} projects at ${budgetNum} EUR:
 - Indirect costs: 7% of direct costs (auto-calculate from sum above)
 
 Return ONLY valid JSON with ENGLISH keys and ${langName} string values.
-Calculate realistic unit costs and quantities. Verify: sum of all "total" fields ≈ ${budgetNum}.
+All numeric fields must be real numbers — no placeholders, no text.
+Scale the amounts so the sum of all "total" fields is close to ${budgetNum} EUR.
 
 {
   "budget_lines": [
-    {"category": "Human Resources", "item": "Project Coordinator", "unit": "month", "quantity": 18, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
-    {"category": "Human Resources", "item": "Technical Expert", "unit": "month", "quantity": 12, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": CALCULATE},
-    {"category": "Equipment", "item": "Main equipment for ${sector}", "unit": "unit", "quantity": CALCULATE, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
-    {"category": "Services", "item": "Specialized services", "unit": "lump sum", "quantity": 1, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
-    {"category": "Training", "item": "Training and workshops", "unit": "participant", "quantity": CALCULATE, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
-    {"category": "Travel", "item": "Field visits and travel", "unit": "trip", "quantity": CALCULATE, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
-    {"category": "Communication", "item": "Visibility and communication", "unit": "lump sum", "quantity": 1, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0},
-    {"category": "Indirect costs", "item": "Indirect costs (7%)", "unit": "lump sum", "quantity": 1, "unit_cost": CALCULATE, "total": CALCULATE, "grant_amount": CALCULATE, "own_contribution": 0}
+    {"category": "Human Resources", "item": "Project Coordinator", "unit": "month", "quantity": 18, "unit_cost": ${Math.round(budgetNum * 0.40 / 18)}, "total": ${Math.round(budgetNum * 0.40)}, "grant_amount": ${Math.round(budgetNum * 0.40)}, "own_contribution": 0},
+    {"category": "Human Resources", "item": "Technical Expert", "unit": "month", "quantity": 12, "unit_cost": ${Math.round(budgetNum * 0.10 / 12)}, "total": ${Math.round(budgetNum * 0.10)}, "grant_amount": ${Math.round(budgetNum * 0.08)}, "own_contribution": ${Math.round(budgetNum * 0.02)}},
+    {"category": "Equipment", "item": "Main equipment for ${sector}", "unit": "unit", "quantity": 5, "unit_cost": ${Math.round(budgetNum * 0.22 / 5)}, "total": ${Math.round(budgetNum * 0.22)}, "grant_amount": ${Math.round(budgetNum * 0.22)}, "own_contribution": 0},
+    {"category": "Services", "item": "Specialized services", "unit": "lump sum", "quantity": 1, "unit_cost": ${Math.round(budgetNum * 0.11)}, "total": ${Math.round(budgetNum * 0.11)}, "grant_amount": ${Math.round(budgetNum * 0.11)}, "own_contribution": 0},
+    {"category": "Training", "item": "Training and workshops", "unit": "participant", "quantity": 50, "unit_cost": ${Math.round(budgetNum * 0.09 / 50)}, "total": ${Math.round(budgetNum * 0.09)}, "grant_amount": ${Math.round(budgetNum * 0.09)}, "own_contribution": 0},
+    {"category": "Travel", "item": "Field visits and travel", "unit": "trip", "quantity": 20, "unit_cost": ${Math.round(budgetNum * 0.02 / 20)}, "total": ${Math.round(budgetNum * 0.02)}, "grant_amount": ${Math.round(budgetNum * 0.02)}, "own_contribution": 0},
+    {"category": "Communication", "item": "Visibility and communication", "unit": "lump sum", "quantity": 1, "unit_cost": ${Math.round(budgetNum * 0.02)}, "total": ${Math.round(budgetNum * 0.02)}, "grant_amount": ${Math.round(budgetNum * 0.02)}, "own_contribution": 0},
+    {"category": "Indirect costs", "item": "Indirect costs (7%)", "unit": "lump sum", "quantity": 1, "unit_cost": ${Math.round(budgetNum * 0.96 * 0.07)}, "total": ${Math.round(budgetNum * 0.96 * 0.07)}, "grant_amount": ${Math.round(budgetNum * 0.96 * 0.07)}, "own_contribution": 0}
   ],
-  "notes": "Budget note in ${langName} — total sums to ${budgetAmt}, explain co-financing and cost efficiency"
+  "notes": "Budget note in ${langName} — total approximately ${budgetAmt}, explain co-financing and cost efficiency"
 }`;
 
   // ── Call Gemini 3x in parallel — differentiated token limits ─
