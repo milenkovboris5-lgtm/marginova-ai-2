@@ -17,8 +17,6 @@
       "memory": 256
     }
   },
-  "cleanUrls": true,
-  "trailingSlash": false,
   "crons": [
     {
       "path": "/api/cron/update-opportunities",
