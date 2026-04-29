@@ -1,6 +1,10 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/_lib/llmRouter.js
-// v6 — REPLACE THE ENTIRE FILE WITH THIS
+// v7 — REPLACE THE ENTIRE FILE WITH THIS
+//
+// CHANGES over v6:
+// 9. BUDGET RULE: Gemini cannot override budget mismatch signals
+// 10. LANGUAGE RULE: consistent language across all programs
 //
 // FIXES over v5:
 // 1. buildDataRows() passes TIER label to Gemini based on _relevanceScore
@@ -17,7 +21,7 @@
 
 const { gemini, LANG_NAMES } = require('./utils');
 
-console.log('[llmRouter] v6 loaded — tier labels, relevance-aware formatting');
+console.log('[llmRouter] v7 loaded — budget rule enforced, language consistency');
 
 const NATIVE_NAMES = {
   mk:'македонски', sr:'српски',   hr:'hrvatski',  bs:'bosanski',
@@ -218,6 +222,13 @@ STRICT RULES — follow exactly:
 6. Keep amounts, dates, and URLs character-for-character as given in the data.
 7. [WEB — verify] tagged results: add a short note to verify on official website.
 8. Do NOT show the TIER label or SCORE number to the user — use it only for formatting decisions.
+9. BUDGET RULE — CRITICAL: Never write that an amount "fits the budget range" or
+   "is within budget" unless the MATCH SIGNALS explicitly contain a budget match signal.
+   If RISK FACTORS contain "Budget mismatch", you MUST include that warning clearly
+   in the ⚠️ section. Do NOT override or ignore budget risk factors with your own assessment.
+   Copy the budget risk factor text exactly as given — do not soften it.
+10. LANGUAGE RULE: Detect the user's language from their messages and respond in that
+    language consistently across ALL programs. Do not switch languages mid-response.
 
 Format EACH program exactly like this (no deviations):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
