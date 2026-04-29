@@ -1,19 +1,19 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/_lib/fundingScorer.js
-// v6 — REPLACE THE ENTIRE FILE WITH THIS
+// v7 — REPLACE THE ENTIRE FILE WITH THIS
 //
-// FIXES over v5:
-// 1. Query 1 uses ALL sector keywords (not just 4)
-// 2. Query 2 (country) is narrowed with sector filter
-//    → stops irrelevant global programs bleeding through
-// 3. Sort is relevance-first, deadline as tiebreaker
-// 4. _matchCount is a proper weighted integer, not signal count
-// 5. DB_FETCH_LIMIT raised to 120 for better candidate pool
+// FIXES over v6:
+// 1. Budget scoring three-tier logic:
+//    amt <= max       → +2 (fits)
+//    max < amt <= max*3 → 0  (neutral)
+//    amt > max*3      → -3 (way above — penalized, pushed to bottom)
+// 2. Budget risk factor: clear human message when mismatch
+//    "Budget mismatch: you need up to €30k, program offers €150k"
 // ═══════════════════════════════════════════════════════════
 
 const { getTable } = require('./utils');
 
-console.log('[fundingScorer] v6 loaded — all keywords, relevance sort, narrow country query');
+console.log('[fundingScorer] v7 loaded — budget three-tier scoring, clear mismatch warnings');
 
 const SECTOR_SQL_KEYWORDS = {
   'Environment / Energy':      ['environment','climate','renewable','biodiversity','ecosystem','conservation','clean energy','pollution','nature','wildlife','forest','sustainability','green','energy','ecology','gef','geff','wwf','life programme','carbon','emission'],
@@ -256,12 +256,23 @@ function annotate(g, profile, sectorKws) {
   }
 
   // Budget range matching
+  // v7 FIX: Three-tier budget logic:
+  //   amt <= max       → +2 (fits — user can apply for this amount)
+  //   max < amt <= max*3 → 0  (above range but not extreme — neutral)
+  //   amt > max*3      → -3  (way above — misleading, penalize heavily)
+  // Example: user wants €30k, program offers €150k → amt > 30k*3=90k → -3
+  // Example: user wants €30k, program offers €60k  → amt > 30k*3=90k? No → neutral
   if (profile.budget && g.award_amount != null) {
     const [min, max] = BUDGET_RANGES[profile.budget] || [0, Infinity];
     const amt = Number(g.award_amount);
-    if (!isNaN(amt) && amt >= min && amt <= max) {
-      relevanceScore += 2;
-      matchSignals.push(`Amount ${amt.toLocaleString()} ${g.currency || 'EUR'} fits your budget range`);
+    if (!isNaN(amt)) {
+      if (amt >= min && amt <= max) {
+        relevanceScore += 2;
+        matchSignals.push(`Amount ${amt.toLocaleString()} ${g.currency || 'EUR'} fits your budget range`);
+      } else if (amt > max * 3) {
+        relevanceScore -= 3; // way above budget — pushes to bottom
+      }
+      // amt between max and max*3 → neutral (0), no signal either way
     }
   }
 
@@ -299,11 +310,19 @@ function annotate(g, profile, sectorKws) {
     }
   }
 
+  // Budget risk factor
+  // v7 FIX: Only warn when amount is genuinely mismatched.
+  // amt > max*3 → strong warning (e.g. want 30k, program offers 150k)
+  // amt < min*0.5 → warn (program offers too little)
   if (profile.budget && g.award_amount != null) {
     const [mn, mx] = BUDGET_RANGES[profile.budget] || [0, Infinity];
     const amt      = Number(g.award_amount);
-    if (!isNaN(amt) && (amt < mn * 0.5 || amt > mx * 2)) {
-      riskFactors.push(`Budget gap: you need ${profile.budget}, program offers ${Math.round(amt).toLocaleString()} ${g.currency || 'EUR'}`);
+    if (!isNaN(amt)) {
+      if (amt > mx * 3) {
+        riskFactors.push(`Budget mismatch: you need ${profile.budget}, program offers ${Math.round(amt).toLocaleString()} ${g.currency || 'EUR'} — check if partial funding is allowed`);
+      } else if (amt < mn * 0.5) {
+        riskFactors.push(`Program offers ${Math.round(amt).toLocaleString()} ${g.currency || 'EUR'} — may be below your budget need`);
+      }
     }
   }
 
