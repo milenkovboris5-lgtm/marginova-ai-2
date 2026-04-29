@@ -115,6 +115,7 @@ button,input,textarea,select{font:inherit}
 
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.45rem 1.1rem;font-size:.74rem;color:rgba(255,255,255,.85);opacity:0;transition:.3s;z-index:999;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -140,6 +141,23 @@ button,input,textarea,select{font:inherit}
       <p>Fill in details, generate your draft</p>
     </div>
     <div class="sb-body">
+      <!-- ВЛЕЗ Б: Upload RFP -->
+      <div id="rfp-upload-area" style="background:rgba(201,168,76,.06);border:1.5px dashed rgba(201,168,76,.35);border-radius:10px;padding:.85rem;text-align:center;cursor:pointer;transition:.2s;margin-bottom:.1rem" onclick="document.getElementById('rfp-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--gold)'" ondrop="handleRFPDrop(event)">
+        <input type="file" id="rfp-file-input" accept="application/pdf" style="display:none" onchange="handleRFPUpload(event)">
+        <div style="font-size:1.4rem;margin-bottom:.3rem">📎</div>
+        <div style="font-size:.78rem;font-weight:500;color:var(--gold)">Upload RFP / Open Call PDF</div>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:.2rem">Drag & drop or click — Gemini ќе го анализира повикот</div>
+      </div>
+      <div id="rfp-loading" style="display:none;text-align:center;padding:.75rem;font-size:.78rem;color:var(--muted)">
+        <div style="display:inline-block;width:16px;height:16px;border:2px solid var(--gold);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;margin-right:.5rem;vertical-align:middle"></div>
+        Анализирам повик...
+      </div>
+      <div id="rfp-result" style="display:none;background:rgba(31,169,75,.06);border:1px solid rgba(31,169,75,.2);border-radius:8px;padding:.65rem .85rem;font-size:.74rem">
+        <div style="color:#0F5C2E;font-weight:500;margin-bottom:.3rem">✓ Повикот е анализиран</div>
+        <div id="rfp-summary" style="color:var(--muted);line-height:1.5"></div>
+        <button onclick="clearRFP()" style="margin-top:.5rem;background:transparent;border:none;color:var(--muted);font-size:.68rem;cursor:pointer;text-decoration:underline">Избриши и внеси рачно</button>
+      </div>
+
       <div class="from-chat" id="from-chat" style="display:none">
         <div class="from-chat-dot"></div>
         <span id="from-chat-msg">Program loaded — click Generate Application ✦</span>
@@ -481,6 +499,103 @@ function renderSch(c,TX) {
   if (c.cv_structure?.length) h+=sec('📄',TX('Структура на CV','CV Structure'),
     `<ul style="padding-left:1.2rem">${c.cv_structure.map(g=>`<li class="doc-text" style="margin-bottom:.3rem">${esc(g)}</li>`).join('')}</ul>`);
   return h;
+}
+
+// ═══ RFP UPLOAD FUNCTIONS ═══════════════════════════════
+
+function handleRFPDrop(e) {
+  e.preventDefault();
+  document.getElementById('rfp-upload-area').style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') processRFP(file);
+  else toast('Само PDF фајлови се поддржани', 2500);
+}
+
+function handleRFPUpload(e) {
+  const file = e.target.files[0];
+  if (file) processRFP(file);
+}
+
+async function processRFP(file) {
+  if (file.size > 10 * 1024 * 1024) {
+    toast('PDF е преголем — максимум 10MB', 3000);
+    return;
+  }
+
+  // Show loading
+  document.getElementById('rfp-upload-area').style.display = 'none';
+  document.getElementById('rfp-loading').style.display = 'block';
+  document.getElementById('rfp-result').style.display = 'none';
+
+  try {
+    // Convert PDF to base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const lang = document.getElementById('f-lang').value || 'en';
+
+    const res = await fetch('/api/parse-rfp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pdfBase64: base64, language: lang }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Parse failed');
+
+    const rfp = data.rfp;
+
+    // Auto-fill the form
+    if (rfp.title)        sv('f-title',  rfp.title);
+    if (rfp.organization) sv('f-donor',  rfp.organization);
+    if (rfp.amount)       sv('f-amount', rfp.amount);
+    if (rfp.country)      sv('f-country',rfp.country);
+    if (rfp.focus_areas)  sv('f-sector', rfp.focus_areas);
+
+    // Show result summary
+    document.getElementById('rfp-loading').style.display = 'none';
+    document.getElementById('rfp-result').style.display = 'block';
+
+    const summaryLines = [
+      rfp.title        ? '<strong>' + rfp.title + '</strong>' : '',
+      rfp.organization ? '🏛 ' + rfp.organization : '',
+      rfp.amount       ? '💰 ' + rfp.amount : '',
+      rfp.deadline     ? '📅 ' + rfp.deadline : '',
+      rfp.summary      ? '<br><em>' + rfp.summary + '</em>' : '',
+    ].filter(Boolean).join(' · ');
+
+    document.getElementById('rfp-summary').innerHTML = summaryLines;
+
+    // Show key requirements as toast
+    if (rfp.key_requirements && rfp.key_requirements.length) {
+      toast('Повикот е анализиран — формата е пополнета автоматски', 3000);
+    }
+
+    // Store rfp data for use in generate
+    window._rfpData = rfp;
+
+  } catch(err) {
+    document.getElementById('rfp-loading').style.display = 'none';
+    document.getElementById('rfp-upload-area').style.display = 'block';
+    toast('Грешка: ' + err.message, 4000);
+    console.error('[RFP]', err);
+  }
+}
+
+function clearRFP() {
+  window._rfpData = null;
+  document.getElementById('rfp-upload-area').style.display = 'block';
+  document.getElementById('rfp-result').style.display = 'none';
+  document.getElementById('rfp-file-input').value = '';
+  // Clear auto-filled fields
+  ['f-title','f-donor','f-amount'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
 }
 
 async function downloadPDF() {
