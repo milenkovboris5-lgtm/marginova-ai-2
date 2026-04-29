@@ -913,15 +913,18 @@ async function sendMsg() {
 // ─── OPEN BUILDER ────────────────────────────────────────────
 function openBuilder(program) {
   // OPTION C FIX: use sessionProfile (detected this session) not sidebar DOM.
-  // Sidebar DOM may contain stale Supabase data from previous sessions.
   const country = sessionProfile.country || '';
   const sector  = sessionProfile.sector  || '';
+  // Pass type from DB data — never infer from title keywords to avoid
+  // MSCA/Chevening being treated as scholarship when clicked as grant
+  const isScholarship = /scholarship|fellowship/i.test(program.opportunityType || '');
   const params  = new URLSearchParams({
     title:   program.title        || '',
     donor:   program.organization || '',
     amount:  program.amount       || '',
     country: country,
     sector:  sector,
+    type:    isScholarship ? 'scholarship' : 'grant',
   });
   window.location.href = '/premium-application.html?' + params.toString();
 }
