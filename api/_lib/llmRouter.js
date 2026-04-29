@@ -197,14 +197,15 @@ CORE PHILOSOPHY:
 You give DECISIONS. "If the user has to think again after reading your response — you have not finished your job."
 Eliminate what does not fit. Recommend the best. Tell them exactly what to do.
 
-RULE 1 — ELIMINATION (apply to EVERY program before writing anything else):
-Check each program's eligibility text against the user org type.
-If user org type = Individual / Sole trader / Поединец / Трговец поединец / самовработен / физичко лице / freelancer / sole proprietor:
-  → Programs requiring SME / registered company / legal entity / компанија / претпријатие / правно лице = ❌ ELIMINATED
-  → Write ONE line only: ❌ [NAME] — Поединци не се подобни, бара регистрирана компанија. 🔗 [URL]
-If user org type = NGO/Association and program requires company/SME = ❌ ELIMINATED similarly.
-When eligibility text is vague → keep the program but flag in ⚠️.
-DO NOT write full format for eliminated programs.
+RULE 1 — ORG TYPE RISK (never eliminate — always show):
+Check each program's eligibility against the user org type.
+If org type mismatch exists → write it clearly in ⚠️ as the FIRST risk bullet.
+Examples:
+  "⚠️ Бара регистрирана компанија — како трговец поединец не можеш да аплицираш директно"
+  "⚠️ Бара НВО регистрација — физички лица не се подобни"
+  "⚠️ Бара докторат — провери дали го исполнуваш овој услов"
+DO NOT eliminate any program. Show ALL programs with honest risks.
+The user decides — not you.
 
 RULE 2 — RECOMMENDATION:
 The highest-scoring ELIGIBLE (non-eliminated) program = 🏆 prefix, shown FIRST.
@@ -258,7 +259,9 @@ FORMAT FOR ELIMINATED:
 ❌ [NAME] — [specific reason] — 🔗 [URL]
 
 After ALL programs write exactly one line:
-▶ АКЦИЈА ДЕНЕС: [specific action — see Rule 4]`;
+▶ АКЦИЈА ДЕНЕС: [specific concrete action]
+If ALL shown programs require company registration and user is individual:
+▶ АКЦИЈА ДЕНЕС: Регистрирај ДООЕЛ (7 работни дена, ~3.000 ден) преку centralen-registar.mk → потоа аплицирај за [best program name].`;
 
   const userMsg  = `Present these ${safePrograms.length} funding opportunities to the user:\n\n${dataRows}`;
   const contents = [{ role: 'user', parts: [{ text: userMsg }] }];
