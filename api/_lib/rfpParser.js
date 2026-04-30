@@ -30,9 +30,15 @@ Return ONLY valid JSON — no markdown fences, no explanation, no preamble.
 }
 
 Rules:
-- amount_min, amount_max: plain integers, no symbols
-- deadline: YYYY-MM-DD, use final submission deadline
-- key_requirements: 3 most important eligibility/submission requirements`;
+- amount_min, amount_max: plain integers, no symbols, no currency signs
+- deadline: YYYY-MM-DD format only, use final submission deadline
+- key_requirements: exactly 3 most important requirements
+- CRITICAL: ALL string values must use plain text only
+  NO double quotes inside string values — use parentheses instead
+  WRONG: "eligibility": "For \"SMEs\" and companies"
+  RIGHT:  "eligibility": "For (SMEs) and companies"
+- If a value contains a quote character, replace it with a space or parentheses
+- Keep all string values short and clean — no special formatting`;
 
 async function parseRFP(pdfBase64) {
   if (!GEMINI_KEY) throw new Error('Missing GEMINI_API_KEY');
@@ -66,8 +72,13 @@ async function parseRFP(pdfBase64) {
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   if (!raw) throw new Error('Gemini returned empty response');
 
-  // Parse JSON
-  const clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  // Sanitize + Parse JSON
+  // Bug #5: Gemini may output unescaped quotes or curly quotes in PDF extraction
+  const sanitized = raw
+    .replace(/\u201C|\u201D/g, "'")
+    .replace(/\u2018|\u2019/g, "'")
+    .replace(/\u00AB|\u00BB/g, "'");
+  const clean = sanitized.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const parsed = JSON.parse(clean);
 
   // Format amount for display
