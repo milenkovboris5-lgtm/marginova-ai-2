@@ -331,9 +331,13 @@ Return ONLY valid JSON:
 // Runs BEFORE parseJSON — fixes curly/smart quotes Gemini sometimes outputs
 function sanitizeGeminiJSON(raw) {
   if (!raw || typeof raw !== 'string') return raw;
+  // Fix curly/smart quotes — these are always wrong in JSON (100% reliable)
+  // Straight unescaped quotes inside strings are fundamentally ambiguous —
+  // we rely on temp=0.0 + prompt rule to prevent them at source
   return raw
-    .replace(/\u201C|\u201D/g, "'")  // curly double quotes → single quote
-    .replace(/\u2018|\u2019/g, "'"); // curly single quotes → single quote
+    .replace(/\u201C|\u201D/g, "'")
+    .replace(/\u2018|\u2019/g, "'")
+    .replace(/\u00AB|\u00BB/g, "'");
 }
 
 async function safeGemini(prompt, lang, maxTokens = 8000) {
@@ -355,7 +359,7 @@ async function safeGemini(prompt, lang, maxTokens = 8000) {
   try {
     const result = await gemini(system, [{ role: 'user', parts: [{ text: prompt }] }], {
       maxTokens,
-      temperature: 0.1,
+      temperature: 0.0,  // 0.0 reduces hallucination and quote violations
     });
     console.log(`[safeGemini] maxTokens:${maxTokens} raw preview:`, (result || '').slice(0, 300));
     return result;
