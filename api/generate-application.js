@@ -103,7 +103,7 @@ Return ONLY valid JSON with ENGLISH keys and ${langName} string values:
   "problem_analysis": "Root cause analysis in ${langName} with statistics (cite sources like Eurostat, World Bank, national statistics). 200-250 words. Include: scale of problem, who is affected, why existing solutions fail.",
   "innovation": "What makes this project different from existing approaches. 80-100 words in ${langName}.",
   "sustainability": "Financial sustainability (revenue model or follow-up funding), institutional sustainability, impact sustainability. 120-150 words in ${langName}.",
-  "team_capacity": "Organization track record, key team members roles, relevant previous projects. 100-120 words in ${langName}.",
+  "team_capacity": "Organization track record and relevant experience. Do NOT invent specific names, titles or people. Describe the team generically: roles, years of experience, relevant past projects. 100-120 words in ${langName}.",
   "communication": "How results will be disseminated: reports, social media, policy briefs, events. 60-80 words in ${langName}."
 }`;
 
@@ -122,9 +122,15 @@ Return ONLY minified valid JSON with English keys and ${langName} values:
 {"overall_objective":"1 sentence in ${langName}","specific_objective":"1 SMART sentence in ${langName}","results":[{"number":1,"title":"title in ${langName}","description":"brief in ${langName}","indicators":["indicator with target in ${langName}"],"verification":"how in ${langName}"},{"number":2,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"},{"number":3,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"}],"activities":[{"id":"A1.1","result":1,"title":"title in ${langName}","months":"1-2","responsible":"role in ${langName}"},{"id":"A1.2","result":1,"title":"title","months":"3-5","responsible":"role"},{"id":"A2.1","result":2,"title":"title","months":"4-9","responsible":"role"},{"id":"A2.2","result":2,"title":"title","months":"7-14","responsible":"role"},{"id":"A3.1","result":3,"title":"title","months":"12-16","responsible":"role"},{"id":"A3.2","result":3,"title":"title","months":"16-18","responsible":"role"},{"id":"A0.1","result":0,"title":"Project management in ${langName}","months":"1-18","responsible":"Project Manager in ${langName}"}],"risks":[{"risk":"risk in ${langName}","probability":"Low","impact":"High","mitigation":"measure in ${langName}"},{"risk":"risk","probability":"Medium","impact":"Medium","mitigation":"measure"},{"risk":"risk","probability":"Low","impact":"Medium","mitigation":"measure"}]}`;
 
   const budgetNum = (() => {
-    const s = String(budgetAmt).replace(/[^0-9]/g, '');
-    const n = parseInt(s, 10);
-    return isNaN(n) ? 60000 : n;
+    const s = String(budgetAmt);
+    // Remove thousand separators (multi-pass handles 1,500,000)
+    let c = s.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
+    c = c.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
+    c = c.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
+    // Extract all numbers, take MAXIMUM (handles ranges like "15,000 — 150,000 EUR")
+    const nums = (c.match(/[0-9]+/g) || []).map(Number).filter(n => n > 999 && n <= 10000000);
+    if (nums.length === 0) return 60000;
+    return Math.max(...nums);
   })();
 
   const budgetPrompt = `You are a senior EU grant accountant.
