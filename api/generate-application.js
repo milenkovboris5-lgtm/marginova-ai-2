@@ -348,11 +348,13 @@ async function safeGemini(prompt, lang, maxTokens = 8000) {
     '2. No markdown fences (no ```json), no explanation, no preamble.',
     '3. No trailing commas. No comments inside JSON.',
     '4. All string values must use double quotes on the OUTSIDE only.',
-    '5. CRITICAL: NEVER place double quote characters (" ") inside string values.',
-    '   They break JSON parsing. Use single quotes or remove them instead.',
-    '   WRONG: {"text": "The \"ERP\" system"}   RIGHT: {"text": "The ERP system"}',
+    '5. CRITICAL: NEVER place double quote characters inside string values.',
+    '   Use parentheses instead: (МСП) not "МСП", (ЕУ) not "ЕУ", (ERP) not "ERP"',
+    '   WRONG: {"text": "малите претпријатија \"МСП\" во"}',
+    '   RIGHT:  {"text": "малите претпријатија (МСП) во"}',
+    '   This applies to ALL abbreviations: МСП, ЕУ, AI, ERP, SaaS, MES, IT, ICT',
     '6. Do NOT translate JSON keys — only translate string values.',
-    '7. ALL numeric fields must be plain integers — no commas, no dots as thousands, no currency symbols.',
+    '7. ALL numeric fields must be plain integers — no commas, no dots as thousands.',
     '8. If a value would be very long, shorten it to fit valid JSON.',
   ].join('\n');
 
