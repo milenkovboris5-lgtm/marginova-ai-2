@@ -316,9 +316,5 @@ function mergeWithWeb(dbResults, webResults) {
   console.log(`[mergeWithWeb] db:${dbResults?.length || 0} web:${webResults?.length || 0} final:${merged.length}`);
   return merged;
 }
+module.exports = { searchDB, RESULTS_TO_SHOW };
 
-function needsSerper(dbResults) {
-  return !Array.isArray(dbResults) || dbResults.length < MIN_RESULTS;
-}
-
-module.exports = { searchDB, mergeWithWeb, needsSerper, RESULTS_TO_SHOW };
