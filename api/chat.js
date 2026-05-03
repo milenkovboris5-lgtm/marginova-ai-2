@@ -83,7 +83,6 @@ const LANG = {
     conditional:   '⚠️ УСЛОВНО',
     no:            '❌ НЕ',
     elim:          '🚫 ЕЛИМИНИРАНО',
-    // nextStep helpers
     nextStepUrl:   (url)   => `Отвори ја официјалната страница и провери го повикот за предлози: ${url}`,
     nextStepSearch:(title) => `Пребарај "${title}" на официјалната веб-страница на донаторот`,
     nextStepApply: (days)  => `⚡ Аплицирај во следните ${days} дена. `,
@@ -238,40 +237,40 @@ const RISK_STRINGS = {
 // ─── WHY-FITS STRINGS (Macedonian / English / Serbian) ──────────────
 const WHY_FITS_STRINGS = {
   mk: {
-    ngo: 'одговара на вашиот тип НВО',
-    company: 'одговара на вашата регистрирана компанија',
-    farmer: 'наменето за земјоделски стопанства',
-    student: 'отворено за студенти / млади',
+    ngo:      'одговара на вашиот тип НВО',
+    company:  'одговара на вашата регистрирана компанија',
+    farmer:   'наменето за земјоделски стопанства',
+    student:  'отворено за студенти / млади',
     researcher: 'насочено кон истражувачки институции',
-    country: 'отворено за',
-    balkans: 'отворено за земји на Западен Балкан',
-    sector: 'се усогласува со вашиот сектор',
+    country:  'отворено за',
+    balkans:  'отворено за земји на Западен Балкан',
+    sector:   'се усогласува со вашиот сектор',
     fallback: 'Општо совпаѓање — проверете ги критериумите на официјален извор',
-    noMatch: 'Не ги исполнува критериумите за подобност',
+    noMatch:  'Не ги исполнува критериумите за подобност',
   },
   en: {
-    ngo: 'matches your NGO type',
-    company: 'matches your company registration',
-    farmer: 'designed for agricultural holdings',
-    student: 'open to students / young professionals',
+    ngo:      'matches your NGO type',
+    company:  'matches your company registration',
+    farmer:   'designed for agricultural holdings',
+    student:  'open to students / young professionals',
     researcher: 'targets research institutions',
-    country: 'open to',
-    balkans: 'open to Western Balkans countries',
-    sector: 'aligns with your sector',
+    country:  'open to',
+    balkans:  'open to Western Balkans countries',
+    sector:   'aligns with your sector',
     fallback: 'General match — verify eligibility criteria on official source',
-    noMatch: 'Does not match eligibility criteria',
+    noMatch:  'Does not match eligibility criteria',
   },
   sr: {
-    ngo: 'odgovara vašem tipu NVO',
-    company: 'odgovara vašoj registrovanoj kompaniji',
-    farmer: 'namenjeno za poljoprivredna gazdinstva',
-    student: 'otvoreno za studente / mlade',
+    ngo:      'odgovara vašem tipu NVO',
+    company:  'odgovara vašoj registrovanoj kompaniji',
+    farmer:   'namenjeno za poljoprivredna gazdinstva',
+    student:  'otvoreno za studente / mlade',
     researcher: 'usmereno ka istraživačkim institucijama',
-    country: 'otvoreno za',
-    balkans: 'otvoreno za zemlje Zapadnog Balkana',
-    sector: 'usklađeno sa vašim sektorom',
+    country:  'otvoreno za',
+    balkans:  'otvoreno za zemlje Zapadnog Balkana',
+    sector:   'usklađeno sa vašim sektorom',
     fallback: 'Opšte poklapanje — proverite kriterijume na zvaničnom izvoru',
-    noMatch: 'Ne ispunjava kriterijume podobnosti',
+    noMatch:  'Ne ispunjava kriterijume podobnosti',
   },
 };
 
@@ -305,14 +304,14 @@ function buildWhyFits(opp, profile, lang) {
 
 // ─── PROGRAM FAMILY CLUSTERS ─────────────────────────────────────────
 const PROGRAM_FAMILIES = [
-  { re: /ipard/i,                          family: 'IPARD' },
-  { re: /erasmus\+?/i,                     family: 'Erasmus+' },
-  { re: /horizon\s*(europe|2020)?/i,       family: 'Horizon Europe' },
-  { re: /creative\s*europe/i,              family: 'Creative Europe' },
-  { re: /life\s*(program|programme)?/i,    family: 'LIFE Programme' },
-  { re: /interreg/i,                       family: 'Interreg' },
-  { re: /eu4business|eu\s*for\s*business/i,family: 'EU4Business' },
-  { re: /wbif|western\s*balkans\s*invest/i,family: 'WBIF' },
+  { re: /ipard/i,                           family: 'IPARD' },
+  { re: /erasmus\+?/i,                      family: 'Erasmus+' },
+  { re: /horizon\s*(europe|2020)?/i,        family: 'Horizon Europe' },
+  { re: /creative\s*europe/i,               family: 'Creative Europe' },
+  { re: /life\s*(program|programme)?/i,     family: 'LIFE Programme' },
+  { re: /interreg/i,                        family: 'Interreg' },
+  { re: /eu4business|eu\s*for\s*business/i, family: 'EU4Business' },
+  { re: /wbif|western\s*balkans\s*invest/i, family: 'WBIF' },
 ];
 
 function getFamily(title) {
@@ -329,13 +328,13 @@ function getFamily(title) {
 // ─── 0. detectNegatives ──────────────────────────────────────────────
 function detectNegatives(text) {
   const negates = {
-    farmer:  false,
-    land:    false,
-    company: false,
-    ngo:     false,
-    student: false,
-    partner: false,
-    research:false,
+    farmer:   false,
+    land:     false,
+    company:  false,
+    ngo:      false,
+    student:  false,
+    partner:  false,
+    research: false,
   };
   const t = text || '';
 
@@ -366,7 +365,7 @@ function detectNegatives(text) {
 
 // ─── 1. detectUserProfile ────────────────────────────────────────────
 function detectUserProfile(text, baseProfile) {
-  const p   = { ...baseProfile };
+  const p = { ...baseProfile };
 
   if (!p.orgType) {
     if (/\b(ngo|нво|civil society|здружение|association|nonprofit|невладина)\b/i.test(text))
@@ -412,10 +411,10 @@ function detectUserProfile(text, baseProfile) {
 
   p.negates = detectNegatives(text);
 
-  if (p.negates.farmer)  p._isFarmer   = false;
-  if (p.negates.ngo)     p._isNGO      = false;
-  if (p.negates.company) p._isCompany  = false;
-  if (p.negates.student) p._isStudent  = false;
+  if (p.negates.farmer)  p._isFarmer  = false;
+  if (p.negates.ngo)     p._isNGO     = false;
+  if (p.negates.company) p._isCompany = false;
+  if (p.negates.student) p._isStudent = false;
 
   return p;
 }
@@ -478,10 +477,10 @@ function normalizeOpportunity(raw, profile) {
 // ─── 4. scoreOpportunity (with lang) ─────────────────────────────────
 function scoreOpportunity(opp, profile, lang) {
   const RS = RISK_STRINGS[lang] || RISK_STRINGS.en;
-  const req    = opp.requirements;
-  const neg    = profile.negates || {};
-  const today  = new Date();
-  const risks  = [];
+  const req   = opp.requirements;
+  const neg   = profile.negates || {};
+  const today = new Date();
+  const risks = [];
 
   if (opp.deadline) {
     const deadDate = new Date(opp.deadline);
@@ -499,13 +498,12 @@ function scoreOpportunity(opp, profile, lang) {
     else if (daysLeft < 21) risks.push(RS.deadlineSoon(daysLeft));
   }
 
-  // ABSOLUTE: negatives override — check BEFORE any scoring
   let negativeConflict = false;
   let negativeReason   = null;
 
   if ((neg.farmer || neg.land) && (req.requiresFarmer || req.requiresLand)) {
-    negativeConflict  = true;
-    negativeReason    = RS.noFarmer;
+    negativeConflict = true;
+    negativeReason   = RS.noFarmer;
     risks.push(RS.noFarmer);
   }
   if (neg.ngo && req.requiresNGO) {
@@ -642,12 +640,8 @@ function scoreOpportunity(opp, profile, lang) {
     eligScore = Math.min(eligScore, 0.35);
   }
 
-  if (req.requiresExperience) {
-    risks.push(RS.elExperience);
-  }
-  if (req.requiresInnovation) {
-    risks.push(RS.elInnovation);
-  }
+  if (req.requiresExperience) risks.push(RS.elExperience);
+  if (req.requiresInnovation)  risks.push(RS.elInnovation);
 
   if (hardConflict && eligScore < 0.15) {
     opp.eliminated        = true;
@@ -698,20 +692,20 @@ function scoreOpportunity(opp, profile, lang) {
     });
   }
 
-  let sectorScore = profile.sector ? 0.0 : 0.50;  // FIXED: null sector → 0.0
+  let sectorScore = profile.sector ? 0.0 : 0.50;
   if (profile.sector) {
     const hay = (opp.sectorText + ' ' + opp.description + ' ' + opp.eligibilityText).toLowerCase();
     const SECTOR_KWS = {
-      'it / technology':       ['technology','digital','software','ai','ict','innovation','startup','fintech','cybersecurity','data'],
-      'agriculture':           ['agriculture','farmer','rural','food','farm','ipard','agri','crop','livestock','organic'],
-      'education':             ['education','school','learning','training','erasmus','scholarship','curriculum','teacher'],
-      'environment / energy':  ['environment','climate','renewable','biodiversity','conservation','clean energy','emission','sustainability'],
-      'civil society':         ['civil society','ngo','nonprofit','advocacy','democracy','community','rights','governance'],
-      'health / social':       ['health','social','welfare','care','women','gender','disability','mental health'],
-      'research / innovation': ['research','science','innovation','university','academic','phd','r&d','laboratory','patent'],
-      'sme / business':        ['business','enterprise','sme','entrepreneur','revenue','market','investment','startup'],
-      'tourism / culture':     ['tourism','culture','heritage','creative','art','film','media','festival'],
-      'student / youth':       ['student','scholarship','fellowship','youth','erasmus','exchange','internship','undergraduate'],
+      'it / technology':           ['technology','digital','software','ai','ict','innovation','startup','fintech','cybersecurity','data'],
+      'agriculture':               ['agriculture','farmer','rural','food','farm','ipard','agri','crop','livestock','organic'],
+      'education':                 ['education','school','learning','training','erasmus','scholarship','curriculum','teacher'],
+      'environment / energy':      ['environment','climate','renewable','biodiversity','conservation','clean energy','emission','sustainability'],
+      'civil society':             ['civil society','ngo','nonprofit','advocacy','democracy','community','rights','governance'],
+      'health / social':           ['health','social','welfare','care','women','gender','disability','mental health'],
+      'research / innovation':     ['research','science','innovation','university','academic','phd','r&d','laboratory','patent'],
+      'sme / business':            ['business','enterprise','sme','entrepreneur','revenue','market','investment','startup'],
+      'tourism / culture':         ['tourism','culture','heritage','creative','art','film','media','festival'],
+      'student / youth':           ['student','scholarship','fellowship','youth','erasmus','exchange','internship','undergraduate'],
       'individual / entrepreneur': ['individual','entrepreneur','founder','creator','freelance','startup','self-employed'],
     };
     const kws  = SECTOR_KWS[profile.sector.toLowerCase()] || [];
@@ -738,14 +732,12 @@ function scoreOpportunity(opp, profile, lang) {
   }
   riskScore = Math.max(riskScore, 0.10);
 
-  if (!risks.length) {
-    risks.push(RS.verifyDefault);
-  }
+  if (!risks.length) risks.push(RS.verifyDefault);
 
   const boost      = Math.min((opp._relevanceScore || 0) / 12, 0.05);
   const finalScore = eligScore * 0.50 + regionScore * 0.20 + sectorScore * 0.20 + riskScore * 0.10 + boost;
 
-  let probability = Math.min(Math.round(finalScore * 100), 85);  // FIXED: cap 85% (not 97)
+  let probability = Math.min(Math.round(finalScore * 100), 85);
   if (hasConflict) probability = Math.min(probability, 35);
 
   let decision, riskLevel;
@@ -814,7 +806,7 @@ function mergeDuplicates(opps) {
 
 function normTitle(t) {
   return (t || '').toLowerCase()
-    .replace(/[-–—]\s*\d{4}.*/,'').replace(/\(.*?\)/g,'').replace(/[^\w\s]/g,'').replace(/\s+/g,' ').trim().slice(0,55);
+    .replace(/[-–—]\s*\d{4}.*/,'').replace(/\(.*?\)/g,'').replace(/[^\w\s]/g,'').replace(/\s+/g,' ').trim().slice(0, 55);
 }
 
 function tokenSim(a, b) {
