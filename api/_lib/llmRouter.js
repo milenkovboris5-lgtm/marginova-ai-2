@@ -182,10 +182,6 @@ async function synthesize(lang, today, profile, programs, sources) {
     ? 'Задолжително одговори САМО на македонски јазик. Сите секции мора да бидат на македонски.'
     : 'You MUST respond entirely in ' + nativeName + ' (' + langName + ').';
 
-  // ═══ SYSTEM PROMPT — v9 ═══════════════════════════════════
-  // Base: identical to stable v7
-  // Change: risk factors are now specific, not generic
-  // No hallucination: use ONLY data provided, never invent programs
   const systemPrompt = 'You are MARGINOVA, a funding opportunities assistant. ' + langInstruction + '\n' +
     'Today: ' + safeToday + '. User profile: ' + profileLine + '.\n' +
     'DB results: ' + safeSources.db + '. Web results: ' + safeSources.serper + '.\n\n' +
@@ -231,10 +227,10 @@ async function synthesize(lang, today, profile, programs, sources) {
 
   try {
     const rawResult = await gemini(systemPrompt, contents, { maxTokens: 3500, temperature: 0.1 });
-    const result    = sanitizeGeminiJSON(rawResult);
     if (!rawResult || typeof rawResult !== 'string') {
       throw new Error('Gemini returned empty or non-string result');
     }
+    const result = sanitizeGeminiJSON(rawResult);
     return result;
   } catch (err) {
     console.error('[SYNTHESIZE] Gemini call failed:', err.message);
