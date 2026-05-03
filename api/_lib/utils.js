@@ -1,8 +1,13 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/_lib/utils.js
-// v5 — sanitizeField with prompt injection protection.
-//      All other functions unchanged from v4.
-// ONLY sanitizeField is changed — safe to drop-in replace.
+// v6 — DeepSeek integration + Gemini guardrails (topP/topK)
+//
+// CHANGES over v5:
+// 1. deepseek() — OpenAI-compatible client for DeepSeek API
+//    Used by: generate-application.js, application.js
+// 2. geminiCall() — added topP:0.85 + topK:40 to generationConfig
+//    Reduces hallucination range, keeps output on-topic
+// 3. GEMINI_URL centralized here (removed from parse-rfp.js)
 // ═══════════════════════════════════════════════════════════
 
 const { createClient } = require('@supabase/supabase-js');
@@ -138,18 +143,12 @@ function detectLang(text) {
   return 'en';
 }
 
-// ═══ INPUT SANITIZATION — WITH INJECTION PROTECTION ═════════
-
-// Prompt injection patterns to neutralize
 const INJECTION_PATTERNS = [
-  // Classic LLM injection markers
   /\[INST\]|\[\/INST\]/gi,
   /<\|im_start\|>|<\|im_end\|>/g,
   /<\|system\|>|<\|user\|>|<\|assistant\|>/g,
-  // Role-switching attempts
   /###\s*(system|user|assistant|human|ai|bot)/gi,
   /^(system|user|assistant)\s*:/gim,
-  // Instruction override attempts
   /ignore\s+(all\s+)?(previous|above|prior|earlier|your)\s+(instructions?|rules?|constraints?|guidelines?|prompts?)/gi,
   /forget\s+(all\s+)?(previous|above|prior|earlier|your)\s+(instructions?|rules?|constraints?)/gi,
   /disregard\s+(all\s+)?(previous|above|prior|earlier|your)/gi,
@@ -158,44 +157,29 @@ const INJECTION_PATTERNS = [
   /pretend\s+(you\s+are|to\s+be)\s+/gi,
   /new\s+instructions?\s*:/gi,
   /override\s+(previous\s+)?(instructions?|rules?|system)/gi,
-  // XML/HTML tag injection
   /<\/?(system|prompt|instruction|context|human|assistant)[^>]*>/gi,
-  // Backtick code block injection
   /```\s*(system|instruction|prompt)/gi,
 ];
 
-/**
- * sanitizeField(str, maxLen)
- * Truncates, strips HTML/XML system tags, neutralizes injection attempts.
- * Safe for use on all user-controlled input fields.
- */
 function sanitizeField(str, maxLen = 500) {
   if (!str) return '';
   let s = String(str).trim().slice(0, maxLen);
-
-  // Apply each injection pattern
   for (const pattern of INJECTION_PATTERNS) {
     s = s.replace(pattern, '[removed]');
   }
-
-  // Strip triple backtick blocks (common injection vector)
   s = s.replace(/```[\s\S]{0,200}```/g, '[code block removed]');
-
   return s;
 }
 
-// ═══ IP RATE LIMIT ════════════════════════════════════════════
 const DAILY_IP_LIMIT = 200;
 
 async function checkIP(req) {
   if (!supabase) return true;
-
   const ip =
     req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
     req.socket?.remoteAddress ||
     'unknown';
   const today = new Date().toISOString().split('T')[0];
-
   try {
     const { data, error } = await supabase.rpc('check_and_increment_ip', {
       p_ip: ip, p_date: today, p_limit: DAILY_IP_LIMIT
@@ -207,7 +191,7 @@ async function checkIP(req) {
     return data === true;
   } catch (e) {
     console.error('[IP CHECK]', e.message);
-    return true; // allow on error
+    return true;
   }
 }
 
@@ -217,11 +201,8 @@ async function checkIPFallback(ip, today) {
       .select('ip,count,reset_date')
       .eq('ip', ip)
       .maybeSingle();
-
     if (error) { console.error('[IP GET]', error.message); return true; }
-
     const rowDate = row?.reset_date ? String(row.reset_date).slice(0, 10) : null;
-
     if (!row || rowDate !== today) {
       await getTable('ip_limits').upsert(
         { ip, count: 1, reset_date: today },
@@ -229,9 +210,7 @@ async function checkIPFallback(ip, today) {
       );
       return true;
     }
-
     if ((row.count || 0) >= DAILY_IP_LIMIT) return false;
-
     await getTable('ip_limits').upsert(
       { ip, count: (row.count || 0) + 1, reset_date: today },
       { onConflict: 'ip' }
@@ -243,25 +222,23 @@ async function checkIPFallback(ip, today) {
   }
 }
 
-// ═══ QUOTA ════════════════════════════════════════════════════
-// Test mode: all plans unlimited
 async function checkAndDeductQuota(userId) {
   if (!userId || !supabase) return { allowed: true };
-  // In test mode — always allow
   return { allowed: true };
 }
 
 // ═══ GEMINI ══════════════════════════════════════════════════
+// Role: classification, chat synthesis, PDF vision (parse-rfp)
+// Guardrails: topP + topK narrow the token selection pool,
+// keeping output on-topic and reducing hallucination range.
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 async function geminiCall(systemPrompt, contents, opts = {}) {
   if (!GEMINI_KEY) throw new Error('Missing GEMINI_API_KEY');
-
   const url          = `${GEMINI_URL}?key=${GEMINI_KEY}`;
   const safeContents = Array.isArray(contents) ? contents : [contents];
-
   const r = await ft(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -270,11 +247,12 @@ async function geminiCall(systemPrompt, contents, opts = {}) {
       contents: safeContents,
       generationConfig: {
         maxOutputTokens: opts.maxTokens  ?? 4096,
-        temperature:     opts.temperature ?? 0.35
-      }
-    })
+        temperature:     opts.temperature ?? 0.35,
+        topP:            opts.topP        ?? 0.85,
+        topK:            opts.topK        ?? 40,
+      },
+    }),
   }, opts.timeout ?? 30000);
-
   if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 240)}`);
   const d = await r.json();
   if (d.error) throw new Error(d.error.message);
@@ -290,6 +268,50 @@ async function gemini(systemPrompt, contents, opts = {}) {
     console.log('[GEMINI RETRY]', e.message);
     await new Promise(r => setTimeout(r, 1500));
     return await geminiCall(systemPrompt, contents, opts);
+  }
+}
+
+// ═══ DEEPSEEK ════════════════════════════════════════════════
+// Role: long-form grant writing (generate-application, application)
+// OpenAI-compatible API — model: deepseek-chat (DeepSeek-V3)
+
+const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY;
+const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
+
+async function deepseekCall(systemPrompt, userContent, opts = {}) {
+  if (!DEEPSEEK_KEY) throw new Error('Missing DEEPSEEK_API_KEY');
+  const r = await ft(DEEPSEEK_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${DEEPSEEK_KEY}`,
+    },
+    body: JSON.stringify({
+      model:       opts.model       ?? 'deepseek-chat',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userContent  },
+      ],
+      max_tokens:  opts.maxTokens  ?? 8000,
+      temperature: opts.temperature ?? 0.3,
+      stream: false,
+    }),
+  }, opts.timeout ?? 60000);
+  if (!r.ok) throw new Error(`DeepSeek ${r.status}: ${(await r.text()).slice(0, 240)}`);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  const text = d.choices?.[0]?.message?.content || '';
+  if (!text) throw new Error('DeepSeek returned empty response');
+  return text;
+}
+
+async function deepseek(systemPrompt, userContent, opts = {}) {
+  try {
+    return await deepseekCall(systemPrompt, userContent, opts);
+  } catch (e) {
+    console.log('[DEEPSEEK RETRY]', e.message);
+    await new Promise(r => setTimeout(r, 2000));
+    return await deepseekCall(systemPrompt, userContent, opts);
   }
 }
 
@@ -315,9 +337,12 @@ module.exports = {
   ft,
   detectLang,
   LANG_NAMES,
+  GEMINI_URL,
+  GEMINI_KEY,
   sanitizeField,
   checkIP,
   checkAndDeductQuota,
   gemini,
+  deepseek,
   setCors,
 };
