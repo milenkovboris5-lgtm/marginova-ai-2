@@ -47,7 +47,6 @@ async function searchSerper(query) {
 }
 
 // ═══ DATE EXTRACTOR ═══
-// Extracts deadline date from search snippets
 
 function extractDate(text) {
   if (!text) return null;
@@ -59,14 +58,14 @@ function extractDate(text) {
   };
 
   const patterns = [
-    // 2026-12-31
-    /\b(202[5-9])-(\d{2})-(\d{2})\b/,
+    // 2026-12-31  (works through 2099)
+    /\b(20[2-9]\d)-(\d{2})-(\d{2})\b/,
     // 31 December 2026
-    /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(202[5-9])\b/i,
+    /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20[2-9]\d)\b/i,
     // December 31, 2026
-    /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2}),?\s+(202[5-9])/i,
+    /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2}),?\s+(20[2-9]\d)/i,
     // 31.12.2026 or 31/12/2026
-    /\b(\d{1,2})[./](\d{1,2})[./](202[5-9])\b/
+    /\b(\d{1,2})[./](\d{1,2})[./](20[2-9]\d)\b/
   ];
 
   for (const pattern of patterns) {
@@ -75,16 +74,12 @@ function extractDate(text) {
 
     try {
       if (pattern === patterns[0]) {
-        // ISO format
         return `${m[1]}-${m[2]}-${m[3]}`;
       } else if (pattern === patterns[1]) {
-        // 31 December 2026
         return `${m[3]}-${months[m[2].toLowerCase()]}-${m[1].padStart(2,'0')}`;
       } else if (pattern === patterns[2]) {
-        // December 31, 2026
         return `${m[3]}-${months[m[1].toLowerCase()]}-${m[2].padStart(2,'0')}`;
       } else {
-        // DD.MM.YYYY
         return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
       }
     } catch(e) { continue; }
@@ -102,12 +97,10 @@ function extractFromResults(results, currentUrl) {
   for (const result of (results || [])) {
     const text = `${result.title || ''} ${result.snippet || ''}`;
 
-    // Try to extract date
     if (!deadline) {
       deadline = extractDate(text);
     }
 
-    // Use first result URL if we don't have a good one
     if (!link && result.link && !result.link.includes('google.com')) {
       link = result.link;
     }
@@ -126,7 +119,12 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 module.exports = async function handler(req, res) {
 
-  // Security: only allow Vercel cron or requests with secret
+  // Security: reject immediately if CRON_SECRET is not configured
+  if (!CRON_SECRET) {
+    console.error('[CRON] CRON_SECRET env var not set — refusing all requests');
+    return res.status(500).json({ error: 'Server misconfiguration: CRON_SECRET not set' });
+  }
+
   const authHeader = req.headers['authorization'] || '';
   const cronHeader = req.headers['x-vercel-cron'] || '';
 
@@ -146,10 +144,6 @@ module.exports = async function handler(req, res) {
     const today = new Date().toISOString().split('T')[0];
     const staleDate = new Date(Date.now() - STALE_DAYS * 86400000).toISOString().split('T')[0];
 
-    // Fetch opportunities that need updating:
-    // 1. deadline is NULL
-    // 2. last_checked is NULL or older than STALE_DAYS
-    // Only Open status
     const { data: opportunities, error } = await db
       .from('funding_opportunities')
       .select('id,title,organization_name,source_url,application_deadline,last_checked')
@@ -168,7 +162,6 @@ module.exports = async function handler(req, res) {
       results.checked++;
 
       try {
-        // Build search query
         const query = `"${opp.title}" ${opp.organization_name} deadline apply 2026`;
         console.log(`[CRON] Searching: ${opp.title.slice(0, 50)}`);
 
@@ -177,7 +170,6 @@ module.exports = async function handler(req, res) {
 
         if (!searchResults) {
           results.skipped++;
-          // Still update last_checked so we don't hammer it next run
           await db.from('funding_opportunities')
             .update({ last_checked: today })
             .eq('id', opp.id);
@@ -186,7 +178,6 @@ module.exports = async function handler(req, res) {
 
         const { deadline, link } = extractFromResults(searchResults, opp.source_url);
 
-        // Build update payload
         const update = { last_checked: today };
 
         if (deadline && deadline !== opp.application_deadline) {
