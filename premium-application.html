@@ -116,6 +116,24 @@ button,input,textarea,select{font:inherit}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.45rem 1.1rem;font-size:.74rem;color:rgba(255,255,255,.85);opacity:0;transition:.3s;z-index:999;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── PRINT / PDF ─────────────────────────────────────────── */
+@media print {
+  .topbar       { display: none !important; }
+  .sidebar      { display: none !important; }
+  .prog-overlay { display: none !important; }
+  .toast        { display: none !important; }
+  .placeholder  { display: none !important; }
+  .layout       { display: block !important; }
+  .main-area    { overflow: visible !important; }
+  html, body    { overflow: visible !important; height: auto !important; }
+  .doc-wrap     { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+  .doc-cover    { border-radius: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .doc-sec      { break-inside: avoid; border-radius: 0 !important; }
+  .dtable th, .dtable td, .gtbl th, .gtbl td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bsummary     { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page         { margin: 1.5cm; size: A4 portrait; }
+}
 </style>
 </head>
 <body>
@@ -502,7 +520,6 @@ function renderSch(c,TX) {
 }
 
 // ═══ RFP UPLOAD FUNCTIONS ═══════════════════════════════
-
 function handleRFPDrop(e) {
   e.preventDefault();
   document.getElementById('rfp-upload-area').style.borderColor = '';
@@ -522,13 +539,11 @@ async function processRFP(file) {
     return;
   }
 
-  // Show loading
   document.getElementById('rfp-upload-area').style.display = 'none';
   document.getElementById('rfp-loading').style.display = 'block';
   document.getElementById('rfp-result').style.display = 'none';
 
   try {
-    // Convert PDF to base64
     const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -549,14 +564,12 @@ async function processRFP(file) {
 
     const rfp = data.rfp;
 
-    // Auto-fill the form
     if (rfp.title)        sv('f-title',  rfp.title);
     if (rfp.organization) sv('f-donor',  rfp.organization);
     if (rfp.amount)       sv('f-amount', rfp.amount);
     if (rfp.country)      sv('f-country',rfp.country);
     if (rfp.focus_areas)  sv('f-sector', rfp.focus_areas);
 
-    // Show result summary
     document.getElementById('rfp-loading').style.display = 'none';
     document.getElementById('rfp-result').style.display = 'block';
 
@@ -570,12 +583,10 @@ async function processRFP(file) {
 
     document.getElementById('rfp-summary').innerHTML = summaryLines;
 
-    // Show key requirements as toast
     if (rfp.key_requirements && rfp.key_requirements.length) {
       toast('Повикот е анализиран — формата е пополнета автоматски', 3000);
     }
 
-    // Store rfp data for use in generate
     window._rfpData = rfp;
 
   } catch(err) {
@@ -591,7 +602,6 @@ function clearRFP() {
   document.getElementById('rfp-upload-area').style.display = 'block';
   document.getElementById('rfp-result').style.display = 'none';
   document.getElementById('rfp-file-input').value = '';
-  // Clear auto-filled fields
   ['f-title','f-donor','f-amount'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
