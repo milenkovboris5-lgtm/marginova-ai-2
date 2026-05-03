@@ -64,9 +64,9 @@ async function generateGrant(profile, program, lang, langName) {
   const budgetAmt   = program.amount        || program.award_amount || '€60,000';
   const donor       = program.donor         || program.organization_name || 'Funding Organization';
   const title       = program.title         || 'Funding Program';
-  const description = profile.description   || '';  // ← КЛУЧНО: сега се користи
+  const description = profile.description   || '';
 
-  // ─── NARRATIVE PROMPT (долг, со опис) ─────────────────────────────
+  // ─── NARRATIVE PROMPT ─────────────────────────────────────────────
   const narrativePrompt = `You are a senior EU grant writer. Write a professional, DETAILED grant application in ${langName}.
 
 ALL string values must be in ${langName}.
@@ -85,15 +85,15 @@ ${description || 'Not provided — focus on general sector challenges'}
 Return ONLY valid JSON with ENGLISH keys:
 {
   "project_title": "compelling project title in ${langName} (12-15 words, specific to the project description)",
-  "abstract": "Executive summary in ${langName}, 250-300 words. MUST include: the specific problem from project description, concrete solution, measurable expected impact numbers, target group size, and budget. First sentence must hook the reader.",
-  "problem_analysis": "Root cause analysis in ${langName} with statistics (cite Eurostat, World Bank, national data). 250-300 words. Include: scale of problem, who is affected, economic/environmental impact, why existing solutions fail. Use the project description to make it specific.",
-  "innovation": "What makes this project different from existing approaches. 120-150 words in ${langName}. Describe specific novel methods or technologies from the project description.",
-  "sustainability": "Financial, institutional, and impact sustainability. 150-180 words in ${langName}. Include revenue model, partnerships, and long-term impact.",
-  "team_capacity": "Organization track record and relevant experience. 120-150 words in ${langName}. Describe generic roles (Project Manager, Technical Expert, Trainers) and their assumed experience. Do NOT invent specific names.",
-  "communication": "Dissemination plan: reports, social media, policy briefs, events. 80-100 words in ${langName}."
+  "abstract": "Executive summary in ${langName}, 400-500 words. Structure: (1) Hook sentence — state the core problem and its scale. (2) Who is affected and why current solutions fail. (3) What this project does — specific solution from the project description, concrete methodology. (4) Expected results: at least 3 measurable outcomes with numbers (beneficiaries, % improvement, units produced). (5) Budget and co-financing. (6) Closing sentence on long-term impact. Every sentence must be specific to the project description — NO generic phrases.",
+  "problem_analysis": "In-depth root cause analysis in ${langName}, 400-500 words. Structure: (1) Macro context — cite at least 2 real statistics (Eurostat, World Bank, national agency) relevant to the sector in ${country}. (2) Micro level — who exactly is affected, how many people, what are the direct consequences. (3) Economic/social/environmental cost of inaction — use numbers. (4) Gap analysis — what interventions exist and why they are insufficient. (5) Why this project addresses the root cause, not symptoms. Base every claim on the project description. Do NOT write generic text.",
+  "innovation": "Innovation and added value in ${langName}, 200-250 words. (1) What is novel about the approach compared to standard practice in the sector. (2) Specific technology, method, or partnership model introduced — reference the project description. (3) How it differs from what ${donor} has funded before (if known). (4) Transferability — can it be replicated in other regions or sectors?",
+  "sustainability": "Sustainability plan in ${langName}, 250-300 words. Cover three dimensions: (1) Financial — revenue model after grant ends (fees, public funding, earned income), with realistic projections. (2) Institutional — which organizations will absorb the results, signed letters of intent or MOUs planned. (3) Impact — how results will continue to benefit the target group without project staff. Include at least 2 concrete post-project milestones with timeframes.",
+  "team_capacity": "Team capacity in ${langName}, 200-250 words. (1) Organization's track record — years of operation, number of projects managed, total funding managed (use plausible estimates based on ${sector} in ${country}). (2) Key roles: Project Manager (qualifications, relevant experience), Technical Expert (domain expertise), Financial Manager (compliance experience), Field Coordinator (local knowledge). (3) Why this team is uniquely qualified for THIS project — link to the project description. Do NOT invent specific names.",
+  "communication": "Communication and visibility plan in ${langName}, 150-200 words. (1) Target audiences: primary (beneficiaries, partners), secondary (policy makers, media, public). (2) Channels and tools: project website, social media strategy (platforms, posting frequency), press releases, events. (3) EU visibility requirements: logo placement, acknowledgment in publications, final public event. (4) Knowledge products: at least 1 policy brief, 1 good-practice guide, final conference proceedings."
 }`;
 
-  // ─── PLAN PROMPT (со опис) ───────────────────────────────────────
+  // ─── PLAN PROMPT ───────────────────────────────────────────────────
   const planPrompt = `EU grant writer. Create project plan in ${langName}. ALL JSON keys stay in English.
 
 PROJECT DESCRIPTION:
@@ -103,30 +103,34 @@ Sector: ${sector}, Country: ${country}, Budget: ${budgetAmt}, Duration: 18 month
 
 Return ONLY valid JSON (minified) with ENGLISH keys:
 {
-  "overall_objective": "1 sentence in ${langName}",
-  "specific_objective": "1 SMART sentence with numbers in ${langName}",
+  "overall_objective": "1 sentence in ${langName} — the broad development goal this project contributes to (sector + country level)",
+  "specific_objective": "1 SMART sentence in ${langName} — specific, measurable, achievable, relevant, time-bound. Must contain: target group size, measurable change, and timeframe (18 months)",
   "results": [
-    {"number":1,"title":"Result title in ${langName}","description":"specific output based on project description","indicators":["measurable indicator with target"],"verification":"evidence"},
-    {"number":2,"title":"...","description":"...","indicators":["..."],"verification":"..."},
-    {"number":3,"title":"...","description":"...","indicators":["..."],"verification":"..."}
+    {"number":1,"title":"Result title in ${langName}","description":"2-3 sentences describing the specific deliverable based on the project description","indicators":["Primary indicator: number + baseline + target","Secondary indicator: quality measure"],"verification":"how this will be verified (document, survey, certificate, report)"},
+    {"number":2,"title":"...","description":"2-3 sentences...","indicators":["...","..."],"verification":"..."},
+    {"number":3,"title":"...","description":"2-3 sentences...","indicators":["...","..."],"verification":"..."}
   ],
   "activities": [
-    {"id":"A1.1","result":1,"title":"activity title in ${langName}","months":"1-3","responsible":"role"},
-    {"id":"A1.2","result":1,"title":"...","months":"4-6","responsible":"..."},
-    {"id":"A2.1","result":2,"title":"...","months":"5-9","responsible":"..."},
-    {"id":"A2.2","result":2,"title":"...","months":"8-14","responsible":"..."},
-    {"id":"A3.1","result":3,"title":"...","months":"12-16","responsible":"..."},
+    {"id":"A1.1","result":1,"title":"specific activity title in ${langName}","months":"1-3","responsible":"role"},
+    {"id":"A1.2","result":1,"title":"...","months":"3-6","responsible":"..."},
+    {"id":"A1.3","result":1,"title":"...","months":"5-8","responsible":"..."},
+    {"id":"A2.1","result":2,"title":"...","months":"6-10","responsible":"..."},
+    {"id":"A2.2","result":2,"title":"...","months":"8-13","responsible":"..."},
+    {"id":"A2.3","result":2,"title":"...","months":"11-15","responsible":"..."},
+    {"id":"A3.1","result":3,"title":"...","months":"13-16","responsible":"..."},
     {"id":"A3.2","result":3,"title":"...","months":"16-18","responsible":"..."},
-    {"id":"A0.1","result":0,"title":"Project management","months":"1-18","responsible":"Project Manager"}
+    {"id":"A0.1","result":0,"title":"Project management & reporting","months":"1-18","responsible":"Project Manager"},
+    {"id":"A0.2","result":0,"title":"Monitoring & evaluation","months":"1-18","responsible":"M&E Coordinator"}
   ],
   "risks": [
-    {"risk":"risk specific to project in ${langName}","probability":"Low/Medium/High","impact":"Low/Medium/High","mitigation":"measure in ${langName}"},
+    {"risk":"risk specific to project in ${langName}","probability":"Low/Medium/High","impact":"Low/Medium/High","mitigation":"specific 1-2 sentence mitigation measure in ${langName}"},
     {"risk":"...","probability":"Medium","impact":"Medium","mitigation":"..."},
-    {"risk":"...","probability":"Low","impact":"Medium","mitigation":"..."}
+    {"risk":"...","probability":"Low","impact":"High","mitigation":"..."},
+    {"risk":"...","probability":"Medium","impact":"Low","mitigation":"..."}
   ]
 }`;
 
-  // ─── BUDGET ─────────────────────────────────────────────────────
+  // ─── BUDGET ─────────────────────────────────────────────────────────
   const budgetNum = (() => {
     const s = String(budgetAmt);
     let c = s.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
@@ -166,7 +170,7 @@ RULES: All numbers are integers. No commas. No currency symbols. grant_amount + 
 
   console.log('[generate-application] calling DeepSeek 3x in parallel, budget target:', budgetNum);
   const [narrativeRaw, planRaw, budgetRaw] = await Promise.all([
-    safeDeepSeek(narrativePrompt, lang, 16000),  // ← зголемено на 16k
+    safeDeepSeek(narrativePrompt, lang, 16000),
     safeDeepSeek(planPrompt,      lang, 8000),
     safeDeepSeek(budgetPrompt,    lang, 8000),
   ]);
@@ -251,19 +255,19 @@ function scaledBudgetFallback(budgetNum, lang) {
   const tv  = Math.round(budgetNum * 0.04);
   const cm  = Math.round(budgetNum * 0.02);
   const ic  = Math.round(budgetNum * 0.96 * 0.07);
-  const hr2own  = Math.round(hr2 * 0.15);
+  const hr2own   = Math.round(hr2 * 0.15);
   const hr2grant = hr2 - hr2own;
 
   return {
     budget_lines: [
-      { category: mk?'Човечки ресурси':'Human Resources',   item: mk?'Проект координатор':'Project Coordinator', unit:'month',    quantity:18, unit_cost:Math.round(hr/18),    total:hr,   grant_amount:hr,        own_contribution:0       },
-      { category: mk?'Човечки ресурси':'Human Resources',   item: mk?'Технички експерт':'Technical Expert',       unit:'month',    quantity:12, unit_cost:Math.round(hr2/12),   total:hr2,  grant_amount:hr2grant,  own_contribution:hr2own  },
-      { category: mk?'Опрема':'Equipment',                  item: mk?'Опрема за проектот':'Project equipment',    unit:'unit',     quantity:4,  unit_cost:Math.round(eq/4),     total:eq,   grant_amount:eq,        own_contribution:0       },
-      { category: mk?'Услуги':'Services',                   item: mk?'Специјализирани услуги':'Specialist services', unit:'lump sum', quantity:1, unit_cost:sv,               total:sv,   grant_amount:sv,        own_contribution:0       },
-      { category: mk?'Обука':'Training',                    item: mk?'Обука и работилници':'Training & workshops', unit:'participant', quantity:50, unit_cost:Math.round(tr/50), total:tr, grant_amount:tr,        own_contribution:0       },
-      { category: mk?'Патување':'Travel',                   item: mk?'Теренски посети':'Field visits',             unit:'trip',     quantity:10, unit_cost:Math.round(tv/10),    total:tv,   grant_amount:tv,        own_contribution:0       },
-      { category: mk?'Комуникација':'Communication',        item: mk?'Видливост и комуникација':'Visibility & comms', unit:'lump sum', quantity:1, unit_cost:cm,               total:cm,   grant_amount:cm,        own_contribution:0       },
-      { category: mk?'Индиректни трошоци':'Indirect costs', item: mk?'Индиректни трошоци (7%)':'Indirect costs (7%)', unit:'lump sum', quantity:1, unit_cost:ic,             total:ic,   grant_amount:ic,        own_contribution:0       },
+      { category: mk?'Човечки ресурси':'Human Resources',   item: mk?'Проект координатор':'Project Coordinator',    unit:'month',       quantity:18, unit_cost:Math.round(hr/18),    total:hr,   grant_amount:hr,        own_contribution:0       },
+      { category: mk?'Човечки ресурси':'Human Resources',   item: mk?'Технички експерт':'Technical Expert',          unit:'month',       quantity:12, unit_cost:Math.round(hr2/12),   total:hr2,  grant_amount:hr2grant,  own_contribution:hr2own  },
+      { category: mk?'Опрема':'Equipment',                  item: mk?'Опрема за проектот':'Project equipment',       unit:'unit',        quantity:4,  unit_cost:Math.round(eq/4),     total:eq,   grant_amount:eq,        own_contribution:0       },
+      { category: mk?'Услуги':'Services',                   item: mk?'Специјализирани услуги':'Specialist services', unit:'lump sum',    quantity:1,  unit_cost:sv,                   total:sv,   grant_amount:sv,        own_contribution:0       },
+      { category: mk?'Обука':'Training',                    item: mk?'Обука и работилници':'Training & workshops',   unit:'participant', quantity:50, unit_cost:Math.round(tr/50),    total:tr,   grant_amount:tr,        own_contribution:0       },
+      { category: mk?'Патување':'Travel',                   item: mk?'Теренски посети':'Field visits',               unit:'trip',        quantity:10, unit_cost:Math.round(tv/10),    total:tv,   grant_amount:tv,        own_contribution:0       },
+      { category: mk?'Комуникација':'Communication',        item: mk?'Видливост и комуникација':'Visibility & comms',unit:'lump sum',    quantity:1,  unit_cost:cm,                   total:cm,   grant_amount:cm,        own_contribution:0       },
+      { category: mk?'Индиректни трошоци':'Indirect costs', item: mk?'Индиректни трошоци (7%)':'Indirect costs (7%)',unit:'lump sum',    quantity:1,  unit_cost:ic,                   total:ic,   grant_amount:ic,        own_contribution:0       },
     ],
     notes: mk
       ? `Буџетот е пресметан врз основа на стандардна EU распределба. Вкупен грант: €${(hr+hr2grant+eq+sv+tr+tv+cm+ic).toLocaleString()}. Ко-финансирање: €${hr2own.toLocaleString()} (${Math.round(hr2own/(budgetNum)*100)}%).`
@@ -349,9 +353,9 @@ function parseJSON(raw, fallback) {
         .replace(/,\s*([}\]])/g, '$1')
         .replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"')
         .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
-      const opens = (repaired.match(/\[/g) || []).length;
+      const opens  = (repaired.match(/\[/g) || []).length;
       const closes = (repaired.match(/\]/g) || []).length;
-      const openB = (repaired.match(/\{/g) || []).length;
+      const openB  = (repaired.match(/\{/g) || []).length;
       const closeB = (repaired.match(/\}/g) || []).length;
       for (let i = 0; i < opens - closes; i++) repaired += ']';
       for (let i = 0; i < openB - closeB; i++) repaired += '}';
@@ -404,7 +408,7 @@ function narrativeFallback(org, sector, country, description, lang) {
   const hasDesc = description && description.length > 10;
   return {
     project_title:    hasDesc ? (mk ? `${description.slice(0, 60)} во ${country}` : `${description.slice(0, 60)} in ${country}`) : (mk ? `Дигитална иницијатива за ${country}` : `Digital Initiative for ${country}`),
-    abstract:         hasDesc ? (mk ? description.slice(0, 400) : description.slice(0, 400)) : (mk ? `Проектот ќе изгради капацитети во секторот ${sector} во ${country}, со директна корист за 150 корисници.` : `This project will build capacity in the ${sector} sector in ${country}, directly benefiting 150 people.`),
+    abstract:         hasDesc ? description.slice(0, 400) : (mk ? `Проектот ќе изгради капацитети во секторот ${sector} во ${country}, со директна корист за 150 корисници.` : `This project will build capacity in the ${sector} sector in ${country}, directly benefiting 150 people.`),
     problem_analysis: mk ? `Недостатокот на иновативни решенија во ${country} е клучна пречка за развој.` : `The lack of innovative solutions in ${country} is a key barrier to development.`,
     innovation:       mk ? 'Иновативен пристап кој комбинира најнови технологии.' : 'Innovative approach combining cutting-edge technologies.',
     sustainability:   mk ? 'По завршувањето, активностите ќе продолжат преку одржлив бизнис модел.' : 'After completion, activities will continue through a sustainable business model.',
@@ -425,18 +429,18 @@ function planFallback(sector, country, description, lang) {
       { number: 3, title: mk ? 'Одржливост обезбедена' : 'Sustainability ensured', description: '', indicators: ['Partnership agreement signed', 'Revenue model defined'], verification: mk ? 'Договори за партнерство' : 'Partnership agreements' },
     ],
     activities: [
-      { id: 'A1.1', result: 1, title: mk ? 'Анализа и дизајн'       : 'Analysis & design',    months: '1-4',   responsible: mk ? 'Технички тим'   : 'Technical team' },
-      { id: 'A1.2', result: 1, title: mk ? 'Развој и тестирање'     : 'Development & testing', months: '5-10',  responsible: mk ? 'Технички тим'   : 'Technical team' },
-      { id: 'A2.1', result: 2, title: mk ? 'Регрутација на корисници' : 'Beneficiary recruitment', months: '6-8',   responsible: mk ? 'Координатор'    : 'Coordinator' },
-      { id: 'A2.2', result: 2, title: mk ? 'Спроведување на активности' : 'Activity implementation', months: '9-15',  responsible: mk ? 'Тим'           : 'Team' },
-      { id: 'A3.1', result: 3, title: mk ? 'Партнерства'           : 'Partnerships',          months: '12-16', responsible: mk ? 'Директор'       : 'Director' },
-      { id: 'A3.2', result: 3, title: mk ? 'Финален извештај'      : 'Final report',         months: '17-18', responsible: mk ? 'Тим'           : 'Team' },
-      { id: 'A0.1', result: 0, title: mk ? 'Управување со проект'  : 'Project management',   months: '1-18',  responsible: mk ? 'Проект менаџер' : 'Project Manager' },
+      { id: 'A1.1', result: 1, title: mk ? 'Анализа и дизајн'            : 'Analysis & design',           months: '1-4',   responsible: mk ? 'Технички тим'   : 'Technical team' },
+      { id: 'A1.2', result: 1, title: mk ? 'Развој и тестирање'          : 'Development & testing',       months: '5-10',  responsible: mk ? 'Технички тим'   : 'Technical team' },
+      { id: 'A2.1', result: 2, title: mk ? 'Регрутација на корисници'    : 'Beneficiary recruitment',     months: '6-8',   responsible: mk ? 'Координатор'    : 'Coordinator' },
+      { id: 'A2.2', result: 2, title: mk ? 'Спроведување на активности'  : 'Activity implementation',     months: '9-15',  responsible: mk ? 'Тим'            : 'Team' },
+      { id: 'A3.1', result: 3, title: mk ? 'Партнерства'                 : 'Partnerships',                months: '12-16', responsible: mk ? 'Директор'       : 'Director' },
+      { id: 'A3.2', result: 3, title: mk ? 'Финален извештај'            : 'Final report',                months: '17-18', responsible: mk ? 'Тим'            : 'Team' },
+      { id: 'A0.1', result: 0, title: mk ? 'Управување со проект'        : 'Project management',          months: '1-18',  responsible: mk ? 'Проект менаџер' : 'Project Manager' },
     ],
     risks: [
       { risk: mk ? 'Низок интерес на целната група' : 'Low target group interest', probability: 'Low',    impact: 'High',   mitigation: mk ? 'Рана комуникација и пилот' : 'Early communication and pilot' },
-      { risk: mk ? 'Доцнење на набавките'           : 'Procurement delays',       probability: 'Medium', impact: 'Medium', mitigation: mk ? 'Резервни добавувачи'     : 'Backup suppliers' },
-      { risk: mk ? 'Технички предизвици'            : 'Technical challenges',     probability: 'Low',    impact: 'Medium', mitigation: mk ? 'Агилен развој'         : 'Agile development' },
+      { risk: mk ? 'Доцнење на набавките'           : 'Procurement delays',        probability: 'Medium', impact: 'Medium', mitigation: mk ? 'Резервни добавувачи'     : 'Backup suppliers' },
+      { risk: mk ? 'Технички предизвици'            : 'Technical challenges',      probability: 'Low',    impact: 'Medium', mitigation: mk ? 'Агилен развој'           : 'Agile development' },
     ],
   };
 }
