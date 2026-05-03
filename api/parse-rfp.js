@@ -1,20 +1,22 @@
 // ═══════════════════════════════════════════════════════════
-// MARGINOVA — api/parse-rfp.js  v3 — SELF-CONTAINED
-// Сè во еден фајл — нема зависност од _lib/rfpParser.js
-// Единствена зависност: ./_lib/utils (setCors, checkIP, ft)
+// MARGINOVA — api/parse-rfp.js  v4 — Gemini wrapper + key check
+//
+// CHANGES over v3:
+// 1. Uses gemini() from utils (auto-retry, centralized key/URL)
+//    instead of raw ft() — eliminates duplicate GEMINI_URL constant
+// 2. GEMINI_API_KEY checked at request time → clear 500 error
+// 3. JSON parse wrapped in try/catch with parseJSON repair fallback
+// 4. inline_data passed via gemini() contents array (supported)
 // ═══════════════════════════════════════════════════════════
 
-const { setCors, checkIP, ft } = require('./_lib/utils');
+const { setCors, checkIP, gemini } = require('./_lib/utils');
 
-console.log('[parse-rfp] v3 loaded — self-contained, no rfpParser dependency');
-
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+console.log('[parse-rfp] v4 loaded — gemini() wrapper, key check, parse repair');
 
 // First ~2 pages only — title/donor/amount always on page 1-2
 const FIRST_PAGES_LIMIT = 60 * 1024;
 
-const EXTRACT_PROMPT = `You are extracting data from a funding call document.
+const EXTRACT_SYSTEM = `You are extracting data from a funding call document.
 Return ONLY a valid JSON object. No markdown. No explanation.
 
 {
@@ -30,14 +32,15 @@ RULES:
 - Use parentheses: write (SME) not "SME", write (EU) not "EU"
 - deadline: YYYY-MM-DD format or null
 - amount: if range given (15000-150000), return ONLY the maximum: 150000 EUR
-- Keep all values under 120 characters`;
+- Keep all values under 120 characters
+- Use ONLY data found in the document — do not invent any field`;
 
 function sanitize(raw) {
   if (!raw || typeof raw !== 'string') return raw;
   return raw
-    .replace(/\u201C|\u201D/g, "'")
-    .replace(/\u2018|\u2019/g, "'")
-    .replace(/\u00AB|\u00BB/g, "'");
+    .replace(/"|"/g, "'")
+    .replace(/'|'/g, "'")
+    .replace(/«|»/g, "'");
 }
 
 function parseAmount(amtStr) {
@@ -45,18 +48,39 @@ function parseAmount(amtStr) {
   const s = String(amtStr);
   const currency = /USD|\$/.test(s) ? 'USD' : /GBP|£/.test(s) ? 'GBP' : 'EUR';
   const symbol   = currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '€';
-  // Remove thousand separators, then extract all numbers
   let c = s.replace(/(\d)[,.](\d{3})(?=[,.\d]|\b)/g, '$1$2');
   c = c.replace(/(\d)[,.](\d{3})(?=[,.\d]|\b)/g, '$1$2');
-  const nums = (c.match(/[0-9]+/g) || []).map(Number).filter(n => n > 999 && n <= 10000000);
+  const nums = (c.match(/[0-9]+/g) || []).map(Number).filter(n => n > 999 && n <= 50000000);
   if (nums.length === 0) return s;
   return symbol + Math.max(...nums).toLocaleString();
+}
+
+function repairJSON(raw) {
+  if (!raw) return null;
+  const clean = sanitize(raw).replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  const start = clean.indexOf('{');
+  const end   = clean.lastIndexOf('}');
+  if (start === -1 || end === -1) return null;
+  const candidate = clean.slice(start, end + 1);
+  try { return JSON.parse(candidate); } catch (_) {}
+  try {
+    const repaired = candidate
+      .replace(/,\s*([}\]])/g, '$1')
+      .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":')
+      .replace(/\/\/[^\n]*/g, '');
+    return JSON.parse(repaired);
+  } catch (_) { return null; }
 }
 
 module.exports = async function handler(req, res) {
   setCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
+
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('[parse-rfp] GEMINI_API_KEY not set');
+    return res.status(500).json({ error: 'Server configuration error: missing GEMINI_API_KEY' });
+  }
 
   try { const ok = await checkIP(req); if (!ok) return res.status(429).json({ error: 'Daily limit reached' }); } catch(e) {}
 
@@ -70,34 +94,18 @@ module.exports = async function handler(req, res) {
 
     console.log('[parse-rfp] PDF:', Math.round(pdfBase64.length/1024), 'KB →', Math.round(truncated.length/1024), 'KB');
 
-    const res2 = await ft(GEMINI_URL + '?key=' + GEMINI_KEY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [
-            { inline_data: { mime_type: 'application/pdf', data: truncated } },
-            { text: EXTRACT_PROMPT }
-          ]
-        }],
-        generationConfig: { maxOutputTokens: 300, temperature: 0.0 }
-      })
-    }, 20000);
+    const raw = await gemini(EXTRACT_SYSTEM, [{
+      role: 'user',
+      parts: [
+        { inline_data: { mime_type: 'application/pdf', data: truncated } },
+        { text: 'Extract the funding program data from this document.' },
+      ],
+    }], { maxTokens: 300, temperature: 0.0, topP: 0.9, topK: 20 });
 
-    if (!res2.ok) {
-      const err = await res2.text();
-      throw new Error('Gemini error ' + res2.status + ': ' + err.slice(0, 200));
-    }
-
-    const data = await res2.json();
-    if (data.error) throw new Error(data.error.message);
-
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!raw) throw new Error('Gemini returned empty response');
 
-    const clean = sanitize(raw).replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-    const parsed = JSON.parse(clean);
+    const parsed = repairJSON(raw);
+    if (!parsed) throw new Error('Could not parse Gemini response as JSON');
 
     const rfp = {
       title:            parsed.title        || '',
