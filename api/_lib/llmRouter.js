@@ -263,7 +263,7 @@ async function extractFromSerper(serperResults, profile) {
     'Only extract fields explicitly stated. Use null for anything not mentioned.\n' +
     'User profile: sector=' + (safeProfile.sector || 'unknown') + ', country=' + (safeProfile.country || 'unknown') + '\n\n' +
     'Return exactly this shape:\n' +
-    '[{"index":1,"title":"...","organization":"...or null","amount":"...or null","deadline":"YYYY-MM-DD or null","eligibility":"...or null","focus":"...","url":"...","relevance_notes":"brief note or null"}]\n\n' +
+    '[{"index":1,"title":"...","organization":"...or null","amount":"...or null","deadline":"YYYY-MM-DD or null","eligibility":"...or null","focus":"...","url":"...","country_hint":"country name or null","relevance_notes":"brief note or null"}]\n\n' +
     'Web search results:\n' + snippets;
   try {
     const raw = await gemini(
@@ -287,7 +287,7 @@ async function extractFromSerper(serperResults, profile) {
         eligibility:          r.eligibility || null,
         description:          r.focus ? String(r.focus) : '',
         source_url:           String(r.url),
-        country:              safeProfile.country || '',
+        country:              r.country_hint || 'Global',
         focus_areas:          safeProfile.sector  || '',
         matchSignals:         r.relevance_notes ? ['Web: ' + r.relevance_notes] : [],
         riskFactors:          ['Web result — verify ALL details on official source before applying'],
