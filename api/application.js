@@ -1,11 +1,15 @@
 // ═════════════════════════════════════════════════════════════
 // MARGINOVA.AI — api/application.js
-// v3 — Cleaned: gemini/quota/sanitize from utils (no dupes)
+// v4 — DeepSeek replaces Gemini for application drafting
+//
+// CHANGE: gemini() → deepseek() for the main generation call.
+// DeepSeek-V3 handles long structured documents better.
+// Gemini stays for classification/synthesis tasks (chat.js).
 // ═════════════════════════════════════════════════════════════
 
 const {
   supabase, getTable, ft, detectLang, LANG_NAMES,
-  sanitizeField, checkIP, checkAndDeductQuota, gemini, setCors
+  sanitizeField, checkIP, checkAndDeductQuota, deepseek, setCors
 } = require('./_lib/utils');
 
 // ═══ LOADERS ═══
@@ -255,9 +259,8 @@ module.exports = async function handler(req, res) {
       input.notes ? `Additional notes: ${input.notes}` : ''
     ].filter(Boolean).join('\n');
 
-    // Use shared gemini() from utils with application-specific opts
-    const contents = [{ role: 'user', parts: [{ text: userMessage }] }];
-    const text = await gemini(systemPrompt, contents, { maxTokens: 4096, temperature: 0.35 });
+    // DeepSeek handles long structured application drafts
+    const text = await deepseek(systemPrompt, userMessage, { maxTokens: 4096, temperature: 0.35 });
 
     const saved = await saveApplicationSession({
       user_id:           userId,
