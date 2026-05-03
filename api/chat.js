@@ -1,21 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════════
-// MARGINOVA — api/chat.js  v9 — Universal Funding Decision Engine
+// MARGINOVA — api/chat.js  v9.1 — Universal Funding Decision Engine
 //
-// PIPELINE:
-// 1. detectNegatives()      — explicit "I do not have X" constraints
-// 2. detectUserProfile()    — enhance profile with type flags + negates
-// 3. searchDB()             — DB-first search
-// 4. serperFallback()       — only if DB < 2 results + SERPER_API_KEY set
-// 5. normalizeOpportunity() — uniform structure for all results
-// 6. parseEligibility()     — extract 11 requirement flags
-// 7. scoreOpportunity()     — negates override → eligibility×0.5 + region×0.2 + sector×0.2 + risk×0.1
-// 8. mergeDuplicates()      — family clustering + token-similarity dedup
-// 9. rankResults()          — top 3 main paths + eliminated list
-// 10. buildOutputText()     — pure JS structured output (LANG labels)
-// 11. formatDecisionOutput()— Gemini refines/translates; JS fallback on error
+// FIXED v9.1:
+// - scoreOpportunity() теперь принимает lang (риски, nextStep, whyFits на языках)
+// - RISK_STRINGS для mk/en/sr
+// - nextStep через LANG[lang]
+// - sectorScore: null sector → 0.0 (не 0.50)
+// - probability cap 85% (не 97%)
 // ═══════════════════════════════════════════════════════════════════════
 
-console.log('[chat.js] v9 loaded — Universal Decision Engine');
+console.log('[chat.js] v9.1 loaded — Universal Decision Engine (fixed lang, risks, scoring)');
 console.log('[chat.js] GEMINI_API_KEY:',        process.env.GEMINI_API_KEY        ? 'SET ✓' : 'MISSING ✗');
 console.log('[chat.js] SUPABASE_URL:',          process.env.SUPABASE_URL          ? 'SET ✓' : 'MISSING ✗');
 console.log('[chat.js] SUPABASE_SERVICE_KEY:',  process.env.SUPABASE_SERVICE_KEY  ? 'SET ✓' : 'MISSING ✗');
@@ -89,6 +83,10 @@ const LANG = {
     conditional:   '⚠️ УСЛОВНО',
     no:            '❌ НЕ',
     elim:          '🚫 ЕЛИМИНИРАНО',
+    // nextStep helpers
+    nextStepUrl:   (url)   => `Отвори ја официјалната страница и провери го повикот за предлози: ${url}`,
+    nextStepSearch:(title) => `Пребарај "${title}" на официјалната веб-страница на донаторот`,
+    nextStepApply: (days)  => `⚡ Аплицирај во следните ${days} дена. `,
   },
   en: {
     header:        'Here is the evaluation based on your profile:',
@@ -118,6 +116,9 @@ const LANG = {
     conditional:   '⚠️ CONDITIONAL',
     no:            '❌ NO',
     elim:          '🚫 ELIMINATED',
+    nextStepUrl:   (url)   => `Open the official page and check the call for proposals: ${url}`,
+    nextStepSearch:(title) => `Search for "${title}" on the donor's official website`,
+    nextStepApply: (days)  => `⚡ Apply within ${days} days. `,
   },
   sr: {
     header:        'Evo evaluacije prema vašem profilu:',
@@ -147,10 +148,160 @@ const LANG = {
     conditional:   '⚠️ USLOVNO',
     no:            '❌ NE',
     elim:          '🚫 ELIMINISANO',
+    nextStepUrl:   (url)   => `Otvori zvaničnu stranicu i proveri poziv za predloge: ${url}`,
+    nextStepSearch:(title) => `Pretraži "${title}" na zvaničnom sajtu donatora`,
+    nextStepApply: (days)  => `⚡ Apliciraj u narednih ${days} dana. `,
   },
 };
 
 function L(lang) { return LANG[lang] || LANG.en; }
+
+// ─── RISK STRINGS (Macedonian / English / Serbian) ──────────────────
+const RISK_STRINGS = {
+  mk: {
+    deadlineUrgent: (d) => `Рок за ${d} дена — аплицирај веднаш`,
+    deadlineSoon:   (d) => `Рок за ${d} дена — започни со апликацијата сега`,
+    noFarmer:       'Наведовте дека немате земјоделско стопанство/земјиште — оваа програма го бара тоа',
+    noNGO:          'Наведовте дека немате НВО — оваа програма бара регистрирана организација',
+    noCompany:      'Наведовте дека немате регистрирана компанија — оваа програма бара правно лице',
+    noStudent:      'Наведовте дека не сте студент — оваа програма бара активен студентски статус',
+    noPartner:      'Наведовте дека немате партнерски организации — оваа програма бара конзорциум',
+    noResearch:     'Наведовте дека немате афилијација со истражувачка институција — оваа програма го бара тоа',
+    noDeadline:     'Рокот не е потврден — проверете го на официјалниот извор пред да аплицирате',
+    noUrl:          'Нема линк до извор — пребарајте ја официјалната веб-страница на донаторот',
+    webResult:      'Веб резултат — проверете ги СИТЕ детали (износ, рок, подобност) на официјален извор',
+    globalComp:     'Глобална конкуренција — многу голем број апликанти',
+    verifyDefault:  'Проверете ги целосните критериуми за подобност на официјален извор пред поднесување',
+    requireNGO:     'Бара регистрирана НВО — поединци не се подобни',
+    requireCompany: 'Бара регистрирана компанија — НВО обично не се подобни за оваа програма',
+    requireLegal:   'Бара регистриран правен субјект — поединци не се подобни',
+    requireFarmer:  'Бара регистрирано земјоделско стопанство + сопственост на земјиште — не е применливо за вашиот профил',
+    requireStudent: 'Бара активен студентски статус — не е применливо за вашиот профил',
+    consortium:     'Бара конзорциум/партнерство — мора да идентификувате барем еден партнер',
+    regionMismatch: (region, country) => `Потврди дека ${country} е подобна — програмата е наменета за: "${region}"`,
+    elFarmer:       'Потребно е документирано земјоделско искуство',
+    elExperience:   'Потребен е докажан работен стаж — подгответе примери од претходни проекти',
+    elInnovation:   'Бара иновативен пристап — нагласете ја уникатноста на проектот',
+  },
+  en: {
+    deadlineUrgent: (d) => `Deadline in ${d} days — apply immediately`,
+    deadlineSoon:   (d) => `Deadline in ${d} days — start the application now`,
+    noFarmer:       'You stated you do not have an agricultural holding or land — this program requires it',
+    noNGO:          'You stated you do not have an NGO — this program requires a registered civil society organization',
+    noCompany:      'You stated you do not have a registered company — this program requires a legal entity',
+    noStudent:      'You stated you are not a student — this program requires active student enrollment',
+    noPartner:      'You stated you have no partner organizations — this program requires a consortium',
+    noResearch:     'You stated you have no research institution affiliation — this program requires one',
+    noDeadline:     'Deadline not confirmed — verify on official source before starting application',
+    noUrl:          'No source URL — search for the official donor website to find application instructions',
+    webResult:      'Web result — verify ALL details (amount, deadline, eligibility) on official source before applying',
+    globalComp:     'Global competition — very large applicant pool, highly competitive',
+    verifyDefault:  'Verify full eligibility criteria on official source before submitting',
+    requireNGO:     'Requires registered NGO — individuals are not eligible',
+    requireCompany: 'Requires registered company — NGOs are typically not eligible for this program',
+    requireLegal:   'Requires registered legal entity — sole individuals are not eligible',
+    requireFarmer:  'Requires registered agricultural holding + land ownership — not applicable to your profile',
+    requireStudent: 'Requires current student status — not applicable to your profile',
+    consortium:     'Requires consortium/partnership — you must identify at least one partner organization',
+    regionMismatch: (region, country) => `Confirm ${country} is eligible — program targets: "${region}"`,
+    elFarmer:       'Documented farming experience required',
+    elExperience:   'Documented track record required — prepare examples of previous projects or grants',
+    elInnovation:   'Innovation required — highlight the uniqueness of your project',
+  },
+  sr: {
+    deadlineUrgent: (d) => `Rok za ${d} dana — apliciraj odmah`,
+    deadlineSoon:   (d) => `Rok za ${d} dana — započni sa aplikacijom sada`,
+    noFarmer:       'Naveli ste da nemate poljoprivredno gazdinstvo/zemljište — ovaj program to zahteva',
+    noNGO:          'Naveli ste da nemate NVO — ovaj program zahteva registrovanu organizaciju',
+    noCompany:      'Naveli ste da nemate registrovanu kompaniju — ovaj program zahteva pravno lice',
+    noStudent:      'Naveli ste da niste student — ovaj program zahteva aktivan studentski status',
+    noPartner:      'Naveli ste da nemate partnerske organizacije — ovaj program zahteva konzorcijum',
+    noResearch:     'Naveli ste da nemate afilijaciju sa istraživačkom institucijom — ovaj program to zahteva',
+    noDeadline:     'Rok nije potvrđen — proverite na zvaničnom izvoru',
+    noUrl:          'Nema link ka izvoru — potražite zvanični sajt donatora',
+    webResult:      'Web rezultat — proverite SVE detalje (iznos, rok, podobnost) na zvaničnom izvoru',
+    globalComp:     'Globalna konkurencija — veoma veliki broj aplikanata',
+    verifyDefault:  'Proverite kriterijume podobnosti na zvaničnom izvoru',
+    requireNGO:     'Zahteva registrovanu NVO — pojedinci nisu podobni',
+    requireCompany: 'Zahteva registrovanu kompaniju — NVO nisu podobne za ovaj program',
+    requireLegal:   'Zahteva registrovano pravno lice — pojedinci nisu podobni',
+    requireFarmer:  'Zahteva registrovano poljoprivredno gazdinstvo + zemljište — nije primenljivo za vaš profil',
+    requireStudent: 'Zahteva aktivan studentski status — nije primenljivo za vaš profil',
+    consortium:     'Zahteva konzorcijum/partnerstvo — morate imati bar jednog partnera',
+    regionMismatch: (region, country) => `Potvrdite da ${country} je podobna — program je namenjen za: "${region}"`,
+    elFarmer:       'Dokumentovano poljoprivredno iskustvo potrebno',
+    elExperience:   'Dokumentovano iskustvo potrebno — pripremite primere prethodnih projekata',
+    elInnovation:   'Inovacija potrebna — naglasite jedinstvenost projekta',
+  },
+};
+
+// ─── WHY-FITS STRINGS (Macedonian / English / Serbian) ──────────────
+const WHY_FITS_STRINGS = {
+  mk: {
+    ngo: 'одговара на вашиот тип НВО',
+    company: 'одговара на вашата регистрирана компанија',
+    farmer: 'наменето за земјоделски стопанства',
+    student: 'отворено за студенти / млади',
+    researcher: 'насочено кон истражувачки институции',
+    country: 'отворено за',
+    balkans: 'отворено за земји на Западен Балкан',
+    sector: 'се усогласува со вашиот сектор',
+    fallback: 'Општо совпаѓање — проверете ги критериумите на официјален извор',
+    noMatch: 'Не ги исполнува критериумите за подобност',
+  },
+  en: {
+    ngo: 'matches your NGO type',
+    company: 'matches your company registration',
+    farmer: 'designed for agricultural holdings',
+    student: 'open to students / young professionals',
+    researcher: 'targets research institutions',
+    country: 'open to',
+    balkans: 'open to Western Balkans countries',
+    sector: 'aligns with your sector',
+    fallback: 'General match — verify eligibility criteria on official source',
+    noMatch: 'Does not match eligibility criteria',
+  },
+  sr: {
+    ngo: 'odgovara vašem tipu NVO',
+    company: 'odgovara vašoj registrovanoj kompaniji',
+    farmer: 'namenjeno za poljoprivredna gazdinstva',
+    student: 'otvoreno za studente / mlade',
+    researcher: 'usmereno ka istraživačkim institucijama',
+    country: 'otvoreno za',
+    balkans: 'otvoreno za zemlje Zapadnog Balkana',
+    sector: 'usklađeno sa vašim sektorom',
+    fallback: 'Opšte poklapanje — proverite kriterijume na zvaničnom izvoru',
+    noMatch: 'Ne ispunjava kriterijume podobnosti',
+  },
+};
+
+function buildWhyFits(opp, profile, lang) {
+  const s = WHY_FITS_STRINGS[lang] || WHY_FITS_STRINGS.en;
+  const req = opp.requirements;
+  const reasons = [];
+
+  if (profile._isNGO && req.requiresNGO) reasons.push(s.ngo);
+  if (profile._isCompany && req.requiresCompany) reasons.push(s.company);
+  if (profile._isFarmer && req.requiresFarmer) reasons.push(s.farmer);
+  if (profile._isStudent && req.requiresStudent) reasons.push(s.student);
+  if (profile._isResearcher && req.requiresResearch) reasons.push(s.researcher);
+  if (profile.country && opp.region && opp.region.toLowerCase().includes(profile.country.toLowerCase())) {
+    reasons.push(`${s.country} ${profile.country}`);
+  } else if (/western balkans|balkans/i.test(opp.region)) {
+    reasons.push(s.balkans);
+  }
+  if (profile.sector) {
+    const hay = (opp.sectorText + ' ' + opp.description).toLowerCase();
+    const kw = profile.sector.split(/[/ ]/)[0].toLowerCase();
+    if (kw && hay.includes(kw)) reasons.push(`${s.sector} (${profile.sector})`);
+  }
+
+  if (reasons.length === 0) {
+    if (opp.eliminated) return opp.eliminationReason || s.noMatch;
+    return s.fallback;
+  }
+  return reasons.join(', ').replace(/^\w/, c => c.toUpperCase()) + '.';
+}
 
 // ─── PROGRAM FAMILY CLUSTERS ─────────────────────────────────────────
 const PROGRAM_FAMILIES = [
@@ -324,8 +475,9 @@ function normalizeOpportunity(raw, profile) {
   };
 }
 
-// ─── 4. scoreOpportunity ─────────────────────────────────────────────
-function scoreOpportunity(opp, profile) {
+// ─── 4. scoreOpportunity (with lang) ─────────────────────────────────
+function scoreOpportunity(opp, profile, lang) {
+  const RS = RISK_STRINGS[lang] || RISK_STRINGS.en;
   const req    = opp.requirements;
   const neg    = profile.negates || {};
   const today  = new Date();
@@ -337,14 +489,14 @@ function scoreOpportunity(opp, profile) {
       return Object.assign(opp, {
         eliminated: true, eliminationReason: 'Expired deadline',
         decision: '🚫 ELIMINATED', probability: 0, riskLevel: 'High',
-        risks: ['Deadline has passed — this program is closed'],
+        risks: [RS.noDeadline],
         nextStep: 'Look for the next call for proposals from this donor',
         whyFits:  'Program is closed — deadline has passed',
       });
     }
     const daysLeft = Math.round((deadDate - today) / 86400000);
-    if (daysLeft < 7)       risks.push(`Deadline in ${daysLeft} days — apply immediately`);
-    else if (daysLeft < 21) risks.push(`Deadline in ${daysLeft} days — start the application now`);
+    if (daysLeft < 7)       risks.push(RS.deadlineUrgent(daysLeft));
+    else if (daysLeft < 21) risks.push(RS.deadlineSoon(daysLeft));
   }
 
   // ABSOLUTE: negatives override — check BEFORE any scoring
@@ -353,33 +505,33 @@ function scoreOpportunity(opp, profile) {
 
   if ((neg.farmer || neg.land) && (req.requiresFarmer || req.requiresLand)) {
     negativeConflict  = true;
-    negativeReason    = 'Requires agricultural holding/land — user explicitly stated they do not have one';
-    risks.push('You stated you do not have an agricultural holding or land — this program requires it');
+    negativeReason    = RS.noFarmer;
+    risks.push(RS.noFarmer);
   }
   if (neg.ngo && req.requiresNGO) {
     negativeConflict = true;
-    negativeReason   = 'Requires NGO — user explicitly stated they do not have one';
-    risks.push('You stated you do not have an NGO — this program requires a registered civil society organization');
+    negativeReason   = RS.noNGO;
+    risks.push(RS.noNGO);
   }
   if (neg.company && req.requiresCompany && !req.requiresNGO) {
     negativeConflict = true;
-    negativeReason   = 'Requires registered company — user explicitly stated they do not have one';
-    risks.push('You stated you do not have a registered company — this program requires a legal entity');
+    negativeReason   = RS.noCompany;
+    risks.push(RS.noCompany);
   }
   if (neg.student && req.requiresStudent) {
     negativeConflict = true;
-    negativeReason   = 'Requires student status — user explicitly stated they are not a student';
-    risks.push('You stated you are not a student — this program requires active student enrollment');
+    negativeReason   = RS.noStudent;
+    risks.push(RS.noStudent);
   }
   if (neg.partner && req.requiresPartners) {
     negativeConflict = true;
-    negativeReason   = 'Requires consortium/partners — user explicitly stated they have none';
-    risks.push('You stated you have no partner organizations — this program requires a consortium');
+    negativeReason   = RS.noPartner;
+    risks.push(RS.noPartner);
   }
   if (neg.research && req.requiresResearch) {
     negativeConflict = true;
-    negativeReason   = 'Requires research institution affiliation — user explicitly stated they have none';
-    risks.push('You stated you have no research institution affiliation — this program requires one');
+    negativeReason   = RS.noResearch;
+    risks.push(RS.noResearch);
   }
 
   if (negativeConflict) {
@@ -406,11 +558,11 @@ function scoreOpportunity(opp, profile) {
         eligScore = 0.95;
       } else if (profile._isIndividual) {
         eligScore = 0.05; hardConflict = true;
-        risks.push('Requires registered NGO — individuals are not eligible');
-        opp.eliminationReason = 'Requires NGO — user is an individual';
+        risks.push(RS.requireNGO);
+        opp.eliminationReason = RS.requireNGO;
       } else if (profile._isCompany) {
         eligScore = 0.15; hardConflict = true;
-        risks.push('Requires NGO/association — companies are typically not eligible');
+        risks.push(RS.requireCompany);
       } else if (profile._isFarmer) {
         eligScore = 0.10; hardConflict = true;
         risks.push('Requires civil society NGO — agricultural holdings are not eligible');
@@ -425,11 +577,11 @@ function scoreOpportunity(opp, profile) {
         eligScore = 0.92;
       } else if (profile._isNGO) {
         eligScore = 0.20; hardConflict = true;
-        risks.push('Requires registered company — NGOs are typically not eligible for this program');
+        risks.push(RS.requireCompany);
       } else if (profile._isIndividual) {
         eligScore = 0.08; hardConflict = true;
-        risks.push('Requires registered legal entity — sole individuals are not eligible');
-        opp.eliminationReason = 'Requires registered company — user is an individual';
+        risks.push(RS.requireLegal);
+        opp.eliminationReason = RS.requireLegal;
       } else if (profile._isFarmer) {
         eligScore = 0.30;
         risks.push('Verify: requires registered company — check if agricultural holding qualifies');
@@ -446,8 +598,8 @@ function scoreOpportunity(opp, profile) {
       } else {
         eligScore = 0.03; hardConflict = true;
         opp.eliminated        = true;
-        opp.eliminationReason = 'Requires active agricultural holding or land ownership';
-        risks.push('Requires registered agricultural holding + land ownership — not applicable to your profile');
+        opp.eliminationReason = RS.requireFarmer;
+        risks.push(RS.requireFarmer);
       }
     }
 
@@ -457,8 +609,8 @@ function scoreOpportunity(opp, profile) {
       } else {
         eligScore = 0.03; hardConflict = true;
         opp.eliminated        = true;
-        opp.eliminationReason = 'Requires active student enrollment';
-        risks.push('Requires current student status — not applicable to your profile');
+        opp.eliminationReason = RS.requireStudent;
+        risks.push(RS.requireStudent);
       }
     }
 
@@ -482,16 +634,19 @@ function scoreOpportunity(opp, profile) {
   }
 
   if (req.requiresPartners) {
-    risks.push('Requires consortium/partnership — you must identify at least one partner organization');
+    risks.push(RS.consortium);
   }
 
   if (req.requiresLegalEntity && profile._isIndividual && !req.requiresStudent) {
-    risks.push('Requires registered legal entity — sole traders may qualify in some jurisdictions, verify locally');
+    risks.push(RS.requireLegal);
     eligScore = Math.min(eligScore, 0.35);
   }
 
   if (req.requiresExperience) {
-    risks.push('Documented track record required — prepare examples of previous projects or grants');
+    risks.push(RS.elExperience);
+  }
+  if (req.requiresInnovation) {
+    risks.push(RS.elInnovation);
   }
 
   if (hardConflict && eligScore < 0.15) {
@@ -526,7 +681,7 @@ function scoreOpportunity(opp, profile) {
       regionScore = 0.45;
     } else if (reg.length > 3 && !reg.includes(pc)) {
       regionScore = 0.08;
-      risks.push(`Confirm ${profile.country} is eligible — program targets: "${opp.region}"`);
+      risks.push(RS.regionMismatch(opp.region, profile.country));
       opp.eliminated        = true;
       opp.eliminationReason = `Region mismatch — program targets ${opp.region}, not ${profile.country}`;
     }
@@ -543,7 +698,7 @@ function scoreOpportunity(opp, profile) {
     });
   }
 
-  let sectorScore = 0.50;
+  let sectorScore = profile.sector ? 0.0 : 0.50;  // FIXED: null sector → 0.0
   if (profile.sector) {
     const hay = (opp.sectorText + ' ' + opp.description + ' ' + opp.eligibilityText).toLowerCase();
     const SECTOR_KWS = {
@@ -567,30 +722,30 @@ function scoreOpportunity(opp, profile) {
   let riskScore = 0.85;
   if (!opp.deadline) {
     riskScore -= 0.10;
-    risks.push('Deadline not confirmed — verify on official source before starting application');
+    risks.push(RS.noDeadline);
   }
   if (!opp.sourceUrl) {
     riskScore -= 0.15;
-    risks.push('No source URL — search for the official donor website to find application instructions');
+    risks.push(RS.noUrl);
   }
   if (opp.sourceType === 'serper_extracted') {
     riskScore -= 0.20;
-    risks.push('Web result — verify ALL details (amount, deadline, eligibility) on official source before applying');
+    risks.push(RS.webResult);
   }
   if (/global|international|worldwide/.test(opp.region.toLowerCase()) && !/europe/.test(opp.region.toLowerCase())) {
     riskScore -= 0.08;
-    risks.push('Global competition — very large applicant pool, highly competitive');
+    risks.push(RS.globalComp);
   }
   riskScore = Math.max(riskScore, 0.10);
 
   if (!risks.length) {
-    risks.push('Verify full eligibility criteria on official source before submitting');
+    risks.push(RS.verifyDefault);
   }
 
   const boost      = Math.min((opp._relevanceScore || 0) / 12, 0.05);
   const finalScore = eligScore * 0.50 + regionScore * 0.20 + sectorScore * 0.20 + riskScore * 0.10 + boost;
 
-  let probability = Math.min(Math.round(finalScore * 100), 97);
+  let probability = Math.min(Math.round(finalScore * 100), 85);  // FIXED: cap 85% (not 97)
   if (hasConflict) probability = Math.min(probability, 35);
 
   let decision, riskLevel;
@@ -613,46 +768,19 @@ function scoreOpportunity(opp, profile) {
     opp.eliminationReason = opp.eliminationReason || 'Score below threshold — poor overall fit';
   }
 
+  const lbl = L(lang);
   let nextStep = opp.sourceUrl
-    ? `Open the official page and check the call for proposals: ${opp.sourceUrl}`
-    : `Search for "${opp.title}" on the donor's official website`;
+    ? lbl.nextStepUrl(opp.sourceUrl)
+    : lbl.nextStepSearch(opp.title);
 
   if (opp.deadline && !opp.eliminated) {
-    const daysLeft = Math.round((new Date(opp.deadline) - today) / 86400000);
-    if (daysLeft <= 30) nextStep = `⚡ Apply within ${daysLeft} days. ` + nextStep;
+    const daysLeft = Math.round((new Date(opp.deadline) - new Date()) / 86400000);
+    if (daysLeft <= 30) nextStep = lbl.nextStepApply(daysLeft) + nextStep;
   }
 
-  opp.whyFits = buildWhyFits(opp, profile, 'en');
+  opp.whyFits = buildWhyFits(opp, profile, lang);
 
   return Object.assign(opp, { score: parseFloat(finalScore.toFixed(3)), probability, decision, riskLevel, risks, nextStep });
-}
-
-// ─── buildWhyFits ─────────────────────────────────────────────────────
-function buildWhyFits(opp, profile, lang) {
-  const reasons = [];
-  const req     = opp.requirements;
-
-  if (profile._isNGO      && req.requiresNGO)      reasons.push('matches your NGO type');
-  if (profile._isCompany  && req.requiresCompany)   reasons.push('matches your company registration');
-  if (profile._isFarmer   && req.requiresFarmer)    reasons.push('designed for agricultural holdings');
-  if (profile._isStudent  && req.requiresStudent)   reasons.push('open to students / young professionals');
-  if (profile._isResearcher && req.requiresResearch)reasons.push('targets research institutions');
-  if (profile.country && opp.region && opp.region.toLowerCase().includes(profile.country.toLowerCase())) {
-    reasons.push(`open to ${profile.country}`);
-  } else if (/western balkans|balkans/i.test(opp.region)) {
-    reasons.push('open to Western Balkans countries');
-  }
-  if (profile.sector) {
-    const hay = (opp.sectorText + ' ' + opp.description).toLowerCase();
-    const kw  = profile.sector.split(/[/ ]/)[0].toLowerCase();
-    if (kw && hay.includes(kw)) reasons.push(`aligns with your sector (${profile.sector})`);
-  }
-
-  if (reasons.length === 0) {
-    if (opp.eliminated) return opp.eliminationReason || 'Does not match eligibility criteria';
-    return 'General match — verify eligibility criteria on official source';
-  }
-  return reasons.join(', ').replace(/^\w/, c => c.toUpperCase()) + '.';
 }
 
 // ─── 5. mergeDuplicates ──────────────────────────────────────────────
@@ -989,7 +1117,7 @@ module.exports = async function handler(req, res) {
 
     if (rawResults.length > 0) {
       const normalized = rawResults.map(r => normalizeOpportunity(r, profile));
-      const scored     = normalized.map(o => scoreOpportunity(o, profile));
+      const scored     = normalized.map(o => scoreOpportunity(o, profile, lang));
       const deduped    = mergeDuplicates(scored);
       const ranked     = rankResults(deduped);
       top         = ranked.top;
