@@ -188,7 +188,7 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: { message: 'Method Not Allowed' } });
-  if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: { message: 'Missing GEMINI_API_KEY.' } });
+    if (!process.env.DEEPSEEK_API_KEY) return res.status(500).json({ error: { message: 'Missing DEEPSEEK_API_KEY.' } });
   if (!supabase)               return res.status(500).json({ error: { message: 'Supabase is not configured.' } });
 
   if (!(await checkIP(req))) {
