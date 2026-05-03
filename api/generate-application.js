@@ -1,27 +1,19 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/generate-application.js
-// v2.3 — CHANGES over v2.2:
-//   Budget scaling: Gemini calculates amounts to match actual program budget
-//   narrative: 8000 (long prose)
-//   plan:      4000 (compact JSON)
-//   Budget tokens: 2000 → 3000 (space for calculations)
-//   scholarship: 6000
-//   Promise.all wall time = ~25s → well within 60s Vercel limit
+// v2.4 — DeepSeek replaces Gemini for grant/scholarship writing
+//
+// CHANGES over v2.3:
+// 1. safeDeepSeek() replaces safeGemini() — DeepSeek-V3 writes applications
+//    Gemini stays only for PDF/vision tasks (parse-rfp.js)
+// 2. LANG_NAMES imported from utils (removed local duplicate)
+// 3. validateAndFixBudget: removed unnecessary async keyword
+// 4. Budget number cap: 10M → 50M (covers Horizon Europe flagships)
+// 5. Version log corrected (was logging v2.2)
 // ═══════════════════════════════════════════════════════════
 
-const { setCors, gemini, supabase } = require('./_lib/utils');
+const { setCors, deepseek, supabase, LANG_NAMES } = require('./_lib/utils');
 
-console.log('[generate-application] v2.2 loaded — differentiated token limits, parallel calls ~25s');
-
-const LANG_NAMES = {
-  mk:'македонски (Macedonian)', en:'English', sr:'српски (Serbian)',
-  hr:'hrvatski (Croatian)',     bg:'български (Bulgarian)', ro:'română (Romanian)',
-  de:'Deutsch (German)',        fr:'français (French)',     es:'español (Spanish)',
-  it:'italiano (Italian)',      pl:'polski (Polish)',       tr:'Türkçe (Turkish)',
-  nl:'Nederlands (Dutch)',      pt:'português (Portuguese)',ru:'русский (Russian)',
-  ar:'العربية (Arabic)',        zh:'中文 (Chinese)',        ja:'日本語 (Japanese)',
-  ko:'한국어 (Korean)',          uk:'українська (Ukrainian)',
-};
+console.log('[generate-application] v2.4 loaded — DeepSeek writer, parallel calls ~25s');
 
 module.exports = async function handler(req, res) {
   setCors(req, res);
@@ -123,12 +115,10 @@ Return ONLY minified valid JSON with English keys and ${langName} values:
 
   const budgetNum = (() => {
     const s = String(budgetAmt);
-    // Remove thousand separators (multi-pass handles 1,500,000)
     let c = s.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
     c = c.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
     c = c.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
-    // Extract all numbers, take MAXIMUM (handles ranges like "15,000 — 150,000 EUR")
-    const nums = (c.match(/[0-9]+/g) || []).map(Number).filter(n => n > 999 && n <= 10000000);
+    const nums = (c.match(/[0-9]+/g) || []).map(Number).filter(n => n > 999 && n <= 50000000);
     if (nums.length === 0) return 60000;
     return Math.max(...nums);
   })();
@@ -176,17 +166,16 @@ STRICT RULES:
 5. grant_amount + own_contribution = total for each line
 6. own_contribution is 0 for most lines; one line can have small co-financing`;
 
-  console.log('[generate-application] calling Gemini 3x in parallel, budget target:', budgetAmt, budgetNum);
+  console.log('[generate-application] calling DeepSeek 3x in parallel, budget target:', budgetAmt, budgetNum);
   const [narrativeRaw, planRaw, budgetRaw] = await Promise.all([
-    safeGemini(narrativePrompt, lang, 8000),
-    safeGemini(planPrompt,      lang, 4000),
-    safeGemini(budgetPrompt,    lang, 4000),
+    safeDeepSeek(narrativePrompt, lang, 8000),
+    safeDeepSeek(planPrompt,      lang, 4000),
+    safeDeepSeek(budgetPrompt,    lang, 4000),
   ]);
 
   const narrative = parseJSON(narrativeRaw, narrativeFallback(org, sector, country, lang));
   const plan      = parseJSON(planRaw,      planFallback(sector, country, lang));
 
-  // Budget: parse then VALIDATE totals
   let budget = parseJSON(budgetRaw, null);
   budget = await validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName);
 
@@ -221,31 +210,23 @@ STRICT RULES:
   };
 }
 
-// ═══ LOCALE-SAFE NUMBER PARSER ═══════════════════════════════
-// Handles: 19800, "19800", "19,800", "19.800", "€19,800", "19 800"
 function parseLocaleNumber(val) {
   if (val === null || val === undefined) return 0;
   const s = String(val).trim();
-  // Remove currency symbols and spaces
   let clean = s.replace(/[€$£¥₹\s]/g, '');
-  // European format: dots as thousands, optional comma decimal → 1.234,56 or 19.800
   if (/^\d{1,3}(\.\d{3})+(,\d*)?$/.test(clean)) {
     clean = clean.replace(/\./g, '').replace(',', '.');
   } else if (/,\d{3}/.test(clean)) {
-    // US format: comma thousands separators → 1,234 or 1,234.56
     clean = clean.replace(/,(\d{3})/g, '$1');
   } else {
-    // Plain decimal comma → replace with dot
     clean = clean.replace(',', '.');
   }
-  // Remove any remaining non-numeric except decimal point and minus
   clean = clean.replace(/[^0-9.-]/g, '');
   const n = parseFloat(clean);
   return isNaN(n) ? 0 : Math.round(n);
 }
 
-// ═══ BUDGET VALIDATION + FALLBACK REPAIR ════════════════════
-async function validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName) {
+function validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName) {
   const lines = budget?.budget_lines;
 
   if (!lines || !Array.isArray(lines) || lines.length === 0) {
@@ -254,7 +235,7 @@ async function validateAndFixBudget(budget, budgetNum, lang, sector, country, do
   }
 
   const parsedTotal = lines.reduce((s, l) => s + parseLocaleNumber(l.total), 0);
-  const tolerance   = budgetNum * 0.25; // 25% tolerance
+  const tolerance   = budgetNum * 0.25;
 
   console.log(`[budget] Parsed total: ${parsedTotal}, expected: ${budgetNum}, diff: ${Math.abs(parsedTotal - budgetNum)}`);
 
@@ -264,24 +245,20 @@ async function validateAndFixBudget(budget, budgetNum, lang, sector, country, do
   }
 
   console.warn(`[budget] Validation FAILED (${parsedTotal} vs ${budgetNum}) — using scaled fallback`);
-  // Use deterministic scaled fallback instead of retry (faster, more reliable)
   return scaledBudgetFallback(budgetNum, lang);
 }
 
-// ═══ DETERMINISTIC SCALED BUDGET FALLBACK ═══════════════════
-// Replaces the old hardcoded budgetFallback — always correct for any budgetNum
 function scaledBudgetFallback(budgetNum, lang) {
   const mk = lang === 'mk';
-  const hr  = Math.round(budgetNum * 0.24); // HR coordinator
-  const hr2 = Math.round(budgetNum * 0.16); // HR expert
-  const eq  = Math.round(budgetNum * 0.22); // Equipment
-  const sv  = Math.round(budgetNum * 0.11); // Services
-  const tr  = Math.round(budgetNum * 0.09); // Training
-  const tv  = Math.round(budgetNum * 0.04); // Travel
-  const cm  = Math.round(budgetNum * 0.02); // Communication
-  const ic  = Math.round(budgetNum * 0.96 * 0.07); // Indirect 7%
+  const hr  = Math.round(budgetNum * 0.24);
+  const hr2 = Math.round(budgetNum * 0.16);
+  const eq  = Math.round(budgetNum * 0.22);
+  const sv  = Math.round(budgetNum * 0.11);
+  const tr  = Math.round(budgetNum * 0.09);
+  const tv  = Math.round(budgetNum * 0.04);
+  const cm  = Math.round(budgetNum * 0.02);
+  const ic  = Math.round(budgetNum * 0.96 * 0.07);
 
-  // co-financing on expert line only (~2%)
   const hr2own  = Math.round(hr2 * 0.15);
   const hr2grant = hr2 - hr2own;
 
@@ -328,25 +305,20 @@ Return ONLY valid JSON:
   "cv_structure": ["Education entry", "Experience entry", "Skills entry", "Publications/Awards entry"]
 }`;
 
-  const raw     = await safeGemini(prompt, lang, 6000);
+  const raw     = await safeDeepSeek(prompt, lang, 6000);
   const content = parseJSON(raw, scholarshipFallback(name, sector, country, lang));
   return content;
 }
 
-// ═══ GEMINI OUTPUT SANITIZER ════════════════════════════════
-// Runs BEFORE parseJSON — fixes curly/smart quotes Gemini sometimes outputs
 function sanitizeGeminiJSON(raw) {
   if (!raw || typeof raw !== 'string') return raw;
-  // Fix curly/smart quotes — these are always wrong in JSON (100% reliable)
-  // Straight unescaped quotes inside strings are fundamentally ambiguous —
-  // we rely on temp=0.0 + prompt rule to prevent them at source
   return raw
     .replace(/\u201C|\u201D/g, "'")
     .replace(/\u2018|\u2019/g, "'")
     .replace(/\u00AB|\u00BB/g, "'");
 }
 
-async function safeGemini(prompt, lang, maxTokens = 8000) {
+async function safeDeepSeek(prompt, lang, maxTokens = 8000) {
   const system = [
     'You are a professional grant writer.',
     'OUTPUT RULES (non-negotiable):',
@@ -356,23 +328,21 @@ async function safeGemini(prompt, lang, maxTokens = 8000) {
     '4. All string values must use double quotes on the OUTSIDE only.',
     '5. CRITICAL: NEVER place double quote characters inside string values.',
     '   Use parentheses instead: (МСП) not "МСП", (ЕУ) not "ЕУ", (ERP) not "ERP"',
-    '   WRONG: {"text": "малите претпријатија \"МСП\" во"}',
+    '   WRONG: {"text": "малите претпријатија \\"МСП\\" во"}',
     '   RIGHT:  {"text": "малите претпријатија (МСП) во"}',
     '   This applies to ALL abbreviations: МСП, ЕУ, AI, ERP, SaaS, MES, IT, ICT',
     '6. Do NOT translate JSON keys — only translate string values.',
     '7. ALL numeric fields must be plain integers — no commas, no dots as thousands.',
     '8. If a value would be very long, shorten it to fit valid JSON.',
+    '9. Write ONLY about the project described. Do not invent details not in the prompt.',
   ].join('\n');
 
   try {
-    const result = await gemini(system, [{ role: 'user', parts: [{ text: prompt }] }], {
-      maxTokens,
-      temperature: 0.0,  // 0.0 reduces hallucination and quote violations
-    });
-    console.log(`[safeGemini] maxTokens:${maxTokens} raw preview:`, (result || '').slice(0, 300));
+    const result = await deepseek(system, prompt, { maxTokens, temperature: 0.3 });
+    console.log(`[safeDeepSeek] maxTokens:${maxTokens} raw preview:`, (result || '').slice(0, 300));
     return result;
   } catch (e) {
-    console.warn('[safeGemini] gemini call error:', e.message);
+    console.warn('[safeDeepSeek] deepseek call error:', e.message);
     return '{}';
   }
 }
@@ -380,7 +350,6 @@ async function safeGemini(prompt, lang, maxTokens = 8000) {
 function parseJSON(raw, fallback) {
   if (!raw) return fallback;
 
-  // Run sanitizer first — fixes curly quotes and other Gemini artifacts
   raw = sanitizeGeminiJSON(raw);
 
   let clean = raw
