@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="icon" href="/logo.png" type="image/png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Marginova.AI — Workspace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -243,8 +243,8 @@ a{color:var(--gold);text-decoration:none}
       <div class="sb-item" onclick="openPremium()"><span class="sb-item-icon">🧩</span> Build Application<span style="font-size:.62rem;background:rgba(201,168,76,.15);color:var(--gold);padding:.1rem .35rem;border-radius:999px;margin-left:auto">PRO</span></div>
     </nav>
     <div class="sb-stats">
-      <div class="sb-stat"><strong>200+</strong><span>Programs</span></div>
       <div class="sb-stat"><strong>40+</strong><span>Countries</span></div>
+      <div class="sb-stat"><strong>20+</strong><span>Languages</span></div>
       <div class="sb-stat"><strong>24/7</strong><span>Live</span></div>
     </div>
     <div class="sb-bottom">
@@ -484,9 +484,6 @@ const db = createClient(SUPA_URL, SUPA_ANON, {
 });
 
 // ─── STATE ───────────────────────────────────────────────────
-// chatHistory lives ONLY in RAM for the current session.
-// Login = fresh start. Logout = wiped. Refresh = wiped.
-// No persistence, no trim logic needed.
 let currentUser     = null;
 let authMode        = 'login';
 let lang            = localStorage.getItem('mlang') || 'en';
@@ -540,9 +537,6 @@ function initApp() {
 }
 
 // ─── SESSION PROFILE (RAM only) ──────────────────────────────
-// Set by sendMsg() after a successful search.
-// Used by openBuilder() — NOT from Supabase.
-// Wiped on refresh = clean slate every session.
 let sessionProfile = { sector: null, country: null, orgType: null };
 
 // ─── PROFILE ─────────────────────────────────────────────────
@@ -562,13 +556,9 @@ async function loadUserProfile() {
     const plan = data.profile?.plan || 'free';
     currentUserPlan = plan;
 
-    // OPTION C: Supabase profile → plan badge + drawer only.
-    // Sidebar "Your Profile" stays "—" until user sends first message.
-    // Prevents stale saved profile from contaminating new sessions.
     document.getElementById('drawer-plan').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
     document.getElementById('tok-badge').textContent   = plan.charAt(0).toUpperCase() + plan.slice(1);
 
-    // Cache in memory for Profile Modal pre-fill only.
     if (data.profile) window._savedProfile = data.profile;
   } catch (e) {
     console.warn('[profile] loadUserProfile error:', e.message);
@@ -592,7 +582,6 @@ async function doSignOut() {
 function resetUI() {
   document.getElementById('messages').innerHTML = INITIAL_MSG;
   document.getElementById('welcome-block').style.display = 'block';
-  // Sidebar starts clean — no Supabase data pre-filled
   document.getElementById('profile-org').textContent     = '—';
   document.getElementById('profile-country').textContent = '—';
   document.getElementById('profile-sector').textContent  = 'Not set';
@@ -612,7 +601,6 @@ async function openProfileModal() {
   }
   if (!currentUser) return;
   try {
-    // Use cached profile if available, else fetch
     const profile = window._savedProfile || await (async () => {
       const { data: { session } } = await db.auth.getSession();
       if (!session?.access_token) return null;
@@ -652,15 +640,12 @@ async function saveProfile() {
     }, { onConflict: 'user_id' });
     if (error) throw error;
 
-    // Update cached saved profile
     window._savedProfile = { ...window._savedProfile, organization_type: orgType, sector, country, goals: budget };
 
-    // Update sessionProfile so Builder uses fresh data immediately
     sessionProfile.sector  = sector  || null;
     sessionProfile.country = country || null;
     sessionProfile.orgType = orgType || null;
 
-    // Update sidebar to reflect what user just saved
     document.getElementById('profile-org').textContent     = orgType || 'Not set';
     document.getElementById('profile-country').textContent = country || 'Not set';
     document.getElementById('profile-sector').textContent  = sector  || 'Not set';
@@ -823,8 +808,6 @@ async function sendMsg() {
   if (text) addMsg('user', text);
   if (currentFile) addMsg('user', '📎 ' + currentFile.name);
 
-  // chatHistory lives only in RAM — no trim, no persistence, no slice.
-  // A fresh login always starts with chatHistory = [].
   chatHistory.push({ role: 'user', content: text || '[Document attached]' });
 
   const wb = document.getElementById('welcome-block');
@@ -858,17 +841,8 @@ async function sendMsg() {
 
     addMsg('ai', reply, intent);
 
-    // Update sessionProfile and sidebar from this session's search results.
-    // This is the LIVE detected profile — separate from Supabase saved profile.
     if (data?.top_matches?.length) {
-      // Extract detected profile signals from the conversation payload
-      // The backend detected these from the user's messages this session
-      const firstMatch = data.top_matches[0];
-
-      // Update sidebar "Your Profile" with session-detected data only
-      // We read profile signals back from the request we just sent
       const sentMsgs = chatHistory.slice(-4).map(m => m.content || '').join(' ');
-      // Simple extraction for sidebar display
       const countryMatch = sentMsgs.match(/\b(Македонија|Macedonia|Serbia|Croatia|Bosnia|Albania|Kosovo|Bulgaria|Montenegro|Slovenia|Poland|Germany|Turkey|France|Italy|Spain|Hungary|Czech|Slovakia|Portugal|Netherlands|Belgium|Sweden|Finland|Denmark|Norway|Ukraine)\b/i);
       const orgMatch     = sentMsgs.match(/\b(НВО|НГО|ngo|startup|стартап|МСП|sme|фармер|farmer|municipality|university)\b/i);
 
@@ -882,7 +856,6 @@ async function sendMsg() {
       }
     }
 
-    // Update sidebar panel with latest results
     if (data?.top_matches?.length) {
       document.getElementById('recent-opps').innerHTML = data.top_matches.slice(0, 4).map(x => `
         <div class="opp-item">
@@ -912,11 +885,8 @@ async function sendMsg() {
 
 // ─── OPEN BUILDER ────────────────────────────────────────────
 function openBuilder(program) {
-  // OPTION C FIX: use sessionProfile (detected this session) not sidebar DOM.
   const country = sessionProfile.country || '';
   const sector  = sessionProfile.sector  || '';
-  // Pass type from DB data — never infer from title keywords to avoid
-  // MSCA/Chevening being treated as scholarship when clicked as grant
   const isScholarship = /scholarship|fellowship/i.test(program.opportunityType || '');
   const params  = new URLSearchParams({
     title:   program.title        || '',
