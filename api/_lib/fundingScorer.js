@@ -214,13 +214,14 @@ function annotate(g, profile, sectorKws) {
     profile.orgType.toLowerCase().includes('sole proprietor')
   );
 
-  if (isIndividual) {
-    const eligAndDesc = `${elig} ${desc}`;
-    const requiresCompany = SME_REQUIRED_KEYWORDS.some(k => eligAndDesc.includes(k));
-    if (requiresCompany) {
-      relevanceScore -= 6;
-      console.log(`[annotate] Individual penalty applied to: ${g.title} (score -6)`);
-    }
+  const eligAndDesc     = `${elig} ${desc}`;
+  const requiresCompany = isIndividual
+    ? SME_REQUIRED_KEYWORDS.some(k => eligAndDesc.includes(k))
+    : false;
+
+  if (isIndividual && requiresCompany) {
+    relevanceScore -= 6;
+    console.log(`[annotate] Individual penalty applied to: ${g.title} (score -6)`);
   }
 
   // Keyword hits from user profile
@@ -243,12 +244,8 @@ function annotate(g, profile, sectorKws) {
   const riskFactors = [];
 
   // v9: Individual ineligibility risk — shown first
-  if (isIndividual) {
-    const eligAndDesc = `${elig} ${desc}`;
-    const requiresCompany = SME_REQUIRED_KEYWORDS.some(k => eligAndDesc.includes(k));
-    if (requiresCompany) {
-      riskFactors.push('⛔ Поединци/трговци поединци не се подобни — бара регистрирана компанија');
-    }
+  if (isIndividual && requiresCompany) {
+    riskFactors.push('⛔ Поединци/трговци поединци не се подобни — бара регистрирана компанија');
   }
 
   if (profile.orgType && elig.length > 10) {
@@ -317,4 +314,3 @@ function mergeWithWeb(dbResults, webResults) {
   return merged;
 }
 module.exports = { searchDB, RESULTS_TO_SHOW };
-
