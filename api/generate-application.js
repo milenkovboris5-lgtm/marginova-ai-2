@@ -1,19 +1,11 @@
 // ═══════════════════════════════════════════════════════════
 // MARGINOVA — api/generate-application.js
-// v2.4 — DeepSeek replaces Gemini for grant/scholarship writing
-//
-// CHANGES over v2.3:
-// 1. safeDeepSeek() replaces safeGemini() — DeepSeek-V3 writes applications
-//    Gemini stays only for PDF/vision tasks (parse-rfp.js)
-// 2. LANG_NAMES imported from utils (removed local duplicate)
-// 3. validateAndFixBudget: removed unnecessary async keyword
-// 4. Budget number cap: 10M → 50M (covers Horizon Europe flagships)
-// 5. Version log corrected (was logging v2.2)
+// v2.5 — FIXED: sends profile.description to DeepSeek, larger output (16k tokens)
 // ═══════════════════════════════════════════════════════════
 
 const { setCors, deepseek, supabase, LANG_NAMES } = require('./_lib/utils');
 
-console.log('[generate-application] v2.4 loaded — DeepSeek writer, parallel calls ~25s');
+console.log('[generate-application] v2.5 loaded — DeepSeek writer, profile.description included, larger output');
 
 module.exports = async function handler(req, res) {
   setCors(req, res);
@@ -66,20 +58,19 @@ module.exports = async function handler(req, res) {
 };
 
 async function generateGrant(profile, program, lang, langName) {
-  const org       = profile.organization  || profile.name       || 'Our Organization';
-  const sector    = profile.sector        || 'Education / IT';
-  const country   = profile.country       || 'North Macedonia';
-  const budgetAmt = program.amount        || program.award_amount || '€60,000';
-  const donor     = program.donor         || program.organization_name || 'Funding Organization';
-  const title     = program.title         || 'Funding Program';
+  const org         = profile.organization  || profile.name       || 'Our Organization';
+  const sector      = profile.sector        || 'Technology / Innovation';
+  const country     = profile.country       || 'North Macedonia';
+  const budgetAmt   = program.amount        || program.award_amount || '€60,000';
+  const donor       = program.donor         || program.organization_name || 'Funding Organization';
+  const title       = program.title         || 'Funding Program';
+  const description = profile.description   || '';  // ← КЛУЧНО: сега се користи
 
-  const narrativePrompt = `You are a senior EU grant writer. Write a professional grant application in ${langName}.
+  // ─── NARRATIVE PROMPT (долг, со опис) ─────────────────────────────
+  const narrativePrompt = `You are a senior EU grant writer. Write a professional, DETAILED grant application in ${langName}.
+
 ALL string values must be in ${langName}.
-
-CRITICAL JSON KEY RULE — NON-NEGOTIABLE:
-Keep ALL JSON keys EXACTLY in English as shown. NEVER translate keys.
-Wrong: "наслов_на_проект", "резиме" — FORBIDDEN
-Right: "project_title", "abstract" — always use these exact English keys.
+Keep ALL JSON keys in ENGLISH (project_title, abstract, problem_analysis, etc.).
 
 Organization: ${org}
 Sector: ${sector}
@@ -88,93 +79,100 @@ Program: ${title}
 Donor: ${donor}
 Budget requested: ${budgetAmt}
 
-Return ONLY valid JSON with ENGLISH keys and ${langName} string values:
+PROJECT DESCRIPTION (use this to make the application SPECIFIC and CONCRETE):
+${description || 'Not provided — focus on general sector challenges'}
+
+Return ONLY valid JSON with ENGLISH keys:
 {
-  "project_title": "compelling project title in ${langName} (max 12 words)",
-  "abstract": "Executive summary in ${langName}, 180-220 words. Problem + solution + target group + expected impact + budget. First sentence must hook the reader.",
-  "problem_analysis": "Root cause analysis in ${langName} with statistics (cite sources like Eurostat, World Bank, national statistics). 200-250 words. Include: scale of problem, who is affected, why existing solutions fail.",
-  "innovation": "What makes this project different from existing approaches. 80-100 words in ${langName}.",
-  "sustainability": "Financial sustainability (revenue model or follow-up funding), institutional sustainability, impact sustainability. 120-150 words in ${langName}.",
-  "team_capacity": "Organization track record and relevant experience. Do NOT invent specific names, titles or people. Describe the team generically: roles, years of experience, relevant past projects. 100-120 words in ${langName}.",
-  "communication": "How results will be disseminated: reports, social media, policy briefs, events. 60-80 words in ${langName}."
+  "project_title": "compelling project title in ${langName} (12-15 words, specific to the project description)",
+  "abstract": "Executive summary in ${langName}, 250-300 words. MUST include: the specific problem from project description, concrete solution, measurable expected impact numbers, target group size, and budget. First sentence must hook the reader.",
+  "problem_analysis": "Root cause analysis in ${langName} with statistics (cite Eurostat, World Bank, national data). 250-300 words. Include: scale of problem, who is affected, economic/environmental impact, why existing solutions fail. Use the project description to make it specific.",
+  "innovation": "What makes this project different from existing approaches. 120-150 words in ${langName}. Describe specific novel methods or technologies from the project description.",
+  "sustainability": "Financial, institutional, and impact sustainability. 150-180 words in ${langName}. Include revenue model, partnerships, and long-term impact.",
+  "team_capacity": "Organization track record and relevant experience. 120-150 words in ${langName}. Describe generic roles (Project Manager, Technical Expert, Trainers) and their assumed experience. Do NOT invent specific names.",
+  "communication": "Dissemination plan: reports, social media, policy briefs, events. 80-100 words in ${langName}."
 }`;
 
-  const planPrompt = `EU grant writer. String values in ${langName}. ALL JSON keys stay in English.
+  // ─── PLAN PROMPT (со опис) ───────────────────────────────────────
+  const planPrompt = `EU grant writer. Create project plan in ${langName}. ALL JSON keys stay in English.
 
-CRITICAL JSON KEY RULE: NEVER translate JSON keys.
-Keep: "overall_objective", "specific_objective", "results", "number", "title",
-"description", "indicators", "verification", "activities", "id", "result",
-"months", "responsible", "risks", "risk", "probability", "impact", "mitigation"
-These key names must NEVER be translated — only their string values.
+PROJECT DESCRIPTION:
+${description || 'General innovation project'}
 
-Project: ${sector} in ${country}. Budget: ${budgetAmt}. Duration: 18 months.
-Donor: ${donor}. Program: ${title}.
+Sector: ${sector}, Country: ${country}, Budget: ${budgetAmt}, Duration: 18 months.
 
-Return ONLY minified valid JSON with English keys and ${langName} values:
-{"overall_objective":"1 sentence in ${langName}","specific_objective":"1 SMART sentence in ${langName}","results":[{"number":1,"title":"title in ${langName}","description":"brief in ${langName}","indicators":["indicator with target in ${langName}"],"verification":"how in ${langName}"},{"number":2,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"},{"number":3,"title":"title","description":"brief","indicators":["indicator"],"verification":"how"}],"activities":[{"id":"A1.1","result":1,"title":"title in ${langName}","months":"1-2","responsible":"role in ${langName}"},{"id":"A1.2","result":1,"title":"title","months":"3-5","responsible":"role"},{"id":"A2.1","result":2,"title":"title","months":"4-9","responsible":"role"},{"id":"A2.2","result":2,"title":"title","months":"7-14","responsible":"role"},{"id":"A3.1","result":3,"title":"title","months":"12-16","responsible":"role"},{"id":"A3.2","result":3,"title":"title","months":"16-18","responsible":"role"},{"id":"A0.1","result":0,"title":"Project management in ${langName}","months":"1-18","responsible":"Project Manager in ${langName}"}],"risks":[{"risk":"risk in ${langName}","probability":"Low","impact":"High","mitigation":"measure in ${langName}"},{"risk":"risk","probability":"Medium","impact":"Medium","mitigation":"measure"},{"risk":"risk","probability":"Low","impact":"Medium","mitigation":"measure"}]}`;
+Return ONLY valid JSON (minified) with ENGLISH keys:
+{
+  "overall_objective": "1 sentence in ${langName}",
+  "specific_objective": "1 SMART sentence with numbers in ${langName}",
+  "results": [
+    {"number":1,"title":"Result title in ${langName}","description":"specific output based on project description","indicators":["measurable indicator with target"],"verification":"evidence"},
+    {"number":2,"title":"...","description":"...","indicators":["..."],"verification":"..."},
+    {"number":3,"title":"...","description":"...","indicators":["..."],"verification":"..."}
+  ],
+  "activities": [
+    {"id":"A1.1","result":1,"title":"activity title in ${langName}","months":"1-3","responsible":"role"},
+    {"id":"A1.2","result":1,"title":"...","months":"4-6","responsible":"..."},
+    {"id":"A2.1","result":2,"title":"...","months":"5-9","responsible":"..."},
+    {"id":"A2.2","result":2,"title":"...","months":"8-14","responsible":"..."},
+    {"id":"A3.1","result":3,"title":"...","months":"12-16","responsible":"..."},
+    {"id":"A3.2","result":3,"title":"...","months":"16-18","responsible":"..."},
+    {"id":"A0.1","result":0,"title":"Project management","months":"1-18","responsible":"Project Manager"}
+  ],
+  "risks": [
+    {"risk":"risk specific to project in ${langName}","probability":"Low/Medium/High","impact":"Low/Medium/High","mitigation":"measure in ${langName}"},
+    {"risk":"...","probability":"Medium","impact":"Medium","mitigation":"..."},
+    {"risk":"...","probability":"Low","impact":"Medium","mitigation":"..."}
+  ]
+}`;
 
+  // ─── BUDGET ─────────────────────────────────────────────────────
   const budgetNum = (() => {
     const s = String(budgetAmt);
     let c = s.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
-    c = c.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
     c = c.replace(/(\d)[,.](\d{3})(?=[,\.\d]|\b)/g, '$1$2');
     const nums = (c.match(/[0-9]+/g) || []).map(Number).filter(n => n > 999 && n <= 50000000);
     if (nums.length === 0) return 60000;
     return Math.max(...nums);
   })();
 
-  const budgetPrompt = `You are a senior EU grant accountant.
-Language for string VALUES only: ${langName}.
+  const budgetPrompt = `Senior EU grant accountant. Create budget in ${langName}. ALL JSON keys in English.
 
-CRITICAL: ALL JSON keys stay in English exactly as shown. NEVER translate keys.
+PROJECT DESCRIPTION:
+${description || 'General innovation project'}
 
-BUDGET MATH RULE — NON-NEGOTIABLE:
-Total budget = ${budgetNum} EUR (${budgetAmt}).
-Allocate using these percentages:
-- Human Resources: ${Math.round(budgetNum * 0.40)} EUR (40%)
-- Equipment: ${Math.round(budgetNum * 0.22)} EUR (22%)
-- Services: ${Math.round(budgetNum * 0.11)} EUR (11%)
-- Training: ${Math.round(budgetNum * 0.09)} EUR (9%)
-- Travel: ${Math.round(budgetNum * 0.04)} EUR (4%)
-- Communication: ${Math.round(budgetNum * 0.02)} EUR (2%)
-- Indirect costs (7% of direct costs): ${Math.round(budgetNum * 0.96 * 0.07)} EUR
+Total budget target: ${budgetNum} EUR (${budgetAmt}).
 
-Context: ${sector} project in ${country}. 18 months. Donor: ${donor}.
+Allocate using:
+- Human Resources: 40%
+- Equipment/Infrastructure: 22%
+- Services: 11%
+- Training: 9%
+- Travel: 4%
+- Communication: 2%
+- Indirect costs (7% of direct): calculate automatically
 
-Return ONLY valid JSON — no markdown fences, no explanation, no preamble:
+Create 7-8 budget lines. Each line: unit_cost × quantity = total.
+Return ONLY valid JSON:
 {
   "budget_lines": [
-    {
-      "category": "Human Resources",
-      "item": "describe the role in ${langName}",
-      "unit": "month",
-      "quantity": NUMBER,
-      "unit_cost": NUMBER,
-      "total": NUMBER,
-      "grant_amount": NUMBER,
-      "own_contribution": NUMBER
-    }
+    {"category":"Human Resources","item":"Project Coordinator","unit":"month","quantity":18,"unit_cost":NUMBER,"total":NUMBER,"grant_amount":NUMBER,"own_contribution":NUMBER},
+    ...
   ],
-  "notes": "brief budget justification note in ${langName}"
+  "notes": "budget justification in ${langName}"
 }
 
-STRICT RULES:
-1. ALL numeric fields must be plain integers — NO commas, NO dots as thousands separators, NO currency symbols, NO quotes around numbers
-2. Create exactly 7-8 budget lines covering the categories above
-3. Each line: unit_cost × quantity MUST equal total exactly
-4. Sum of ALL total fields MUST equal approximately ${budgetNum} EUR (within 5%)
-5. grant_amount + own_contribution = total for each line
-6. own_contribution is 0 for most lines; one line can have small co-financing`;
+RULES: All numbers are integers. No commas. No currency symbols. grant_amount + own_contribution = total. Make one line with small own_contribution (2-5%).`;
 
-  console.log('[generate-application] calling DeepSeek 3x in parallel, budget target:', budgetAmt, budgetNum);
+  console.log('[generate-application] calling DeepSeek 3x in parallel, budget target:', budgetNum);
   const [narrativeRaw, planRaw, budgetRaw] = await Promise.all([
-    safeDeepSeek(narrativePrompt, lang, 8000),
-    safeDeepSeek(planPrompt,      lang, 4000),
-    safeDeepSeek(budgetPrompt,    lang, 4000),
+    safeDeepSeek(narrativePrompt, lang, 16000),  // ← зголемено на 16k
+    safeDeepSeek(planPrompt,      lang, 8000),
+    safeDeepSeek(budgetPrompt,    lang, 8000),
   ]);
 
-  const narrative = parseJSON(narrativeRaw, narrativeFallback(org, sector, country, lang));
-  const plan      = parseJSON(planRaw,      planFallback(sector, country, lang));
+  const narrative = parseJSON(narrativeRaw, narrativeFallback(org, sector, country, description, lang));
+  const plan      = parseJSON(planRaw,      planFallback(sector, country, description, lang));
 
   let budget = parseJSON(budgetRaw, null);
   budget = await validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName);
@@ -210,6 +208,7 @@ STRICT RULES:
   };
 }
 
+// ─── HELPER: parse numbers from strings ─────────────────────────────
 function parseLocaleNumber(val) {
   if (val === null || val === undefined) return 0;
   const s = String(val).trim();
@@ -226,24 +225,18 @@ function parseLocaleNumber(val) {
   return isNaN(n) ? 0 : Math.round(n);
 }
 
-function validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName) {
+async function validateAndFixBudget(budget, budgetNum, lang, sector, country, donor, langName) {
   const lines = budget?.budget_lines;
-
   if (!lines || !Array.isArray(lines) || lines.length === 0) {
     console.warn('[budget] No budget_lines — using scaled fallback');
     return scaledBudgetFallback(budgetNum, lang);
   }
-
   const parsedTotal = lines.reduce((s, l) => s + parseLocaleNumber(l.total), 0);
   const tolerance   = budgetNum * 0.25;
-
-  console.log(`[budget] Parsed total: ${parsedTotal}, expected: ${budgetNum}, diff: ${Math.abs(parsedTotal - budgetNum)}`);
-
   if (Math.abs(parsedTotal - budgetNum) <= tolerance) {
     console.log('[budget] Validation PASSED');
     return budget;
   }
-
   console.warn(`[budget] Validation FAILED (${parsedTotal} vs ${budgetNum}) — using scaled fallback`);
   return scaledBudgetFallback(budgetNum, lang);
 }
@@ -258,7 +251,6 @@ function scaledBudgetFallback(budgetNum, lang) {
   const tv  = Math.round(budgetNum * 0.04);
   const cm  = Math.round(budgetNum * 0.02);
   const ic  = Math.round(budgetNum * 0.96 * 0.07);
-
   const hr2own  = Math.round(hr2 * 0.15);
   const hr2grant = hr2 - hr2own;
 
@@ -295,17 +287,17 @@ Scholarship: ${title}
 
 Return ONLY valid JSON:
 {
-  "personal_statement": "Compelling motivation letter, 400-500 words, first person. Structure: 1) Hook opening about your journey 2) Academic/professional background 3) Specific goals for this scholarship 4) How you will use knowledge back home 5) Strong closing. Must be personal and specific, not generic.",
-  "academic_background": "Education history, research experience, publications if any, GPA context. 120-150 words.",
-  "professional_experience": "Relevant work, internships, volunteer work. Concrete achievements with numbers. 100-120 words.",
+  "personal_statement": "Compelling motivation letter, 400-500 words, first person.",
+  "academic_background": "Education history, research experience, publications. 120-150 words.",
+  "professional_experience": "Relevant work, internships, volunteer work. 100-120 words.",
   "research_proposal": "Title + Abstract (60 words) + Methodology (80 words) + Expected outcomes (40 words). Total 200 words.",
-  "return_plan": "Specific plan for applying knowledge after returning: institution to join, project to launch, people to impact. Numbers and timeline. 100-120 words.",
-  "why_this_program": "Specific reasons why THIS scholarship/program is the right fit. Reference program specific features. 80-100 words.",
-  "references_guidance": "What to ask from reference letter writers (3 bullet points)",
+  "return_plan": "Specific plan for applying knowledge after returning. 100-120 words.",
+  "why_this_program": "Why THIS scholarship/program. 80-100 words.",
+  "references_guidance": ["Guidance point 1", "Guidance point 2", "Guidance point 3"],
   "cv_structure": ["Education entry", "Experience entry", "Skills entry", "Publications/Awards entry"]
 }`;
 
-  const raw     = await safeDeepSeek(prompt, lang, 6000);
+  const raw = await safeDeepSeek(prompt, lang, 6000);
   const content = parseJSON(raw, scholarshipFallback(name, sector, country, lang));
   return content;
 }
@@ -318,27 +310,21 @@ function sanitizeGeminiJSON(raw) {
     .replace(/\u00AB|\u00BB/g, "'");
 }
 
-async function safeDeepSeek(prompt, lang, maxTokens = 8000) {
+async function safeDeepSeek(prompt, lang, maxTokens = 16000) {
   const system = [
     'You are a professional grant writer.',
-    'OUTPUT RULES (non-negotiable):',
-    '1. Return ONLY a valid JSON object — nothing else.',
-    '2. No markdown fences (no ```json), no explanation, no preamble.',
-    '3. No trailing commas. No comments inside JSON.',
-    '4. All string values must use double quotes on the OUTSIDE only.',
-    '5. CRITICAL: NEVER place double quote characters inside string values.',
-    '   Use parentheses instead: (МСП) not "МСП", (ЕУ) not "ЕУ", (ERP) not "ERP"',
-    '   WRONG: {"text": "малите претпријатија \\"МСП\\" во"}',
-    '   RIGHT:  {"text": "малите претпријатија (МСП) во"}',
-    '   This applies to ALL abbreviations: МСП, ЕУ, AI, ERP, SaaS, MES, IT, ICT',
-    '6. Do NOT translate JSON keys — only translate string values.',
-    '7. ALL numeric fields must be plain integers — no commas, no dots as thousands.',
-    '8. If a value would be very long, shorten it to fit valid JSON.',
-    '9. Write ONLY about the project described. Do not invent details not in the prompt.',
+    'OUTPUT RULES: Return ONLY a valid JSON object — nothing else.',
+    'No markdown fences (no ```json), no explanation, no preamble.',
+    'No trailing commas. No comments inside JSON.',
+    'All string values must use double quotes on the OUTSIDE only.',
+    'NO double quotes inside string values — use parentheses instead: (МСП) not "МСП".',
+    'Do NOT translate JSON keys — only translate string values.',
+    'ALL numeric fields must be plain integers — no commas, no dots.',
+    'Write DETAILED, SPECIFIC content based on the project description.',
   ].join('\n');
 
   try {
-    const result = await deepseek(system, prompt, { maxTokens, temperature: 0.3 });
+    const result = await deepseek(system, prompt, { maxTokens, temperature: 0.35 });
     console.log(`[safeDeepSeek] maxTokens:${maxTokens} raw preview:`, (result || '').slice(0, 300));
     return result;
   } catch (e) {
@@ -349,49 +335,31 @@ async function safeDeepSeek(prompt, lang, maxTokens = 8000) {
 
 function parseJSON(raw, fallback) {
   if (!raw) return fallback;
-
   raw = sanitizeGeminiJSON(raw);
-
-  let clean = raw
-    .replace(/```json\s*/gi, '')
-    .replace(/```\s*/g, '')
-    .trim();
-
+  let clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const start = clean.indexOf('{');
   const end   = clean.lastIndexOf('}');
-  if (start === -1 || end === -1 || end <= start) {
-    console.warn('[parseJSON] no JSON object found, using fallback');
-    return fallback;
-  }
+  if (start === -1 || end === -1 || end <= start) return fallback;
   let candidate = clean.slice(start, end + 1);
-
   try {
     return fallback ? { ...fallback, ...JSON.parse(candidate) } : JSON.parse(candidate);
-  } catch (_) {}
-
-  try {
-    let repaired = candidate
-      .replace(/,\s*([}\]])/g, '$1')
-      .replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"')
-      .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":')
-      .replace(/\/\/[^\n]*/g, '')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/"[^"]*$/, '"[truncated]"')
-      .replace(/[\x00-\x1F\x7F]/g, ' ');
-
-    const opens  = (repaired.match(/\[/g) || []).length;
-    const closes = (repaired.match(/\]/g) || []).length;
-    const openB  = (repaired.match(/\{/g) || []).length;
-    const closeB = (repaired.match(/\}/g) || []).length;
-    for (let i = 0; i < opens  - closes; i++) repaired += ']';
-    for (let i = 0; i < openB  - closeB; i++) repaired += '}';
-
-    const parsed = JSON.parse(repaired);
-    console.log('[parseJSON] repaired successfully');
-    return fallback ? { ...fallback, ...parsed } : parsed;
-  } catch (e2) {
-    console.warn('[parseJSON] all repair attempts failed:', e2.message.slice(0, 80));
-    return fallback;
+  } catch (_) {
+    try {
+      let repaired = candidate
+        .replace(/,\s*([}\]])/g, '$1')
+        .replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"')
+        .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+      const opens = (repaired.match(/\[/g) || []).length;
+      const closes = (repaired.match(/\]/g) || []).length;
+      const openB = (repaired.match(/\{/g) || []).length;
+      const closeB = (repaired.match(/\}/g) || []).length;
+      for (let i = 0; i < opens - closes; i++) repaired += ']';
+      for (let i = 0; i < openB - closeB; i++) repaired += '}';
+      const parsed = JSON.parse(repaired);
+      return fallback ? { ...fallback, ...parsed } : parsed;
+    } catch (e2) {
+      return fallback;
+    }
   }
 }
 
@@ -417,12 +385,6 @@ function buildLFM(narrative, plan, lang) {
       mov:         r.verification || (isMk ? 'Финален извештај' : 'Final report'),
       assumptions: isMk ? 'Партнерите соработуваат' : 'Partners cooperate as planned',
     })),
-    activities: (plan.activities || []).map(a => ({
-      id:          a.id,
-      description: a.title,
-      inputs:      isMk ? `Буџет, тим, опрема (Месеци ${a.months})` : `Budget, team, equipment (Months ${a.months})`,
-      assumptions: isMk ? 'Достапност на ресурси' : 'Resources available as planned',
-    })),
   };
 }
 
@@ -437,42 +399,44 @@ function buildGantt(activities) {
   });
 }
 
-function narrativeFallback(org, sector, country, lang) {
+function narrativeFallback(org, sector, country, description, lang) {
   const mk = lang === 'mk';
+  const hasDesc = description && description.length > 10;
   return {
-    project_title:    mk ? `Дигитална иновација за ${country}` : `Digital Innovation for ${country}`,
-    abstract:         mk ? `Проектот ќе изгради капацитети во секторот ${sector} во ${country}, со директна корист за 150 корисници.` : `This project will build capacity in the ${sector} sector in ${country}, directly benefiting 150 people.`,
-    problem_analysis: mk ? `Недостатокот на дигитални вештини во ${country} е клучна пречка за економски развој.` : `The lack of digital skills in ${country} is a key barrier to economic development.`,
-    innovation:       mk ? 'Иновативен пристап кој комбинира онлајн и офлајн обука.' : 'Innovative blended learning approach combining online and offline training.',
-    sustainability:   mk ? 'По завршувањето на проектот, платформата ќе продолжи со работа преку членарини.' : 'After the project, the platform will continue through membership fees.',
-    team_capacity:    mk ? `Организацијата ${org} има докажано искуство во секторот.` : `${org} has proven experience in the sector.`,
+    project_title:    hasDesc ? (mk ? `${description.slice(0, 60)} во ${country}` : `${description.slice(0, 60)} in ${country}`) : (mk ? `Дигитална иницијатива за ${country}` : `Digital Initiative for ${country}`),
+    abstract:         hasDesc ? (mk ? description.slice(0, 400) : description.slice(0, 400)) : (mk ? `Проектот ќе изгради капацитети во секторот ${sector} во ${country}, со директна корист за 150 корисници.` : `This project will build capacity in the ${sector} sector in ${country}, directly benefiting 150 people.`),
+    problem_analysis: mk ? `Недостатокот на иновативни решенија во ${country} е клучна пречка за развој.` : `The lack of innovative solutions in ${country} is a key barrier to development.`,
+    innovation:       mk ? 'Иновативен пристап кој комбинира најнови технологии.' : 'Innovative approach combining cutting-edge technologies.',
+    sustainability:   mk ? 'По завршувањето, активностите ќе продолжат преку одржлив бизнис модел.' : 'After completion, activities will continue through a sustainable business model.',
+    team_capacity:    mk ? `Организацијата ${org} има докажано искуство во секторот ${sector}.` : `${org} has proven experience in the ${sector} sector.`,
     communication:    mk ? 'Резултатите ќе бидат споделени преку веб-сајт, социјални мрежи и јавни настани.' : 'Results will be shared via website, social media, and public events.',
   };
 }
 
-function planFallback(sector, country, lang) {
+function planFallback(sector, country, description, lang) {
   const mk = lang === 'mk';
+  const hasDesc = description && description.length > 10;
   return {
-    overall_objective:  mk ? `Придонес кон одржливиот развој на ${sector} секторот во ${country}` : `Contribute to sustainable development of the ${sector} sector in ${country}`,
-    specific_objective: mk ? 'Зголемен пристап до квалитетни услуги за 150 корисници до крајот на проектот' : '150 beneficiaries have improved access to quality services by end of project',
+    overall_objective:  mk ? `Унапредување на иновациите во ${sector} секторот во ${country}` : `Advancing innovation in the ${sector} sector in ${country}`,
+    specific_objective: mk ? (hasDesc ? `${description.slice(0, 100)} до крајот на проектот` : `Зголемен пристап до иновативни решенија за 150 корисници`) : (hasDesc ? `${description.slice(0, 100)} by project end` : `Improved access to innovative solutions for 150 beneficiaries`),
     results: [
-      { number: 1, title: mk ? 'Зајакнат институционален капацитет' : 'Strengthened institutional capacity', description: '', indicators: ['1 platform developed', '5 staff trained'], verification: mk ? 'Договори и извештаи' : 'Contracts and reports' },
-      { number: 2, title: mk ? '150 корисници обучени' : '150 beneficiaries trained', description: '', indicators: ['150 certificates issued', '80% satisfaction rate'], verification: mk ? 'Сертификати и анкети' : 'Certificates and surveys' },
-      { number: 3, title: mk ? 'Одржливост обезбедена' : 'Sustainability ensured', description: '', indicators: ['Partnership agreement signed', 'Revenue model operational'], verification: mk ? 'Договори за партнерство' : 'Partnership agreements' },
+      { number: 1, title: mk ? 'Развиено иновативно решение' : 'Innovative solution developed', description: '', indicators: ['1 prototype/platform developed', '5 staff trained'], verification: mk ? 'Технички извештај' : 'Technical report' },
+      { number: 2, title: mk ? '150 корисници вклучени' : '150 beneficiaries engaged', description: '', indicators: ['150 certificates issued', '80% satisfaction rate'], verification: mk ? 'Анкети и сертификати' : 'Surveys and certificates' },
+      { number: 3, title: mk ? 'Одржливост обезбедена' : 'Sustainability ensured', description: '', indicators: ['Partnership agreement signed', 'Revenue model defined'], verification: mk ? 'Договори за партнерство' : 'Partnership agreements' },
     ],
     activities: [
-      { id: 'A1.1', result: 1, title: mk ? 'Развој на платформа'     : 'Platform development',    months: '1-5',   responsible: mk ? 'Технички тим'   : 'Technical team' },
-      { id: 'A1.2', result: 1, title: mk ? 'Обука на персонал'       : 'Staff training',          months: '2-3',   responsible: mk ? 'Координатор'    : 'Coordinator' },
-      { id: 'A2.1', result: 2, title: mk ? 'Регрутација'             : 'Participant recruitment', months: '3-4',   responsible: mk ? 'Координатор'    : 'Coordinator' },
-      { id: 'A2.2', result: 2, title: mk ? 'Спроведување на обуки'   : 'Training delivery',      months: '5-14',  responsible: mk ? 'Тренери'        : 'Trainers' },
-      { id: 'A3.1', result: 3, title: mk ? 'Партнерски договори'     : 'Partnership agreements', months: '12-15', responsible: mk ? 'Директор'       : 'Director' },
-      { id: 'A3.2', result: 3, title: mk ? 'Финален извештај'        : 'Final report',           months: '17-18', responsible: mk ? 'Тим'            : 'Team' },
-      { id: 'A0.1', result: 0, title: mk ? 'Управување со проект'    : 'Project management',     months: '1-18',  responsible: mk ? 'Проект менаџер' : 'Project Manager' },
+      { id: 'A1.1', result: 1, title: mk ? 'Анализа и дизајн'       : 'Analysis & design',    months: '1-4',   responsible: mk ? 'Технички тим'   : 'Technical team' },
+      { id: 'A1.2', result: 1, title: mk ? 'Развој и тестирање'     : 'Development & testing', months: '5-10',  responsible: mk ? 'Технички тим'   : 'Technical team' },
+      { id: 'A2.1', result: 2, title: mk ? 'Регрутација на корисници' : 'Beneficiary recruitment', months: '6-8',   responsible: mk ? 'Координатор'    : 'Coordinator' },
+      { id: 'A2.2', result: 2, title: mk ? 'Спроведување на активности' : 'Activity implementation', months: '9-15',  responsible: mk ? 'Тим'           : 'Team' },
+      { id: 'A3.1', result: 3, title: mk ? 'Партнерства'           : 'Partnerships',          months: '12-16', responsible: mk ? 'Директор'       : 'Director' },
+      { id: 'A3.2', result: 3, title: mk ? 'Финален извештај'      : 'Final report',         months: '17-18', responsible: mk ? 'Тим'           : 'Team' },
+      { id: 'A0.1', result: 0, title: mk ? 'Управување со проект'  : 'Project management',   months: '1-18',  responsible: mk ? 'Проект менаџер' : 'Project Manager' },
     ],
     risks: [
-      { risk: mk ? 'Низок интерес на корисниците' : 'Low beneficiary interest', probability: 'Low',    impact: 'High',   mitigation: mk ? 'Рана комуникација' : 'Early communication' },
-      { risk: mk ? 'Доцнење на плаќања'           : 'Payment delays',           probability: 'Medium', impact: 'Medium', mitigation: mk ? 'Резервен фонд'     : 'Reserve fund' },
-      { risk: mk ? 'Технички проблеми'            : 'Technical issues',         probability: 'Low',    impact: 'Medium', mitigation: mk ? 'Тестирање'         : 'Pre-launch testing' },
+      { risk: mk ? 'Низок интерес на целната група' : 'Low target group interest', probability: 'Low',    impact: 'High',   mitigation: mk ? 'Рана комуникација и пилот' : 'Early communication and pilot' },
+      { risk: mk ? 'Доцнење на набавките'           : 'Procurement delays',       probability: 'Medium', impact: 'Medium', mitigation: mk ? 'Резервни добавувачи'     : 'Backup suppliers' },
+      { risk: mk ? 'Технички предизвици'            : 'Technical challenges',     probability: 'Low',    impact: 'Medium', mitigation: mk ? 'Агилен развој'         : 'Agile development' },
     ],
   };
 }
@@ -480,13 +444,13 @@ function planFallback(sector, country, lang) {
 function scholarshipFallback(name, sector, country, lang) {
   const mk = lang === 'mk';
   return {
-    personal_statement:      mk ? `Растев во ${country} гледајќи ги предизвиците во секторот ${sector}.` : `Growing up in ${country}, I witnessed firsthand the challenges in the ${sector} sector.`,
+    personal_statement:      mk ? `Растев во ${country} сведочејќи на предизвиците во ${sector}.` : `Growing up in ${country}, I witnessed the challenges in ${sector}.`,
     academic_background:     mk ? 'Дипломиран со одличен успех.' : 'Graduated with distinction.',
     professional_experience: mk ? 'Работев на проекти поврзани со секторот.' : 'Worked on sector-related projects.',
-    research_proposal:       mk ? 'Наслов: Иновации во секторот.' : 'Title: Innovations in the sector.',
-    return_plan:             mk ? 'По враќањето, ќе работам со националните институции.' : 'After returning, I will work with national institutions.',
-    why_this_program:        mk ? 'Овој програм е идеален поради репутацијата.' : 'This program is ideal due to its reputation.',
-    references_guidance:     [mk?'Нагласете ги лидерските квалитети':'Emphasize leadership qualities', mk?'Споменете конкретни постигнувања':'Mention specific achievements', mk?'Опишете го потенцијалот':'Describe impact potential'],
-    cv_structure:            [mk?'Образование: Универзитет, степен, година':'Education: University, degree, year', mk?'Искуство: Позиција, организација':'Experience: Position, org', mk?'Вештини: Јазици':'Skills: Languages', mk?'Признанија':'Recognition: Awards'],
+    research_proposal:       mk ? `Наслов: Иновации во ${sector}` : `Title: Innovations in ${sector}`,
+    return_plan:             mk ? `По враќањето во ${country}, ќе работам со националните институции.` : `After returning to ${country}, I will work with national institutions.`,
+    why_this_program:        mk ? 'Овој програм е идеален поради неговата репутација.' : 'This program is ideal due to its reputation.',
+    references_guidance:     [mk?'Нагласете ги лидерските квалитети':'Emphasize leadership qualities', mk?'Споменете конкретни постигнувања':'Mention specific achievements', mk?'Опишете го потенцијалот за влијание':'Describe impact potential'],
+    cv_structure:            [mk?'Образование: Универзитет, степен, година':'Education: University, degree, year', mk?'Искуство: Позиција, организација':'Experience: Position, organization', mk?'Вештини: Јазици, технички вештини':'Skills: Languages, technical skills', mk?'Признанија: Награди, сертификати':'Recognition: Awards, certificates'],
   };
 }
