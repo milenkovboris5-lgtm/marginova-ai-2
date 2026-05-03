@@ -141,6 +141,45 @@ async function checkAndDeductQuota(userId) {
   return { allowed: true };
 }
 
+// ─── DEEPSEEK ─────────────────────────────────────────────
+const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
+const DEEPSEEK_MODEL = 'deepseek-chat';
+
+async function deepseekCall(systemPrompt, userPrompt, opts = {}) {
+  const key = process.env.DEEPSEEK_API_KEY;
+  if (!key) throw new Error('Missing DEEPSEEK_API_KEY');
+  const r = await ft(DEEPSEEK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({
+      model: DEEPSEEK_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt   },
+      ],
+      max_tokens:  opts.maxTokens   ?? 4000,   // default 4000
+      temperature: opts.temperature ?? 0.35,
+      stream: false,
+    }),
+  }, opts.timeout ?? 120000);
+  if (!r.ok) throw new Error(`DeepSeek ${r.status}: ${(await r.text()).slice(0, 240)}`);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  const text = d.choices?.[0]?.message?.content || '';
+  if (!text) throw new Error('DeepSeek returned empty response');
+  return text;
+}
+
+async function deepseek(systemPrompt, userPrompt, opts = {}) {
+  try {
+    return await deepseekCall(systemPrompt, userPrompt, opts);
+  } catch (e) {
+    console.log('[DEEPSEEK RETRY]', e.message);
+    await new Promise(r => setTimeout(r, 2000));
+    return await deepseekCall(systemPrompt, userPrompt, opts);
+  }
+}
+
 // ─── GEMINI ───────────────────────────────────────────────
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
@@ -197,5 +236,5 @@ function setCors(req, res) {
 
 module.exports = {
   supabase, getTable, ft, detectLang, LANG_NAMES,
-  sanitizeField, checkIP, checkAndDeductQuota, gemini, setCors
+  sanitizeField, checkIP, checkAndDeductQuota, gemini, deepseek, setCors
 };
