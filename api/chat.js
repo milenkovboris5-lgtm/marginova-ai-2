@@ -1,10 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════════
-// MARGINOVA — api/chat.js  v6 — TTL fix + relevance-aware llmRouter
+// MARGINOVA — api/chat.js  v7 — DB-only search, Serper removed from chat
 //
-// CHANGES over v5.1:
-// 1. CACHE_TTL_HOURS: 24 → 6  (stale results fix)
-// 2. cleanCache() runs every request (fire-and-forget, not 5% random)
-//    Minimal cost — only deletes expired rows, fast query
+// ARCHITECTURE CHANGE (v7):
+// Serper is NO LONGER used in real-time chat. It runs ONLY in the weekly
+// cron job (api/cron/update-opportunities.js) which keeps the Supabase DB
+// fresh. This removes latency, Serper quota burn, and web-result noise.
+//
+// FIXES over v6:
+// 1. Serper removed — searchSerper, buildSerperQuery, extractFromSerper deleted
+// 2. sources cache bug fixed — cached response now reflects real db count
+// 3. hybridSearch simplified to DB-only searchDB call
 // ═══════════════════════════════════════════════════════════════════════
 
 // ─── STARTUP DIAGNOSTICS ─────────────────────────────────────────────
@@ -13,7 +18,7 @@ console.log('[chat.js] NODE_ENV:', process.env.NODE_ENV);
 console.log('[chat.js] GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'SET ✓' : 'MISSING ✗');
 console.log('[chat.js] SUPABASE_URL:', process.env.SUPABASE_URL ? 'SET ✓' : 'MISSING ✗');
 console.log('[chat.js] SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? 'SET ✓' : 'MISSING ✗');
-console.log('[chat.js] SERPER_API_KEY:', process.env.SERPER_API_KEY ? 'SET ✓' : 'MISSING ✗');
+console.log('[chat.js] DEEPSEEK_API_KEY:', process.env.DEEPSEEK_API_KEY ? 'SET ✓' : 'MISSING ✗');
 
 // ─── SAFE MODULE IMPORTS ─────────────────────────────────────────────
 let utils, profileDetector, fundingScorer, llmRouter;
@@ -68,29 +73,19 @@ const { detectProfile, needsSearch } = profileDetector || {
 
 const {
   searchDB,
-  mergeWithWeb,
-  needsSerper,
   RESULTS_TO_SHOW = 6,
 } = fundingScorer || {
   searchDB:        async () => [],
-  mergeWithWeb:    (a, b) => [...a, ...b].slice(0, 6),
-  needsSerper:     () => false,
   RESULTS_TO_SHOW: 6,
 };
 
-const { extractFromSerper, synthesize } = llmRouter || {
-  extractFromSerper: async () => [],
+const { synthesize } = llmRouter || {
   synthesize: async (lang) => lang === 'mk'
     ? 'Системот е во одржување. Обидете се повторно.'
     : 'System is under maintenance. Please try again.',
 };
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────
-const SERPER_KEY = process.env.SERPER_API_KEY;
-
-// v6 FIX: 24h → 6h — reduces stale result window dramatically.
-// searchDB hits Supabase (fast, free tier handles it).
-// Users inserting new programs now see them within 6h max.
 const CACHE_TTL_HOURS = 6;
 
 // ─── CACHE HELPERS ───────────────────────────────────────────────────
@@ -115,7 +110,7 @@ async function getCached(key) {
   if (!supabase) return null;
   try {
     const { data, error } = await getTable('search_cache')
-      .select('results,created_at')
+      .select('results,created_at,db_count')
       .eq('query_hash', key)
       .gt('expires_at', new Date().toISOString())
       .limit(1);
@@ -128,7 +123,7 @@ async function getCached(key) {
   }
 }
 
-async function saveCache(key, queryText, results) {
+async function saveCache(key, queryText, results, dbCount) {
   if (!supabase) return;
   try {
     const now     = new Date();
@@ -138,6 +133,7 @@ async function saveCache(key, queryText, results) {
       query_hash: key,
       query_text: queryText,
       results,
+      db_count:   dbCount,
       created_at: now.toISOString(),
       expires_at: expires.toISOString(),
     });
@@ -146,9 +142,6 @@ async function saveCache(key, queryText, results) {
   }
 }
 
-// v6 FIX: cleanCache runs every request (fire-and-forget).
-// Cost: one fast DELETE WHERE expires_at < now() per request.
-// Much better than 5% random — expired rows are always cleaned promptly.
 async function cleanCache() {
   if (!supabase) return;
   try {
@@ -158,87 +151,23 @@ async function cleanCache() {
   }
 }
 
-// ─── SERPER SEARCH ───────────────────────────────────────────────────
-async function searchSerper(query) {
-  if (!SERPER_KEY) {
-    console.log('[SERPER] No API key — web fallback disabled');
-    return [];
-  }
-  try {
-    const r = await ft('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: { 'X-API-KEY': SERPER_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query, num: 8, gl: 'us', hl: 'en' }),
-    }, 8000);
-    if (!r.ok) {
-      console.log('[SERPER] HTTP error:', r.status);
-      return [];
-    }
-    const data = await r.json();
-    return (data.organic || [])
-      .filter(item => item.title && item.link)
-      .map(item => ({
-        title:   item.title,
-        snippet: item.snippet || '',
-        link:    item.link,
-        source:  'serper',
-      }))
-      .slice(0, 6);
-  } catch (e) {
-    console.log('[SERPER] error:', e.message);
-    return [];
-  }
-}
-
-function buildSerperQuery(userText, profile) {
-  const parts = ['grant funding open call'];
-  if (profile.sector)  parts.push(profile.sector.split('/')[0].trim());
-  if (profile.country) parts.push(profile.country);
-  if (profile.orgType) parts.push(profile.orgType.split('/')[0].trim());
-  const kws = (userText || '').toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ').split(/\s+/)
-    .filter(w => w.length > 4 && !['about','where','which','would','could'].includes(w))
-    .slice(0, 3);
-  return [...parts, ...kws].join(' ');
-}
-
-// ─── HYBRID SEARCH ───────────────────────────────────────────────────
-async function hybridSearch(userText, profile) {
-  console.log('[HYBRID] profile:', JSON.stringify({
+// ─── DB-ONLY SEARCH ──────────────────────────────────────────────────
+// Serper is NOT used here. It runs only in api/cron/update-opportunities.js
+// which refreshes the Supabase DB weekly. The DB is the single source of truth.
+async function dbSearch(profile) {
+  console.log('[DB SEARCH] profile:', JSON.stringify({
     sector: profile.sector, country: profile.country,
     orgType: profile.orgType, budget: profile.budget,
   }));
 
-  let dbResults = [];
   try {
-    dbResults = await searchDB(profile);
-    console.log('[HYBRID] DB returned:', dbResults.length);
+    const results = await searchDB(profile);
+    console.log('[DB SEARCH] returned:', results.length);
+    return { results, sources: { db: results.length, serper: 0 } };
   } catch (e) {
-    console.error('[HYBRID] searchDB error:', e.message);
+    console.error('[DB SEARCH] error:', e.message);
+    return { results: [], sources: { db: 0, serper: 0 } };
   }
-
-  const doSerper = needsSerper(dbResults);
-  console.log('[HYBRID] Serper needed:', doSerper);
-
-  if (!doSerper) {
-    return { results: dbResults, sources: { db: dbResults.length, serper: 0 } };
-  }
-
-  const rawWeb = await searchSerper(buildSerperQuery(userText, profile));
-  let extractedWeb = [];
-  if (rawWeb.length > 0) {
-    try {
-      extractedWeb = await extractFromSerper(rawWeb, profile);
-      console.log('[HYBRID] Serper extracted:', extractedWeb.length);
-    } catch (e) {
-      console.error('[HYBRID] extractFromSerper error:', e.message);
-    }
-  }
-
-  return {
-    results: mergeWithWeb(dbResults, extractedWeb),
-    sources: { db: dbResults.length, serper: extractedWeb.length },
-  };
 }
 
 // ─── MAIN HANDLER ────────────────────────────────────────────────────
@@ -283,11 +212,8 @@ module.exports = async function handler(req, res) {
     }
 
     // ── Language detection ────────────────────────────────
-    // Scan ALL messages (not just last 3) to catch explicit language requests
-    // e.g. "НА МАКЕДОНСКИ" sent after earlier English messages
     const allMsgsText = (body.messages || []).map(m => m.content || '').join(' ') + ' ' + userText;
 
-    // Explicit language override — check current message first
     const explicitMk = /на македонски|по македонски|in macedonian|makedonski/i.test(userText);
     const explicitEn = /in english|на англиски|по английски/i.test(userText);
 
@@ -295,7 +221,7 @@ module.exports = async function handler(req, res) {
                : explicitEn ? 'en'
                : body.lang  || detectLang(allMsgsText);
 
-    const today    = new Date().toLocaleDateString('en-GB', {
+    const today = new Date().toLocaleDateString('en-GB', {
       day: '2-digit', month: '2-digit', year: 'numeric',
     });
     console.log('[handler] lang:', lang, 'today:', today);
@@ -312,8 +238,6 @@ module.exports = async function handler(req, res) {
       console.warn('[handler] detectProfile error:', e.message);
     }
 
-    // v6 FIX: cleanCache runs every request (fire-and-forget)
-    // Cost negligible — fast DELETE on indexed expires_at column
     cleanCache().catch(() => {});
 
     // ── Search decision ───────────────────────────────────
@@ -341,24 +265,22 @@ module.exports = async function handler(req, res) {
           results   = cached.results;
           cachedAt  = cached.created_at;
           fromCache = true;
-          console.log('[handler] Serving from cache:', results.length, 'results');
+          // v7 fix: restore real db count from cache, not 0
+          sources   = { db: cached.db_count ?? results.length, serper: 0 };
+          console.log('[handler] Serving from cache:', results.length, 'results, db:', sources.db);
         }
       } catch (e) {
         console.warn('[handler] cache lookup error:', e.message);
       }
 
       if (!fromCache) {
-        try {
-          const hybrid = await hybridSearch(userText, profile);
-          results  = hybrid.results;
-          sources  = hybrid.sources;
-          if (results.length) {
-            saveCache(cacheKey, userText, results).catch(e =>
-              console.warn('[handler] saveCache error:', e.message)
-            );
-          }
-        } catch (e) {
-          console.error('[handler] hybridSearch error:', e.message);
+        const searched = await dbSearch(profile);
+        results = searched.results;
+        sources = searched.sources;
+        if (results.length) {
+          saveCache(cacheKey, userText, results, sources.db).catch(e =>
+            console.warn('[handler] saveCache error:', e.message)
+          );
         }
       }
     }
