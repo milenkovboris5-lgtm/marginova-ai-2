@@ -1,19 +1,21 @@
 // ═══════════════════════════════════════════════════════════════════════
-// MARGINOVA — api/chat.js  v8 — Funding Decision Engine
+// MARGINOVA — api/chat.js  v9 — Universal Funding Decision Engine
 //
 // PIPELINE:
-// 1. detectUserProfile()    — enhance profile with type flags
-// 2. searchDB()             — DB-first search
-// 3. serperFallback()       — only if DB < 2 results + SERPER_API_KEY set
-// 4. normalizeOpportunity() — uniform structure for all results
-// 5. parseEligibility()     — extract requirement flags from eligibility text
-// 6. scoreOpportunity()     — score formula: eligibility×0.5 + region×0.2 + sector×0.2 + risk×0.1
-// 7. mergeDuplicates()      — collapse near-identical programs
-// 8. rankResults()          — top 3 main paths + eliminated list
-// 9. formatDecisionOutput() — Gemini formats in user language
+// 1. detectNegatives()      — explicit "I do not have X" constraints
+// 2. detectUserProfile()    — enhance profile with type flags + negates
+// 3. searchDB()             — DB-first search
+// 4. serperFallback()       — only if DB < 2 results + SERPER_API_KEY set
+// 5. normalizeOpportunity() — uniform structure for all results
+// 6. parseEligibility()     — extract 11 requirement flags
+// 7. scoreOpportunity()     — negates override → eligibility×0.5 + region×0.2 + sector×0.2 + risk×0.1
+// 8. mergeDuplicates()      — family clustering + token-similarity dedup
+// 9. rankResults()          — top 3 main paths + eliminated list
+// 10. buildOutputText()     — pure JS structured output (LANG labels)
+// 11. formatDecisionOutput()— Gemini refines/translates; JS fallback on error
 // ═══════════════════════════════════════════════════════════════════════
 
-console.log('[chat.js] v8 loaded — Decision Engine');
+console.log('[chat.js] v9 loaded — Universal Decision Engine');
 console.log('[chat.js] GEMINI_API_KEY:',        process.env.GEMINI_API_KEY        ? 'SET ✓' : 'MISSING ✗');
 console.log('[chat.js] SUPABASE_URL:',          process.env.SUPABASE_URL          ? 'SET ✓' : 'MISSING ✗');
 console.log('[chat.js] SUPABASE_SERVICE_KEY:',  process.env.SUPABASE_SERVICE_KEY  ? 'SET ✓' : 'MISSING ✗');
@@ -57,14 +59,163 @@ const NATIVE_NAMES = {
   ar:'العربية',
 };
 
+// ─── LANGUAGE LABEL MAPS ─────────────────────────────────────────────
+const LANG = {
+  mk: {
+    header:        'Еве ја евалуацијата според вашиот профил:',
+    topSection:    '🎯 ТОП ПАТИШТА ЗА ВАС',
+    org:           'Организација',
+    funding:       'Финансирање',
+    deadline:      'Краен рок',
+    region:        'Регион',
+    decision:      'Одлука',
+    probability:   'Веројатност',
+    riskLbl:       'Ризик',
+    low:           'Низок',
+    medium:        'Среден',
+    high:          'Висок',
+    whyFits:       'Зошто одговара',
+    mainRisks:     'Главни ризици',
+    nextStep:      'Следен чекор',
+    link:          'Линк',
+    eliminated:    '🚫 ОТСТРАНЕТИ / НИЗОК ПРИОРИТЕТ',
+    finalSection:  '📋 КОНЕЧНА ОДЛУКА',
+    bestPath:      'Најдобра патека',
+    action:        'Препорачана акција',
+    noResults:     'Нема програми кои ги исполнуваат критериумите. Додај повеќе детали — сектор, земја, тип на организација.',
+    noMoreDetail:  'Нема пронајдени програми за вашиот профил. Додај повеќе детали — сектор, земја, тип на организација, и буџет — за да добиеш подобри резултати.',
+    notConfirmed:  'Не е потврдено',
+    yes:           '✅ ДА',
+    conditional:   '⚠️ УСЛОВНО',
+    no:            '❌ НЕ',
+    elim:          '🚫 ЕЛИМИНИРАНО',
+  },
+  en: {
+    header:        'Here is the evaluation based on your profile:',
+    topSection:    '🎯 TOP FUNDING PATHS FOR YOU',
+    org:           'Organization',
+    funding:       'Funding',
+    deadline:      'Deadline',
+    region:        'Region',
+    decision:      'Decision',
+    probability:   'Probability',
+    riskLbl:       'Risk',
+    low:           'Low',
+    medium:        'Medium',
+    high:          'High',
+    whyFits:       'Why it fits',
+    mainRisks:     'Main risks',
+    nextStep:      'Next step',
+    link:          'Link',
+    eliminated:    '🚫 ELIMINATED / LOW PRIORITY',
+    finalSection:  '📋 FINAL DECISION',
+    bestPath:      'Best path',
+    action:        'Recommended action',
+    noResults:     'No programs passed the eligibility filter. Please add more details — sector, country, organization type.',
+    noMoreDetail:  'No funding programs found for your profile. Please add more details — sector, country, organization type, and budget.',
+    notConfirmed:  'Not confirmed',
+    yes:           '✅ YES',
+    conditional:   '⚠️ CONDITIONAL',
+    no:            '❌ NO',
+    elim:          '🚫 ELIMINATED',
+  },
+  sr: {
+    header:        'Evo evaluacije prema vašem profilu:',
+    topSection:    '🎯 TOP PUTEVI ZA VAS',
+    org:           'Organizacija',
+    funding:       'Finansiranje',
+    deadline:      'Rok',
+    region:        'Region',
+    decision:      'Odluka',
+    probability:   'Verovatnoća',
+    riskLbl:       'Rizik',
+    low:           'Nizak',
+    medium:        'Srednji',
+    high:          'Visok',
+    whyFits:       'Zašto odgovara',
+    mainRisks:     'Glavni rizici',
+    nextStep:      'Sledeći korak',
+    link:          'Link',
+    eliminated:    '🚫 ELIMINISANI / NIZAK PRIORITET',
+    finalSection:  '📋 KONAČNA ODLUKA',
+    bestPath:      'Najbolji put',
+    action:        'Preporučena akcija',
+    noResults:     'Nema programa koji ispunjavaju kriterijume. Dodajte više detalja — sektor, zemlja, tip organizacije.',
+    noMoreDetail:  'Nisu pronađeni programi za vaš profil. Dodajte više detalja — sektor, zemlja, tip organizacije i budžet.',
+    notConfirmed:  'Nije potvrđeno',
+    yes:           '✅ DA',
+    conditional:   '⚠️ USLOVNO',
+    no:            '❌ NE',
+    elim:          '🚫 ELIMINISANO',
+  },
+};
+
+function L(lang) { return LANG[lang] || LANG.en; }
+
+// ─── PROGRAM FAMILY CLUSTERS ─────────────────────────────────────────
+const PROGRAM_FAMILIES = [
+  { re: /ipard/i,                          family: 'IPARD' },
+  { re: /erasmus\+?/i,                     family: 'Erasmus+' },
+  { re: /horizon\s*(europe|2020)?/i,       family: 'Horizon Europe' },
+  { re: /creative\s*europe/i,              family: 'Creative Europe' },
+  { re: /life\s*(program|programme)?/i,    family: 'LIFE Programme' },
+  { re: /interreg/i,                       family: 'Interreg' },
+  { re: /eu4business|eu\s*for\s*business/i,family: 'EU4Business' },
+  { re: /wbif|western\s*balkans\s*invest/i,family: 'WBIF' },
+];
+
+function getFamily(title) {
+  for (const { re, family } of PROGRAM_FAMILIES) {
+    if (re.test(title || '')) return family;
+  }
+  return null;
+}
+
 // ═══════════════════════════════════════════════════════════
 // DECISION ENGINE FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 
+// ─── 0. detectNegatives ──────────────────────────────────────────────
+function detectNegatives(text) {
+  const negates = {
+    farmer:  false,
+    land:    false,
+    company: false,
+    ngo:     false,
+    student: false,
+    partner: false,
+    research:false,
+  };
+  const t = text || '';
+
+  if (/(?:do\s+not|don['']?t|not\s+have|нема[мт]?|без|не\s+поседувам|немам|не\s+сум\s+земјоделец|нисам\s+farmer|nisam\s+farmer)\s+(?:an?\s+)?(?:agricultural\s+holding|farm(?:er)?|земјоделск[ао]\s+стопанство|земјоделец|agri[- ]?holding)/i.test(t)) {
+    negates.farmer = true;
+  }
+  if (/(?:do\s+not|don['']?t|not\s+own|not\s+have|нема[мт]?|без|не\s+поседувам|немам)\s+(?:any\s+)?(?:land|земјиште|hectares?|хектар|парцела|cadastral\s+plot)/i.test(t)) {
+    negates.land = true;
+  }
+  if (/(?:do\s+not|don['']?t|not\s+have|нема[мт]?|без|не\s+поседувам|немам)\s+(?:a\s+)?(?:company|registered\s+company|llc|ltd|дооел|фирма|претпријатие|legal\s+entity|правно\s+лице)/i.test(t)) {
+    negates.company = true;
+  }
+  if (/(?:do\s+not|don['']?t|not\s+have|нема[мт]?|без|не\s+поседувам|немам)\s+(?:an?\s+)?(?:ngo|association|нво|здружение|nonprofit|civil\s+society\s+org)/i.test(t)) {
+    negates.ngo = true;
+  }
+  if (/(?:not\s+a\s+student|not\s+enrolled|do\s+not\s+have\s+student|нема[мт]?\s+студентски\s+статус|не\s+сум\s+студент|nisam\s+student)/i.test(t)) {
+    negates.student = true;
+  }
+  if (/(?:do\s+not|don['']?t|нема[мт]?|немам|без)\s+(?:any\s+)?(?:partners?|partner\s+org|конзорциум|конзорц|consortium)/i.test(t)) {
+    negates.partner = true;
+  }
+  if (/(?:do\s+not|don['']?t|not\s+affiliated|нема[мт]?|немам|без)\s+(?:a\s+)?(?:research\s+institution|university\s+affiliation|научна\s+институција|универзитет)/i.test(t)) {
+    negates.research = true;
+  }
+
+  return negates;
+}
+
 // ─── 1. detectUserProfile ────────────────────────────────────────────
 function detectUserProfile(text, baseProfile) {
-  const p    = { ...baseProfile };
-  const low  = (text || '').toLowerCase();
+  const p   = { ...baseProfile };
 
   if (!p.orgType) {
     if (/\b(ngo|нво|civil society|здружение|association|nonprofit|невладина)\b/i.test(text))
@@ -75,9 +226,9 @@ function detectUserProfile(text, baseProfile) {
       p.orgType = 'Individual / Entrepreneur';
     else if (/\b(земјоделец|земјоделско стопанство|farmer|agricultural holding|ipard|фармер)\b/i.test(text))
       p.orgType = 'Agricultural holding';
-    else if (/\b(студент|student|scholarship|стипендија|fellowship|phd|doctoral|undergraduate)\b/i.test(text))
+    else if (/\b(студент|student|стипендија|scholarship|fellowship|phd|doctoral|undergraduate)\b/i.test(text))
       p.orgType = 'Student / Youth';
-    else if (/\b(municipality|општини|локалнa власт|local government|јавно тело|public body)\b/i.test(text))
+    else if (/\b(municipality|општини|локална власт|local government|јавно тело|public body)\b/i.test(text))
       p.orgType = 'Municipality / Public body';
     else if (/\b(university|универзитет|институт|institute|академска|research institution)\b/i.test(text))
       p.orgType = 'University / Research';
@@ -108,6 +259,13 @@ function detectUserProfile(text, baseProfile) {
   p._isMunicipality = /municipality|public body/i.test(p.orgType || '');
   p._isResearcher   = /university|research/i.test(p.orgType || '');
 
+  p.negates = detectNegatives(text);
+
+  if (p.negates.farmer)  p._isFarmer   = false;
+  if (p.negates.ngo)     p._isNGO      = false;
+  if (p.negates.company) p._isCompany  = false;
+  if (p.negates.student) p._isStudent  = false;
+
   return p;
 }
 
@@ -124,6 +282,8 @@ function parseEligibility(eligText, descText) {
     requiresLegalEntity: /\b(registered entity|legal entity|правно лице|регистрирана|incorporated|registration proof)\b/.test(hay),
     requiresResearch:    /\b(research institution|university|academic institution|научна институција)\b/.test(hay),
     requiresMunicipality:/\b(municipality|local authority|local government|јавна институција|public body)\b/.test(hay),
+    requiresExperience:  /\b(proven experience|track record|minimum \d+ years|at least \d+ years|prior project experience|demonstrated capacity|previous grants|искуство|докажан капацитет)\b/.test(hay),
+    requiresInnovation:  /\b(innovative|innovation|breakthrough|novel|novelty|proof of concept|inovativ|иновациј)\b/.test(hay),
   };
 }
 
@@ -159,16 +319,18 @@ function normalizeOpportunity(raw, profile) {
     nextStep:        null,
     eliminated:      false,
     eliminationReason: null,
+    whyFits:         '',
+    family:          getFamily(raw.title),
   };
 }
 
 // ─── 4. scoreOpportunity ─────────────────────────────────────────────
 function scoreOpportunity(opp, profile) {
-  const req   = opp.requirements;
-  const today = new Date();
-  const risks = [];
+  const req    = opp.requirements;
+  const neg    = profile.negates || {};
+  const today  = new Date();
+  const risks  = [];
 
-  // Hard elimination: expired deadline
   if (opp.deadline) {
     const deadDate = new Date(opp.deadline);
     if (!isNaN(deadDate) && deadDate < today) {
@@ -177,6 +339,7 @@ function scoreOpportunity(opp, profile) {
         decision: '🚫 ELIMINATED', probability: 0, riskLevel: 'High',
         risks: ['Deadline has passed — this program is closed'],
         nextStep: 'Look for the next call for proposals from this donor',
+        whyFits:  'Program is closed — deadline has passed',
       });
     }
     const daysLeft = Math.round((deadDate - today) / 86400000);
@@ -184,7 +347,53 @@ function scoreOpportunity(opp, profile) {
     else if (daysLeft < 21) risks.push(`Deadline in ${daysLeft} days — start the application now`);
   }
 
-  // ── Eligibility score (0–1) ───────────────────────────
+  // ABSOLUTE: negatives override — check BEFORE any scoring
+  let negativeConflict = false;
+  let negativeReason   = null;
+
+  if ((neg.farmer || neg.land) && (req.requiresFarmer || req.requiresLand)) {
+    negativeConflict  = true;
+    negativeReason    = 'Requires agricultural holding/land — user explicitly stated they do not have one';
+    risks.push('You stated you do not have an agricultural holding or land — this program requires it');
+  }
+  if (neg.ngo && req.requiresNGO) {
+    negativeConflict = true;
+    negativeReason   = 'Requires NGO — user explicitly stated they do not have one';
+    risks.push('You stated you do not have an NGO — this program requires a registered civil society organization');
+  }
+  if (neg.company && req.requiresCompany && !req.requiresNGO) {
+    negativeConflict = true;
+    negativeReason   = 'Requires registered company — user explicitly stated they do not have one';
+    risks.push('You stated you do not have a registered company — this program requires a legal entity');
+  }
+  if (neg.student && req.requiresStudent) {
+    negativeConflict = true;
+    negativeReason   = 'Requires student status — user explicitly stated they are not a student';
+    risks.push('You stated you are not a student — this program requires active student enrollment');
+  }
+  if (neg.partner && req.requiresPartners) {
+    negativeConflict = true;
+    negativeReason   = 'Requires consortium/partners — user explicitly stated they have none';
+    risks.push('You stated you have no partner organizations — this program requires a consortium');
+  }
+  if (neg.research && req.requiresResearch) {
+    negativeConflict = true;
+    negativeReason   = 'Requires research institution affiliation — user explicitly stated they have none';
+    risks.push('You stated you have no research institution affiliation — this program requires one');
+  }
+
+  if (negativeConflict) {
+    opp.eliminated        = true;
+    opp.eliminationReason = negativeReason;
+    opp.risks             = risks;
+    opp.riskLevel         = 'High';
+    opp.decision          = '🚫 ELIMINATED';
+    opp.probability       = 0;
+    opp.whyFits           = negativeReason;
+    opp.nextStep          = 'This program does not match your stated profile. Check the donor\'s other programs.';
+    return opp;
+  }
+
   let eligScore    = 0.50;
   let hardConflict = false;
 
@@ -236,7 +445,7 @@ function scoreOpportunity(opp, profile) {
         if (req.requiresLand) risks.push('Confirm: land ownership/lease documentation will be required');
       } else {
         eligScore = 0.03; hardConflict = true;
-        opp.eliminated = true;
+        opp.eliminated        = true;
         opp.eliminationReason = 'Requires active agricultural holding or land ownership';
         risks.push('Requires registered agricultural holding + land ownership — not applicable to your profile');
       }
@@ -247,7 +456,7 @@ function scoreOpportunity(opp, profile) {
         eligScore = 0.92;
       } else {
         eligScore = 0.03; hardConflict = true;
-        opp.eliminated = true;
+        opp.eliminated        = true;
         opp.eliminationReason = 'Requires active student enrollment';
         risks.push('Requires current student status — not applicable to your profile');
       }
@@ -281,20 +490,28 @@ function scoreOpportunity(opp, profile) {
     eligScore = Math.min(eligScore, 0.35);
   }
 
+  if (req.requiresExperience) {
+    risks.push('Documented track record required — prepare examples of previous projects or grants');
+  }
+
   if (hardConflict && eligScore < 0.15) {
-    opp.eliminated = true;
+    opp.eliminated        = true;
     opp.eliminationReason = opp.eliminationReason || 'Eligibility conflict with your organization type';
   }
 
+  const hasConflict = hardConflict || opp.eliminated;
+
   if (opp.eliminated) {
     return Object.assign(opp, {
-      decision: '🚫 ELIMINATED', probability: Math.round(eligScore * 30),
-      riskLevel: 'High', risks,
-      nextStep: "This program does not match your organization type. Check the donor's other programs.",
+      decision:    '🚫 ELIMINATED',
+      probability: Math.min(Math.round(eligScore * 30), 35),
+      riskLevel:   'High',
+      risks,
+      nextStep:    'This program does not match your organization type. Check the donor\'s other programs.',
+      whyFits:     opp.eliminationReason || 'Eligibility conflict',
     });
   }
 
-  // ── Region score (0–1) ──────────────────────────────────
   let regionScore = 0.50;
   if (profile.country) {
     const pc  = profile.country.toLowerCase();
@@ -310,20 +527,22 @@ function scoreOpportunity(opp, profile) {
     } else if (reg.length > 3 && !reg.includes(pc)) {
       regionScore = 0.08;
       risks.push(`Confirm ${profile.country} is eligible — program targets: "${opp.region}"`);
-      opp.eliminated = true;
+      opp.eliminated        = true;
       opp.eliminationReason = `Region mismatch — program targets ${opp.region}, not ${profile.country}`;
     }
   }
 
   if (opp.eliminated) {
     return Object.assign(opp, {
-      decision: '🚫 ELIMINATED', probability: Math.round(eligScore * regionScore * 50),
-      riskLevel: 'High', risks,
-      nextStep: "This program is not open to your country. Check the donor's regional programs.",
+      decision:    '🚫 ELIMINATED',
+      probability: Math.min(Math.round(eligScore * regionScore * 50), 35),
+      riskLevel:   'High',
+      risks,
+      nextStep:    'This program is not open to your country. Check the donor\'s regional programs.',
+      whyFits:     opp.eliminationReason || 'Region mismatch',
     });
   }
 
-  // ── Sector score (0–1) ──────────────────────────────────
   let sectorScore = 0.50;
   if (profile.sector) {
     const hay = (opp.sectorText + ' ' + opp.description + ' ' + opp.eligibilityText).toLowerCase();
@@ -345,7 +564,6 @@ function scoreOpportunity(opp, profile) {
     sectorScore = hits >= 3 ? 0.95 : hits === 2 ? 0.80 : hits === 1 ? 0.65 : 0.25;
   }
 
-  // ── Risk score (0–1) ────────────────────────────────────
   let riskScore = 0.85;
   if (!opp.deadline) {
     riskScore -= 0.10;
@@ -369,13 +587,21 @@ function scoreOpportunity(opp, profile) {
     risks.push('Verify full eligibility criteria on official source before submitting');
   }
 
-  // ── Final score ──────────────────────────────────────────
   const boost      = Math.min((opp._relevanceScore || 0) / 12, 0.05);
   const finalScore = eligScore * 0.50 + regionScore * 0.20 + sectorScore * 0.20 + riskScore * 0.10 + boost;
-  const probability = Math.min(Math.round(finalScore * 100), 97);
+
+  let probability = Math.min(Math.round(finalScore * 100), 97);
+  if (hasConflict) probability = Math.min(probability, 35);
 
   let decision, riskLevel;
-  if (probability >= 75) {
+  if (hasConflict) {
+    decision  = probability >= 25 ? '❌ NO' : '🚫 ELIMINATED';
+    riskLevel = 'High';
+    if (decision === '🚫 ELIMINATED') {
+      opp.eliminated        = true;
+      opp.eliminationReason = opp.eliminationReason || 'Score below threshold — poor overall fit';
+    }
+  } else if (probability >= 75) {
     decision = '✅ YES'; riskLevel = 'Low';
   } else if (probability >= 50) {
     decision = '⚠️ CONDITIONAL'; riskLevel = 'Medium';
@@ -383,7 +609,7 @@ function scoreOpportunity(opp, profile) {
     decision = '❌ NO'; riskLevel = 'High';
   } else {
     decision = '🚫 ELIMINATED'; riskLevel = 'High';
-    opp.eliminated = true;
+    opp.eliminated        = true;
     opp.eliminationReason = opp.eliminationReason || 'Score below threshold — poor overall fit';
   }
 
@@ -396,13 +622,56 @@ function scoreOpportunity(opp, profile) {
     if (daysLeft <= 30) nextStep = `⚡ Apply within ${daysLeft} days. ` + nextStep;
   }
 
+  opp.whyFits = buildWhyFits(opp, profile, 'en');
+
   return Object.assign(opp, { score: parseFloat(finalScore.toFixed(3)), probability, decision, riskLevel, risks, nextStep });
+}
+
+// ─── buildWhyFits ─────────────────────────────────────────────────────
+function buildWhyFits(opp, profile, lang) {
+  const reasons = [];
+  const req     = opp.requirements;
+
+  if (profile._isNGO      && req.requiresNGO)      reasons.push('matches your NGO type');
+  if (profile._isCompany  && req.requiresCompany)   reasons.push('matches your company registration');
+  if (profile._isFarmer   && req.requiresFarmer)    reasons.push('designed for agricultural holdings');
+  if (profile._isStudent  && req.requiresStudent)   reasons.push('open to students / young professionals');
+  if (profile._isResearcher && req.requiresResearch)reasons.push('targets research institutions');
+  if (profile.country && opp.region && opp.region.toLowerCase().includes(profile.country.toLowerCase())) {
+    reasons.push(`open to ${profile.country}`);
+  } else if (/western balkans|balkans/i.test(opp.region)) {
+    reasons.push('open to Western Balkans countries');
+  }
+  if (profile.sector) {
+    const hay = (opp.sectorText + ' ' + opp.description).toLowerCase();
+    const kw  = profile.sector.split(/[/ ]/)[0].toLowerCase();
+    if (kw && hay.includes(kw)) reasons.push(`aligns with your sector (${profile.sector})`);
+  }
+
+  if (reasons.length === 0) {
+    if (opp.eliminated) return opp.eliminationReason || 'Does not match eligibility criteria';
+    return 'General match — verify eligibility criteria on official source';
+  }
+  return reasons.join(', ').replace(/^\w/, c => c.toUpperCase()) + '.';
 }
 
 // ─── 5. mergeDuplicates ──────────────────────────────────────────────
 function mergeDuplicates(opps) {
-  const merged = [];
+  const familyBest = {};
+  const noFamily   = [];
+
   for (const opp of opps) {
+    if (opp.family) {
+      if (!familyBest[opp.family] || (opp.score || 0) > (familyBest[opp.family].score || 0)) {
+        familyBest[opp.family] = opp;
+      }
+    } else {
+      noFamily.push(opp);
+    }
+  }
+
+  const merged = Object.values(familyBest);
+  for (const opp of noFamily) {
     const keyA = normTitle(opp.title);
     const dup  = merged.findIndex(m => normTitle(m.title) === keyA || tokenSim(normTitle(m.title), keyA) > 0.78);
     if (dup >= 0) {
@@ -411,6 +680,7 @@ function mergeDuplicates(opps) {
       merged.push(opp);
     }
   }
+
   return merged;
 }
 
@@ -435,140 +705,94 @@ function rankResults(opps) {
   return { top: active.slice(0, 3), lowPriority: [...active.slice(3), ...eliminated] };
 }
 
-// ─── 7. formatDecisionOutput ─────────────────────────────────────────
+// ─── 7. buildOutputText ──────────────────────────────────────────────
+function buildOutputText(lang, today, profile, top, lowPriority) {
+  const lbl = L(lang);
+  const SEP = '━━━━━━━━━━━━━━━━━━━━';
+  const BIG = '════════════════════════════════════';
+  let out = '';
+
+  out += lbl.header + '\n' + BIG + '\n';
+  out += lbl.topSection + '\n' + BIG + '\n\n';
+
+  if (!top.length) {
+    out += lbl.noResults + '\n';
+  } else {
+    for (const [i, o] of top.entries()) {
+      const riskLabel = o.riskLevel === 'Low' ? lbl.low : o.riskLevel === 'Medium' ? lbl.medium : lbl.high;
+      out += SEP + '\n';
+      out += `${i + 1}. ${o.title}\n`;
+      out += `🏛 ${lbl.org}: ${o.organization || '—'}\n`;
+      out += `💰 ${lbl.funding}: ${o.amount}\n`;
+      out += `📅 ${lbl.deadline}: ${o.deadline || lbl.notConfirmed}\n`;
+      out += `🌍 ${lbl.region}: ${o.region || '—'}\n`;
+      out += `🎯 ${lbl.decision}: ${o.decision}   📊 ${lbl.probability}: ${o.probability}%   ⚠️ ${lbl.riskLbl}: ${riskLabel}\n`;
+      if (o.whyFits) out += `\n${lbl.whyFits}: ${o.whyFits}\n`;
+      if (o.risks?.length) {
+        out += `${lbl.mainRisks}:\n`;
+        o.risks.slice(0, 3).forEach(r => { out += `  • ${r}\n`; });
+      }
+      out += `${lbl.nextStep}: ${o.nextStep || '—'}\n`;
+      if (o.sourceUrl) out += `🔗 ${lbl.link}: ${o.sourceUrl}\n`;
+      out += SEP + '\n\n';
+    }
+  }
+
+  out += BIG + '\n' + lbl.eliminated + '\n' + BIG + '\n';
+  if (!lowPriority.length) {
+    out += '—\n';
+  } else {
+    lowPriority.slice(0, 6).forEach(o => {
+      out += `• ${o.title} | ${o.decision} | ${o.eliminationReason || 'Low fit score'}\n`;
+    });
+  }
+
+  out += '\n' + BIG + '\n' + lbl.finalSection + '\n' + BIG + '\n';
+  if (top.length > 0) {
+    const best = top[0];
+    out += `${lbl.bestPath}: ${best.title}\n`;
+    out += `${lbl.action}: ${best.nextStep || '—'}\n`;
+  } else {
+    out += lbl.noResults + '\n';
+  }
+
+  return out;
+}
+
+// ─── 8. formatDecisionOutput ─────────────────────────────────────────
 async function formatDecisionOutput(lang, today, profile, top, lowPriority) {
   const nativeName  = NATIVE_NAMES[lang] || 'English';
   const profileLine = [profile.sector, profile.orgType, profile.country, profile.budget]
     .filter(Boolean).join(' | ') || 'not specified';
 
-  const topBlock = top.map((o, i) =>
-    `[${i+1}] ${o.title}
-DECISION: ${o.decision}  PROBABILITY: ${o.probability}%  RISK: ${o.riskLevel}
-Organization: ${o.organization}
-Amount: ${o.amount}
-Deadline: ${o.deadline || 'Not confirmed'}
-Region: ${o.region || '—'}
-Risks: ${o.risks.slice(0,3).join(' || ')}
-Next step: ${o.nextStep}
-URL: ${o.sourceUrl || '—'}`
-  ).join('\n\n---\n\n');
+  const jsOutput = buildOutputText(lang, today, profile, top, lowPriority);
 
-  const lowBlock = lowPriority.slice(0, 6).map((o, i) =>
-    `${i+1}. ${o.title} | ${o.decision} | ${o.eliminationReason || 'Low fit score'}`
-  ).join('\n');
+  if (lang === 'en' || !top.length) return jsOutput;
 
   const systemPrompt =
 `You are MARGINOVA, a funding decision advisor. RESPOND ENTIRELY IN ${nativeName}. DO NOT switch language.
 Today: ${today}. User profile: ${profileLine}.
 
 STRICT RULES:
-1. Translate ALL labels, decisions, risk text, and next steps into ${nativeName}.
-2. Keep amounts, percentages, dates, URLs, and program names EXACTLY as given.
+1. Translate ALL narrative text into ${nativeName}. Keep structure, emojis, and separators EXACTLY as given.
+2. Keep amounts, percentages, dates, URLs, and program names EXACTLY as given — do NOT translate them.
 3. Do NOT invent programs, amounts, or URLs.
-4. Do NOT add programs not in the data.
-5. Risk descriptions must be specific — never write generic "check eligibility".
-6. LANGUAGE: every word must be in ${nativeName}.
+4. Do NOT add or remove programs from the list.
+5. Keep the exact structure with ━ and ═ separators.
+6. Every word of running text must be in ${nativeName}.
+7. CRITICAL: The decision labels (✅ YES, ⚠️ CONDITIONAL, ❌ NO, 🚫 ELIMINATED) must be translated to ${nativeName}.
 
-OUTPUT FORMAT (use EXACTLY this structure):
-
-═══════════════════════════════════════
-🎯 ТОП ПАТИШТА / TOP FUNDING PATHS
-═══════════════════════════════════════
-
-For each top result:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[N]. [PROGRAM NAME]
-[DECISION LABEL in ${nativeName}] | [PROBABILITY]% | [RISK LEVEL in ${nativeName}]
-🏛 [ORGANIZATION]
-💰 [AMOUNT]
-📅 [DEADLINE LABEL]: [DEADLINE]
-🌍 [REGION]
-
-⚠️ [RISKS LABEL in ${nativeName}]:
-• [risk 1 — translated]
-• [risk 2 — translated]
-
-▶ [NEXT STEP LABEL in ${nativeName}]: [next step — translated]
-🔗 [URL]
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Then:
-═══════════════════════════════════════
-🚫 [ELIMINATED LABEL in ${nativeName}]
-═══════════════════════════════════════
-[One line per eliminated program: name | decision | reason in ${nativeName}]
-
-Then:
-═══════════════════════════════════════
-📋 [FINAL DECISION LABEL in ${nativeName}]
-═══════════════════════════════════════
-[2 sentences: best program + immediate next action — in ${nativeName}]`;
-
-  const userMsg =
-`Present these funding decisions. TOP PATHS (${top.length}):
-${topBlock || 'No programs passed the decision filter.'}
-
-ELIMINATED / LOW PRIORITY (${lowPriority.length}):
-${lowBlock || 'None.'}`;
+INPUT TEXT TO TRANSLATE AND REFINE:
+${jsOutput}`;
 
   try {
-    const result = await gemini(systemPrompt, [{ role: 'user', parts: [{ text: userMsg }] }], { maxTokens: 3200, temperature: 0.1 });
-    if (result && typeof result === 'string' && result.length > 50) return result;
+    const result = await gemini(systemPrompt, [{ role: 'user', parts: [{ text: 'Translate the above output to ' + nativeName + '. Keep all structure and data exactly.' }] }], { maxTokens: 3200, temperature: 0.1 });
+    if (result && typeof result === 'string' && result.length > 80) return result;
     throw new Error('Empty Gemini response');
   } catch (e) {
     console.error('[formatDecisionOutput] Gemini error:', e.message);
-    return buildFallbackText(lang, top, lowPriority);
+    return jsOutput;
   }
-}
-
-function buildFallbackText(lang, top, lowPriority) {
-  const mk = lang === 'mk';
-  let out = mk ? '🎯 ТОП ФИНАНСИСКИ ПАТИШТА\n\n' : '🎯 TOP FUNDING PATHS FOR YOU\n\n';
-  for (const [i, o] of top.entries()) {
-    out += `${i+1}. ${o.title}\n   ${o.decision} | ${o.probability}%\n   ${o.organization} | ${o.amount}\n`;
-    if (o.deadline) out += `   ${mk ? 'Рок' : 'Deadline'}: ${o.deadline}\n`;
-    if (o.sourceUrl) out += `   ${o.sourceUrl}\n`;
-    out += '\n';
-  }
-  if (lowPriority.length) {
-    out += mk ? '\n🚫 ЕЛИМИНИРАНИ\n' : '\n🚫 ELIMINATED\n';
-    lowPriority.slice(0, 4).forEach(o => { out += `• ${o.title} — ${o.decision}\n`; });
-  }
-  if (!top.length) {
-    out = mk
-      ? 'Нема програми кои ги исполнуваат критериумите. Додај повеќе детали — сектор, земја, тип на организација.'
-      : 'No programs passed the eligibility filter. Please add more details — sector, country, organization type.';
-  }
-  return out;
-}
-
-// ─── SERPER FALLBACK ─────────────────────────────────────────────────
-async function serperSearch(query) {
-  const KEY = process.env.SERPER_API_KEY;
-  if (!KEY) return [];
-  try {
-    const r = await fetch('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: { 'X-API-KEY': KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query, num: 6, gl: 'us', hl: 'en' }),
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!r.ok) return [];
-    const d = await r.json();
-    return d.organic || [];
-  } catch (e) {
-    console.warn('[SERPER]', e.message);
-    return [];
-  }
-}
-
-function buildSerperQuery(profile, userText) {
-  const parts = ['grant funding open call 2025 2026'];
-  if (profile.sector)  parts.push(profile.sector);
-  if (profile.country) parts.push(profile.country);
-  if (profile.orgType) parts.push(profile.orgType);
-  if (userText)        parts.push(userText.replace(/\s+/g, ' ').slice(0, 80));
-  return parts.join(' ');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -623,6 +847,35 @@ async function cleanCache() {
   try { await getTable('search_cache').delete().lt('expires_at', new Date().toISOString()); } catch (_) {}
 }
 
+// ─── SERPER FALLBACK ─────────────────────────────────────────────────
+async function serperSearch(query) {
+  const KEY = process.env.SERPER_API_KEY;
+  if (!KEY) return [];
+  try {
+    const r = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'X-API-KEY': KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: query, num: 6, gl: 'us', hl: 'en' }),
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!r.ok) return [];
+    const d = await r.json();
+    return d.organic || [];
+  } catch (e) {
+    console.warn('[SERPER]', e.message);
+    return [];
+  }
+}
+
+function buildSerperQuery(profile, userText) {
+  const parts = ['grant funding open call 2025 2026'];
+  if (profile.sector)  parts.push(profile.sector);
+  if (profile.country) parts.push(profile.country);
+  if (profile.orgType) parts.push(profile.orgType);
+  if (userText)        parts.push(userText.replace(/\s+/g, ' ').slice(0, 80));
+  return parts.join(' ');
+}
+
 // ═══════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════
@@ -653,30 +906,32 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: { message: 'No message provided.' } });
     }
 
-    // Language detection
     const allText    = (body.messages || []).map(m => m.content || '').join(' ') + ' ' + userText;
     const explicitMk = /на македонски|по македонски|in macedonian|makedonski/i.test(userText);
     const explicitEn = /in english|на англиски|по английски/i.test(userText);
-    const lang = explicitMk ? 'mk' : explicitEn ? 'en' : (body.lang || detectLang(allText));
+    const lang       = explicitMk ? 'mk' : explicitEn ? 'en' : (body.lang || detectLang(allText));
 
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
     console.log('[handler] lang:', lang, 'today:', today);
 
-    // Profile detection
-    const convText   = (body.messages || []).slice(-4).map(m => m.content || '').join(' ') + ' ' + userText;
-    let baseProfile  = { sector: null, orgType: null, country: null, budget: null, keywords: [] };
+    const convText = (body.messages || []).slice(-4).map(m => m.content || '').join(' ') + ' ' + userText;
+    let baseProfile = { sector: null, orgType: null, country: null, budget: null, keywords: [] };
     try { baseProfile = detectProfile(convText); } catch (e) { console.warn('[detectProfile]', e.message); }
 
     const profile = detectUserProfile(convText, baseProfile);
-    console.log('[handler] profile:', JSON.stringify({ sector: profile.sector, orgType: profile.orgType, country: profile.country }));
+    console.log('[handler] profile:', JSON.stringify({
+      sector: profile.sector, orgType: profile.orgType, country: profile.country,
+      _isNGO: profile._isNGO, _isCompany: profile._isCompany,
+      negates: profile.negates,
+    }));
 
     cleanCache().catch(() => {});
 
-    // Search decision
     let shouldSearch = false;
     try {
       shouldSearch = needsSearch(convText) || !!imageData || !!(profile.sector && profile.country);
     } catch (e) { console.warn('[needsSearch]', e.message); }
+    console.log('[handler] shouldSearch:', shouldSearch);
 
     let rawResults = [];
     let sources    = { db: 0, serper: 0 };
@@ -685,8 +940,8 @@ module.exports = async function handler(req, res) {
 
     if (shouldSearch && !imageData) {
       const cacheKey = buildCacheKey(userText, profile) + '_' + lang;
-      const cached   = await getCached(cacheKey);
 
+      const cached = await getCached(cacheKey);
       if (cached?.results?.length) {
         rawResults = cached.results;
         cachedAt   = cached.created_at;
@@ -704,17 +959,16 @@ module.exports = async function handler(req, res) {
           console.error('[handler] searchDB error:', e.message);
         }
 
-        // Serper fallback: only if DB is weak and key is configured
         if (rawResults.length < SERPER_FALLBACK_THRESHOLD && process.env.SERPER_API_KEY && !imageData) {
           console.log('[handler] DB weak — trying Serper fallback');
           try {
-            const query     = buildSerperQuery(profile, userText);
-            const webRaw    = await serperSearch(query);
+            const query   = buildSerperQuery(profile, userText);
+            const webRaw  = await serperSearch(query);
             if (webRaw.length > 0) {
               const extracted = await extractFromSerper(webRaw, profile);
               rawResults      = [...rawResults, ...extracted];
               sources.serper  = extracted.length;
-              console.log('[handler] Serper added:', extracted.length);
+              console.log('[handler] Serper added:', extracted.length, 'results');
             }
           } catch (e) {
             console.warn('[handler] Serper fallback error:', e.message);
@@ -729,9 +983,8 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Decision pipeline
-    let text        = '';
-    let top         = [];
+    let text = '';
+    let top  = [];
     let lowPriority = [];
 
     if (rawResults.length > 0) {
@@ -741,33 +994,34 @@ module.exports = async function handler(req, res) {
       const ranked     = rankResults(deduped);
       top         = ranked.top;
       lowPriority = ranked.lowPriority;
-      console.log('[handler] top:', top.length, 'eliminated:', lowPriority.length);
+
+      console.log('[handler] decision: top=', top.length, 'eliminated=', lowPriority.length);
+
       text = await formatDecisionOutput(lang, today, profile, top, lowPriority);
     } else {
-      text = lang === 'mk'
-        ? 'Нема пронајдени програми за вашиот профил. Додај повеќе детали — сектор, земја, тип на организација, и буџет.'
-        : 'No funding programs found. Please add more details — sector, country, organization type, and budget.';
+      const lbl = L(lang);
+      text = lbl.noMoreDetail;
     }
 
-    // Build top_matches for frontend sidebar panel
-    const allScored = [...top, ...lowPriority];
+    const allScored  = [...top, ...lowPriority];
     const topMatches = allScored.slice(0, RESULTS_TO_SHOW).map(o => ({
       title:           o.title,
       organization:    o.organization,
-      deadline:        o.deadline        || '',
+      deadline:        o.deadline       || '',
       amount:          o.amount,
       country:         o.region,
-      matchSignals:    o.matchSignals    || [],
+      matchSignals:    o.matchSignals   || [],
       riskFactors:     o.riskFactors?.length ? o.riskFactors : o.risks || [],
-      relevanceScore:  o.score           || 0,
-      probability:     o.probability     || 0,
-      decision:        o.decision        || '',
-      riskLevel:       o.riskLevel       || '',
-      source:          o.sourceType      || 'db',
-      link:            o.sourceUrl       || '',
+      relevanceScore:  o.score          || 0,
+      probability:     o.probability    || 0,
+      decision:        o.decision       || '',
+      riskLevel:       o.riskLevel      || '',
+      source:          o.sourceType     || 'db',
+      link:            o.sourceUrl      || '',
       snippet:         [o.organization, o.amount, o.deadline ? `Deadline: ${o.deadline}` : null].filter(Boolean).join(' | '),
-      opportunityId:   o.id              || null,
+      opportunityId:   o.id             || null,
       opportunityType: o.eligibilityText || '',
+      whyFits:         o.whyFits        || '',
     }));
 
     return res.status(200).json({
