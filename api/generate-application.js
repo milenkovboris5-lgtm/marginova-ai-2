@@ -87,9 +87,9 @@ async function generateGrant(profile, program, lang, langName) {
 
   // FIX #7: parallel calls with individual timeouts
   const [narrativeRaw, planRaw, budgetRaw] = await Promise.all([
-    safeDeepSeek(narrativePrompt, lang, 16000),
-    safeDeepSeek(planPrompt,      lang, 8000),
-    safeDeepSeek(budgetPrompt,    lang, 8000),
+    safeDeepSeek(narrativePrompt, lang, 6000),
+    safeDeepSeek(planPrompt,      lang, 6000),
+    safeDeepSeek(budgetPrompt,    lang, 6000),
   ]);
 
   const narrative = parseJSON(narrativeRaw, narrativeFallback(org, sector, country, description, lang));
