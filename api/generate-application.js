@@ -74,7 +74,7 @@ async function generateGrant(profile, program, lang, langName) {
   const coFinRate  = parseFloat(program.co_financing_rate) || DEFAULT_CO_FIN_RATE;
 
   // FIX #4: robust budget parsing — handles ranges, "up to X", plain numbers
-  const budgetNum  = parseBudgetAmount(program.amount || program.award_amount || '60000');
+ const budgetNum = parseBudgetAmount(profile.budget || program.award_amount || '60000');
   const ownTarget  = Math.round(budgetNum * coFinRate / 100);
   const grantTarget = budgetNum - ownTarget;
 
