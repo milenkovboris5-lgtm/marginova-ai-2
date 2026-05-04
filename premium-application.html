@@ -159,7 +159,6 @@ button,input,textarea,select{font:inherit}
       <p>Fill in details, generate your draft</p>
     </div>
     <div class="sb-body">
-      <!-- ВЛЕЗ Б: Upload RFP -->
       <div id="rfp-upload-area" style="background:rgba(201,168,76,.06);border:1.5px dashed rgba(201,168,76,.35);border-radius:10px;padding:.85rem;text-align:center;cursor:pointer;transition:.2s;margin-bottom:.1rem" onclick="document.getElementById('rfp-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--gold)'" ondrop="handleRFPDrop(event)">
         <input type="file" id="rfp-file-input" accept="application/pdf" style="display:none" onchange="handleRFPUpload(event)">
         <div style="font-size:1.4rem;margin-bottom:.3rem">📎</div>
@@ -267,7 +266,7 @@ const db = createClient(
   'https://yidalveetwkcrjkvzbsn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZGFsdmVldHdrY3Jqa3Z6YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjA2OTgsImV4cCI6MjA4OTM5NjY5OH0.PwvEZzVuzTqS9wtAQYqmCbYMc_H7ZuTCaI5OixWHF7M'
 );
-let appType = 'grant', genData = null, sess = null;
+let appType = 'grant', genData = null, sess = null, coFinRate = '', requiresPartner = '';
 
 const esc = s => (String(s||'')).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
 const fmt = n => Number(n||0).toLocaleString('en-EU');
@@ -288,6 +287,8 @@ const fmt = n => Number(n||0).toLocaleString('en-EU');
     sv('f-amount',  p.get('amount'));
     sv('f-country', p.get('country'));
     sv('f-sector',  p.get('sector'));
+    coFinRate       = p.get('coFinRate')       || '';
+    requiresPartner = p.get('requiresPartner') || '';
     if (p.get('type') === 'scholarship') setType('scholarship');
     document.getElementById('from-chat').style.display = 'flex';
     toast('Program loaded — click ✦ Generate Application');
@@ -377,11 +378,14 @@ async function generate() {
           sector:  document.getElementById('f-sector').value,
           country: document.getElementById('f-country').value,
           description: document.getElementById('f-desc')?.value?.trim()||'',
+          budget:  document.getElementById('f-amount').value.trim(),
         },
         selectedProgram: {
           title,
-          donor:  document.getElementById('f-donor').value.trim(),
-          amount: document.getElementById('f-amount').value.trim(),
+          donor:           document.getElementById('f-donor').value.trim(),
+          amount:          document.getElementById('f-amount').value.trim(),
+          co_financing_rate: coFinRate || undefined,
+          requires_partner:  requiresPartner || undefined,
         },
         language: document.getElementById('f-lang').value,
       }),
@@ -519,7 +523,6 @@ function renderSch(c,TX) {
   return h;
 }
 
-// ═══ RFP UPLOAD FUNCTIONS ═══════════════════════════════
 function handleRFPDrop(e) {
   e.preventDefault();
   document.getElementById('rfp-upload-area').style.borderColor = '';
