@@ -3,8 +3,8 @@
 //
 // FIXED v9.1:
 // - scoreOpportunity() теперь принимает lang (риски, nextStep, whyFits на языках)
-// - RISK_STRINGS для mk/en/sr
-// - nextStep через LANG[lang]
+// - RISK_STRINGS за mk/en/sr
+// - nextStep преку LANG[lang]
 // - sectorScore: null sector → 0.0 (не 0.50)
 // - probability cap 85% (не 97%)
 // ═══════════════════════════════════════════════════════════════════════
@@ -461,16 +461,17 @@ function normalizeOpportunity(raw, profile) {
     _relevanceScore: raw._relevanceScore || 0,
     matchSignals:    raw.matchSignals    || [],
     riskFactors:     raw.riskFactors     || [],
-    score:           0,
-    probability:     0,
-    decision:        null,
-    riskLevel:       null,
-    risks:           [],
-    nextStep:        null,
-    eliminated:      false,
-    eliminationReason: null,
-    whyFits:         '',
-    family:          getFamily(raw.title),
+    score:              0,
+    probability:        0,
+    decision:           null,
+    riskLevel:          null,
+    risks:              [],
+    nextStep:           null,
+    eliminated:         false,
+    eliminationReason:  null,
+    whyFits:            '',
+    family:             getFamily(raw.title),
+    co_financing_rate:  raw.co_financing_rate  ?? null,
   };
 }
 
@@ -1125,23 +1126,24 @@ module.exports = async function handler(req, res) {
 
     const allScored  = [...top, ...lowPriority];
     const topMatches = allScored.slice(0, RESULTS_TO_SHOW).map(o => ({
-      title:           o.title,
-      organization:    o.organization,
-      deadline:        o.deadline       || '',
-      amount:          o.amount,
-      country:         o.region,
-      matchSignals:    o.matchSignals   || [],
-      riskFactors:     o.riskFactors?.length ? o.riskFactors : o.risks || [],
-      relevanceScore:  o.score          || 0,
-      probability:     o.probability    || 0,
-      decision:        o.decision       || '',
-      riskLevel:       o.riskLevel      || '',
-      source:          o.sourceType     || 'db',
-      link:            o.sourceUrl      || '',
-      snippet:         [o.organization, o.amount, o.deadline ? `Deadline: ${o.deadline}` : null].filter(Boolean).join(' | '),
-      opportunityId:   o.id             || null,
-      opportunityType: o.eligibilityText || '',
-      whyFits:         o.whyFits        || '',
+      title:              o.title,
+      organization:       o.organization,
+      deadline:           o.deadline          || '',
+      amount:             o.amount,
+      country:            o.region,
+      matchSignals:       o.matchSignals       || [],
+      riskFactors:        o.riskFactors?.length ? o.riskFactors : o.risks || [],
+      relevanceScore:     o.score             || 0,
+      probability:        o.probability       || 0,
+      decision:           o.decision          || '',
+      riskLevel:          o.riskLevel         || '',
+      source:             o.sourceType        || 'db',
+      link:               o.sourceUrl         || '',
+      snippet:            [o.organization, o.amount, o.deadline ? `Deadline: ${o.deadline}` : null].filter(Boolean).join(' | '),
+      opportunityId:      o.id                || null,
+      opportunityType:    o.eligibilityText   || '',
+      whyFits:            o.whyFits           || '',
+      co_financing_rate:  o.co_financing_rate ?? null,
     }));
 
     return res.status(200).json({
