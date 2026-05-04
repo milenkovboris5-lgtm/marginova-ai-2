@@ -70,22 +70,18 @@ async function generateGrant(profile, program, lang, langName) {
   const donor       = program.donor        || program.organization_name || 'Funding Organization';
   const title       = program.title        || 'Funding Program';
 
-  // FIX #1: read co_financing_rate from DB record, fall back to DEFAULT
   const coFinRate  = parseFloat(program.co_financing_rate) || DEFAULT_CO_FIN_RATE;
 
-  // FIX #4: robust budget parsing — handles ranges, "up to X", plain numbers
- const budgetNum = parseBudgetAmount(profile.budget || program.award_amount || '60000');
+  const budgetNum = parseBudgetAmount(profile.budget || program.amount || program.award_amount || '60000');
   const ownTarget  = Math.round(budgetNum * coFinRate / 100);
   const grantTarget = budgetNum - ownTarget;
 
   console.log(`[grant] budget=${budgetNum} coFinRate=${coFinRate}% own=${ownTarget} grant=${grantTarget}`);
 
-  // ─── PROMPTS ──────────────────────────────────────────────────────
   const narrativePrompt = buildNarrativePrompt(org, sector, country, title, donor, budgetNum, coFinRate, ownTarget, grantTarget, description, langName);
   const planPrompt      = buildPlanPrompt(sector, country, budgetNum, description, langName);
   const budgetPrompt    = buildBudgetPrompt(sector, country, donor, budgetNum, coFinRate, ownTarget, grantTarget, description, langName);
 
-  // FIX #7: parallel calls with individual timeouts
   const [narrativeRaw, planRaw, budgetRaw] = await Promise.all([
     safeDeepSeek(narrativePrompt, lang, 6000),
     safeDeepSeek(planPrompt,      lang, 6000),
@@ -108,7 +104,6 @@ async function generateGrant(profile, program, lang, langName) {
   const totalBudget    = totalGrant + totalOwn;
   const coFinPct       = totalBudget > 0 ? Math.round((totalOwn / totalBudget) * 100) : 0;
 
-  // FIX #6: perBeneficiary from plan results, not hardcoded 150
   const beneficiaryCount = extractBeneficiaryCount(plan.results) || 150;
   const perBeneficiary   = totalBudget > 0 ? Math.round(totalBudget / beneficiaryCount) : 0;
 
@@ -286,7 +281,6 @@ function validateAndFixBudget(budget, budgetNum, coFinRate, ownTarget, lang) {
   const totalOk     = Math.abs(parsedTotal - budgetNum) <= budgetNum * BUDGET_TOLERANCE;
   const ownOk       = Math.abs(parsedOwn   - ownTarget) <= ownTarget  * BUDGET_TOLERANCE;
 
-  // FIX #5: validate BOTH total AND own_contribution
   if (totalOk && ownOk) {
     console.log(`[budget] Validation PASSED total=${parsedTotal} own=${parsedOwn}`);
     return budget;
@@ -296,11 +290,10 @@ function validateAndFixBudget(budget, budgetNum, coFinRate, ownTarget, lang) {
   return scaledBudgetFallback(budgetNum, coFinRate, ownTarget, lang);
 }
 
-// FIX #2: scaledBudgetFallback respects coFinRate from DB
 function scaledBudgetFallback(budgetNum, coFinRate, ownTarget, lang) {
   const mk = lang === 'mk';
 
-  const direct   = Math.round(budgetNum / 1.07); // strip 7% indirect
+  const direct   = Math.round(budgetNum / 1.07);
   const indirect = budgetNum - direct;
 
   const hrTotal  = Math.round(direct * 0.40);
@@ -312,7 +305,6 @@ function scaledBudgetFallback(budgetNum, coFinRate, ownTarget, lang) {
   const tvTotal  = Math.round(direct * 0.04);
   const cmTotal  = Math.round(direct * 0.02);
 
-  // Distribute ownTarget across HR2, Equipment, Services
   const ownHr2  = Math.round(ownTarget * 0.50);
   const ownEq   = Math.round(ownTarget * 0.30);
   const ownSv   = ownTarget - ownHr2 - ownEq;
@@ -335,38 +327,30 @@ function scaledBudgetFallback(budgetNum, coFinRate, ownTarget, lang) {
 }
 
 // ─── UTILITY: parse budget amount from string ─────────────────────────
-// FIX #4: handles "€50,000 - €100,000" (takes lower bound), "up to €500k", plain numbers
 function parseBudgetAmount(raw) {
   if (!raw) return 60000;
   const s = String(raw).toLowerCase();
 
-  // strip currency symbols and spaces
   let clean = s.replace(/[€$£¥₹\s]/g, '');
 
-  // expand shorthand: 500k → 500000, 1.5m → 1500000
   clean = clean.replace(/(\d+(?:\.\d+)?)\s*k\b/g,  (_, n) => String(Math.round(parseFloat(n) * 1000)));
   clean = clean.replace(/(\d+(?:\.\d+)?)\s*m\b/g,  (_, n) => String(Math.round(parseFloat(n) * 1000000)));
 
-  // remove thousands separators (both , and .)
   clean = clean.replace(/(\d)[,.](\d{3})(?=[,.\d]|\b)/g, '$1$2');
   clean = clean.replace(/(\d)[,.](\d{3})(?=[,.\d]|\b)/g, '$1$2');
 
-  // extract all candidate numbers
   const nums = (clean.match(/\d+/g) || [])
     .map(Number)
     .filter(n => n >= 1000 && n <= 50_000_000);
 
   if (nums.length === 0) return 60000;
 
-  // if range (e.g. "50000-100000"), take the LOWER bound (safer for budget planning)
   return nums[0];
 }
 
 // ─── UTILITY: extract beneficiary count from results ─────────────────
-// FIX #6: reads from plan data, not hardcoded
 function extractBeneficiaryCount(results) {
   if (!Array.isArray(results) || results.length === 0) return null;
-  // take max beneficiaries across all results
   const counts = results.map(r => parseLocaleNumber(r.beneficiaries)).filter(n => n > 0);
   return counts.length > 0 ? Math.max(...counts) : null;
 }
@@ -375,9 +359,7 @@ function extractBeneficiaryCount(results) {
 function parseLocaleNumber(val) {
   if (val === null || val === undefined) return 0;
   let s = String(val).trim().replace(/[€$£¥₹\s]/g, '');
-  // European format: 1.234,56 → 1234.56
   if (/^\d{1,3}(\.\d{3})+(,\d*)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
-  // US format with comma thousands: 1,234,567
   else if (/,\d{3}/.test(s)) s = s.replace(/,(\d{3})/g, '$1');
   else s = s.replace(',', '.');
   s = s.replace(/[^0-9.-]/g, '');
@@ -386,7 +368,6 @@ function parseLocaleNumber(val) {
 }
 
 // ─── DEEPSEEK CALLER WITH TIMEOUT ────────────────────────────────────
-// FIX #7: wraps each call with a timeout so one slow call doesn't block all
 async function safeDeepSeek(prompt, lang, maxTokens = 16000) {
   const system = [
     'You are a professional grant writer.',
@@ -417,15 +398,13 @@ async function safeDeepSeek(prompt, lang, maxTokens = 16000) {
 }
 
 // ─── JSON PARSER ─────────────────────────────────────────────────────
-// FIX #8: safer quote handling — avoids breaking Macedonian apostrophes
 function parseJSON(raw, fallback) {
   if (!raw) return fallback;
 
-  // normalize only typographic quotes (not all apostrophes)
   let clean = raw
-    .replace(/\u201C|\u201D/g, '"')  // " " → "
-    .replace(/\u2018|\u2019/g, "'")  // ' ' → '  (apostrophe, not quote)
-    .replace(/\u00AB|\u00BB/g, '"')  // « » → "
+    .replace(/\u201C|\u201D/g, '"')
+    .replace(/\u2018|\u2019/g, "'")
+    .replace(/\u00AB|\u00BB/g, '"')
     .replace(/```json\s*/gi, '')
     .replace(/```\s*/g, '')
     .trim();
@@ -442,10 +421,9 @@ function parseJSON(raw, fallback) {
   } catch (_) {
     try {
       let repaired = candidate
-        .replace(/,\s*([}\]])/g, '$1')                              // trailing commas
-        .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":'); // unquoted keys
+        .replace(/,\s*([}\]])/g, '$1')
+        .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
 
-      // balance brackets
       const opens  = (repaired.match(/\[/g) || []).length;
       const closes = (repaired.match(/\]/g) || []).length;
       const openB  = (repaired.match(/\{/g) || []).length;
