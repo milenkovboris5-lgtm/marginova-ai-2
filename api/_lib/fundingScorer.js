@@ -58,7 +58,7 @@ const EUROPEAN_REGIONS = [
   'global','international','worldwide',
 ];
 
-const SELECT_COLS     = 'id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status';
+const SELECT_COLS     = 'id,title,organization_name,opportunity_type,funding_range,award_amount,currency,focus_areas,eligibility,application_deadline,country,description,source_url,status,co_financing_rate,requires_partner,requires_legal_entity,family_id';
 const DB_FETCH_LIMIT  = 120;
 const MIN_RESULTS     = 3;
 const RESULTS_TO_SHOW = 6;
