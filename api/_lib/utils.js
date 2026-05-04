@@ -157,7 +157,7 @@ async function deepseekCall(systemPrompt, userPrompt, opts = {}) {
         { role: 'system', content: systemPrompt },
         { role: 'user',   content: userPrompt   },
       ],
-      max_tokens:  opts.maxTokens   ?? 4000,   // default 4000
+      max_tokens:  opts.maxTokens   ?? 16000,   // default 8000
       temperature: opts.temperature ?? 0.35,
       stream: false,
     }),
